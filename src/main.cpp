@@ -15,6 +15,7 @@
 // Simulators
 #include "../include/calculation/simulator.h"
 #include "../include/calculation/simulator_gcce_bath.h"
+#include "../include/calculation/superoperator.h"
 #include "../include/calculation/gpu/compute_backend.h"
 #include "../include/clustering/bundle/bundle_cluster.h"
 #include "../include/clustering/bundle/bundle_work.h"
@@ -146,7 +147,7 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
 // flip. Any other rotation used to be calculated as one without a word; gCCE puts
 // the qubit in the Hamiltonian and applies the rotation that was asked for.
 void validatePulsesForMethod(Config* cnf, Pulse* pls) {
-    if(!strcasecmp(cnf->method,"gcce")) return;
+    if(!strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"megcce")) return;   // ME-gCCE applies any rotation too
     for(int i=0;i<Pulse_getNpulse(pls);++i) {
         const char axis=pls->pulse_axes[i];
         if((axis=='X' || axis=='Y') && pls->pulse_angles[i]==180.0) continue;
@@ -187,15 +188,54 @@ void validateBathPulses(Config* cnf, Pulse* pls) {
     }
 }
 
-// hamiltonian.cCCE holds the terms of the cCCE Hamiltonian (A47): in a gCCE run - from the input or from -m - they
-// would do nothing, so they are refused. Checked once -m has been applied.
+bool isMasterEquationMethod(const char* m) { return !strcasecmp(m,"mecce") || !strcasecmp(m,"megcce"); }   // Phase C: + pmeCCE, pmegCCE
+
+// meCCE / megCCE (adding_MECCE): Lindblad dissipation in Liouville space on the CPU with a matrix exponential per step.
+// What their kernels do not take is refused here, before any reader. The backend (computeBackendInit), evolution
+// (Config_resolveEvolution), propagator expm (Config_validatePropagator), evolution_update recursive
+// (Config_validateEvolutionUpdate) and -P are refused by the whitelists that already exist.
+void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
+    auto refuse = [](const char* msg, const char* m) { if (rank==0) { fprintf(stderr, "Error: "); fprintf(stderr, msg, m); fprintf(stderr, "\n"); } MPI_Abort(MPI_COMM_WORLD,1); };
+    if (!isMasterEquationMethod(cnf->method)) return;   // a jump section in another method's run: validateHamiltonianForMethod
+    const bool projected = !strcasecmp(cnf->method,"mecce");
+    if (projected && !strcasecmp(pls->pulsename,"Manual"))
+        refuse("method %s takes its pulses from pulse.count (Ramsey, HahnEcho, CPMG); a Manual sequence is not supported", cnf->method);
+    if (Pulse_getPulseiter(pls))       refuse("method %s needs pulse.per_qubit = false", cnf->method);
+    if (pls->detuning_factor != 1.0)   refuse("method %s needs pulse.detuning_factor = 1", cnf->method);
+    if (strcasecmp(cnf->propagator,"eigen")) refuse("method %s needs propagator eigen (its own matrix exponential)", cnf->method);
+    if (!strcasecmp(op->savemode,"cluster_density_matrix")) refuse("method %s does not write savemode cluster_density_matrix", cnf->method);
+    const int nqubit = QubitArray_getNqubit(qa);
+    if (projected && nqubit > 1) refuse("method %s supports one qubit", cnf->method);
+    if (cnf->jump_operators)
+        for (int i = 0; i < cnf->jump_operators->njump; ++i) {
+            const char* name = cnf->jump_operators->ops[i]->bath_name;
+            if (strcasecmp(name,"qubit") && QubitArray_getQubitIdx_fromName(qa,name) < 0) continue;
+            // meCCE projects the qubit out; the branch's per-cluster scalar entered once per cluster power (M1)
+            if (projected) refuse("method %s does not take qubit jump operators (the qubit is projected out); use megCCE", cnf->method);
+            if (nqubit > 1) refuse("a qubit jump operator needs one qubit (method %s)", cnf->method);
+        }
+    // the coherence only: the branch's megCCE density-matrix output is not ported
+    if (strcasecmp(cnf->quantity,"coherence")) refuse("method %s computes quantity coherence only (dm is not implemented)", cnf->method);
+    // the ladder's own check (rdipladder::prepare) comes after the clusters
+    if (cnf->nrdip_ladder > 0) refuse("rdip_ladder needs method CCE, gCCE or pCCE (this run is method %s)", cnf->method);
+}
+
+// hamiltonian.cCCE holds the terms of the cCCE Hamiltonian (A47): in a gCCE or megCCE run - from the input or from -m -
+// they would do nothing, so they are refused; meCCE reads them as cCCE does. hamiltonian.meCCE / megCCE.jump_operators
+// belong to that method. Checked once -m has been applied.
 //
 // delta_A false (A47) replaces the hyperfine tensors of a cluster's bath spins by their mean (createBathArray), which is
 // defined for a bath of nuclear spins: the spins a defect species brings into a cluster and the qubit's mean field
 // (the Overhauser field, computed from the tensors before they are averaged) are refused with it.
 void validateHamiltonianForMethod(Config* cnf, QubitArray* qa, DefectArray* dfa) {
-    if(!strcasecmp(cnf->method,"gcce") && cnf->hamiltonian_ccce_given) {
-        if(rank==0) fprintf(stderr,"Error: hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE; this run is gCCE\n");
+    if(cnf->jump_operators && strcasecmp(cnf->jump_operators_section,cnf->method)) {
+        if(rank==0) fprintf(stderr,"Error: hamiltonian.%s (jump_operators) belongs to method %s; this run is %s\n",
+                            cnf->jump_operators_section,cnf->jump_operators_section,cnf->method);
+        MPI_Abort(MPI_COMM_WORLD,1);
+    }
+    if((!strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"megcce")) && cnf->hamiltonian_ccce_given) {
+        if(rank==0) fprintf(stderr,"Error: hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE; this run is %s\n",
+                            cnf->method);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     if(!cnf->delta_A && (DefectArray_getNdefect(dfa) > 0 || QubitArray_getOverhaus(qa))) {
@@ -687,7 +727,7 @@ int main(int argc, char* argv[]){
                 break;
 
             case 'm':
-                cJSON_applyMethodOption(cnf,cls,optarg);   // cCCE or gCCE; the input's cluster_mode stays (A47)
+                cJSON_applyMethodOption(cnf,cls,optarg);   // cCCE, gCCE, meCCE or megCCE; the input's cluster_mode stays (A47)
                 break;
 
             case 'q':
@@ -762,7 +802,7 @@ int main(int argc, char* argv[]){
                 printf("  -f FILE\t\t\t\tInput file (cce.in)\n");
                 printf("  -I FILE\t\t\t\tInput file name (it can be more than one)\n");
                 printf("  -N N\t\t\t\t\tNumber of bath states\n");
-                printf("  -m METHOD\t\t\t\tMethod (cCCE | gCCE; meCCE and noise reserved, not implemented yet); the cluster shape is the input's cluster_mode\n");
+                printf("  -m METHOD\t\t\t\tMethod (cCCE | gCCE | meCCE | megCCE; noise reserved, not implemented yet); the cluster shape is the input's cluster_mode\n");
                 printf("  -q QUANTITY\t\t\t\tQuantity (coherence | dm)\n");
                 printf("  -B BZ\t\t\t\t\tMagnetic field\n");
                 printf("  -v\t\t\t\t\tLong or short print\n");
@@ -827,6 +867,7 @@ int main(int argc, char* argv[]){
     // only run once both are done. Still before every reader, so an unsupported
     // combination stops the run before a tensor file is opened.
     validateCoordinateFrameRotationInputs(qa,cnf);
+    validateMasterEquation(cnf,pls,qa,op);   // meCCE / megCCE: what their kernels do not take, before any reader
 
     MPI_Barrier(MPI_COMM_WORLD);
 

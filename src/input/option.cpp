@@ -2,6 +2,7 @@
 #include "../../include/input/option.h"
 #include "../../include/input/json.h"
 #include "../../include/common/memory.h"
+#include "../../include/calculation/superoperator.h"
 
 #include <cmath>
 #include <limits>
@@ -193,6 +194,8 @@ static void refuseOldInputKeys(cJSON* root){
         {"", "bspin", "is now \"pulse.bath.spin\""},
         {"", "balphams", "is now \"pulse.bath.alphams\""},
         {"", "bbetams", "is now \"pulse.bath.betams\""},
+        // the master-equation dissipators: adding_MECCE's top-level key is a key of the method's hamiltonian section here
+        {"", "jump_operators", "is now \"hamiltonian.meCCE.jump_operators\" (or hamiltonian.megCCE.jump_operators)"},
         {"", "gcce_refinement_max_sweeps", "is now \"gcce_refinement.max_sweeps\""},
         {"", "cluster_contribution_max_mb", "is now \"cluster_contributions.max_mb\""},
         {"Qubit", "nqubit", "was removed: the number of qubits is the length of Qubit.qubit"},
@@ -254,26 +257,29 @@ static void refuseOldInputKeys(cJSON* root){
     exit(EXIT_FAILURE);
 }
 
-// The calculation method and the cluster shape (A47): "method" is cCCE or gCCE, "cluster_mode" standard, pcce, bundle,
-// dsj, itb or dsjitb. Inside, the code keeps the names it compares against - CCE, gCCE, pCCE, dsj, itb, dsjitb, and
-// cluster_mode adaptive for bundle - so nothing past the readers changed (and the -P inventory writes what it wrote).
-// gCCE with pcce, dsj, itb or dsjitb is not implemented yet (those shapes run with cCCE only; improvements.md A47).
-// meCCE and noise are reserved method names (A49): accepted by the reader, refused as not implemented yet.
+// The calculation method and the cluster shape (A47): "method" is cCCE, gCCE, meCCE or megCCE (the master-equation
+// methods, adding_MECCE), "cluster_mode" standard, pcce, bundle, dsj, itb or dsjitb. Inside, the code keeps the names it
+// compares against - CCE, gCCE, pCCE, dsj, itb, dsjitb, meCCE, megCCE, and cluster_mode adaptive for bundle - so nothing
+// past the readers changed (and the -P inventory writes what it wrote).
+// gCCE with pcce, dsj, itb or dsjitb is not implemented yet (those shapes run with cCCE only; improvements.md A47);
+// meCCE and megCCE run with cluster_mode standard. noise is a reserved method name (A49): accepted by the reader,
+// refused as not implemented yet.
 static void internalMethod(const char* method, const char* shape, const char* where, char* methodOut, char* modeOut){
     const bool gcce = !strcasecmp(method,"gcce");
-    if (!strcasecmp(method,"mecce") || !strcasecmp(method,"noise")){
-        fprintf(stderr,"Error: %s \"%s\" is not implemented yet (a reserved name; the methods that run are cCCE and gCCE)\n",
-                where,method);
+    const bool mecce = !strcasecmp(method,"mecce"), megcce = !strcasecmp(method,"megcce");
+    if (!strcasecmp(method,"noise")){
+        fprintf(stderr,"Error: %s \"%s\" is not implemented yet (a reserved name; the methods that run are cCCE, gCCE, meCCE "
+                       "and megCCE)\n",where,method);
         exit(EXIT_FAILURE);
     }
-    if (!gcce && strcasecmp(method,"ccce")){
+    if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce")){
         if (!strcasecmp(method,"cce"))
             fprintf(stderr,"Error: %s \"%s\" is now \"cCCE\"\n",where,method);
         else if (!strcasecmp(method,"pcce") || !strcasecmp(method,"dsj") || !strcasecmp(method,"itb") || !strcasecmp(method,"dsjitb"))
             fprintf(stderr,"Error: %s \"%s\" is now method \"cCCE\" with \"cluster_mode\": \"%s\" in the input\n",where,method,
                     lowerKey(method).c_str());
         else
-            fprintf(stderr,"Error: %s must be cCCE or gCCE (meCCE and noise are reserved, not implemented yet), not \"%s\"\n",
+            fprintf(stderr,"Error: %s must be cCCE, gCCE, meCCE or megCCE (noise is reserved, not implemented yet), not \"%s\"\n",
                     where,method);
         exit(EXIT_FAILURE);
     }
@@ -287,13 +293,18 @@ static void internalMethod(const char* method, const char* shape, const char* wh
             fprintf(stderr,"Error: cluster_mode must be standard, pcce, bundle, dsj, itb or dsjitb, not \"%s\"\n",shape);
         exit(EXIT_FAILURE);
     }
+    if ((mecce || megcce) && k != 0){   // Phase C1 opens pcce
+        fprintf(stderr,"Error: method %s with cluster_mode \"%s\" is not implemented (cluster_mode standard)\n",
+                mecce ? "meCCE" : "megCCE", shapes[k]);
+        exit(EXIT_FAILURE);
+    }
     if (gcce && k != 0 && k != 2){
         fprintf(stderr,"Error: method gCCE with cluster_mode \"%s\" is not implemented yet; cluster_mode %s runs with method cCCE\n",
                 shapes[k],shapes[k]);
         exit(EXIT_FAILURE);
     }
     static const char* internal[] = {"CCE", "pCCE", "CCE", "dsj", "itb", "dsjitb"};
-    strcpy(methodOut,gcce ? "gCCE" : internal[k]);
+    strcpy(methodOut,gcce ? "gCCE" : mecce ? "meCCE" : megcce ? "megCCE" : internal[k]);
     strcpy(modeOut,k == 2 ? "adaptive" : "standard");
 }
 
@@ -850,6 +861,50 @@ static void readDefectIndexedTensorWithUnit(cJSON* defect, DefectArray* dfa, int
     }
 }
 
+// hamiltonian.<section>.jump_operators (adding_MECCE had a top-level jump_operators): the master-equation dissipators,
+// [{"bath_name": str, "operator": "-"|"+"|"z"|"x"|"y", "rate": MHz >= 0}], stored as C = sqrt(rate) S_op with the rate in
+// rad*kHz. An empty list is kept (rate 0 everywhere) so that the section still names its method.
+static void readJumpOperators(Config* cnf, cJSON* section, const char* name){
+    for (cJSON* key = section->child; key; key = key->next)
+        if (strcmp(key->string,"jump_operators")){
+            fprintf(stderr,"Error: hamiltonian.%s has no key \"%s\" (jump_operators)\n",name,key->string);
+            exit(EXIT_FAILURE);
+        }
+    cJSON* arr = cJSON_GetObjectItem(section, "jump_operators");
+    if (!arr) return;
+    if (cnf->jump_operators) {
+        fprintf(stderr, "Error: jump operators are given in both hamiltonian.meCCE and hamiltonian.megCCE\n"); exit(EXIT_FAILURE);
+    }
+    if (!cJSON_IsArray(arr)) { fprintf(stderr, "Error: hamiltonian.%s.jump_operators must be an array\n", name); exit(EXIT_FAILURE); }
+    const int n = cJSON_GetArraySize(arr);
+    JumpOperatorArray* joa = JumpOperatorArray_init();
+    if (n > 0) JumpOperatorArray_alloc(joa, n);   // none: njump 0, ops NULL (no zero-length allocation)
+    for (int i = 0; i < n; ++i) {
+        cJSON* it = cJSON_GetArrayItem(arr, i);
+        cJSON* nm = cJSON_GetObjectItem(it, "bath_name");
+        cJSON* op = cJSON_GetObjectItem(it, "operator");
+        cJSON* rt = cJSON_GetObjectItem(it, "rate");
+        if (!cJSON_IsString(nm) || !nm->valuestring[0] || !cJSON_IsString(op) || !rt) {
+            fprintf(stderr, "Error: hamiltonian.%s.jump_operators[%d] needs bath_name, operator and rate\n", name, i);
+            exit(EXIT_FAILURE);
+        }
+        if (!isJumpOperatorType(op->valuestring)) {   // before setOp, which keeps 3 characters of op_type
+            const bool old = !strcmp(op->valuestring, "+-") || !strcmp(op->valuestring, "-+");
+            fprintf(stderr, "Error: hamiltonian.%s.jump_operators[%d].operator must be one of - + z x y%s\n", name, i,
+                    old ? " (the old names +- and -+ are now - and +)" : "");
+            exit(EXIT_FAILURE);
+        }
+        const double rate = cJSON_IsNumber(rt) ? rt->valuedouble : -1.0;
+        if (!(std::isfinite(rate) && rate >= 0.0)) {
+            fprintf(stderr, "Error: hamiltonian.%s.jump_operators[%d].rate must be a finite number >= 0 [MHz]\n", name, i);
+            exit(EXIT_FAILURE);
+        }
+        JumpOperatorArray_setOp(joa, i, nm->valuestring, op->valuestring, MHZ_TO_RADKHZ(rate));
+    }
+    cnf->jump_operators = joa;
+    copyBounded(cnf->jump_operators_section, name, sizeof(cnf->jump_operators_section), "hamiltonian section");
+}
+
 /**
  * @brief Read the option from the input file
  * @details Read &General tag  options
@@ -1132,7 +1187,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if(pcce && strcasecmp(cnf->method,"pcce")) {
         fprintf(stderr,"Error: the pcce block belongs to cluster_mode pcce (this input has cluster_mode %s)\n",
                 !strcasecmp(cnf->cluster_mode,"adaptive") ? "bundle" : !strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"cce")
-                ? "standard" : cnf->method);
+                || !strcasecmp(cnf->method,"mecce") || !strcasecmp(cnf->method,"megcce") ? "standard" : cnf->method);
         exit(EXIT_FAILURE);
     }
     if(auto* item=pcce ? cJSON_GetObjectItem(pcce,"print_limit") : NULL) {
@@ -1458,19 +1513,24 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printMessage("    hamiltonian.common : [ qubit_bath_mean_field, bath_bath_mean_field, ");
         printMessage("      hyperfine { dipole, contact, file, missing_row }, ");
         printMessage("      quadrupole (\"off\" or { structure, file, file_without_defect, cell }) ] ");
-        printMessage("    hamiltonian.cCCE : [ knight, hfmedi, delta_A ] \n");
+        printMessage("    hamiltonian.cCCE : [ knight, hfmedi, delta_A ] ");
+        printMessage("    hamiltonian.meCCE / megCCE : [ jump_operators ] \n");
     }
     cJSON* hamiltonian = readBlock(root,"hamiltonian");
     cJSON* common = hamiltonian ? readBlock(hamiltonian,"common") : NULL;
     cJSON* cCCE = hamiltonian ? readBlock(hamiltonian,"cCCE") : NULL;
-    // gCCE, and the reserved methods meCCE and noise (A49), have no settings yet: an empty section is allowed
-    for (const char* name : {"gCCE", "meCCE", "noise"}){
+    // gCCE and the reserved method noise (A49) have no settings yet: an empty section is allowed
+    for (const char* name : {"gCCE", "noise"}){
         cJSON* section = hamiltonian ? readBlock(hamiltonian,name) : NULL;
         if (section && section->child){
             fprintf(stderr,"Error: hamiltonian.%s has no settings yet (\"%s\")\n",name,section->child->string);
             exit(EXIT_FAILURE);
         }
     }
+    // the master-equation methods: jump_operators only; which method the section belongs to is checked once -m
+    // has been applied (main.cpp, validateHamiltonianForMethod)
+    for (const char* name : {"meCCE", "megCCE"})
+        if (cJSON* section = hamiltonian ? readBlock(hamiltonian,name) : NULL) readJumpOperators(cnf, section, name);
     // a cCCE setting in a gCCE run is refused once -m has been applied (main.cpp, validateHamiltonianForMethod)
     cnf->hamiltonian_ccce_given = cCCE && cCCE->child;
 

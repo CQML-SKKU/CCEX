@@ -581,12 +581,9 @@ reject_case p1_manual_hahn rj_hamiltonian_ccce_in_gcce "hamiltonian.cCCE (knight
   "d.setdefault('hamiltonian', {})['cCCE'] = {'knight': True}"
 reject_case natab_knight_shift rj_hamiltonian_ccce_cli_gcce "hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE; this run is gCCE" "" -m gCCE
 reject_case natab_cce2_hahn rj_hamiltonian_gcce_key "hamiltonian.gCCE has no settings yet" "d['hamiltonian'] = {'gCCE': {'knight': True}}"
-# the reserved methods meCCE and noise (A49): refused as not implemented yet, from the input and from -m; their hamiltonian
-# sections have no settings yet
-reject_case natab_cce2_hahn rj_method_mecce "method \"meCCE\" is not implemented yet" "d['method'] = 'meCCE'"
+# the reserved method noise (A49): refused as not implemented yet, from the input and from -m
 reject_case natab_cce2_hahn rj_method_noise "method \"noise\" is not implemented yet" "d['method'] = 'noise'"
 reject_case natab_cce2_hahn rj_method_noise_cli "\"noise\" is not implemented yet" "" -m noise
-reject_case natab_cce2_hahn rj_hamiltonian_mecce_key "hamiltonian.meCCE has no settings yet" "d['hamiltonian'] = {'meCCE': {'knight': True}}"
 # the adaptive block belongs to cluster_mode pcce or bundle; the pcce block to pcce
 reject_case natab_cce2_hahn rj_adaptive_standard "the adaptive block belongs to cluster_mode pcce or bundle (this input has cluster_mode standard)" \
   "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"
@@ -642,6 +639,65 @@ reject_case natab_cce2_hahn rj_old_bpulse_energy_shift "${OLDK}bpulse_energy_shi
 reject_case natab_cce2_hahn rj_old_bspin "${OLDK}bspin\" is now \"pulse.bath.spin\"" "d['bspin'] = 0.5"
 reject_case natab_cce2_hahn rj_old_balphams "${OLDK}balphams\" is now \"pulse.bath.alphams\"" "d['balphams'] = 0.5"
 reject_case natab_cce2_hahn rj_old_bbetams "${OLDK}bbetams\" is now \"pulse.bath.betams\"" "d['bbetams'] = -0.5"
+
+echo
+echo "=== master equation (meCCE, megCCE)"
+# meCCE and megCCE (adding_MECCE, 2026-10-13): Lindblad dissipation by the jump operators of hamiltonian.<method>, on the
+# CPU with a matrix exponential per step. The section belongs to its method; the branch's top-level key is refused with
+# the new place; what the ME kernels do not take is refused before the bath is read.
+MEJ(){ echo "d.setdefault('hamiltonian', {})['$1'] = {'jump_operators': $2}"; }   # MEJ <section> <python list>
+JUMP="$(MEJ meCCE "[{'bath_name':'e','operator':'-','rate':1e-4}]")"
+reject_case p1_manual_hahn rj_me_section_gcce "hamiltonian.meCCE (jump_operators) belongs to method meCCE; this run is gCCE" "$JUMP"
+reject_case p1_cce2_single rj_me_section_other "hamiltonian.megCCE (jump_operators) belongs to method megCCE; this run is meCCE" \
+  "d['method']='meCCE'; $(MEJ megCCE "[{'bath_name':'e','operator':'-','rate':1e-4}]")"
+reject_case p1_cce2_single rj_me_section_key "hamiltonian.meCCE has no key \"knight\" (jump_operators)" \
+  "d['method']='meCCE'; d['hamiltonian'] = {'meCCE': {'knight': True}}"
+reject_case p1_cce2_single rj_old_jump_operators "${OLDK}jump_operators\" is now \"hamiltonian.meCCE.jump_operators\"" \
+  "d['jump_operators'] = [{'bath_name':'e','operator':'-','rate':1e-4}]"
+reject_case p1_cce2_single rj_me_op "jump_operators[0].operator must be one of - + z x y" \
+  "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'e','operator':'q','rate':1e-4}]")"
+reject_case p1_cce2_single rj_me_old_notation "the old names +- and -+ are now - and +" \
+  "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'e','operator':'+-','rate':1e-4}]")"
+reject_case p1_cce2_single rj_me_rate "jump_operators[0].rate must be a finite number >= 0" \
+  "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'e','operator':'z','rate':-1}]")"
+reject_case p1_cce2_single rj_me_name "jump_operators[0] needs bath_name, operator and rate" \
+  "d['method']='meCCE'; $(MEJ meCCE "[{'operator':'z','rate':1e-4}]")"
+reject_case natab_manual_hahn rj_me_manual "method meCCE takes its pulses from pulse.count" \
+  "d['method']='meCCE'; d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',180],['1/2','I',0]]}"
+reject_case p1_cce2_single rj_me_recursive "this run has method=meCCE" \
+  "d['method']='meCCE'; d['evolution_update']='recursive'"
+reject_case p1_cce2_single rj_me_qubit_jump "method meCCE does not take qubit jump operators" \
+  "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'qubit','operator':'z','rate':1e-4}]")"
+reject_case p1_cce2_single rj_me_sparse "method meCCE needs propagator eigen" \
+  "d['method']='meCCE'; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"
+reject_case p1_cce2_single rj_me_shape "method meCCE with cluster_mode \"dsj\" is not implemented" \
+  "d['method']='meCCE'; d['cluster_mode']='dsj'"
+reject_case p1_manual_hahn rj_meg_pulseiter "method megCCE needs pulse.per_qubit = false" "d['method']='megCCE'; d['pulse']['per_qubit']=True"
+reject_case p1_manual_hahn rj_meg_detuning "method megCCE needs pulse.detuning_factor = 1" "d['method']='megCCE'; d['pulse']['detuning_factor']=0.5"
+reject_case p1_manual_hahn rj_meg_density_matrix "method megCCE does not write savemode cluster_density_matrix" \
+  "d['method']='megCCE'; d['savemode']='cluster_density_matrix'"
+reject_case p1_manual_hahn rj_meg_ccce "hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE; this run is megCCE" \
+  "d['method']='megCCE'; d.setdefault('hamiltonian', {})['cCCE'] = {'knight': True}"
+# quantity dm is not implemented for the ME methods (in the input, and from -q after -m)
+reject_case p1_cce2_single rj_me_dm "method meCCE computes quantity coherence only" "d['method']='meCCE'; d['quantity']='dm'"
+reject_case p1_manual_hahn rj_meg_dm_cli "method megCCE computes quantity coherence only" "" -m megCCE -q dm
+# the pcce block in an ME run names the run's cluster_mode (standard), not the method
+reject_case natab_cce2_hahn rj_me_pcce_block "the pcce block belongs to cluster_mode pcce (this input has cluster_mode standard)" \
+  "d['method']='meCCE'; d['pcce'] = {'partition_size': 2}"
+# rdip_ladder assembles cCCE, gCCE and pCCE products only; refused for ME before the bath is read (the ladder's own check
+# comes after the clusters)
+reject_case p1_cce2_single rj_me_rdip_ladder "rdip_ladder needs method CCE, gCCE or pCCE" "d['method']='meCCE'; d['rdip_ladder']=[600]"
+# guarded already by v2's own whitelists: checked here so a later change cannot open them for ME silently
+reject_case p1_manual_hahn rj_meg_cuda "backend=cuda supports method cCCE (cluster_mode standard or pcce), or method gCCE with propagator=eigen" \
+  "d['method']='megCCE'; d['backend']='cuda'"
+reject_case p1_manual_hahn rj_meg_vector "evolution=vector is implemented for method=gCCE only" "d['method']='megCCE'; d['evolution']='vector'"
+reject_case p1_manual_hahn rj_meg_expm "propagator=expm is implemented for method=gCCE only (this run has method=megCCE)" \
+  "d['method']='megCCE'; d['propagator']='expm'"
+reject_case p1_cce2_single rj_me_plan "-P supports cCCE, gCCE and cluster_mode pcce plans" "d['method']='meCCE'" -P
+# the qubit count (two NV, S5): meCCE takes one qubit, and a qubit jump operator needs one qubit
+reject S5 rj_me_two_qubits "method meCCE supports one qubit" "d['method']='meCCE'"
+reject S5 rj_me_qubit_jump_two "a qubit jump operator needs one qubit" \
+  "d['method']='megCCE'; d['hamiltonian'] = {'megCCE': {'jump_operators': [{'bath_name':'qubit','operator':'z','rate':1e-4}]}}"
 
 echo
 echo "==========================================="

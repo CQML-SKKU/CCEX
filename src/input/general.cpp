@@ -1,6 +1,7 @@
 #include "../../include/calculation/gpu/accelerator_defaults.h"
 #include "../../include/clustering/bundle/bundle_defaults.h"
 #include "../../include/input/general.h"
+#include "../../include/calculation/superoperator.h"
 
 #include "../../include/common/memory.h"
 #include <string.h>
@@ -10,6 +11,8 @@
 Config* Config_init(){
     Config* cnf = (Config*)allocArray1d(1,sizeof(Config));
     cnf->method[0] = '\0';
+    cnf->jump_operators = NULL;
+    cnf->jump_operators_section[0] = '\0';
     cnf->quantity[0] = '\0';
     cnf->propagator[0] = '\0';
     cnf->sparse_min_dim = 4096;   // A2: propagator = sparse from this cluster dimension on
@@ -144,6 +147,7 @@ void Config_freeAll(Config* cnf){
     Config_freeQd_tensorfile(cnf);
     Config_freeQd_tensorfile_woqubit(cnf);
     Config_free_flines(cnf);
+    if (cnf->jump_operators) JumpOperatorArray_freeAll(cnf->jump_operators);
     freeArray1d((void**)&(cnf));
 }
 
@@ -365,8 +369,8 @@ int     Config_getQd_readmode(Config* cnf){
 // set 
 void Config_setMethod(Config* cnf, char* method){
 
-    const int opsize = 7;
-    char options[opsize][MAX_CHARARRAY_LENGTH] = {"gCCE","CCE","dsj","itb","dsjitb","pCCE"};
+    const int opsize = 9;   // 8 names; the empty 9th entry keeps accepting "" as before (opsize was 7 for 6 names)
+    char options[opsize][MAX_CHARARRAY_LENGTH] = {"gCCE","CCE","dsj","itb","dsjitb","pCCE","meCCE","megCCE"};
 
     int idx = findIndexCharFix(options,0,opsize-1,method);
     if (idx == -1) {
@@ -526,6 +530,8 @@ void Config_validateEvolutionUpdate(Config* cnf){
         snprintf(found,sizeof(found),"method=gCCE with propagator=%s",cnf->propagator);
     else if (strcasecmp(cnf->propagator,"sparse")==0)   // A2: the Krylov path has no phases to carry over; its clusters
         snprintf(found,sizeof(found),"propagator=sparse");   // below min_dim run exact with it
+    else if (!strcasecmp(cnf->method,"mecce") || !strcasecmp(cnf->method,"megcce"))   // a matrix exponential per step
+        snprintf(found,sizeof(found),"method=%s",cnf->method);
     // A36: may a cluster reach the GPU large-cluster path? The methods computeBackendInit sends to the GPU, with backend
     // cuda (refused there in the CPU build) or with auto in the GPU build
     const bool cuda = (strcasecmp(cnf->backend,"cuda")==0);
@@ -1118,4 +1124,11 @@ void Config_report(Config* cnf){
 
     printStructElementBool("hfmedi",Config_getHfmedi(cnf));
     printStructElementBool("knight",Config_getKnight(cnf));
+
+    if (cnf->jump_operators){
+        char section[MAX_CHARARRAY_LENGTH + 16];
+        snprintf(section,sizeof(section),"hamiltonian.%s",cnf->jump_operators_section);
+        printStructElementChar("jump_operators",section);
+        JumpOperatorArray_report(cnf->jump_operators);
+    }
 }

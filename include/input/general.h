@@ -15,6 +15,8 @@ typedef enum {
     DEFECT_AXIS_REFERENCE_QUBIT_AXIS = 1  /**< "qubit_axis" */
 } DefectAxisReference;
 
+struct JumpOperatorArray;   // calculation/superoperator.h: the jump operators of meCCE / megCCE
+
 /**
  * @struct Config
  * @brief This structure contains the parameters for the simulation.
@@ -44,6 +46,8 @@ typedef struct {
      * 
     */
     char method[MAX_CHARARRAY_LENGTH];
+    struct JumpOperatorArray* jump_operators;   /**< hamiltonian.meCCE / megCCE.jump_operators; NULL: none (ME methods then run at rate 0) */
+    char jump_operators_section[MAX_CHARARRAY_LENGTH];   /**< "meCCE" or "megCCE": the hamiltonian section it came from ("" if none) */
     char quantity[MAX_CHARARRAY_LENGTH];  /**< Measurement : coherence | dm (noise is refused: not implemented) */
     char propagator[MAX_CHARARRAY_LENGTH];/**< free-evolution propagator : eigen | expm (gCCE) | sparse (A2) */
     long sparse_min_dim;                  /**< propagator sparse: clusters of this Hilbert dimension and above take it (default 4096) */
