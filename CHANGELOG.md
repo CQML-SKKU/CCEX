@@ -4,8 +4,9 @@
 
 ### Added
 - **DEER bath pulses** (the block `pulse.bath`: `count`, `sequence`, `defect`, `energy_shift`, `spin`, `alphams`,
-  `betams`) for gCCE on the CPU (matrix and vector, exact and recursive). Ported from the adding_DEER/adding_MECCE
-  branches, whose flat keys (`bnpulse`, ...) are refused with the new names. See `docs/methods/deer.md`.
+  `betams`) for gCCE (matrix and vector, exact and recursive) and megCCE ($U_q\otimes U_b$ in its pulse superoperator)
+  on the CPU, with `cluster_mode` standard or pcce. Ported from the adding_DEER/adding_MECCE branches, whose flat keys
+  (`bnpulse`, ...) are refused with the new names. See `docs/methods/deer.md`.
 - **ME-CCE / ME-gCCE** (`method`: `meCCE`, `megCCE`; `hamiltonian.meCCE.jump_operators`,
   `hamiltonian.megCCE.jump_operators`) — Lindblad dissipation of bath spins (meCCE, megCCE) and of the qubit (megCCE
   only), CPU. Ported from adding_MECCE; meCCE refuses qubit jump operators, which the branch multiplied into every
@@ -233,7 +234,7 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
 - SpinTensorReader `--version v1` (it wrote the OUTCAR x 2, right only untagged and for S = 1), and QE `--A` without
   `--spin S`.
 - Combinations a method does not support; `test/code_verification/check_refusals` lists them.
-- `pulse.bath` (DEER) where it cannot act: method cCCE, `cluster_mode` other than `standard`, `backend` `cuda`,
+- `pulse.bath` (DEER) where it cannot act: methods cCCE and meCCE, `cluster_mode` bundle, `backend` `cuda`,
   `propagator` `sparse`, `gpu_options.warp_max_dim` > 0, `pulse.detuning_factor` ≠ 1, `pulse.per_qubit` true; an
   unknown key of `pulse.bath`; the branch flat keys (`bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`,
   `bspin`, `balphams`, `bbetams`); a last bath row that is not identity and two pulses of one sequence on one edge; a

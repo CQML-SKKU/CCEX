@@ -28,14 +28,22 @@ TOL_MERGED = 1e-12                  # a merged sequence (Manual, fractions as ed
 TOL_CLOSED = 2e-4                   # closed form vs code (branch check_deer.py)
 TOL_REFOCUS = 1e-5                  # refocusing is exact in theory; the propagator's precision with a 2.88 GHz ZFS
 TOL_PATH = 1e-9                     # recursive vs exact bound stated in CHANGELOG 2.0.0 (evolution_update)
+TOL_ME = 1e-6                       # megCCE at rate 0 vs gCCE: the bound of check_master_equation (Task B4)
+TOL_PCCE = 1e-9                     # cluster_mode pcce, partition_size 1 vs standard (controller ruling R9)
+TOL_PERM = 1e-8                     # the spins of a cluster in another order: rounding only, the 2.88 GHz ZFS phase
+                                    # (1.8e5 rad at 10 us) through 79 cluster factors at order 2 (295 at order 3);
+                                    # measured 6.4e-10 / 1.4e-10 (gCCE / megCCE order 2), 5.1e-10 (order 3) (WSL, MKL).
+                                    # The factor 15 above that is arbitrary; a pulse on a wrong spin moves them by ~1
 
 ENSEMBLE = ("nopulse", "onres", "offres", "multi_hit", "multi_miss", "nearpulse")
 PURE = ("path_matrix", "path_matrix_recursive", "path_vector", "path_recursive", "path_nopump")
+C2_ENSEMBLE = ("meg_onres", "meg_nearpulse", "multi_hit_rev", "pg_onres", "pmeg_onres")   # C2: megCCE, pcce, tones
+C2_PURE = ("o2", "o2_rev", "meg_o2", "meg_o2_rev", "o3", "o3_rot")      # order 2 reversed, order 3 rotated
 
 
 def out_file(case, kind="noDiv"):
     # nstate 1 runs write <o>_state1_<kind>, the ensemble ones <o>_<kind>
-    return os.path.join(work, "{}{}_{}".format(case, "_state1" if case in PURE else "", kind))
+    return os.path.join(work, "{}{}_{}".format(case, "_state1" if case in PURE + C2_PURE else "", kind))
 
 
 def read_curve(case, kind="noDiv"):
@@ -120,6 +128,43 @@ def main():
                      "max |diff| = {:.2e}".format(np.abs(pmr - pm).max())))
     ok.append(report("bath pulse acts on the vector path", np.abs(pv - pn).max() > 1e-3,
                      "max |diff| vs no pump = {:.2e}".format(np.abs(pv - pn).max())))
+
+    # Task C2: megCCE with the bath pulse (U = U_q x U_b in its pulse superoperator), the tones in the other order,
+    # cluster_mode pcce with single-spin partitions (inside pgCCE, pmegCCE), order 2 with the bath file reversed
+    print("\n Task C2: megCCE and cluster_mode pcce with bath pulses; the bath file reordered at order 2 and 3")
+    curves = {("onres", "noDiv"): on, ("nearpulse", "noDiv"): near}
+    for c in C2_ENSEMBLE + C2_PURE + ("path_vector",):
+        for kind in ("noDiv", "wiDiv"):
+            if os.path.exists(out_file(c, kind)):
+                curves[c, kind] = read_curve(c, kind)[1]
+
+    def check(name, a, b, test, kinds=("noDiv",), what="max |diff| = {:.2e}"):   # a missing output fails the check
+        keys = [(c, k) for k in kinds for c in (a, b)]
+        if any(key not in curves for key in keys):
+            ok.append(report(name, False, "no output for {}".format(sorted({c for c, k in keys if (c, k) not in curves}))))
+        else:
+            d = max(np.abs(curves[a, k] - curves[b, k]).max() for k in kinds)
+            ok.append(report(name, test(d), what.format(d)))
+
+    check("megCCE rate 0 with bath pulse == gCCE", "meg_onres", "onres", lambda d: d <= TOL_ME)
+    check("megCCE: pump next to the qubit pulse == gCCE (applied once)", "meg_nearpulse", "nearpulse", lambda d: d <= TOL_ME)
+    check("multi-tone [far, resonant] == single resonant", "multi_hit_rev", "onres", lambda d: d <= TOL_EXACT)
+    check("pcce partition_size 1 + bath pulse == standard (gCCE)", "pg_onres", "onres", lambda d: d <= TOL_PCCE)
+    check("pcce partition_size 1 + bath pulse == standard (megCCE)", "pmeg_onres", "meg_onres", lambda d: d <= TOL_PCCE)
+    # order 2 (pure state): the pairs act (wiDiv differs from order 1's), and reversing the bath file reverses the two
+    # spins of every pair; noDiv and wiDiv must not move beyond rounding (a pulse on the wrong spin of a pair moves them)
+    check("order 2 differs from order 1 (pairs act, wiDiv)", "o2", "path_vector", lambda d: d > 1e-3, ("wiDiv",),
+          "max |diff| vs path_vector = {:.2e}")
+    check("order 2, bath file reversed: same noDiv, wiDiv (gCCE)", "o2", "o2_rev", lambda d: d <= TOL_PERM,
+          ("noDiv", "wiDiv"))
+    check("order 2, bath file reversed: same noDiv, wiDiv (megCCE)", "meg_o2", "meg_o2_rev", lambda d: d <= TOL_PERM,
+          ("noDiv", "wiDiv"))
+    check("order 2: megCCE rate 0 with bath pulse == gCCE (noDiv, wiDiv)", "meg_o2", "o2", lambda d: d <= TOL_ME,
+          ("noDiv", "wiDiv"))
+    # 3-spin clusters that wrap around the rotation keep their spins in rotated order: a U_b in reverse kron order
+    # (which the order-2 reversal cannot see) gives another curve
+    check("order 3, bath file rotated by 5: same noDiv, wiDiv (gCCE)", "o3", "o3_rot", lambda d: d <= TOL_PERM,
+          ("noDiv", "wiDiv"))
 
     n = sum(ok)
     print(" {} / {} checks passed".format(n, len(ok)))

@@ -608,17 +608,25 @@ reject_case hbn_gcce2_oh rj_state_neither "Qubit.beta_state must have one of \"i
 
 echo
 echo "=== DEER bath pulses"
-# pulse.bath (DEER, 2026-10-13): pulses on the bath spins of one defect species. Only gCCE has the bath in its matrices,
-# and only its CPU paths with propagator eigen or expm expand a pulse beyond the qubit; the block's form is checked as it
-# is read, and the merged qubit+bath sequence before the run (each pulse exactly once).
+# pulse.bath (DEER, 2026-10-13): pulses on the bath spins of one defect species. Only gCCE and megCCE have the bath in
+# their matrices (cluster_mode standard or pcce), and only their CPU paths (gCCE with propagator eigen or expm, megCCE)
+# expand a pulse beyond the qubit; the block's form is checked as it is read, and the merged qubit+bath sequence before
+# the run (each pulse exactly once). The refusal names the method as the input writes it (meCCE + pcce is pmeCCE inside).
 DEER="d['pulse']['bath'] = {'count': 1, 'defect': 'P1', 'energy_shift': [84.946496], 'sequence': [['0.5','X',180.0],['0.5','I',0.0]]}"
-reject_case p1_cce2_single rj_deer_cce "bath pulses (pulse.bath.count > 0) are implemented for method gCCE" "$DEER"
+reject_case p1_cce2_single rj_deer_cce "bath pulses (pulse.bath.count > 0) are implemented for methods gCCE and megCCE" "$DEER"
+reject_case p1_cce2_single rj_deer_mecce "implemented for methods gCCE and megCCE (cluster_mode standard or pcce); this run is method meCCE" \
+  "$DEER; d['method']='meCCE'"
+reject_case p1_pcce2_sk2 rj_deer_pmecce "implemented for methods gCCE and megCCE (cluster_mode standard or pcce); this run is method meCCE" \
+  "$DEER; d['method']='meCCE'"
+reject_case p1_pcce2_sk2 rj_deer_pcce_ccce "implemented for methods gCCE and megCCE (cluster_mode standard or pcce); this run is method cCCE" \
+  "$DEER"
 reject_case p1_manual_hahn rj_deer_cuda "bath pulses (pulse.bath.count > 0) run on the CPU only" "$DEER; d['backend']='cuda'"
 reject_case p1_manual_hahn rj_deer_detuning "bath pulses need pulse.detuning_factor = 1" "$DEER; d['pulse']['detuning_factor']=0.5"
 reject_case p1_manual_hahn rj_deer_pulseiter "bath pulses cannot be combined with pulse.per_qubit = true" "$DEER; d['pulse']['per_qubit']=True"
 reject_case p1_manual_hahn rj_deer_sparse "bath pulses need propagator eigen or expm" "$DEER; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"
 reject_case p1_manual_hahn rj_deer_warp "bath pulses cannot use gpu_options.warp_max_dim > 0" "$DEER; d['gpu_options'] = {'warp_max_dim': 27}"
-reject_case p1_manual_hahn rj_deer_bundle "bath pulses need cluster_mode standard" "$DEER; d['cluster_mode']='bundle'"
+reject_case p1_manual_hahn rj_deer_bundle "bath pulses need cluster_mode standard or pcce (this run has cluster_mode bundle)" \
+  "$DEER; d['cluster_mode']='bundle'"
 reject_case p1_manual_hahn rj_deer_negative "pulse.bath.count must be >= 0" "d['pulse']['bath'] = {'count': -1}"
 reject_case p1_manual_hahn rj_deer_rows "pulse.bath.sequence must have pulse.bath.count+1 rows" "$DEER; d['pulse']['bath']['sequence']=[['1','I',0.0]]"
 reject_case p1_manual_hahn rj_deer_sum "the fractions of pulse.bath.sequence sum to" "$DEER; d['pulse']['bath']['sequence']=[['0.5','X',180.0],['0.4','I',0.0]]"
@@ -693,7 +701,8 @@ reject_case p1_pcce2_sk2 rj_pg_packed "gpu_options.packed_max_dim works with met
   "d['method']='gCCE'; d['gpu_options']={'packed_max_dim': 4}"
 reject_case p1_pcce2_sk2 rj_pg_warp "gpu_options.warp_max_dim works with method=CCE or gCCE (this run: gCCE, cluster_mode pcce)" \
   "d['method']='gCCE'; d['gpu_options']={'warp_max_dim': 27}"
-for name in rj_pme_qubit_jump rj_pme_recursive rj_pme_vector rj_pmeg_expm rj_pme_pulse rj_pme_rdip_ladder rj_pg_packed rj_pg_warp; do
+for name in rj_pme_qubit_jump rj_pme_recursive rj_pme_vector rj_pmeg_expm rj_pme_pulse rj_pme_rdip_ladder rj_pg_packed rj_pg_warp \
+            rj_deer_pmecce; do
     if grep -i "error" "$WORK/evolution_update_refusals/proc_$name" | grep -qiE "p(g|me|meg)cce"; then
         echo "  FAIL  $name : an internal method name in the message"; FAIL=$((FAIL+1))
     else

@@ -140,9 +140,9 @@ Rabi frequency follows from the angle and the duration. <br>
 <a id="tag_pulse_bath"></a>
 ## pulse.bath
 <b>Description:</b><br>
-DEER bath pulses: pump pulses on the bath spins of one species during the qubit's sequence, for `method` = `gCCE` on
-the CPU (`backend` `auto` is set to `cpu`). What it does, what it supports and what it refuses is in
-[deer.md](../methods/deer.md). Without the block, or with `count` 0, the run is the same as before, byte for byte. Its
+DEER bath pulses: pump pulses on the bath spins of one species during the qubit's sequence, for `method` = `gCCE` or
+`megCCE` (`cluster_mode` standard or pcce) on the CPU (`backend` `auto` is set to `cpu`). What it does, what it supports
+and what it refuses is in [deer.md](../methods/deer.md). Without the block, or with `count` 0, the run is the same as before, byte for byte. Its
 keys are the seven below; any other key is refused (`pulse.bath has no key "..."`). The keys of the adding_DEER /
 adding_MECCE branches (`bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams`)
 are refused with their new names. <br>

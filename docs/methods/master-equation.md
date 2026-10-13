@@ -100,7 +100,8 @@ small clusters.
   ran that jump at rate 0.
 - The branch's float qubit gyromagnetic ratio and float `deltat` are double in this code (fixed before the port: the
   qubit's gyro in cc2d2c8f2, `Config::deltat` a double).
-- DEER bath pulses (`pulse.bath`) are refused for megCCE for now; the branch applied them as $U_q\otimes U_b$.
+- DEER bath pulses (`pulse.bath`) run with megCCE as on the branch, $U_q\otimes U_b$ in the pulse superoperator, with
+  the gCCE's $U_b$ (`bathPulseOperator`, [deer.md](deer.md)) instead of the branch's own copy; meCCE refuses them.
 
 ## Verification
 
@@ -173,7 +174,7 @@ and power, the normalization, the row-major dissipator, the jump rate) are the s
 | backend | CPU (`auto` runs on the CPU; `cuda` refused) | CPU (same) |
 | `propagator` | `eigen` (the name; the ME step is a matrix exponential); `sparse`, `expm` refused | same |
 | `evolution`, `evolution_update` | not used; `vector` and `recursive` refused | same |
-| pulses | `pulse.count` 0, 1, n of ideal $\pi$ flips (other rotations and Manual refused) | any sequence and rotation, Manual included (`per_qubit` false, `detuning_factor` 1); `pulse.bath` refused |
+| pulses | `pulse.count` 0, 1, n of ideal $\pi$ flips (other rotations and Manual refused); `pulse.bath` refused | any sequence and rotation, Manual included (`per_qubit` false, `detuning_factor` 1); DEER bath pulses `pulse.bath` ([deer.md](deer.md)) |
 | jump operators | bath names | bath names, `"qubit"` or the qubit's name (one qubit) |
 | `hamiltonian` | `common`, `cCCE`, `meCCE` | `common`, `megCCE` |
 | output | coherence, savemode `coherence`, `cluster_coherence` | same |

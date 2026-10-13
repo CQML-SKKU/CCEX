@@ -169,13 +169,22 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
     }
 }
 
-// DEER bath pulses act on bath spins, so only a method with the bath in its matrices can apply them (gCCE), and only
-// the CPU paths expand a pulse beyond the qubit (gpu_backend.cu applyPulse takes qdim x qdim pulses).
+// DEER bath pulses act on bath spins, so only a method with the bath in its matrices can apply them (the gCCE and megCCE
+// kernels, also with cluster_mode pcce: pgCCE, pmegCCE inside), and only the CPU paths expand a pulse beyond the qubit
+// (gpu_backend.cu applyPulse takes qdim x qdim pulses). The method is decided by its kernel and named as the input writes
+// it (inputMethodName); cluster_mode is "standard" inside for pcce too and "adaptive" for bundle.
 void validateBathPulses(Config* cnf, Pulse* pls) {
     if (!Pulse_hasBathPulses(pls)) return;
     auto refuse = [](const char* msg) { if (rank==0) fprintf(stderr, "Error: %s\n", msg); MPI_Abort(MPI_COMM_WORLD,1); };
-    if (strcasecmp(cnf->method,"gcce")) refuse("bath pulses (pulse.bath.count > 0) are implemented for method gCCE");
-    if (strcasecmp(cnf->cluster_mode,"standard")) refuse("bath pulses need cluster_mode standard");   // bundle is "adaptive" inside
+    char msg[256];
+    const char* kernel = methodKernel(cnf->method);
+    if (strcmp(kernel,"gcce") && strcmp(kernel,"megcce")) {
+        snprintf(msg, sizeof msg, "bath pulses (pulse.bath.count > 0) are implemented for methods gCCE and megCCE "
+                 "(cluster_mode standard or pcce); this run is method %s", inputMethodName(cnf->method));
+        refuse(msg);
+    }
+    if (strcasecmp(cnf->cluster_mode,"standard"))   // gCCE + bundle (megCCE + bundle is refused by the reader)
+        refuse("bath pulses need cluster_mode standard or pcce (this run has cluster_mode bundle)");
     if (pls->detuning_factor != 1.0)    refuse("bath pulses need pulse.detuning_factor = 1");
     if (Pulse_getPulseiter(pls))        refuse("bath pulses cannot be combined with pulse.per_qubit = true");
     if (!strcasecmp(cnf->propagator,"sparse"))

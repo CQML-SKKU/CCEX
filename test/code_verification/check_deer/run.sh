@@ -89,6 +89,38 @@ cases["bad_bspin"] = merge(merge({}, cases["onres"]), {"pulse": {"bath": {"spin"
 cases["bad_defect"]   = merge(merge({}, cases["onres"]), {"pulse": {"bath": {"defect": "P2"}}})
 cases["bad_ms_equal"] = merge(merge({}, cases["onres"]), {"pulse": {"bath": {"betams": 0.5}}})
 cases["bad_ms_range"] = merge(merge({}, cases["onres"]), {"pulse": {"bath": {"alphams": 1.5}}})
+# --- Task C2: megCCE (rate 0: no jump operators; evolution_update exact by default for ME) and cluster_mode pcce
+cases["meg_onres"] = merge(merge({}, cases["onres"]), {"method": "megCCE"})
+# the bath pi on an edge of its own (qubit identity there): megCCE follows the merged sequence, each pulse once
+cases["meg_nearpulse"] = merge(merge({}, cases["nearpulse"]), {"method": "megCCE"})
+# the resonant tone second: every tone is tried, not the first one only (A3 review)
+cases["multi_hit_rev"] = pump([200, 79.975539], HAHN)
+# pcce with partition_size 1 is the standard single-spin set (ruling R9; base seed 3528 fixes the partition search)
+PC1 = {"cluster_mode": "pcce", "pcce": {"partition_size": 1}}
+cases["pg_onres"]   = merge(merge({}, cases["onres"]), PC1)
+cases["pmeg_onres"] = merge(merge({}, cases["meg_onres"]), PC1)
+# order 2 on the pure state, and the same with the bath file's spins in reverse order (the axis file and the state
+# file reordered with them, line for line): the same _noDiv (A3 review: kron order and identity placement). Any order
+# of two spins either keeps a pair or swaps it, and a U_b built in reverse kron order swaps the two spins' operators the
+# same way in both runs; so gCCE also runs order 3 with the spins rotated by 5 (a 3-spin cluster that wraps around is
+# rotated, not reversed, which such a U_b does not survive)
+def reorder(src, dst, perm):   # the header line, then the spin lines in the order perm gives
+    lines = open(src).read().splitlines()
+    open(dst, "w").write("\n".join([lines[0]] + perm(lines[1:])) + "\n")
+for tag, perm in (("rev", lambda l: l[::-1]), ("rot", lambda l: l[-5:] + l[:-5])):
+    reorder(f"{inp}/bath_DEERtest_12spin.txt", f"{w}/{tag}_bath.txt", perm)
+    reorder(f"{inp}/avaax_DEERtest", f"{w}/{tag}_avaax", perm)
+    reorder(f"{inp}/state_1", f"{w}/{tag}_state_1", perm)
+O2 = {"order": 2, "nstate": 1, "bath_state_file": f"{inp}/state_"}
+def files(tag):
+    return {"bathfile": [f"{w}/{tag}_bath.txt"], "Defect": {"axis_file": f"{w}/{tag}_avaax"},
+            "bath_state_file": f"{w}/{tag}_state_"}
+cases["o2"]         = merge(merge({}, cases["onres"]), O2)
+cases["o2_rev"]     = merge(merge({}, cases["o2"]), files("rev"))
+cases["meg_o2"]     = merge(merge({}, cases["meg_onres"]), O2)
+cases["meg_o2_rev"] = merge(merge({}, cases["meg_o2"]), files("rev"))
+cases["o3"]         = merge(merge({}, cases["o2"]), {"order": 3})
+cases["o3_rot"]     = merge(merge({}, cases["o3"]), files("rot"))
 for name, extra in cases.items():
     d = merge(copy.deepcopy(base), extra); d["outfile"] = f"{w}/{name}"
     json.dump(d, open(f"{w}/{name}.json", "w"), indent=1)
@@ -98,6 +130,17 @@ for c in nopulse onres offres multi_hit multi_miss nearpulse; do
 done
 for c in path_matrix path_matrix_recursive path_vector path_recursive path_nopump; do   # bath_state_file key AND -s flag (CLAUDE.md)
     run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" -s "$HERE/inputs/state_" -N 1 || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+done
+# Task C2: megCCE and cluster_mode pcce with bath pulses; the pure-state runs at order 2 and 3 and their reordered
+# baths (bath_state_file key and -s flag, and the log must name the state file read)
+for c in meg_onres meg_nearpulse multi_hit_rev pg_onres pmeg_onres; do
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+done
+for c in o2 o2_rev meg_o2 meg_o2_rev o3 o3_rot; do
+    st="$HERE/inputs/state_"
+    case "$c" in *_rev) st="$W/rev_state_" ;; *_rot) st="$W/rot_state_" ;; esac
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" -s "$st" -N 1 || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+    grep -qF "Read StateFile : ${st}1" "$W/proc_$c" || { echo "  FAIL  $c : did not read ${st}1"; FAIL=$((FAIL+1)); }
 done
 if python3 "$HERE/check_deer.py" "$W" "$HERE/inputs"; then PASS=$((PASS+1)); else FAIL=$((FAIL+1)); fi
 # a pump whose tones reach no spin of pulse.bath.defect runs (a control), with one warning (ruling A3 defect-name)

@@ -2,13 +2,15 @@
 #include "../../include/calculation/simulator.h"
 #include "../../include/calculation/superoperator.h"
 #include "../../include/calculation/small_hamiltonian.h"
+#include "../../include/calculation/simulator_gcce_bath.h"
+#include "../../include/physical/pulse_bath.h"
 
 // ME-gCCE: the gCCE (qubit and bath spins in the cluster space, the full Hamiltonian) with Lindblad jump operators,
 // propagated in Liouville space (row-major vectorization, exp(L tau) per interval). Bath jumps act as 1_q (x) C_B,
 // qubit jumps (bath_name "qubit" or the qubit's name) as C_q (x) 1_B in every cluster, the 0th cluster included, which
 // the coherence is divided by as in the gCCE (PyCCE 1.1.1 LindbladgCCE has the same structure).
-// Ported from adding_MECCE src/simulator_megcce.cpp as of 6022d7998, without the bath-pulse arguments (the DEER bath
-// pulses of a megCCE run are refused at input) and without its full density-matrix output (savemode
+// Ported from adding_MECCE src/simulator_megcce.cpp as of 6022d7998, with the DEER bath pulses (pulse.bath) through the
+// gCCE's bathPulseOperator instead of the branch's bUpulses, and without its full density-matrix output (savemode
 // cluster_density_matrix and quantity dm are refused at input, main.cpp validateMasterEquation).
 
 // L_incoh of the jump operators in the qubit x bath space: C_q (x) 1_B for a qubit jump, 1_q (x) C_B for each bath spin of
@@ -63,8 +65,9 @@ static MatrixXcd incoherent_superoperator_megcce(QubitArray* qa, BathArray* ba, 
 }
 
 // The super-propagator of one time point: S_total = S_free(tau_{N+1}) S_pulse_N ... S_pulse_1 S_free(tau_1), with
-// S_free = exp(L tau) and S_pulse = U (x) U^* for U = U_q (x) 1_B; the intervals follow the pulse sequence (its fractions,
-// a Manual sequence included), as calPropagatorGcce.
+// S_free = exp(L tau) and S_pulse = U (x) U^* for U = U_q (x) U_b (U_b the DEER bath pulse of the row, 1_B without one);
+// the intervals follow the pulse sequence (its fractions, a Manual sequence and the merged qubit + bath sequence
+// included), as calPropagatorGcce.
 static MatrixXcd calSuperPropagatorMegcce(BathArray* ba, const MatrixXcd& L, Pulse* pulse, double tfree,
                                           MatrixXcd* Upulses){
 
@@ -86,8 +89,11 @@ static MatrixXcd calSuperPropagatorMegcce(BathArray* ba, const MatrixXcd& L, Pul
         // pulse superoperator
         MatrixXcd Spulse;
         if (ipulse < npulse){
-            // the qubit pulse over the bath (DEER bath pulses: Phase C)
-            MatrixXcd Upulse_full = kron(Upulses[ipulse], MatrixXcd::Identity(bdim, bdim));
+            // the qubit pulse and the bath pulse of this row (identity on the spins it does not drive; the 0th cluster,
+            // ba == NULL, has bdim 1)
+            const MatrixXcd Ub = (Pulse_hasBathPulses(pulse) && ba) ? bathPulseOperator(ba, pulse, ipulse)
+                                                                    : MatrixXcd::Identity(bdim, bdim);
+            MatrixXcd Upulse_full = kron(Upulses[ipulse], Ub);
 
             // S[rho] = U rho U^dagger
             Spulse = op_to_supop(Upulse_full, Upulse_full.adjoint());

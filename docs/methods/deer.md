@@ -1,9 +1,10 @@
 # DEER bath pulses
 
 What the `pulse.bath` block of the input file does: pump pulses on bath spins (double electron-electron resonance,
-DEER) during the qubit's own sequence, for gCCE on the CPU. Ported from the adding_DEER / adding_MECCE branches
-(`origin/adding_MECCE` 2c63eac52), whose flat keys are refused with the new names. The keys are listed in
-[InputFile_Pulse.md](../user/InputFile_Pulse.md#tag_pulse_bath); the test is `test/code_verification/check_deer/`.
+DEER) during the qubit's own sequence, for gCCE and megCCE (ME-gCCE) on the CPU, with `cluster_mode` standard or pcce.
+Ported from the adding_DEER / adding_MECCE branches (`origin/adding_MECCE` 2c63eac52), whose flat keys are refused with
+the new names. The keys are listed in [InputFile_Pulse.md](../user/InputFile_Pulse.md#tag_pulse_bath); the test is
+`test/code_verification/check_deer/`.
 
 ## The physics
 
@@ -39,6 +40,11 @@ $$U = U_{\text{free},N}\prod_{i=N-1}^{0}\big(U_{q,i}\otimes U_{b,i}\big)\,U_{\te
 with $U_{q,i}$ or $U_{b,i}$ the identity at an edge that has only the other pulse. Every pulse is applied exactly once:
 two pulses of one channel that the merge would put on one edge are refused.
 
+**megCCE.** The density matrix of the cluster (qubit and bath, Liouville space, row-major) is propagated by
+$e^{\mathcal L\tau_i}$ over the merged intervals, and at an edge by the pulse superoperator
+$\mathcal U_i=U_i\otimes U_i^{*}$ with the same $U_i=U_{q,i}\otimes U_{b,i}$ as above ($\mathcal U_i[\rho]=U_i\rho U_i^\dagger$).
+The 0th cluster has no bath spin: $U_b=1$ there. At rate 0 (no jump operators) this is the gCCE result (`check_deer`).
+
 **What a pump does at order 1.** The bath spins do not interact within a cluster of one spin, and a bath $\pi$ at the
 fraction $f$ of a Hahn echo leaves the qubit with the coupling $a_j$ of the driven spins for a net time
 $2\min(f,1-f)\,t$ instead of refocusing it. Averaged over the bath state,
@@ -52,11 +58,11 @@ which `check_deer` compares with the run (within $2\times10^{-4}$; at $f=0.5$ th
 
 | | supported | refused (the message names the reason) |
 |---|---|---|
-| method | `gCCE` | cCCE (no bath in its matrices) |
-| `cluster_mode` | `standard` | `pcce`, `bundle`, `dsj`, `itb`, `dsjitb` |
+| method | `gCCE`, `megCCE` | cCCE and meCCE (no bath spin operator in their matrices: the bath is propagated under the qubit-projected Hamiltonians) |
+| `cluster_mode` | `standard`, `pcce` (inside pgCCE, pmegCCE) | `bundle` (gCCE); `dsj`, `itb`, `dsjitb` run with cCCE only |
 | backend | `cpu`; `auto` is set to `cpu` (logged) | `cuda` |
-| `propagator` | `eigen`, `expm` | `sparse` (it applies pulses as $U_q\otimes\mathbb 1$) |
-| `evolution` × `evolution_update` | `matrix`, `vector` × `exact`, `recursive` | — |
+| `propagator` | gCCE: `eigen`, `expm`; megCCE: `eigen` (the name; its step is a matrix exponential) | `sparse` (it applies pulses as $U_q\otimes\mathbb 1$); megCCE refuses `expm` as without bath pulses |
+| `evolution` × `evolution_update` | gCCE: `matrix`, `vector` × `exact`, `recursive`; megCCE: its own Liouville-space step (`exact`) | megCCE: `vector`, `recursive` (as without bath pulses) |
 | GPU warp kernel | — | `gpu_options.warp_max_dim` > 0 |
 | pulses | ideal (`pulse.detuning_factor` 1), `pulse.per_qubit` false, any qubit sequence | `detuning_factor` ≠ 1, `per_qubit` true |
 | `pulse.bath` | its seven keys | an unknown key; `count` < 0; a sequence with other than `count`+1 rows, fractions not summing to 1, a last row that is not identity, two pulses of one channel on one edge; `count` > 0 without `defect` or `energy_shift` |
@@ -98,6 +104,7 @@ The run log prints the merged sequence (qubit and bath axis and angle per interv
 | merging the sequences, installing the merged one | `src/physical/pulse_bath.cpp` (`mergePulseSequences`, `Pulse_resolveBathSequence`) |
 | method/backend refusals | `src/main.cpp` (`validateBathPulses`) |
 | driven-spin checks, $U_b$, $U_q\otimes U_b$ in the expanded pulses | `src/calculation/simulator_gcce_bath.cpp` (`validateBathPulseTargets`, `bathPulseOperator`, `applyBathPulsesGcce`) |
+| $U_q\otimes U_b$ in the megCCE pulse superoperator | `src/calculation/simulator_megcce.cpp` (`calSuperPropagatorMegcce`) |
 
 `applyBathPulsesGcce` replaces the cached $U_q\otimes\mathbb 1$ of a row by $U_q\otimes U_b$ where a spin of the cluster is
 driven, and then makes the vector path take the dense product (its block product assumes $U_q\otimes\mathbb 1$), so

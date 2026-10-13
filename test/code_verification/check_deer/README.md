@@ -3,9 +3,9 @@
     bash test/code_verification/check_deer/run.sh     # bin/main.out, or CCEX_BIN; CCEX_MPI as for the others
 
 What `pulse.bath` (docs/methods/deer.md) must do, checked against answers that are known rather than a recorded run,
-plus the paths a bath pulse has to reach. One run of the suite is a unit test and 17 CCEX runs on 1 rank (two on
-`check_numerics/cases/p1_manual_hahn`, eleven on 12 spins at order 1 with 41 points, four that must stop before any cluster);
-it decides with the exit status (0 = every check passed).
+plus the paths a bath pulse has to reach. One run of the suite is a unit test and 28 CCEX runs on 1 rank (two on
+`check_numerics/cases/p1_manual_hahn`, sixteen on 12 spins at order 1 with 41 points, six at order 2 or 3, four that must
+stop before any cluster); it decides with the exit status (0 = every check passed).
 
 ## What runs
 
@@ -30,7 +30,23 @@ it decides with the exit status (0 = every check passed).
 | `path_recursive` | as `onres` | pure | vector, recursive |
 | `path_nopump` | none | pure | vector, exact |
 
-   The pure-state runs pass the state file as the `bath_state_file` key and as `-s inputs/state_ -N 1`.
+   Task C2 adds megCCE, `cluster_mode` pcce and multi-spin clusters (the same template; `seed` 3528 in every run, which
+   also fixes the pcce partition search):
+
+| case | from | change |
+|---|---|---|
+| `meg_onres` | `onres` | `method` megCCE, no jump operators (rate 0; `evolution_update` exact, the ME default) |
+| `meg_nearpulse` | `nearpulse` | `method` megCCE, rate 0 (the bath pi on an edge of its own) |
+| `multi_hit_rev` | `onres` | tones [200, 79.975539] MHz (the resonant one second) |
+| `pg_onres` | `onres` | `cluster_mode` pcce, `pcce.partition_size` 1 (inside pgCCE) |
+| `pmeg_onres` | `meg_onres` | the same (inside pmegCCE) |
+| `o2`, `meg_o2` | `onres`, `meg_onres` | `order` 2 on the pure state `inputs/state_1` (66 pairs) |
+| `o2_rev`, `meg_o2_rev` | `o2`, `meg_o2` | the bath file, the axis file and the state file with the 12 spins in reverse order (written by `run.sh`) |
+| `o3` | `o2` | `order` 3 (216 triples) |
+| `o3_rot` | `o3` | the three files with the spins rotated by 5 (the last five first) |
+
+   The pure-state runs pass the state file as the `bath_state_file` key and as `-s <prefix> -N 1`, and `run.sh` checks
+   that the log names the file read (`Read StateFile : <prefix>1`).
 4. Refusals (exit status and message) and warnings:
 
 | case | input | expected |
@@ -60,9 +76,23 @@ on the pumped line (configuration 1 of `inputs/avaax_DEERtest`).
 | `_wiDiv` = `_noDiv` (the six ensemble cases, bytes) | — | branch: at order 1 there is no division |
 | vector = matrix (exact), recursive = exact (vector and matrix), complex | 1e-9 | `evolution_update` bound of CHANGELOG 2.0.0 |
 | `path_vector` ≠ `path_nopump` | > 1e-3 | the pump acts on the vector path (its block product assumes kron(U, 1)) |
+| `meg_onres` = `onres`, `meg_nearpulse` = `nearpulse`; `meg_o2` = `o2` (`_noDiv`, `_wiDiv`) | 1e-6 | megCCE at rate 0 is the gCCE: the bound of `check_master_equation` (megCCE r0 vs gCCE) |
+| `multi_hit_rev` = `onres` | 0 | as `multi_hit`: every tone is tried, not the first one only |
+| `pg_onres` = `onres`, `pmeg_onres` = `meg_onres` | 1e-9 | controller ruling R9: pcce with bath pulses is open only while partition_size 1 gives the standard result |
+| `o2` ≠ `path_vector` (`_wiDiv`) | > 1e-3 | the pairs act (otherwise the reordering checks below would compare order-1 values) |
+| `o2_rev` = `o2`, `meg_o2_rev` = `meg_o2`, `o3_rot` = `o3` (`_noDiv`, `_wiDiv`) | 1e-8 | rounding only (the 2.88 GHz ZFS phase through 79 or 295 cluster factors); the factor over the measured values is arbitrary |
 
 Everything is judged on `_noDiv` (`<case>_noDiv`, `<case>_state1_noDiv` for the pure states), the whole complex value
-except where the closed form (real) is the reference.
+except where the closed form (real) is the reference; the order-2 and order-3 comparisons also on `_wiDiv`.
+
+Why both reorderings: the spins of a cluster (`cluster_mode` standard) are kept in the order of their index in the bath
+file. Reversing the file
+reverses every pair, so a $U_b$ that puts a spin's rotation on the other spin of the pair (only the first spin driven,
+say) changes the curve; but a $U_b$ built in reverse kron order gives the same wrong operator in both runs (in each
+run spin $a$'s rotation lands on $b$ and $b$'s on $a$). A rotation of the file turns some triples (those that wrap
+around) into rotated, not reversed, order, and that $U_b$ then moves the curve. Measured with mutants of
+`bathPulseOperator` (Task C2): reverse kron order → only `o3_rot` fails (2.0); first spin of a cluster only → `o2_rev`,
+`meg_o2_rev` (1.0) and `o3_rot` (2.9) fail; megCCE without $U_b$ → `meg_onres` (1.3) and `meg_o2` (2.0) fail.
 
 ## Changes from the branch test
 
@@ -114,6 +144,10 @@ No key of the template is reported as not read.
 | `nearpulse` − `nopulse` | 1.35 |
 | vector − matrix, recursive − exact (vector), recursive − exact (matrix) | 0 (10 written decimals) |
 | `path_vector` − `path_nopump` | 2.00 |
+| `meg_onres` − `onres`, `meg_nearpulse` − `nearpulse`; `meg_o2` − `o2` | 1.0e-10, 1.0e-10 (the last written decimal); 8.6e-10 |
+| `multi_hit_rev` − `onres`; `pg_onres` − `onres`; `pmeg_onres` − `meg_onres` | 0; 0; 0 |
+| `o2` − `path_vector` (`_wiDiv`) | 1.17 |
+| `o2_rev` − `o2`; `meg_o2_rev` − `meg_o2`; `o3_rot` − `o3` | 6.4e-10; 1.4e-10; 5.1e-10 |
 
 Not a check, for the record: the pure-state `path_vector` curve is `exp(-i 2 pi t sum_j a_j m_j)` over the driven spins
 within 8.6e-4 (5.8e-4 with 52.0412 instead of 52.04 MHz nm^3; the phase reaches 12 rad), and `path_nopump` is 1 within
