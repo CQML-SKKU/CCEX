@@ -185,6 +185,14 @@ static void refuseOldInputKeys(cJSON* root){
         {"", "pulseiter", "is now \"pulse.per_qubit\""},
         {"", "pulse_time", "is now \"pulse.duration\""},
         {"", "detuning_factor", "is now \"pulse.detuning_factor\""},
+        // DEER bath pulses: adding_MECCE's flat keys (src/option.cpp:677-730 there) are the block pulse.bath here
+        {"", "bnpulse", "is now \"pulse.bath.count\""},
+        {"", "bsequence", "is now \"pulse.bath.sequence\""},
+        {"", "bpulse_defect", "is now \"pulse.bath.defect\""},
+        {"", "bpulse_energy_shift", "is now \"pulse.bath.energy_shift\""},
+        {"", "bspin", "is now \"pulse.bath.spin\""},
+        {"", "balphams", "is now \"pulse.bath.alphams\""},
+        {"", "bbetams", "is now \"pulse.bath.betams\""},
         {"", "gcce_refinement_max_sweeps", "is now \"gcce_refinement.max_sweeps\""},
         {"", "cluster_contribution_max_mb", "is now \"cluster_contributions.max_mb\""},
         {"Qubit", "nqubit", "was removed: the number of qubits is the length of Qubit.qubit"},
@@ -2225,6 +2233,69 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
             fprintf(stderr, "Error: the fractions of the Manual sequence sum to %.12g, not 1\n", total_frac);
             exit(EXIT_FAILURE);
         }
+    }
+
+    // DEER bath pulses, the block pulse.bath (adding_MECCE src/option.cpp:677-730 had them as top-level keys)
+    if (cJSON* bath = readBlock(block,"bath")) {
+        for (cJSON* key = bath->child; key; key = key->next)
+            if (strcmp(key->string,"count") && strcmp(key->string,"sequence") && strcmp(key->string,"defect") &&
+                strcmp(key->string,"energy_shift") && strcmp(key->string,"spin") && strcmp(key->string,"alphams") &&
+                strcmp(key->string,"betams")){
+                fprintf(stderr,"Error: pulse.bath has no key \"%s\" (count, sequence, defect, energy_shift, spin, alphams, betams)\n",
+                        key->string);
+                exit(EXIT_FAILURE);
+            }
+        cJSON* jseq = cJSON_GetObjectItem(bath, "sequence");     // every key looked up, so the input check knows them
+        cJSON* jdef = cJSON_GetObjectItem(bath, "defect");
+        cJSON* jsh  = cJSON_GetObjectItem(bath, "energy_shift");
+        cJSON* jbs  = cJSON_GetObjectItem(bath, "spin");
+        cJSON* jba  = cJSON_GetObjectItem(bath, "alphams");
+        cJSON* jbb  = cJSON_GetObjectItem(bath, "betams");
+        pulse->bnpulse = cJSON_ReadInt(bath, (char*)"count", true, 0);    // type and integer checks as pulse.count
+        if (pulse->bnpulse < 0) { fprintf(stderr, "Error: pulse.bath.count must be >= 0\n"); exit(EXIT_FAILURE); }
+        if (jbs) pulse->bspin    = readFiniteNumber(jbs, "pulse.bath.spin");
+        if (jba) pulse->balphams = readFiniteNumber(jba, "pulse.bath.alphams");
+        if (jbb) pulse->bbetams  = readFiniteNumber(jbb, "pulse.bath.betams");
+        if (pulse->bnpulse > 0) {
+            if (!(jdef && cJSON_IsString(jdef) && jdef->valuestring && jdef->valuestring[0])) {
+                fprintf(stderr, "Error: pulse.bath.defect is required when pulse.bath.count > 0\n"); exit(EXIT_FAILURE);
+            }
+            copyBounded(pulse->bpulse_defect, jdef->valuestring, sizeof(pulse->bpulse_defect), "pulse.bath.defect");
+            std::vector<double> tones;
+            if (jsh && cJSON_IsNumber(jsh)) tones.push_back(readFiniteNumber(jsh, "pulse.bath.energy_shift"));
+            else if (jsh && cJSON_IsArray(jsh))
+                for (int k = 0; k < cJSON_GetArraySize(jsh); ++k)
+                    tones.push_back(readFiniteNumber(cJSON_GetArrayItem(jsh, k), "pulse.bath.energy_shift"));
+            if (tones.empty()) {
+                fprintf(stderr, "Error: pulse.bath.energy_shift needs at least one finite number [MHz]\n"); exit(EXIT_FAILURE);
+            }
+            pulse->n_bpulse_shift = (int)tones.size();
+            pulse->bpulse_energy_shifts = (double*)calloc(tones.size(), sizeof(double));
+            for (size_t k = 0; k < tones.size(); ++k) pulse->bpulse_energy_shifts[k] = MHZ_TO_RADKHZ(tones[k]);
+            if (!(jseq && cJSON_IsArray(jseq)) || cJSON_GetArraySize(jseq) != pulse->bnpulse + 1) {
+                fprintf(stderr, "Error: pulse.bath.sequence must have pulse.bath.count+1 rows of [fraction, axis, angle]\n");
+                exit(EXIT_FAILURE);
+            }
+            const int nrow = pulse->bnpulse + 1;
+            pulse->bsequence_fracs = (double*)calloc(nrow, sizeof(double));
+            pulse->bpulse_axes     = (char*)calloc(nrow + 1, sizeof(char));
+            pulse->bpulse_angles   = (double*)calloc(nrow, sizeof(double));
+            double total = 0.0;
+            for (int i = 0; i < nrow; ++i) {
+                cJSON* row = cJSON_GetArrayItem(jseq, i);
+                if (!cJSON_IsArray(row) || cJSON_GetArraySize(row) != 3) {
+                    fprintf(stderr, "Error: pulse.bath.sequence[%d] must be [fraction, axis, angle]\n", i); exit(EXIT_FAILURE);
+                }
+                pulse->bsequence_fracs[i] = readSequenceFraction(cJSON_GetArrayItem(row, 0), i);   // its messages say sequence[i]
+                pulse->bpulse_axes[i]     = parse_axis(cJSON_GetArrayItem(row, 1), i);
+                char label[64]; snprintf(label, sizeof(label), "pulse.bath.sequence[%d] angle", i);
+                pulse->bpulse_angles[i]   = readFiniteNumber(cJSON_GetArrayItem(row, 2), label);
+                total += pulse->bsequence_fracs[i];
+            }
+            if (std::fabs(total - 1.0) > 1e-9) {
+                fprintf(stderr, "Error: the fractions of pulse.bath.sequence sum to %.12g, not 1\n", total); exit(EXIT_FAILURE);
+            }
+        }   // what the merge needs of the two sequences is checked where it runs (Pulse_resolveBathSequence)
     }
 
     //////////////////////////

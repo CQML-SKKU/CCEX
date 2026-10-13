@@ -2,6 +2,7 @@
 #include "../../../include/calculation/gpu/small_cluster_batch.h"
 #include "../../../include/calculation/hamiltonian_check.h"
 #include "../../../include/calculation/small_hamiltonian.h"
+#include "../../../include/physical/pulse_bath.h"
 #include <algorithm>
 #include <atomic>
 #include <chrono>
@@ -82,6 +83,7 @@ bool warpClusterRun(QubitArray* qa, Config* cnf, Pulse* pls, warpcluster::Plan& 
     plan.mode = gcce ? warpcluster::modeGcce : warpcluster::modeCce;
     plan.ensemble = Config_getNstate(cnf)==0;
     plan.qdim = 1;
+    if (Pulse_hasBathPulses(pls)){ why = "bath pulses (the kernel applies qubit pulses only)"; return false; }
     if (!gcce){
         if (strcasecmp(cnf->method,"cce")){ why = "the method is not CCE or gCCE"; return false; }
         if (QubitArray_getNqubit(qa)!=1 || strcasecmp(cnf->quantity,"coherence")){ why = "cCCE with one qubit and quantity=coherence only"; return false; }

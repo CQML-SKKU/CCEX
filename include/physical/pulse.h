@@ -168,6 +168,19 @@ typedef struct {
      *         pulse_axes      = {"X", "Y", "Y", "X", "I"}
      *         sequence_indices = {0, 0, 2, 0, 0}
     */
+
+    // DEER bath pulses (bnpulse = 0: none), from the input block pulse.bath. As given in the input:
+    int     bnpulse;             // number of bath pulses
+    char    bpulse_defect[50];   // bath spin name driven (case-insensitive)
+    double  bspin, balphams, bbetams;
+    int     n_bpulse_shift;      // number of pump tones
+    double* bpulse_energy_shifts;// pump tones [rad*kHz] (input MHz)
+    double* bsequence_fracs;     // bnpulse+1 interval fractions
+    char*   bpulse_axes;         // bnpulse+1
+    double* bpulse_angles;       // bnpulse+1 [deg]
+    // After Pulse_resolveBathSequence: aligned with the merged sequence (npulse+1 rows)
+    char*   tot_bpulse_axes;
+    double* tot_bpulse_angles;   // [deg]
 } Pulse;
 
 Pulse* Pulse_init();

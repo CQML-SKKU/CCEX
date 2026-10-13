@@ -606,6 +606,44 @@ reject_case hbn_gcce2_oh rj_state_neither "Qubit.beta_state must have one of \"i
   "d['Qubit']['beta_state'] = {}"
 
 echo
+echo "=== DEER bath pulses"
+# pulse.bath (DEER, 2026-10-13): pulses on the bath spins of one defect species. Only gCCE has the bath in its matrices,
+# and only its CPU paths with propagator eigen or expm expand a pulse beyond the qubit; the block's form is checked as it
+# is read, and the merged qubit+bath sequence before the run (each pulse exactly once).
+DEER="d['pulse']['bath'] = {'count': 1, 'defect': 'P1', 'energy_shift': [84.946496], 'sequence': [['0.5','X',180.0],['0.5','I',0.0]]}"
+reject_case p1_cce2_single rj_deer_cce "bath pulses (pulse.bath.count > 0) are implemented for method gCCE" "$DEER"
+reject_case p1_manual_hahn rj_deer_cuda "bath pulses (pulse.bath.count > 0) run on the CPU only" "$DEER; d['backend']='cuda'"
+reject_case p1_manual_hahn rj_deer_detuning "bath pulses need pulse.detuning_factor = 1" "$DEER; d['pulse']['detuning_factor']=0.5"
+reject_case p1_manual_hahn rj_deer_pulseiter "bath pulses cannot be combined with pulse.per_qubit = true" "$DEER; d['pulse']['per_qubit']=True"
+reject_case p1_manual_hahn rj_deer_sparse "bath pulses need propagator eigen or expm" "$DEER; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"
+reject_case p1_manual_hahn rj_deer_warp "bath pulses cannot use gpu_options.warp_max_dim > 0" "$DEER; d['gpu_options'] = {'warp_max_dim': 27}"
+reject_case p1_manual_hahn rj_deer_bundle "bath pulses need cluster_mode standard" "$DEER; d['cluster_mode']='bundle'"
+reject_case p1_manual_hahn rj_deer_negative "pulse.bath.count must be >= 0" "d['pulse']['bath'] = {'count': -1}"
+reject_case p1_manual_hahn rj_deer_rows "pulse.bath.sequence must have pulse.bath.count+1 rows" "$DEER; d['pulse']['bath']['sequence']=[['1','I',0.0]]"
+reject_case p1_manual_hahn rj_deer_sum "the fractions of pulse.bath.sequence sum to" "$DEER; d['pulse']['bath']['sequence']=[['0.5','X',180.0],['0.4','I',0.0]]"
+reject_case p1_manual_hahn rj_deer_defect "pulse.bath.defect is required when pulse.bath.count > 0" "$DEER; del d['pulse']['bath']['defect']"
+reject_case p1_manual_hahn rj_deer_tones "pulse.bath.energy_shift needs at least one finite number" "$DEER; d['pulse']['bath']['energy_shift']=[]"
+reject_case p1_manual_hahn rj_deer_unknown "pulse.bath has no key \"tone\"" "$DEER; d['pulse']['bath']['tone']=1"
+# the pulse of the last row would come after the last interval: never applied, so a non-identity one is refused
+reject_case p1_manual_hahn rj_deer_last_row "the last row of pulse.bath.sequence must be identity" "$DEER; d['pulse']['bath']['sequence']=[['0.5','X',180.0],['0.5','X',180.0]]"
+# two pulses of one channel within 1e-9 would share one edge of the merged sequence and one of them be lost; the chained
+# case: two bath pulses 1.8e-9 apart, each within 1e-9 of the qubit pi at 0.5
+reject_case p1_manual_hahn rj_deer_two_qubit_pulses "pulse.sequence has two qubit pulses at the same time; bath pulses need them apart" \
+  "$DEER; d['pulse'].update({'count': 2, 'name': 'Manual', 'sequence': [['0.5','X',90.0],['0','Y',90.0],['0.5','I',0.0]]})"
+reject_case p1_manual_hahn rj_deer_two_bath_pulses "pulse.bath.sequence has two bath pulses at the same time" \
+  "$DEER; d['pulse']['bath'].update({'count': 2, 'sequence': [['0.5','X',90.0],['0','Y',90.0],['0.5','I',0.0]]})"
+reject_case p1_manual_hahn rj_deer_two_bath_pulses_chained "pulse.bath.sequence has two bath pulses at the same time" \
+  "$DEER; d['pulse']['bath'].update({'count': 2, 'sequence': [['0.4999999991','X',90.0],['0.0000000018','Y',90.0],['0.4999999991','I',0.0]]})"
+# the branch's flat keys (adding_MECCE): refused with the new name (otherwise a warning and a run without the pump)
+reject_case natab_cce2_hahn rj_old_bnpulse "${OLDK}bnpulse\" is now \"pulse.bath.count\"" "d['bnpulse'] = 1"
+reject_case natab_cce2_hahn rj_old_bsequence "${OLDK}bsequence\" is now \"pulse.bath.sequence\"" "d['bsequence'] = [['1','I',0.0]]"
+reject_case natab_cce2_hahn rj_old_bpulse_defect "${OLDK}bpulse_defect\" is now \"pulse.bath.defect\"" "d['bpulse_defect'] = 'P1'"
+reject_case natab_cce2_hahn rj_old_bpulse_energy_shift "${OLDK}bpulse_energy_shift\" is now \"pulse.bath.energy_shift\"" "d['bpulse_energy_shift'] = [84.946496]"
+reject_case natab_cce2_hahn rj_old_bspin "${OLDK}bspin\" is now \"pulse.bath.spin\"" "d['bspin'] = 0.5"
+reject_case natab_cce2_hahn rj_old_balphams "${OLDK}balphams\" is now \"pulse.bath.alphams\"" "d['balphams'] = 0.5"
+reject_case natab_cce2_hahn rj_old_bbetams "${OLDK}bbetams\" is now \"pulse.bath.betams\"" "d['bbetams'] = -0.5"
+
+echo
 echo "==========================================="
 echo " refused combinations : PASS=$PASS FAIL=$FAIL"
 echo "==========================================="

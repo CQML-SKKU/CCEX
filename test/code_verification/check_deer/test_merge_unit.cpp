@@ -54,6 +54,11 @@ int main() {
         int nq = 0, nb = 0; for (auto& r : m) { nq += (r.qAxis != 'I'); nb += (r.bAxis != 'I'); }
         CHECK(m.size() == 3 && nq == 1 && nb == 1, "2e-9 apart: two edges, each pulse once");
     }
+    {   // a bath pulse at 1 + 5e-10 (its fractions sum to 1 within the reader's 1e-9): the last interval is 0, not
+        // negative (a negative fraction would run that interval backwards in time)
+        auto m = mergePulseSequences(hahn, {{1.0 + 5e-10, 'X', 180.0}, {0.0, 'I', 0.0}});
+        CHECK(m.size() == 3 && m[1].bAxis == 'X' && m[2].frac >= 0.0, "edge past 1 within 1e-9: last fraction clamped to 0");
+    }
     std::printf(" merge unit : FAIL=%d\n", fails);
     return fails ? 1 : 0;
 }

@@ -8,6 +8,7 @@
 #include "../include/physical/defect.h"
 #include "../include/clustering/cluster.h"
 #include "../include/physical/pulse.h"
+#include "../include/physical/pulse_bath.h"
 #include "../include/common/output.h"
 #include "../include/input/general.h"
 
@@ -161,6 +162,26 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
             MPI_Abort(MPI_COMM_WORLD,1);
         }
         if(rank==0) fprintf(stdout,"[backend] auto: an ensemble Manual sequence uses CPU\n");
+        strcpy(cnf->backend,"cpu");
+    }
+}
+
+// DEER bath pulses act on bath spins, so only a method with the bath in its matrices can apply them (gCCE), and only
+// the CPU paths expand a pulse beyond the qubit (gpu_backend.cu applyPulse takes qdim x qdim pulses).
+void validateBathPulses(Config* cnf, Pulse* pls) {
+    if (!Pulse_hasBathPulses(pls)) return;
+    auto refuse = [](const char* msg) { if (rank==0) fprintf(stderr, "Error: %s\n", msg); MPI_Abort(MPI_COMM_WORLD,1); };
+    if (strcasecmp(cnf->method,"gcce")) refuse("bath pulses (pulse.bath.count > 0) are implemented for method gCCE");
+    if (strcasecmp(cnf->cluster_mode,"standard")) refuse("bath pulses need cluster_mode standard");   // bundle is "adaptive" inside
+    if (pls->detuning_factor != 1.0)    refuse("bath pulses need pulse.detuning_factor = 1");
+    if (Pulse_getPulseiter(pls))        refuse("bath pulses cannot be combined with pulse.per_qubit = true");
+    if (!strcasecmp(cnf->propagator,"sparse"))
+        refuse("bath pulses need propagator eigen or expm (propagator sparse applies pulses as U_q x 1)");
+    // gpu_warp_max_dim is -1 until Config_resolveWarpMaxDim: > 0 here is a value given in the input
+    if (cnf->gpu_warp_max_dim > 0) refuse("bath pulses cannot use gpu_options.warp_max_dim > 0 (the warp kernel applies qubit pulses only)");
+    if (!strcasecmp(cnf->backend,"cuda")) refuse("bath pulses (pulse.bath.count > 0) run on the CPU only; set backend to cpu");
+    if (strcasecmp(cnf->backend,"cpu")) {
+        if (rank==0) fprintf(stdout,"[backend] auto: bath pulses use CPU\n");
         strcpy(cnf->backend,"cpu");
     }
 }
@@ -777,6 +798,8 @@ int main(int argc, char* argv[]){
     // above) and the flags that can override it, -m and -N in particular. Only now can
     // the defaulted evolution be settled; doing it during the file parse would decide it
     // against an nstate that -N had not yet supplied.
+    Pulse_resolveBathSequence(pls);   // after -f and every flag: the merged sequence is what every later check sees
+    validateBathPulses(cnf,pls);      // before the packed/warp defaults: they read backend
     Config_resolveEvolution(cnf);
     Config_resolvePackedMaxDim(cnf);
     Config_resolveWarpMaxDim(cnf);             // A40, before the evolution_update check (its log names the warp kernel)
