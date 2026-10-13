@@ -227,10 +227,17 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
 // delta_A false (A47) replaces the hyperfine tensors of a cluster's bath spins by their mean (createBathArray), which is
 // defined for a bath of nuclear spins: the spins a defect species brings into a cluster and the qubit's mean field
 // (the Overhauser field, computed from the tensors before they are averaged) are refused with it.
+// The method as the input writes it (A47): the cCCE shapes keep the internal names CCE, pCCE, dsj, itb and dsjitb, which
+// the reader refuses as old method names, so a message names them cCCE; gCCE, meCCE and megCCE are written as they are.
+static const char* inputMethodName(const char* method) {
+    for (const char* m : {"CCE", "pCCE", "dsj", "itb", "dsjitb"}) if (!strcasecmp(method,m)) return "cCCE";
+    return method;
+}
+
 void validateHamiltonianForMethod(Config* cnf, QubitArray* qa, DefectArray* dfa) {
     if(cnf->jump_operators && strcasecmp(cnf->jump_operators_section,cnf->method)) {
         if(rank==0) fprintf(stderr,"Error: hamiltonian.%s (jump_operators) belongs to method %s; this run is %s\n",
-                            cnf->jump_operators_section,cnf->jump_operators_section,cnf->method);
+                            cnf->jump_operators_section,cnf->jump_operators_section,inputMethodName(cnf->method));
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     if((!strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"megcce")) && cnf->hamiltonian_ccce_given) {

@@ -650,6 +650,9 @@ JUMP="$(MEJ meCCE "[{'bath_name':'e','operator':'-','rate':1e-4}]")"
 reject_case p1_manual_hahn rj_me_section_gcce "hamiltonian.meCCE (jump_operators) belongs to method meCCE; this run is gCCE" "$JUMP"
 reject_case p1_cce2_single rj_me_section_other "hamiltonian.megCCE (jump_operators) belongs to method megCCE; this run is meCCE" \
   "d['method']='meCCE'; $(MEJ megCCE "[{'bath_name':'e','operator':'-','rate':1e-4}]")"
+# the run's method as the input writes it: the default cCCE, not the internal name CCE (an old name the reader refuses)
+reject_case p1_cce2_single rj_me_section_ccce "hamiltonian.meCCE (jump_operators) belongs to method meCCE; this run is cCCE" \
+  "d.pop('method'); $JUMP"
 reject_case p1_cce2_single rj_me_section_key "hamiltonian.meCCE has no key \"knight\" (jump_operators)" \
   "d['method']='meCCE'; d['hamiltonian'] = {'meCCE': {'knight': True}}"
 reject_case p1_cce2_single rj_old_jump_operators "${OLDK}jump_operators\" is now \"hamiltonian.meCCE.jump_operators\"" \
