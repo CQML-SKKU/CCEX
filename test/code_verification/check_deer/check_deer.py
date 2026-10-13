@@ -34,11 +34,15 @@ TOL_PERM = 1e-8                     # the spins of a cluster in another order: r
                                     # (1.8e5 rad at 10 us) through 79 cluster factors at order 2 (295 at order 3);
                                     # measured 6.4e-10 / 1.4e-10 (gCCE / megCCE order 2), 5.1e-10 (order 3) (WSL, MKL).
                                     # The factor 15 above that is arbitrary; a pulse on a wrong spin moves them by ~1
+TOL_EXPM = 1e-9                     # gCCE propagator expm vs eigen with the pump: two routes to one propagator, rounding
+                                    # only (final review ruling); measured 1.0e-10, the last written decimal (WSL, MKL)
 
 ENSEMBLE = ("nopulse", "onres", "offres", "multi_hit", "multi_miss", "nearpulse")
 PURE = ("path_matrix", "path_matrix_recursive", "path_vector", "path_recursive", "path_nopump")
-C2_ENSEMBLE = ("meg_onres", "meg_nearpulse", "multi_hit_rev", "pg_onres", "pmeg_onres")   # C2: megCCE, pcce, tones
-C2_PURE = ("o2", "o2_rev", "meg_o2", "meg_o2_rev", "o3", "o3_rot")      # order 2 reversed, order 3 rotated
+C2_ENSEMBLE = ("meg_onres", "meg_nearpulse", "multi_hit_rev", "pg_onres", "pmeg_onres",   # C2: megCCE, pcce, tones
+               "onres_expm")                                                             # final review: expm
+C2_PURE = ("o2", "o2_rev", "meg_o2", "meg_o2_rev", "o3", "o3_rot",      # order 2 reversed, order 3 rotated
+           "pg_o2")                                                    # final review: pcce at order 2
 
 
 def out_file(case, kind="noDiv"):
@@ -164,6 +168,11 @@ def main():
     # 3-spin clusters that wrap around the rotation keep their spins in rotated order: a U_b in reverse kron order
     # (which the order-2 reversal cannot see) gives another curve
     check("order 3, bath file rotated by 5: same noDiv, wiDiv (gCCE)", "o3", "o3_rot", lambda d: d <= TOL_PERM,
+          ("noDiv", "wiDiv"))
+    # final review: the expm propagator with the pump, and multi-spin pcce clusters (partition_size 1 at order 2: the
+    # standard pairs; the spin order inside a pair may differ, rounding only, as the reorderings above)
+    check("gCCE propagator expm + bath pulse == eigen", "onres_expm", "onres", lambda d: d <= TOL_EXPM)
+    check("pcce partition_size 1 + bath pulse, order 2 == standard (gCCE)", "pg_o2", "o2", lambda d: d <= TOL_PERM,
           ("noDiv", "wiDiv"))
 
     n = sum(ok)

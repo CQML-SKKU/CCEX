@@ -3,9 +3,9 @@
     bash test/code_verification/check_deer/run.sh     # bin/main.out, or CCEX_BIN; CCEX_MPI as for the others
 
 What `pulse.bath` (docs/methods/deer.md) must do, checked against answers that are known rather than a recorded run,
-plus the paths a bath pulse has to reach. One run of the suite is a unit test and 28 CCEX runs on 1 rank (two on
-`check_numerics/cases/p1_manual_hahn`, sixteen on 12 spins at order 1 with 41 points, six at order 2 or 3, four that must
-stop before any cluster); it decides with the exit status (0 = every check passed).
+plus the paths a bath pulse has to reach. One run of the suite is a unit test and 30 CCEX runs on 1 rank (two on
+`check_numerics/cases/p1_manual_hahn`, seventeen on 12 spins at order 1 with 41 points, seven at order 2 or 3, four that
+must stop before any cluster; about 90 s on WSL); it decides with the exit status (0 = every check passed).
 
 ## What runs
 
@@ -44,6 +44,8 @@ stop before any cluster); it decides with the exit status (0 = every check passe
 | `o2_rev`, `meg_o2_rev` | `o2`, `meg_o2` | the bath file, the axis file and the state file with the 12 spins in reverse order (written by `run.sh`) |
 | `o3` | `o2` | `order` 3 (216 triples) |
 | `o3_rot` | `o3` | the three files with the spins rotated by 5 (the last five first) |
+| `onres_expm` | `onres` | `propagator` expm (the log: evolution matrix, `evolution_update` exact) — final review |
+| `pg_o2` | `o2` | `cluster_mode` pcce, `pcce.partition_size` 1 (pcce clusters of two spins with the pump) — final review |
 
    The pure-state runs pass the state file as the `bath_state_file` key and as `-s <prefix> -N 1`, and `run.sh` checks
    that the log names the file read (`Read StateFile : <prefix>1`).
@@ -79,6 +81,8 @@ on the pumped line (configuration 1 of `inputs/avaax_DEERtest`).
 | `meg_onres` = `onres`, `meg_nearpulse` = `nearpulse`; `meg_o2` = `o2` (`_noDiv`, `_wiDiv`) | 1e-6 | megCCE at rate 0 is the gCCE: the bound of `check_master_equation` (megCCE r0 vs gCCE) |
 | `multi_hit_rev` = `onres` | 0 | as `multi_hit`: every tone is tried, not the first one only |
 | `pg_onres` = `onres`, `pmeg_onres` = `meg_onres` | 1e-9 | controller ruling R9: pcce with bath pulses is open only while partition_size 1 gives the standard result |
+| `onres_expm` = `onres` | 1e-9 | final review ruling: the expm and eigen propagators of one Hamiltonian, rounding only (`onres_expm` − `nopulse` is 1.34: the pump acts on the expm path) |
+| `pg_o2` = `o2` (`_noDiv`, `_wiDiv`) | 1e-8 | as the reorderings below: partition_size 1 gives the standard pairs, the order of the two spins inside a pair may differ (rounding only) |
 | `o2` ≠ `path_vector` (`_wiDiv`) | > 1e-3 | the pairs act (otherwise the reordering checks below would compare order-1 values) |
 | `o2_rev` = `o2`, `meg_o2_rev` = `meg_o2`, `o3_rot` = `o3` (`_noDiv`, `_wiDiv`) | 1e-8 | rounding only (the 2.88 GHz ZFS phase through 79 or 295 cluster factors); the factor over the measured values is arbitrary |
 
@@ -148,6 +152,7 @@ No key of the template is reported as not read.
 | `multi_hit_rev` − `onres`; `pg_onres` − `onres`; `pmeg_onres` − `meg_onres` | 0; 0; 0 |
 | `o2` − `path_vector` (`_wiDiv`) | 1.17 |
 | `o2_rev` − `o2`; `meg_o2_rev` − `meg_o2`; `o3_rot` − `o3` | 6.4e-10; 1.4e-10; 5.1e-10 |
+| `onres_expm` − `onres`; `pg_o2` − `o2` (2026-10-14) | 1.0e-10 (the last written decimal); 3.2e-10 |
 
 Not a check, for the record: the pure-state `path_vector` curve is `exp(-i 2 pi t sum_j a_j m_j)` over the driven spins
 within 8.6e-4 (5.8e-4 with 52.0412 instead of 52.04 MHz nm^3; the phase reaches 12 rad), and `path_nopump` is 1 within

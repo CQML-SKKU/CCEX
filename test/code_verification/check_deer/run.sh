@@ -121,6 +121,10 @@ cases["meg_o2"]     = merge(merge({}, cases["meg_onres"]), O2)
 cases["meg_o2_rev"] = merge(merge({}, cases["meg_o2"]), files("rev"))
 cases["o3"]         = merge(merge({}, cases["o2"]), {"order": 3})
 cases["o3_rot"]     = merge(merge({}, cases["o3"]), files("rot"))
+# final review: the gCCE expm propagator with the pump (README: propagator eigen/expm), and cluster_mode pcce at order 2
+# (multi-spin pcce clusters with bath pulses; partition_size 1, the base seed 3528 fixes the partition search)
+cases["onres_expm"] = merge(merge({}, cases["onres"]), {"propagator": "expm"})
+cases["pg_o2"]      = merge(merge({}, cases["o2"]), PC1)
 for name, extra in cases.items():
     d = merge(copy.deepcopy(base), extra); d["outfile"] = f"{w}/{name}"
     json.dump(d, open(f"{w}/{name}.json", "w"), indent=1)
@@ -133,10 +137,10 @@ for c in path_matrix path_matrix_recursive path_vector path_recursive path_nopum
 done
 # Task C2: megCCE and cluster_mode pcce with bath pulses; the pure-state runs at order 2 and 3 and their reordered
 # baths (bath_state_file key and -s flag, and the log must name the state file read)
-for c in meg_onres meg_nearpulse multi_hit_rev pg_onres pmeg_onres; do
+for c in meg_onres meg_nearpulse multi_hit_rev pg_onres pmeg_onres onres_expm; do
     run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
 done
-for c in o2 o2_rev meg_o2 meg_o2_rev o3 o3_rot; do
+for c in o2 o2_rev meg_o2 meg_o2_rev o3 o3_rot pg_o2; do
     st="$HERE/inputs/state_"
     case "$c" in *_rev) st="$W/rev_state_" ;; *_rot) st="$W/rot_state_" ;; esac
     run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" -s "$st" -N 1 || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }

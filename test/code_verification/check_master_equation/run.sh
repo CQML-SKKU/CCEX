@@ -66,7 +66,7 @@ REF="$HERE/reference/branch-2c63eac52"
 PYREF="$HERE/reference/pycce"
 chk "meCCE rate 0 == CCE (Hahn, noDiv)"          "$W/me_r0_noDiv" "$W/cce_noDiv" --tol 1e-6
 chk "meCCE rate 0 == CCE (Hahn, wiDiv)"          "$W/me_r0_wiDiv" "$W/cce_wiDiv" --tol 1e-6
-chk "meCCE rate 0 == CCE (Ramsey, complex)"      "$W/me_r0_ramsey_noDiv" "$W/cce_ramsey_noDiv" --tol 1e-6
+chk "meCCE rate 0 == CCE (Ramsey, complex)"      "$W/me_r0_ramsey_noDiv" "$W/cce_ramsey_noDiv" --tol 1e-8   # measured 8.1e-10
 chk "meCCE rate 0 == cCCE with hamiltonian.cCCE.knight true (natab, Hahn, noDiv)" "$W/me_r0_knight_noDiv" "$W/cce_knight_noDiv" --tol 1e-6
 chk "meCCE bath jumps == branch 2c63eac52"       "$W/me_bath_noDiv" "$REF/ccex_mecce_noDiv" --tol 1e-6
 chk "meCCE bath jumps == PyCCE (S=1/2)"         "$W/me_bath_d01_noDiv" "$PYREF/pycce_mecce.dat" --subset-b --tol 1e-6
@@ -152,5 +152,55 @@ for c in pg_sk2 pme_sk2 pmeg_sk2 pc_sk2_m_mecce; do
         echo "  FAIL  $c does not list the clusters of pCCE partition 2"; FAIL=$((FAIL+1))
     fi
 done
+# final review: meCCE beyond the Hahn unit, CPMG with 2 and 3 pi pulses (propagate_superpropagators: the CPMG unit, and
+# the CPMG unit times a Hahn unit), at rate 0 the cCCE curve (complex, noDiv)
+mk cce_cpmg2   "d['pulse']={'count':2}"
+mk me_r0_cpmg2 "d['method']='meCCE'; d['pulse']={'count':2}"
+mk cce_cpmg3   "d['pulse']={'count':3}"
+mk me_r0_cpmg3 "d['method']='meCCE'; d['pulse']={'count':3}"
+for c in cce_cpmg2 me_r0_cpmg2 cce_cpmg3 me_r0_cpmg3; do
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+done
+chk "meCCE rate 0 == CCE (CPMG 2, complex)"     "$W/me_r0_cpmg2_noDiv" "$W/cce_cpmg2_noDiv" --tol 1e-6
+chk "meCCE rate 0 == CCE (CPMG 3, complex)"     "$W/me_r0_cpmg3_noDiv" "$W/cce_cpmg3_noDiv" --tol 1e-6
+# a pure bath state (nstate > 0: rho_0 = |psi><psi| instead of 1/d): check_numerics' p1_cce2_single (NV, P1 1 ppm with
+# its Defect configurations, CCE2, Hahn) as cCCE and as meCCE, on its first state; the state file both as the
+# bath_state_file key and as -s (CLAUDE.md), and the log must name the file read
+PCASE="$REPO/test/code_verification/check_numerics/cases/p1_cce2_single"
+PST="$REPO/test/code_verification/check_numerics/inputs/p1_1ppm/state_"
+python3 - "$PCASE/ccein.json" "$W" "$PST" <<'PY'
+import json, sys
+src, w, st = sys.argv[1:4]
+for name, method in (("cce_single", "cCCE"), ("me_r0_single", "meCCE")):
+    d = json.load(open(src)); d["method"] = method; d["bath_state_file"] = st
+    json.dump(d, open(f"{w}/{name}.json", "w"), indent=1)
+PY
+for c in cce_single me_r0_single; do   # relative paths in the case's input are read from the case's folder
+    ( cd "$PCASE" && run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" -s "$PST" -N 1 -o "$W/$c" ) \
+        || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+    grep -qF "Read StateFile : ${PST}1" "$W/proc_$c" || { echo "  FAIL  $c : did not read ${PST}1"; FAIL=$((FAIL+1)); }
+done
+chk "meCCE rate 0 == cCCE (pure bath state, p1_cce2_single, complex)" "$W/me_r0_single_state1_noDiv" "$W/cce_single_state1_noDiv" --tol 1e-6
+# megCCE with two qubits (the docs say one or more): at rate 0 the gCCE on check_refusals' S5 system (two NV with their
+# ZFS as intmap tensors, two 13C, order 1, one state; written as check_input_forms/legacy.sh writes it), quantity
+# coherence and deltat 1e-4 ms (S5's 1e-7 keeps the curve within 7e-7 of 1; here it reaches 0.43)
+E5="$REPO/example/tutorial/03_Diamond_multiNV_natab/NV2_13C2"
+python3 - "$E5" "$W" <<'PY'
+import json, re, sys
+E, w = sys.argv[1:3]
+s = open(f"{E}/ccein_NV6_13C2_hahnecho.json").read()
+s = re.sub(r'#[^\n]*', '', s); s = re.sub(r'!\S*', '', s)
+d = json.loads(s)
+d.update({"bathfile": [f"{E}/bath"], "bath_state_file": f"{E}/state", "gyrofile": f"{E}/gyro_13C",
+          "quantity": "coherence", "nstep": 20, "deltat": 1e-4})
+for name, method in (("gcce_2nv", "gCCE"), ("meg_r0_2nv", "megCCE")):
+    d["method"] = method; d["outfile"] = f"{w}/{name}"
+    json.dump(d, open(f"{w}/{name}.json", "w"), indent=1)
+PY
+for c in gcce_2nv meg_r0_2nv; do
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" -s "$E5/state" -N 1 || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+    grep -qF "Read StateFile : $E5/state1" "$W/proc_$c" || { echo "  FAIL  $c : did not read $E5/state1"; FAIL=$((FAIL+1)); }
+done
+chk "megCCE rate 0 == gCCE (two NV qubits, S5 system)" "$W/meg_r0_2nv_state1_noDiv" "$W/gcce_2nv_state1_noDiv" --tol 1e-6
 echo " master-equation checks : PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
