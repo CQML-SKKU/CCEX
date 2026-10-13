@@ -749,12 +749,13 @@ Hahn echo is 1, with `true` it is not, and order 1 is the same either way. <br>
 refused with its new place). The Lindblad jump operators of the master-equation methods, one entry per operator:
 C = √γ S<sub>op</sub> on every spin named `bath_name`, with γ = `rate` × 2π·10³ rad/ms. `operator` is `-` (S<sub>-</sub>),
 `+` (S<sub>+</sub>), `z`, `x` or `y` (S<sub>z</sub>, S<sub>x</sub>, S<sub>y</sub>) of that spin, of any S; the branch's
-old names `+-` and `-+` are refused with the new ones. `bath_name` is the name of bath spins (as in the bath file, case
-not significant; a name no spin has adds nothing), or `"qubit"` / the qubit's name for a jump of the qubit, which megCCE
-alone takes (one qubit; meCCE refuses it and names megCCE). The section must belong to the run's method (after `-m`), and
-holds `jump_operators` only. Without the key, or with an empty list, the run is the rate-0 limit: the cCCE (meCCE) or the
-gCCE (megCCE). The equations, what is supported and the checks are in
-[master-equation.md](../methods/master-equation.md). <br>
+old names `+-` and `-+` are refused with the new ones. `bath_name` is the name of bath spins (as in the bath file or of
+the Defect sub-spins, case not significant), or `"qubit"` / the qubit's name for a jump of the qubit, which megCCE alone
+takes (one qubit; meCCE refuses it and names megCCE). A `bath_name` that is neither, checked against the whole bath once
+it is read, is refused with the names the bath has (a cluster without that species simply gets no jump from it). The
+section must belong to the run's method (after `-m`), and holds `jump_operators` only. Without the key, or with an empty
+list, the run is the rate-0 limit: the cCCE (meCCE) or the gCCE (megCCE). The equations, what is supported and the
+checks are in [master-equation.md](../methods/master-equation.md). <br>
 
 <b>Data Type:</b> Array of objects `{"bath_name": string, "operator": string, "rate": number}`
 

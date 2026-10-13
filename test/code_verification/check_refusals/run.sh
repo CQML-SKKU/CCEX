@@ -701,6 +701,15 @@ reject_case p1_cce2_single rj_me_plan "-P supports cCCE, gCCE and cluster_mode p
 reject S5 rj_me_two_qubits "method meCCE supports one qubit" "d['method']='meCCE'"
 reject S5 rj_me_qubit_jump_two "a qubit jump operator needs one qubit" \
   "d['method']='megCCE'; d['hamiltonian'] = {'megCCE': {'jump_operators': [{'bath_name':'qubit','operator':'z','rate':1e-4}]}}"
+# a jump whose bath_name is neither the qubit nor a bath spin of the run (bath file and Defect sub-spins) would run at
+# rate 0 without a word: refused once the bath is read, with the names the bath has. meCCE on check_master_equation's
+# S=1/2 electron-spin system (spins named e; the first entry matches, the second does not), megCCE on the P1 bath
+# (nstep and rbath small, so that a build without the check runs these in seconds)
+MEI="$REPO/test/code_verification/check_master_equation/inputs"
+reject_case p1_cce2_single rj_me_jump_name 'hamiltonian.meCCE.jump_operators[1].bath_name "P1x" names no bath spin of this run (bath spins: e;' \
+  "d = {'method': 'meCCE', 'quantity': 'coherence', 'Qubit': {'file': '$MEI/qubit_espin', 'spin': 0.5, 'alphams': 0.5, 'betams': -0.5}, 'gyrofile': '$MEI/gyro_espin', 'bathfile': ['$MEI/bath_espin'], 'order': 2, 'bfield': 300, 'rbath': 500, 'rdip': 300, 'deltat': 0.04, 'nstep': 5, 'nstate': 0, 'pulse': {'count': 1}}; $(MEJ meCCE "[{'bath_name':'e','operator':'-','rate':1e-4},{'bath_name':'P1x','operator':'+','rate':1e-4}]")"
+reject_case p1_manual_hahn rj_meg_jump_name 'hamiltonian.megCCE.jump_operators[0].bath_name "P1x" names no bath spin of this run (bath spins: P1;' \
+  "d['method']='megCCE'; d['nstep']=5; d['rbath']=200; $(MEJ megCCE "[{'bath_name':'P1x','operator':'z','rate':1e-4}]")"
 
 echo
 echo "==========================================="

@@ -239,11 +239,12 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
 - meCCE / megCCE where they cannot act: the adding_MECCE top-level `jump_operators` (named with its new place) and the
   old operator names `+-`/`-+`; a `hamiltonian.meCCE`/`.megCCE` section in a run of another method (also after `-m`), a
   key other than `jump_operators` in it, jump operators in both sections, an entry without `bath_name`, `operator` and
-  `rate`, an unknown operator, a rate that is negative or not finite; for meCCE a Manual sequence, a rotation other
-  than an ideal π flip and qubit jump operators (megCCE named); more than one qubit for meCCE or with a qubit jump; for
-  both, `pulse.per_qubit` true, `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`, `cluster_mode` other than
-  `standard`, `evolution_update: "recursive"` given, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`;
-  megCCE with a `hamiltonian.cCCE` setting.
+  `rate`, an unknown operator, a rate that is negative or not finite, a `bath_name` that is neither the qubit nor a
+  bath spin of the run (checked once the bath is read; the branch ran it at rate 0); for meCCE a Manual sequence, a
+  rotation other than an ideal π flip and qubit jump operators (megCCE named); more than one qubit for meCCE or with a
+  qubit jump; for both, `pulse.per_qubit` true, `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`,
+  `cluster_mode` other than `standard`, `evolution_update: "recursive"` given, quantity `dm`, savemode
+  `cluster_density_matrix`, `rdip_ladder`; megCCE with a `hamiltonian.cCCE` setting.
 
 ### Removed
 - The MKL dependency, `hf_cutoff`, the bundled `zlib/`, the top-level `main.cpp` and `config/` (moved into `src/` and the tools).

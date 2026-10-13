@@ -220,6 +220,35 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
     if (cnf->nrdip_ladder > 0) refuse("rdip_ladder needs method CCE, gCCE or pCCE (this run is method %s)", cnf->method);
 }
 
+// meCCE / megCCE, once the bath is read: a jump operator whose bath_name is neither the qubit nor the name of a bath spin
+// of the run would add nothing to any cluster - a typo would run at rate 0 without a word - so it is refused, naming the
+// spins there are. The whole bath is checked (the bath file and the Defect sub-spins createBathArray adds, as
+// validateBathPulseTargets), not a cluster: most clusters lack a species. The names compare as the kernels do (case
+// ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation).
+void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, Config* cnf) {
+    if (!isMasterEquationMethod(cnf->method) || !cnf->jump_operators) return;
+    std::vector<const char*> names;   // the distinct bath spin names (case ignored), in the order met
+    auto add = [&names](const char* n) { for (const char* m : names) if (!strcasecmp(m,n)) return; names.push_back(n); };
+    const int nspin = BathArray_getNspin(ba);
+    for (int j = 0; j < nspin; ++j) add(ba->bath[j]->name);
+    if (DefectArray_getNdefect(dfa) > 0)
+        for (int j = 0; j < nspin; ++j)
+            for (int k = 0; k < DefectArray_getNaddspins_i(dfa,j); ++k) add(DefectArray_getSubbath_i_isp(dfa,j,k)->name);
+    for (int i = 0; i < cnf->jump_operators->njump; ++i) {
+        const char* name = cnf->jump_operators->ops[i]->bath_name;
+        if (!strcasecmp(name,"qubit") || QubitArray_getQubitIdx_fromName(qa,name) >= 0) continue;
+        bool found = false;
+        for (const char* m : names) found = found || !strcasecmp(m,name);
+        if (found) continue;
+        std::string list;
+        for (const char* m : names) { if (!list.empty()) list += ", "; list += m; }
+        if (rank==0) fprintf(stderr,"Error: hamiltonian.%s.jump_operators[%d].bath_name \"%s\" names no bath spin of this run "
+                                    "(bath spins: %s; the comparison ignores case) and is not the qubit (\"qubit\" or its "
+                                    "name)\n", cnf->jump_operators_section, i, name, list.empty() ? "none" : list.c_str());
+        MPI_Abort(MPI_COMM_WORLD,1);
+    }
+}
+
 // hamiltonian.cCCE holds the terms of the cCCE Hamiltonian (A47): in a gCCE or megCCE run - from the input or from -m -
 // they would do nothing, so they are refused; meCCE reads them as cCCE does. hamiltonian.meCCE / megCCE.jump_operators
 // belong to that method. Checked once -m has been applied.
@@ -1028,6 +1057,7 @@ int main(int argc, char* argv[]){
     }
     MPI_Barrier(MPI_COMM_WORLD);
     validateBathPulseTargets(ba,dfa,pls);   // DEER: the driven spins exist and fit pulse.bath (bath and detunings set)
+    validateJumpOperatorNames(ba,dfa,qa,cnf);   // meCCE / megCCE: every jump's bath_name is the qubit or a bath spin
 
     if (rank==0){
         printf("    ----------------------------------------------------------------------\n");

@@ -94,7 +94,10 @@ small clusters.
   savemode `cluster_density_matrix` (the branch's full density-matrix output is not ported), `pulse.per_qubit`,
   `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`, `cluster_mode` other than `standard`,
   `evolution_update: "recursive"` (the default is `exact` for both), `rdip_ladder`; the branch's top-level
-  `jump_operators` and its old operator names `+-`/`-+`, each with the new form named.
+  `jump_operators` and its old operator names `+-`/`-+`, each with the new form named. Once the bath is read
+  (`validateJumpOperatorNames`), a `bath_name` that is neither the qubit nor the name of a bath spin of the run (bath
+  file and Defect sub-spins, case ignored) is refused with the names there are: the branch matched it to nothing and
+  ran that jump at rate 0.
 - The branch's float qubit gyromagnetic ratio and float `deltat` are double in this code (fixed before the port: the
   qubit's gyro in cc2d2c8f2, `Config::deltat` a double).
 - DEER bath pulses (`pulse.bath`) are refused for megCCE for now; the branch applied them as $U_q\otimes U_b$.
@@ -114,6 +117,7 @@ small clusters.
 | megCCE rate 0 == gCCE | 1e-6 | 4.4e-9 |
 | gCCE == conj(PyCCE) (S = ½) | 1e-6 | 1.9e-8 |
 | megCCE bath jumps == conj(PyCCE) (S = ½) | 1e-6 | 5.4e-9 |
+| megCCE bath jumps and a qubit `z` jump == conj(PyCCE) (S = ½) | 1e-6 | 4.2e-9 |
 | megCCE order 0, qubit `z` / `-` == $e^{-\gamma t/2}$ | 1e-9 | 2.7e-10 / 2.7e-10 |
 
 PRL2024 Eq. 6 is the free induction of one bath spin on the qubit axis ($A_{zx}=A_{zy}=0$, $a=\vert A_{zz}\vert$) at
@@ -173,17 +177,19 @@ and power, the normalization, the row-major dissipator, the jump rate) are the s
 | jump operators | bath names | bath names, `"qubit"` or the qubit's name (one qubit) |
 | `hamiltonian` | `common`, `cCCE`, `meCCE` | `common`, `megCCE` |
 | output | coherence, savemode `coherence`, `cluster_coherence` | same |
-| refused | qubit jumps, two qubits, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`, `-P` | two qubits with a qubit jump, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`, `-P`, `hamiltonian.cCCE` |
+| refused | qubit jumps, a `bath_name` no bath spin has, two qubits, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`, `-P` | a `bath_name` that is neither the qubit nor a bath spin, two qubits with a qubit jump, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`, `-P`, `hamiltonian.cCCE` |
 
-A `bath_name` that is neither the qubit nor the name of a bath spin matches nothing and adds no dissipation (it is not
-refused). No jump operators, or an empty list, is rate 0: meCCE then gives the cCCE and megCCE the gCCE.
+A `bath_name` is checked against the whole bath once it is read: one that is neither the qubit nor the name of any bath
+spin of the run (bath file and Defect sub-spins) is refused, with the names the bath has. A cluster without that species
+gets no jump from it, which is the normal case. No jump operators, or an empty list, is rate 0: meCCE then gives the
+cCCE and megCCE the gCCE.
 
 ## Where it is in the code
 
 | piece | file |
 |---|---|
 | reading `hamiltonian.meCCE` / `.megCCE.jump_operators`, the old key | `src/input/option.cpp` (`readJumpOperators`, `refuseOldInputKeys`) |
-| the refusals | `src/main.cpp` (`validateMasterEquation`, `validateHamiltonianForMethod`), `src/input/option.cpp` (`internalMethod`) |
+| the refusals | `src/main.cpp` (`validateMasterEquation`, `validateHamiltonianForMethod`, `validateJumpOperatorNames`), `src/input/option.cpp` (`internalMethod`) |
 | superoperators, jump operators | `src/calculation/superoperator.cpp` |
 | the ME-CCE kernel | `src/calculation/simulator_mecce.cpp` (`calCoherenceMecce`) |
 | the ME-gCCE kernel | `src/calculation/simulator_megcce.cpp` (`calCoherenceMegcce`; `ba == NULL` is the 0th cluster) |
