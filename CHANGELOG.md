@@ -244,7 +244,8 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
   old operator names `+-`/`-+`; a `hamiltonian.meCCE`/`.megCCE` section in a run of another method (also after `-m`), a
   key other than `jump_operators` in it, jump operators in both sections, an entry without `bath_name`, `operator` and
   `rate`, an unknown operator, a rate that is negative or not finite, a `bath_name` that is neither the qubit nor a
-  bath spin of the run (checked once the bath is read; the branch ran it at rate 0); for meCCE a Manual sequence, a
+  bath spin of the run (checked once the bath is read; the branch ran it at rate 0) or is both (megCCE would act on the
+  qubit only); for meCCE a Manual sequence, a
   rotation other than an ideal π flip and qubit jump operators (megCCE named); more than one qubit for meCCE or with a
   qubit jump; for both, `pulse.per_qubit` true, `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`,
   `cluster_mode` other than `standard` and `pcce`, `evolution_update: "recursive"` given, quantity `dm`, savemode

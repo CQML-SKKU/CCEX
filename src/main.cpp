@@ -153,8 +153,9 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
         const char axis=pls->pulse_axes[i];
         if((axis=='X' || axis=='Y') && pls->pulse_angles[i]==180.0) continue;
         if(rank==0) fprintf(stderr,"Error: method %s calculates every pulse as an ideal pi flip (X or Y, 180), "
-                                   "but pulse %d of %s is %c %g. Use method gCCE for other rotations.\n",
-                            inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i]);
+                                   "but pulse %d of %s is %c %g. Use method %s for other rotations.\n",
+                            inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i],
+                            !strcmp(kernel,"mecce") ? "megCCE" : "gCCE");   // meCCE, pmeCCE: the ME method that rotates
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     // The CUDA ensemble path takes CPMG intervals the way the CPU one did.
@@ -187,8 +188,9 @@ void validateBathPulses(Config* cnf, Pulse* pls) {
         refuse("bath pulses need cluster_mode standard or pcce (this run has cluster_mode bundle)");
     if (pls->detuning_factor != 1.0)    refuse("bath pulses need pulse.detuning_factor = 1");
     if (Pulse_getPulseiter(pls))        refuse("bath pulses cannot be combined with pulse.per_qubit = true");
-    if (!strcasecmp(cnf->propagator,"sparse"))
-        refuse("bath pulses need propagator eigen or expm (propagator sparse applies pulses as U_q x 1)");
+    if (!strcasecmp(cnf->propagator,"sparse"))   // expm is gCCE only (Config_validatePropagator)
+        refuse(!strcmp(kernel,"megcce") ? "bath pulses with method megCCE need propagator eigen (propagator sparse applies pulses as U_q x 1)"
+                                        : "bath pulses need propagator eigen or expm (propagator sparse applies pulses as U_q x 1)");
     // gpu_warp_max_dim is -1 until Config_resolveWarpMaxDim: > 0 here is a value given in the input
     if (cnf->gpu_warp_max_dim > 0) refuse("bath pulses cannot use gpu_options.warp_max_dim > 0 (the warp kernel applies qubit pulses only)");
     if (!strcasecmp(cnf->backend,"cuda")) refuse("bath pulses (pulse.bath.count > 0) run on the CPU only; set backend to cpu");
@@ -230,14 +232,16 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
     // the coherence only: the branch's megCCE density-matrix output is not ported
     if (strcasecmp(cnf->quantity,"coherence")) refuse("method %s computes quantity coherence only (dm is not implemented)", method);
     // the ladder's own check (rdipladder::prepare) comes after the clusters
-    if (cnf->nrdip_ladder > 0) refuse("rdip_ladder needs method CCE, gCCE or pCCE (this run is method %s)", method);
+    if (cnf->nrdip_ladder > 0)   // the ladder's internal CCE, gCCE, pCCE (rdip_ladder.cpp) in the input's names
+        refuse("rdip_ladder needs method cCCE (cluster_mode standard or pcce) or gCCE (cluster_mode standard); this run is method %s", method);
 }
 
 // meCCE / megCCE, once the bath is read: a jump operator whose bath_name is neither the qubit nor the name of a bath spin
 // of the run would add nothing to any cluster - a typo would run at rate 0 without a word - so it is refused, naming the
 // spins there are. The whole bath is checked (the bath file and the Defect sub-spins createBathArray adds, as
 // validateBathPulseTargets), not a cluster: most clusters lack a species. The names compare as the kernels do (case
-// ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation).
+// ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation). A name that is both the qubit's and a
+// bath spin's is refused too: the megCCE kernel takes it as a qubit jump and drops the bath spins without a word.
 void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, Config* cnf) {
     if (!isMasterEquationMethod(cnf->method) || !cnf->jump_operators) return;
     std::vector<const char*> names;   // the distinct bath spin names (case ignored), in the order met
@@ -249,10 +253,18 @@ void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, 
             for (int k = 0; k < DefectArray_getNaddspins_i(dfa,j); ++k) add(DefectArray_getSubbath_i_isp(dfa,j,k)->name);
     for (int i = 0; i < cnf->jump_operators->njump; ++i) {
         const char* name = cnf->jump_operators->ops[i]->bath_name;
-        if (!strcasecmp(name,"qubit") || QubitArray_getQubitIdx_fromName(qa,name) >= 0) continue;
+        const bool isQubit = !strcasecmp(name,"qubit") || QubitArray_getQubitIdx_fromName(qa,name) >= 0;
         bool found = false;
         for (const char* m : names) found = found || !strcasecmp(m,name);
-        if (found) continue;
+        // the qubit and bath spins by one name: the megCCE kernel would apply the jump to the qubit only
+        if (isQubit && found) {
+            if (rank==0) fprintf(stderr,"Error: hamiltonian.%s.jump_operators[%d].bath_name \"%s\" names both the qubit and "
+                                        "bath spins of this run (the comparison ignores case for bath spins); the jump would "
+                                        "act on the qubit only. Rename the qubit or the bath species\n",
+                                 cnf->jump_operators_section, i, name);
+            MPI_Abort(MPI_COMM_WORLD,1);
+        }
+        if (isQubit || found) continue;
         std::string list;
         for (const char* m : names) { if (!list.empty()) list += ", "; list += m; }
         if (rank==0) fprintf(stderr,"Error: hamiltonian.%s.jump_operators[%d].bath_name \"%s\" names no bath spin of this run "

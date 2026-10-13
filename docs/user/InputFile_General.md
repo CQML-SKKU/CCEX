@@ -54,7 +54,7 @@ input's `cluster_mode`. <br>
 | `cCCE`  | Conventional CCE |
 | `gCCE`  | Generalized CCE |
 | `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
-| `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU, any pulse sequence |
+| `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU; the qubit sequence as given (Manual and any rotation included) with `pulse.per_qubit` false and `pulse.detuning_factor` 1 (others refused); DEER bath pulses (`pulse.bath`) run with it |
 | `noise` | reserved: refused as not implemented yet (2026-10-13) |
 
 The values before 2026-10-13 are refused with their new form: `CCE` is `cCCE`; `pCCE`, `dsj`, `itb` and `dsjitb` are
@@ -753,7 +753,8 @@ C = √γ S<sub>op</sub> on every spin named `bath_name`, with γ = `rate` × 2�
 old names `+-` and `-+` are refused with the new ones. `bath_name` is the name of bath spins (as in the bath file or of
 the Defect sub-spins, case not significant), or `"qubit"` / the qubit's name for a jump of the qubit, which megCCE alone
 takes (one qubit; meCCE refuses it and names megCCE). A `bath_name` that is neither, checked against the whole bath once
-it is read, is refused with the names the bath has (a cluster without that species simply gets no jump from it). The
+it is read, is refused with the names the bath has (a cluster without that species simply gets no jump from it), and so
+is a `bath_name` that is both the qubit's name and a bath spin's (megCCE would apply it to the qubit only). The
 section must belong to the run's method (after `-m`), and holds `jump_operators` only. Without the key, or with an empty
 list, the run is the rate-0 limit: the cCCE (meCCE) or the gCCE (megCCE). The equations, what is supported and the
 checks are in [master-equation.md](../methods/master-equation.md). <br>

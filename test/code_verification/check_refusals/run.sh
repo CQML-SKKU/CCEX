@@ -624,6 +624,8 @@ reject_case p1_manual_hahn rj_deer_cuda "bath pulses (pulse.bath.count > 0) run 
 reject_case p1_manual_hahn rj_deer_detuning "bath pulses need pulse.detuning_factor = 1" "$DEER; d['pulse']['detuning_factor']=0.5"
 reject_case p1_manual_hahn rj_deer_pulseiter "bath pulses cannot be combined with pulse.per_qubit = true" "$DEER; d['pulse']['per_qubit']=True"
 reject_case p1_manual_hahn rj_deer_sparse "bath pulses need propagator eigen or expm" "$DEER; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"
+reject_case p1_manual_hahn rj_deer_meg_sparse "bath pulses with method megCCE need propagator eigen (propagator sparse" \
+  "$DEER; d['method']='megCCE'; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"
 reject_case p1_manual_hahn rj_deer_warp "bath pulses cannot use gpu_options.warp_max_dim > 0" "$DEER; d['gpu_options'] = {'warp_max_dim': 27}"
 reject_case p1_manual_hahn rj_deer_bundle "bath pulses need cluster_mode standard or pcce (this run has cluster_mode bundle)" \
   "$DEER; d['cluster_mode']='bundle'"
@@ -679,7 +681,7 @@ reject_case p1_cce2_single rj_me_name "jump_operators[0] needs bath_name, operat
   "d['method']='meCCE'; $(MEJ meCCE "[{'operator':'z','rate':1e-4}]")"
 reject_case natab_manual_hahn rj_me_manual "method meCCE takes its pulses from pulse.count" \
   "d['method']='meCCE'; d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',180],['1/2','I',0]]}"
-reject_case p1_cce2_single rj_me_recursive "this run has method=meCCE" \
+reject_case p1_cce2_single rj_me_recursive "this run has method=meCCE. Use evolution_update=exact" \
   "d['method']='meCCE'; d['evolution_update']='recursive'"
 reject_case p1_cce2_single rj_me_qubit_jump "method meCCE does not take qubit jump operators" \
   "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'qubit','operator':'z','rate':1e-4}]")"
@@ -695,7 +697,7 @@ reject_case p1_pcce2_sk2 rj_pmeg_expm "propagator=expm is implemented for method
   "d['method']='megCCE'; d['propagator']='expm'"
 reject_case p1_pcce2_sk2 rj_pme_pulse "method meCCE calculates every pulse as an ideal pi flip" \
   "d['method']='meCCE'; d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',90],['1/2','I',0]]}"
-reject_case p1_pcce2_sk2 rj_pme_rdip_ladder "rdip_ladder needs method CCE, gCCE or pCCE (this run is method meCCE)" \
+reject_case p1_pcce2_sk2 rj_pme_rdip_ladder "rdip_ladder needs method cCCE (cluster_mode standard or pcce) or gCCE (cluster_mode standard); this run is method meCCE" \
   "d['method']='meCCE'; d['rdip_ladder']=[600]"
 reject_case p1_pcce2_sk2 rj_pg_packed "gpu_options.packed_max_dim works with method=CCE (this run: gCCE, cluster_mode pcce)" \
   "d['method']='gCCE'; d['gpu_options']={'packed_max_dim': 4}"
@@ -727,7 +729,8 @@ reject_case natab_cce2_hahn rj_me_pcce_block "the pcce block belongs to cluster_
   "d['method']='meCCE'; d['pcce'] = {'partition_size': 2}"
 # rdip_ladder assembles cCCE, gCCE and pCCE products only; refused for ME before the bath is read (the ladder's own check
 # comes after the clusters)
-reject_case p1_cce2_single rj_me_rdip_ladder "rdip_ladder needs method CCE, gCCE or pCCE" "d['method']='meCCE'; d['rdip_ladder']=[600]"
+reject_case p1_cce2_single rj_me_rdip_ladder "rdip_ladder needs method cCCE (cluster_mode standard or pcce) or gCCE (cluster_mode standard); this run is method meCCE" \
+  "d['method']='meCCE'; d['rdip_ladder']=[600]"
 # guarded already by v2's own whitelists: checked here so a later change cannot open them for ME silently
 reject_case p1_manual_hahn rj_meg_cuda "backend=cuda supports method cCCE (cluster_mode standard or pcce), or method gCCE with propagator=eigen" \
   "d['method']='megCCE'; d['backend']='cuda'"
@@ -748,6 +751,20 @@ reject_case p1_cce2_single rj_me_jump_name 'hamiltonian.meCCE.jump_operators[1].
   "d = {'method': 'meCCE', 'quantity': 'coherence', 'Qubit': {'file': '$MEI/qubit_espin', 'spin': 0.5, 'alphams': 0.5, 'betams': -0.5}, 'gyrofile': '$MEI/gyro_espin', 'bathfile': ['$MEI/bath_espin'], 'order': 2, 'bfield': 300, 'rbath': 500, 'rdip': 300, 'deltat': 0.04, 'nstep': 5, 'nstate': 0, 'pulse': {'count': 1}}; $(MEJ meCCE "[{'bath_name':'e','operator':'-','rate':1e-4},{'bath_name':'P1x','operator':'+','rate':1e-4}]")"
 reject_case p1_manual_hahn rj_meg_jump_name 'hamiltonian.megCCE.jump_operators[0].bath_name "P1x" names no bath spin of this run (bath spins: P1;' \
   "d['method']='megCCE'; d['nstep']=5; d['rbath']=200; $(MEJ megCCE "[{'bath_name':'P1x','operator':'z','rate':1e-4}]")"
+# a bath_name that is the qubit's name and a bath spin's: the megCCE kernel takes it as a qubit jump and drops the bath
+# spins, so it is refused once the bath is read (the qubit of p1_gcce2_zfs named P1, as its bath spins)
+reject_case p1_gcce2_zfs rj_meg_jump_both_names 'hamiltonian.megCCE.jump_operators[0].bath_name "P1" names both the qubit and bath spins of this run' \
+  "d['method']='megCCE'; d['nstep']=5; d['Qubit']['qubit'][0]['name']='P1'; d['Qubit']['intmap'][0]['between']=['P1','P1']; $(MEJ megCCE "[{'bath_name':'P1','operator':'z','rate':1e-4}]")"
+# the jump sections as they are read: one method's section only, and jump_operators a list
+reject_case p1_cce2_single rj_me_jump_both_sections "jump operators are given in both hamiltonian.meCCE and hamiltonian.megCCE" \
+  "d['method']='meCCE'; d['hamiltonian'] = {'meCCE': {'jump_operators': [{'bath_name':'P1','operator':'-','rate':1e-4}]}, 'megCCE': {'jump_operators': [{'bath_name':'P1','operator':'-','rate':1e-4}]}}"
+reject_case p1_cce2_single rj_me_jump_not_array "hamiltonian.meCCE.jump_operators must be an array" \
+  "d['method']='meCCE'; d['hamiltonian'] = {'meCCE': {'jump_operators': {'bath_name':'P1','operator':'-','rate':1e-4}}}"
+# a rotation other than an ideal pi flip names the method that applies it: megCCE for meCCE, gCCE for cCCE
+reject_case p1_cce2_single rj_me_pulse_rotation "is X 90. Use method megCCE for other rotations." \
+  "d['method']='meCCE'; d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',90],['1/2','I',0]]}"
+reject_case p1_cce2_single rj_ccce_pulse_rotation "is X 90. Use method gCCE for other rotations." \
+  "d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',90],['1/2','I',0]]}"
 
 echo
 echo "==========================================="
