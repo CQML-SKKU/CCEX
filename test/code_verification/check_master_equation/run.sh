@@ -110,8 +110,10 @@ chk "megCCE order 0, qubit - == exp(-g t/2)"     "$W/meg0_qminus_noDiv" "$ONE" -
 # gives single-spin partitions (every partition takes exactly N/ncenter = 1 spin, cluster_pcce.cpp
 # assignCentroidsFromPoints), connected by the distance of their centers - the spins - as the standard clusters are, so
 # pgCCE with partition_size 1 is gCCE. partition_size 2 (3 spins in rbath: one partition of 2, the third left out)
-# compares each master-equation kernel at rate 0 with the kernel it reduces to, on the same partition.
-PC="d['cluster_mode']='pcce'"
+# compares each master-equation kernel at rate 0 with the kernel it reduces to, on the same partition. The template has no
+# seed (a new one per run), and the partition search is seeded: a fixed seed (19, arbitrary) keeps the partition - and the
+# order of the spins inside a cluster, which moves the result by ~1e-10 through the kron order - the same from run to run.
+PC="d['cluster_mode']='pcce'; d['seed']=19"
 mk pg_sk1   "d['method']='gCCE'; $PC; d['pcce']={'partition_size':1}; d['deltat']=0.1; d['nstep']=20"
 mk pc_sk2   "$PC; d['pcce']={'partition_size':2}"
 mk pme_sk2  "d['method']='meCCE'; $PC; d['pcce']={'partition_size':2}"
@@ -123,5 +125,32 @@ done
 chk "pgCCE partition_size 1 == gCCE"              "$W/pg_sk1_noDiv" "$W/gcce_noDiv" --tol 1e-8
 chk "pmeCCE rate 0 == pCCE (partition 2)"         "$W/pme_sk2_noDiv" "$W/pc_sk2_noDiv" --tol 1e-6
 chk "pmegCCE rate 0 == pgCCE (partition 2)"       "$W/pmeg_sk2_noDiv" "$W/pg_sk2_noDiv" --tol 1e-6
+# at rate 0 the master-equation kernels are the cCCE / gCCE kernels, so the two checks above cannot tell them apart; with
+# the bath jumps of me_bath / meg_bath on single-spin partitions a p-variant must give meCCE / megCCE (meCCE with these
+# jumps is 0.9 away from the cCCE)
+mk pme_sk1_bath  "d['method']='meCCE'; $PC; d['pcce']={'partition_size':1}; $(MEJ meCCE "$JUMPS")"
+mk pmeg_sk1_bath "d['method']='megCCE'; $PC; d['pcce']={'partition_size':1}; d['deltat']=0.1; d['nstep']=20; $(MEJ megCCE "$JUMPS")"
+for c in pme_sk1_bath pmeg_sk1_bath; do
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+done
+# -m keeps the input's cluster_mode: the cCCE + pcce input with -m meCCE is pmeCCE (a lost pcce shape would run the
+# standard clusters without a word)
+run_ccex "$BIN_DEV" "$W/pc_sk2.json" "$W/proc_pc_sk2_m_mecce" -m meCCE -o "$W/pc_sk2_m_mecce" \
+    || { echo "  FAIL  pc_sk2 -m meCCE : CCEX exit"; FAIL=$((FAIL+1)); }
+chk "pmeCCE partition_size 1, bath jumps == meCCE"   "$W/pme_sk1_bath_noDiv" "$W/me_bath_noDiv" --tol 1e-8
+chk "pmegCCE partition_size 1, bath jumps == megCCE" "$W/pmeg_sk1_bath_noDiv" "$W/meg_bath_noDiv" --tol 1e-8
+chk "cCCE + pcce with -m meCCE == pmeCCE (partition 2)" "$W/pc_sk2_m_mecce_noDiv" "$W/pme_sk2_noDiv" --tol 1e-12
+# the clusters (order >= 1; the 0th power depends on the kernel): the gCCE and master-equation kernels with partition_size 2
+# take the pCCE partitions - here one partition of 2 spins - and not the standard clusters (3 spins, one pair), which a
+# p-variant losing the pcce clustering would list (the rate-0 checks above cannot see it for pgCCE and pmegCCE together)
+clusters(){ grep -E '^[[:space:]]*Cluster\[[1-9][0-9]*\]\[' "$1" | sed 's/^[[:space:]]*//'; }
+for c in pg_sk2 pme_sk2 pmeg_sk2 pc_sk2_m_mecce; do
+    if [ -n "$(clusters "$W/proc_pc_sk2")" ] && [ "$(clusters "$W/proc_pc_sk2")" != "$(clusters "$W/proc_gcce")" ] &&
+       [ "$(clusters "$W/proc_$c")" = "$(clusters "$W/proc_pc_sk2")" ]; then
+        echo "  PASS  $c lists the clusters of pCCE partition 2 (not the standard ones)"; PASS=$((PASS+1))
+    else
+        echo "  FAIL  $c does not list the clusters of pCCE partition 2"; FAIL=$((FAIL+1))
+    fi
+done
 echo " master-equation checks : PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

@@ -678,6 +678,28 @@ reject_case p1_cce2_single rj_me_qubit_jump "method meCCE does not take qubit ju
 # meCCE with cluster_mode pcce (inside pmeCCE) projects the qubit out as well; the message names the method as written
 reject_case p1_pcce2_sk2 rj_pme_qubit_jump "method meCCE does not take qubit jump operators" \
   "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'qubit','operator':'z','rate':1e-4}]")"
+# the method as the input writes it in every refusal a gCCE / meCCE / megCCE + pcce run (inside pgCCE, pmeCCE, pmegCCE) can
+# meet: the internal names must not reach the messages
+reject_case p1_pcce2_sk2 rj_pme_recursive "this run has method=meCCE" "d['method']='meCCE'; d['evolution_update']='recursive'"
+reject_case p1_pcce2_sk2 rj_pme_vector "evolution=vector is implemented for method=gCCE only (this run has method=meCCE)" \
+  "d['method']='meCCE'; d['evolution']='vector'"
+reject_case p1_pcce2_sk2 rj_pmeg_expm "propagator=expm is implemented for method=gCCE only (this run has method=megCCE)" \
+  "d['method']='megCCE'; d['propagator']='expm'"
+reject_case p1_pcce2_sk2 rj_pme_pulse "method meCCE calculates every pulse as an ideal pi flip" \
+  "d['method']='meCCE'; d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',90],['1/2','I',0]]}"
+reject_case p1_pcce2_sk2 rj_pme_rdip_ladder "rdip_ladder needs method CCE, gCCE or pCCE (this run is method meCCE)" \
+  "d['method']='meCCE'; d['rdip_ladder']=[600]"
+reject_case p1_pcce2_sk2 rj_pg_packed "gpu_options.packed_max_dim works with method=CCE (this run: gCCE, cluster_mode pcce)" \
+  "d['method']='gCCE'; d['gpu_options']={'packed_max_dim': 4}"
+reject_case p1_pcce2_sk2 rj_pg_warp "gpu_options.warp_max_dim works with method=CCE or gCCE (this run: gCCE, cluster_mode pcce)" \
+  "d['method']='gCCE'; d['gpu_options']={'warp_max_dim': 27}"
+for name in rj_pme_qubit_jump rj_pme_recursive rj_pme_vector rj_pmeg_expm rj_pme_pulse rj_pme_rdip_ladder rj_pg_packed rj_pg_warp; do
+    if grep -i "error" "$WORK/evolution_update_refusals/proc_$name" | grep -qiE "p(g|me|meg)cce"; then
+        echo "  FAIL  $name : an internal method name in the message"; FAIL=$((FAIL+1))
+    else
+        echo "  PASS  $name names no internal method"; PASS=$((PASS+1))
+    fi
+done
 reject_case p1_cce2_single rj_me_sparse "method meCCE needs propagator eigen" \
   "d['method']='meCCE'; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"
 reject_case p1_cce2_single rj_me_shape "method meCCE with cluster_mode \"dsj\" is not implemented" \

@@ -154,7 +154,7 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
         if((axis=='X' || axis=='Y') && pls->pulse_angles[i]==180.0) continue;
         if(rank==0) fprintf(stderr,"Error: method %s calculates every pulse as an ideal pi flip (X or Y, 180), "
                                    "but pulse %d of %s is %c %g. Use method gCCE for other rotations.\n",
-                            cnf->method,i+1,pls->pulsename,axis,pls->pulse_angles[i]);
+                            inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i]);
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     // The CUDA ensemble path takes CPMG intervals the way the CPU one did.
@@ -193,8 +193,6 @@ bool isMasterEquationMethod(const char* m) {   // meCCE, megCCE and their pcce f
     return !strcasecmp(m,"mecce") || !strcasecmp(m,"megcce") || !strcasecmp(m,"pmecce") || !strcasecmp(m,"pmegcce");
 }
 
-static const char* inputMethodName(const char* method);   // below, beside validateHamiltonianForMethod
-
 // meCCE / megCCE (adding_MECCE): Lindblad dissipation in Liouville space on the CPU with a matrix exponential per step.
 // What their kernels do not take is refused here, before any reader. The backend (computeBackendInit), evolution
 // (Config_resolveEvolution), propagator expm (Config_validatePropagator), evolution_update recursive
@@ -223,7 +221,7 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
     // the coherence only: the branch's megCCE density-matrix output is not ported
     if (strcasecmp(cnf->quantity,"coherence")) refuse("method %s computes quantity coherence only (dm is not implemented)", method);
     // the ladder's own check (rdipladder::prepare) comes after the clusters
-    if (cnf->nrdip_ladder > 0) refuse("rdip_ladder needs method CCE, gCCE or pCCE (this run is method %s)", cnf->method);
+    if (cnf->nrdip_ladder > 0) refuse("rdip_ladder needs method CCE, gCCE or pCCE (this run is method %s)", method);
 }
 
 // meCCE / megCCE, once the bath is read: a jump operator whose bath_name is neither the qubit nor the name of a bath spin
@@ -262,17 +260,6 @@ void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, 
 // delta_A false (A47) replaces the hyperfine tensors of a cluster's bath spins by their mean (createBathArray), which is
 // defined for a bath of nuclear spins: the spins a defect species brings into a cluster and the qubit's mean field
 // (the Overhauser field, computed from the tensors before they are averaged) are refused with it.
-// The method as the input writes it (A47): the cCCE shapes keep the internal names CCE, pCCE, dsj, itb and dsjitb, which
-// the reader refuses as old method names, so a message names them cCCE; the pcce forms pgCCE, pmeCCE and pmegCCE (refused
-// as the branch's names) are gCCE, meCCE and megCCE; gCCE, meCCE and megCCE are written as they are.
-static const char* inputMethodName(const char* method) {
-    for (const char* m : {"CCE", "pCCE", "dsj", "itb", "dsjitb"}) if (!strcasecmp(method,m)) return "cCCE";
-    if (!strcasecmp(method,"pgcce")) return "gCCE";
-    if (!strcasecmp(method,"pmecce")) return "meCCE";
-    if (!strcasecmp(method,"pmegcce")) return "megCCE";
-    return method;
-}
-
 void validateHamiltonianForMethod(Config* cnf, QubitArray* qa, DefectArray* dfa) {
     const char* kernel=methodKernel(cnf->method);   // the section of a pcce form is its method's (pmeCCE: meCCE)
     if(cnf->jump_operators && strcasecmp(cnf->jump_operators_section,kernel)) {

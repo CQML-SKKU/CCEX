@@ -195,7 +195,8 @@ static unsigned long long warpMask(const Config* cnf, int qdim = 3){
 static void warpInputCheck(const Config* cnf){
     const bool gcce = !strcasecmp(cnf->method,"gcce");
     if (!gcce && strcasecmp(cnf->method,"cce")){
-        if (rank==0) fprintf(stderr,"Error: gpu_options.warp_max_dim works with method=CCE or gCCE (this run: %s); 0 switches it off\n",cnf->method);
+        if (rank==0) fprintf(stderr,"Error: gpu_options.warp_max_dim works with method=CCE or gCCE (this run: %s%s); 0 switches it off\n",
+                             inputMethodName(cnf->method),methodUsesPcceClusters(cnf->method) ? ", cluster_mode pcce" : "");
         ccexFatal();
     }
     if (!strcasecmp(cnf->backend,"cpu")){
@@ -204,7 +205,7 @@ static void warpInputCheck(const Config* cnf){
     }
     if (!warpMask(cnf)){
         if (rank==0) fprintf(stderr,"Error: gpu_options.warp_max_dim %d: the warp kernel has no dimension up to it for method=%s (it has %s)\n",
-                             cnf->gpu_warp_max_dim,cnf->method,gcce ? "6, 9, 12, 18, 21, 24 and 27 with a qubit of dimension 3" : "8 and 16");
+                             cnf->gpu_warp_max_dim,inputMethodName(cnf->method),gcce ? "6, 9, 12, 18, 21, 24 and 27 with a qubit of dimension 3" : "8 and 16");
         ccexFatal();
     }
 }
@@ -564,7 +565,8 @@ void smallClusterWarmUp(const Config* cnf){
     if (!packed && !warp) return;
     // refused here, before the bath is read: the packed kernel is cCCE, and it is in the GPU binary only
     if (packed && strcasecmp(cnf->method,"cce")){
-        if (rank==0) fprintf(stderr,"Error: gpu_options.packed_max_dim works with method=CCE (this run: %s)\n",cnf->method);
+        if (rank==0) fprintf(stderr,"Error: gpu_options.packed_max_dim works with method=CCE (this run: %s%s)\n",inputMethodName(cnf->method),
+                             methodUsesPcceClusters(cnf->method) ? ", cluster_mode pcce" : "");
         ccexFatal();
     }
     if (warp && !strcmp(cnf->gpu_warp_source,"given")) warpInputCheck(cnf);

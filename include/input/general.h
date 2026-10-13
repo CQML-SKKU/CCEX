@@ -277,6 +277,9 @@ bool    Config_getKnight(Config* cnf);
 // (megCCE, pmegCCE).
 bool methodUsesPcceClusters(const char* m);
 const char* methodKernel(const char* m);
+// The method as the input writes it, for messages (A47): CCE, pCCE, dsj, itb, dsjitb are cCCE (the reader refuses them as
+// old method names); pgCCE, pmeCCE, pmegCCE are gCCE, meCCE, megCCE (refused as the adding_MECCE branch's names).
+const char* inputMethodName(const char* m);
 
 // set 
 void Config_setMethod(Config* cnf, char* method);

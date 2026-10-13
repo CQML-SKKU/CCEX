@@ -80,7 +80,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
         fprintf(stderr,"Warning: hamiltonian.common.qubit_bath_mean_field has no effect with method=%s.\n"
                        "         CCE projects the qubit out, so the qubit Hamiltonian --\n"
                        "         where the Overhauser field lives -- is never built.\n"
-                       "         Use method=gCCE for mean-field.\n", method);
+                       "         Use method=gCCE for mean-field.\n", inputMethodName(method));
     }
 
 

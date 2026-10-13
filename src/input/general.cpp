@@ -377,6 +377,14 @@ const char* methodKernel(const char* m){
     return "cce";
 }
 
+const char* inputMethodName(const char* m){
+    for (const char* c : {"CCE", "pCCE", "dsj", "itb", "dsjitb"}) if (!strcasecmp(m,c)) return "cCCE";
+    if (!strcasecmp(m,"pgcce"))   return "gCCE";
+    if (!strcasecmp(m,"pmecce"))  return "meCCE";
+    if (!strcasecmp(m,"pmegcce")) return "megCCE";
+    return m;
+}
+
 // set 
 void Config_setMethod(Config* cnf, char* method){
 
@@ -505,7 +513,7 @@ void Config_resolveEvolution(Config* cnf){
         // something the run does not do.
         if (strcasecmp(cnf->evolution,"matrix")!=0 && !isGCCE){
             fprintf(stderr,"Error : evolution=%s is implemented for method=gCCE only "
-                           "(this run has method=%s).\n",cnf->evolution,cnf->method);
+                           "(this run has method=%s).\n",cnf->evolution,inputMethodName(cnf->method));
             exit(EXIT_FAILURE);
         }
         return;
@@ -543,7 +551,7 @@ void Config_validateEvolutionUpdate(Config* cnf){
     else if (strcasecmp(cnf->propagator,"sparse")==0)   // A2: the Krylov path has no phases to carry over; its clusters
         snprintf(found,sizeof(found),"propagator=sparse");   // below min_dim run exact with it
     else if (!strcmp(methodKernel(cnf->method),"mecce") || !strcmp(methodKernel(cnf->method),"megcce"))   // a matrix exponential per step
-        snprintf(found,sizeof(found),"method=%s",cnf->method);
+        snprintf(found,sizeof(found),"method=%s",inputMethodName(cnf->method));
     // A36: may a cluster reach the GPU large-cluster path? The methods computeBackendInit sends to the GPU, with backend
     // cuda (refused there in the CPU build) or with auto in the GPU build
     const bool cuda = (strcasecmp(cnf->backend,"cuda")==0);
@@ -591,7 +599,7 @@ void Config_validatePropagator(const Config* cnf, int nqubit){
     const bool isGCCE = !strcmp(methodKernel(cnf->method),"gcce");   // gCCE, pgCCE
     if (!isGCCE && strcasecmp(cnf->propagator,"expm")==0){
         fprintf(stderr,"Error : propagator=expm is implemented for method=gCCE only (this run has method=%s); "
-                       "cCCE takes eigen or sparse.\n",cnf->method);
+                       "cCCE takes eigen or sparse.\n",inputMethodName(cnf->method));
         exit(EXIT_FAILURE);
     }
     if (strcasecmp(cnf->propagator,"sparse")!=0){ return; }

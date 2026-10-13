@@ -246,7 +246,7 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
   bath spin of the run (checked once the bath is read; the branch ran it at rate 0); for meCCE a Manual sequence, a
   rotation other than an ideal π flip and qubit jump operators (megCCE named); more than one qubit for meCCE or with a
   qubit jump; for both, `pulse.per_qubit` true, `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`,
-  `cluster_mode` other than `standard`, `evolution_update: "recursive"` given, quantity `dm`, savemode
+  `cluster_mode` other than `standard` and `pcce`, `evolution_update: "recursive"` given, quantity `dm`, savemode
   `cluster_density_matrix`, `rdip_ladder`; megCCE with a `hamiltonian.cCCE` setting.
 
 ### Removed
