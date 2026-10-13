@@ -73,9 +73,21 @@ $N=4^n$ (ME-CCE) and, with an S = 1 qubit, $N=9\cdot4^n$ (ME-gCCE):
 | 4 | 256 | 1 MB | 2304 | 85 MB |
 | 5 | 1024 | 16 MB | 9216 | 1.36 GB |
 
-A run holds a few such matrices ($\mathcal L$, its exponentials, the products), and the matrix exponential has its own
-temporaries on top. The time per step is that of a dense exponential of an $N\times N$ matrix: these methods are meant for
-small clusters.
+How many such matrices one cluster holds at once (each MPI rank computes its own clusters; counted in
+`simulator_mecce.cpp`, `simulator_megcce.cpp` and `superoperator.cpp`, the Hilbert-space matrices of side $\sqrt N$ left
+out):
+
+| | held through the time loop | added at a time point | peak |
+|---|---|---|---|
+| ME-CCE | $\mathcal L$ and the Liouvillian with $\alpha$, $\beta$ exchanged (2) | the exponentials before and after a $\pi$ pulse, the CPMG products | 10 (FID), 11 (Hahn, CPMG) |
+| ME-gCCE | $\mathcal L$ (1) | one $e^{\mathcal L\tau}$ per distinct interval of the sequence ($k$: 1 for FID and Hahn, 2 for CPMG, more for a merged DEER sequence with unequal intervals), the pulse superoperator, the running product, two product temporaries | $k+10$ at most: 10 (FID, Hahn), 12 (CPMG) |
+
+The peak is reached while an exponential is computed: Eigen's Padé-13 scaling and squaring (`matrix_exp_pade13` in
+`external/eigen/unsupported/Eigen/src/MatrixFunctions/MatrixExponential.h`, Eigen 3.4.1) holds 8 matrices of that size
+(the argument $\mathcal L\tau$, the scaled argument, its 2nd, 4th and 6th powers, $U$, $V$ and one work matrix) on top
+of what the cluster holds. An ME-gCCE CPMG cluster of 4 bath spins with an S = 1 qubit thus needs about
+12 × 85 MB ≈ 1 GB, of 5 spins 12 × 1.36 GB ≈ 16 GB. The time per step is that of a dense exponential of an
+$N\times N$ matrix: these methods are meant for small clusters.
 
 ## Changes from the branch
 
@@ -97,7 +109,8 @@ small clusters.
   `jump_operators` and its old operator names `+-`/`-+`, each with the new form named. Once the bath is read
   (`validateJumpOperatorNames`), a `bath_name` that is neither the qubit nor the name of a bath spin of the run (bath
   file and Defect sub-spins, case ignored) is refused with the names there are: the branch matched it to nothing and
-  ran that jump at rate 0.
+  ran that jump at rate 0. A `bath_name` that is both the qubit's name and a bath spin's is refused too (the kernel would
+  take it as a qubit jump only).
 - The branch's float qubit gyromagnetic ratio and float `deltat` are double in this code (fixed before the port: the
   qubit's gyro in cc2d2c8f2, `Config::deltat` a double).
 - DEER bath pulses (`pulse.bath`) run with megCCE as on the branch, $U_q\otimes U_b$ in the pulse superoperator, with
@@ -105,17 +118,21 @@ small clusters.
 
 ## Verification
 
-`check_master_equation` (measured 2026-10-13, WSL, g++ with MKL; the suite's README has the cases):
+`check_master_equation` (measured 2026-10-13, WSL, g++ with MKL, the CPMG, pure-state and two-qubit rows 2026-10-14; the
+suite's README has the cases):
 
 | check | tol | max \|diff\| |
 |---|---|---|
 | meCCE rate 0 == cCCE, Hahn `_noDiv` / `_wiDiv` | 1e-6 | 7.0e-10 / 7.0e-10 |
-| meCCE rate 0 == cCCE, Ramsey (complex) | 1e-6 | 8.1e-10 |
+| meCCE rate 0 == cCCE, Ramsey (complex) | 1e-8 | 8.1e-10 |
+| meCCE rate 0 == cCCE, CPMG with 2 / 3 pulses (complex) | 1e-6 | 7.0e-10 / 1.1e-9 |
+| meCCE rate 0 == cCCE, a pure bath state (`check_numerics` p1_cce2_single, complex) | 1e-6 | 4.5e-8 |
 | meCCE rate 0 == cCCE with `hamiltonian.cCCE.knight` true (natab, Hahn) | 1e-6 | 0 |
 | meCCE bath jumps == the branch's meCCE output | 1e-6 | 1.9e-8 |
 | meCCE bath jumps == PyCCE (S = ½ test system) | 1e-6 | 3.6e-9 |
 | meCCE, one bath spin, FID == PRL2024 Eq. 6, $2\gamma<a$ / $2\gamma>a$ | 1e-8 | 2.4e-10 / 2.7e-10 |
 | megCCE rate 0 == gCCE | 1e-6 | 4.4e-9 |
+| megCCE rate 0 == gCCE, two NV qubits (S = 1, two ¹³C, one state) | 1e-6 | 1.0e-10 |
 | gCCE == conj(PyCCE) (S = ½) | 1e-6 | 1.9e-8 |
 | megCCE bath jumps == conj(PyCCE) (S = ½) | 1e-6 | 5.4e-9 |
 | megCCE bath jumps and a qubit `z` jump == conj(PyCCE) (S = ½) | 1e-6 | 4.2e-9 |
@@ -181,7 +198,8 @@ and power, the normalization, the row-major dissipator, the jump rate) are the s
 | refused | qubit jumps, a `bath_name` no bath spin has, two qubits, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`, `-P` | a `bath_name` that is neither the qubit nor a bath spin, two qubits with a qubit jump, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`, `-P`, `hamiltonian.cCCE` |
 
 A `bath_name` is checked against the whole bath once it is read: one that is neither the qubit nor the name of any bath
-spin of the run (bath file and Defect sub-spins) is refused, with the names the bath has. A cluster without that species
+spin of the run (bath file and Defect sub-spins) is refused, with the names the bath has, and so is one that is both the
+qubit's name and a bath spin's. A cluster without that species
 gets no jump from it, which is the normal case. No jump operators, or an empty list, is rate 0: meCCE then gives the
 cCCE and megCCE the gCCE.
 

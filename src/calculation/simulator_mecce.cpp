@@ -47,6 +47,9 @@ MatrixXcd* calCoherenceMecce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* 
 
     // after an odd number of pi pulses alpha and beta are exchanged
     MatrixXcd L_flipped = projected_coherent_superoperator(Hbeta, Halpha) + L_incoh;
+    // each is a Liouville-space matrix like L, unused from here on: freed so the time loop does not carry them
+    L_coh.resize(0, 0);
+    L_incoh.resize(0, 0);
 
     ////////////////////////////////
     // Initial state

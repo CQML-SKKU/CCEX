@@ -79,6 +79,8 @@ static MatrixXcd calSuperPropagatorMegcce(BathArray* ba, const MatrixXcd& L, Pul
     int N2 = L.rows(); // superoperator dimension (totdim^2)
 
     MatrixXcd Stotal;
+    // exp(L tau) of each distinct interval only (sequence_indices[i] == i; a later row with the same fraction points back
+    // to it): one for FID and the Hahn echo, two for CPMG. The rows that repeat an interval keep an empty (0 x 0) entry.
     MatrixXcd* Sfrees = new MatrixXcd[npulse + 1];
 
     for (int ipulse = 0; ipulse < npulse + 1; ipulse++){
@@ -103,12 +105,10 @@ static MatrixXcd calSuperPropagatorMegcce(BathArray* ba, const MatrixXcd& L, Pul
         }
 
         // free evolution superoperator, exp(L tau), once per distinct interval
-        MatrixXcd Sfree;
         if (sameTauIndex == ipulse){
-            Sfree = (L * tau).exp();
-        } else {
-            Sfree = Sfrees[sameTauIndex];
+            Sfrees[ipulse] = (L * tau).exp();
         }
+        const MatrixXcd& Sfree = Sfrees[sameTauIndex];
 
         // total super-propagator
         if (ipulse == 0 && ipulse != npulse){
@@ -120,8 +120,6 @@ static MatrixXcd calSuperPropagatorMegcce(BathArray* ba, const MatrixXcd& L, Pul
         } else {
             Stotal = Spulse * Sfree * Stotal;
         }
-
-        Sfrees[ipulse] = Sfree;
     }
 
     delete[] Sfrees;
@@ -184,6 +182,9 @@ MatrixXcd* calCoherenceMegcce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse*
     MatrixXcd L_incoh = incoherent_superoperator_megcce(qa, ba, bsigmas, joa, bdim, qdim);
 
     MatrixXcd L = L_coh + L_incoh;
+    // each is a Liouville-space matrix like L, unused from here on: freed so the time loop does not carry them
+    L_coh.resize(0, 0);
+    L_incoh.resize(0, 0);
 
     ////////////////////////////////
     // Density matrix
