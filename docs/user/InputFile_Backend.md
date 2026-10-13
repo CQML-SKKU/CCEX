@@ -248,7 +248,7 @@ series should not switch between the two. Must be a JSON string. <br>
 | `exact` | sin and cos at every time point |
 | `recursive` | sin and cos every 16th time point, the previous point's phases times one step's factor in between |
 
-<b>Default:</b> `recursive` where it exists (CPU cCCE, the packed kernel, CPU gCCE with `propagator` = `eigen`), `exact` elsewhere (the GPU large-cluster path, gCCE `expm`); per path in `bin/main_gpu.out` since A36 (the whole run `exact` with `backend` `cuda`/`auto` until then; `exact` everywhere until A29, 2026-10-12)
+<b>Default:</b> `recursive` where it exists (CPU cCCE, the packed kernel, CPU gCCE with `propagator` = `eigen`), `exact` elsewhere (the GPU large-cluster path, gCCE `expm`; meCCE, megCCE: `exact`, and a given `recursive` is refused); per path in `bin/main_gpu.out` since A36 (the whole run `exact` with `backend` `cuda`/`auto` until then; `exact` everywhere until A29, 2026-10-12)
 
 <b>Example:</b> ``` "evolution_update" : "exact" ```
 

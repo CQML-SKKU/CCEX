@@ -69,6 +69,11 @@ which `check_deer` compares with the run (within $2\times10^{-4}$; at $f=0.5$ th
 | driven spins | | a `defect` no spin has (bath file and Defect sub-spins); a `spin` other than that spin's S; `alphams`/`betams` equal or not levels of S |
 | old keys | | the branch's `bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams` (each named with its new key) |
 
+**Untested.** `check_deer` drives S = ½ spins (P1, levels ½ and −½) with X 180 pulses only (gCCE with propagator
+eigen and expm, megCCE, `cluster_mode` standard and pcce). A driven spin with S > ½ (two of its levels as
+`alphams`/`betams`) and bath pulses about Y or Z (or by another angle) take the same code (`bathRotation` in
+`src/calculation/simulator_gcce_bath.cpp`), but no check runs CCEX with them: they are accepted and untested.
+
 When spins of the `defect` exist but no tone reaches any of them, the run goes on with one warning
 (`Warning: pulse.bath drives no spin ...`): the pump is then the identity, which is a legitimate control run
 (`offres` in the test). `pulse.bath` absent or `count` 0 gives the output bytes of a run without the block.
