@@ -174,6 +174,14 @@ The keys of this group are described in [InputFile_Pulse.md](InputFile_Pulse.md)
     - [per_qubit](InputFile_Pulse.md#tag_pulse_per_qubit)
     - [duration](InputFile_Pulse.md#tag_pulse_duration)
     - [detuning_factor](InputFile_Pulse.md#tag_detuning_factor)
+    - [bath](InputFile_Pulse.md#tag_pulse_bath) (DEER bath pulses, gCCE; [deer.md](../methods/deer.md))
+        - [count](InputFile_Pulse.md#tag_pulse_bath_count)
+        - [sequence](InputFile_Pulse.md#tag_pulse_bath_sequence)
+        - [defect](InputFile_Pulse.md#tag_pulse_bath_defect)
+        - [energy_shift](InputFile_Pulse.md#tag_pulse_bath_energy_shift)
+        - [spin](InputFile_Pulse.md#tag_pulse_bath_spin)
+        - [alphams](InputFile_Pulse.md#tag_pulse_bath_alphams)
+        - [betams](InputFile_Pulse.md#tag_pulse_bath_betams)
 
 <a id="DefectArrayTags"></a>
 ## DefectArray-related tags
@@ -307,5 +315,18 @@ names (`quantity`, `order`, `bfield`, `deltat`, `nstep`, `nstate`, `seed`, `rdip
 | Defect entry `rxyzs` | `nuclear_positions` |
 | Defect entry `hypf` | `hyperfine` |
 | `-m CCE`, `-m pCCE`, ... | `-m cCCE` or `-m gCCE`; the cluster shape is the input's `cluster_mode` |
+
+The DEER keys of the adding_DEER / adding_MECCE branches were never keys of this code; they are refused with their new
+names (`Error: input key "bnpulse" is now "pulse.bath.count"`), and the converter does not rewrite them:
+
+| adding_DEER / adding_MECCE | Now |
+|---|---|
+| `bnpulse` | `pulse.bath.count` |
+| `bsequence` | `pulse.bath.sequence` |
+| `bpulse_defect` | `pulse.bath.defect` |
+| `bpulse_energy_shift` | `pulse.bath.energy_shift` |
+| `bspin` | `pulse.bath.spin` |
+| `balphams` | `pulse.bath.alphams` |
+| `bbetams` | `pulse.bath.betams` |
 
 The names of savemode changed the same day and are in [savemode](InputFile_Output.md#tag_savemode).

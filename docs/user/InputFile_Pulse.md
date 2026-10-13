@@ -12,6 +12,14 @@ The `pulse` block (new on 2026-10-13: the keys `npulse`, `pulsename`, `sequence`
     - [per_qubit](#tag_pulse_per_qubit)
     - [duration](#tag_pulse_duration)
     - [detuning_factor](#tag_detuning_factor)
+    - [bath](#tag_pulse_bath) (DEER bath pulses)
+        - [count](#tag_pulse_bath_count)
+        - [sequence](#tag_pulse_bath_sequence)
+        - [defect](#tag_pulse_bath_defect)
+        - [energy_shift](#tag_pulse_bath_energy_shift)
+        - [spin](#tag_pulse_bath_spin)
+        - [alphams](#tag_pulse_bath_alphams)
+        - [betams](#tag_pulse_bath_betams)
 
 <a id="tag_pulse"></a>
 ## pulse
@@ -128,3 +136,124 @@ Rabi frequency follows from the angle and the duration. <br>
 <b>Example:</b> ``` "pulse" : {"count": 1, "duration": 10.0, "detuning_factor": 0.98} ```
 
 <b>Related variable:</b> [Pulse](#Pulse)::detuning_factor
+
+<a id="tag_pulse_bath"></a>
+## pulse.bath
+<b>Description:</b><br>
+DEER bath pulses: pump pulses on the bath spins of one species during the qubit's sequence, for `method` = `gCCE` on
+the CPU (`backend` `auto` is set to `cpu`). What it does, what it supports and what it refuses is in
+[deer.md](../methods/deer.md). Without the block, or with `count` 0, the run is the same as before, byte for byte. Its
+keys are the seven below; any other key is refused (`pulse.bath has no key "..."`). The keys of the adding_DEER /
+adding_MECCE branches (`bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams`)
+are refused with their new names. <br>
+
+<b>Data Type:</b> Object
+
+<b>Example:</b> ``` "pulse" : {"count": 1, "bath": {"count": 1, "defect": "P1", "energy_shift": [79.975539], "sequence": [["0.50", "X", 180.0], ["0.50", "I", 0.0]]}} ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::bnpulse and the fields after it
+
+<a id="tag_pulse_bath_count"></a>
+## pulse.bath.count
+<b>Description:</b><br>
+The number of bath pulses (`bnpulse` on the branches). `0` turns the block off; a negative number is refused. <br>
+
+<b>Data Type:</b> Integer
+
+<b>Default:</b> `0`
+
+<b>Example:</b> ``` "bath" : {"count": 1, ...} ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::bnpulse
+
+<a id="tag_pulse_bath_sequence"></a>
+## pulse.bath.sequence
+<b>Description:</b><br>
+The bath pulses written out like [pulse.sequence](#tag_sequence), on the same time axis: `count` + 1 rows
+`[fraction, axis, angle]`, each the interval before a pulse as a fraction of the total time (a number or a string such
+as `"1/4"`; the fractions sum to 1 within 1e-9), the axis `X`, `Y`, `Z` or `I`, the angle in degrees. The last row is
+the interval after the last pulse; its pulse must be identity (`I` or angle 0). The run merges it with the qubit
+sequence: pulses closer than 1e-9 of the sequence act at the same time, and two pulses of one sequence that would land
+on one edge are refused (each pulse is applied exactly once). The run log prints the merged sequence. Required when
+`count` > 0. <br>
+
+<b>Data Type:</b> List of [String or Double, String, Double]
+
+<b>Default:</b> - (required when `count` > 0)
+
+<b>Example:</b> ``` "sequence" : [["0.505", "X", 180.0], ["0.495", "I", 0.0]] ``` (a π pump 0.005 of the sequence after the Hahn echo's qubit π)
+
+<b>Related variable:</b> [Pulse](#Pulse)::bsequence_fracs, bpulse_axes, bpulse_angles; after the merge tot_bpulse_axes, tot_bpulse_angles
+
+<a id="tag_pulse_bath_defect"></a>
+## pulse.bath.defect
+<b>Description:</b><br>
+The name of the bath spins the pump can drive, as in the bath file (or a Defect sub-spin's name); the comparison
+ignores case. A name no spin of the run has is refused. Required when `count` > 0. <br>
+
+<b>Data Type:</b> String
+
+<b>Default:</b> - (required when `count` > 0)
+
+<b>Example:</b> ``` "defect" : "P1" ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::bpulse_defect
+
+<a id="tag_pulse_bath_energy_shift"></a>
+## pulse.bath.energy_shift
+<b>Description:</b><br>
+The pump tone(s). A spin of [defect](#tag_pulse_bath_defect) is driven when one tone is within 10 rad·kHz (1.59 kHz) of
+its detuning, the `detuning` of its Defect configuration ([Defect](InputFile_Defect.md#tag_df_detuning)); the window is
+an arbitrary constant taken over from the branch and not an input key. When no spin of that name is within reach of a
+tone, the run warns once and goes on (the pump is then the identity). Required when `count` > 0, at least one number. <br>
+
+<b>Data Type:</b> Double or list of Double
+
+<b>Unit:</b> MHz
+
+<b>Default:</b> - (required when `count` > 0)
+
+<b>Example:</b> ``` "energy_shift" : [79.975539, 200.0] ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::bpulse_energy_shifts (rad·kHz)
+
+<a id="tag_pulse_bath_spin"></a>
+## pulse.bath.spin
+<b>Description:</b><br>
+The spin S of the driven spins; it has to be their S (a different one is refused before any cluster is computed). <br>
+
+<b>Data Type:</b> Double
+
+<b>Default:</b> `0.5`
+
+<b>Example:</b> ``` "spin" : 0.5 ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::bspin
+
+<a id="tag_pulse_bath_alphams"></a>
+## pulse.bath.alphams
+<b>Description:</b><br>
+The first of the two levels m the bath pulse rotates between (the |a> of the generalized Pauli operators in
+[deer.md](../methods/deer.md)). It and [betams](#tag_pulse_bath_betams) must be two different levels of
+[spin](#tag_pulse_bath_spin) (m = -S, -S+1, ..., S). <br>
+
+<b>Data Type:</b> Double
+
+<b>Default:</b> `0.5`
+
+<b>Example:</b> ``` "alphams" : 0.5 ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::balphams
+
+<a id="tag_pulse_bath_betams"></a>
+## pulse.bath.betams
+<b>Description:</b><br>
+The second of the two levels m of the bath pulse; see [alphams](#tag_pulse_bath_alphams). <br>
+
+<b>Data Type:</b> Double
+
+<b>Default:</b> `-0.5`
+
+<b>Example:</b> ``` "betams" : -0.5 ```
+
+<b>Related variable:</b> [Pulse](#Pulse)::bbetams

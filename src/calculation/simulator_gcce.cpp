@@ -5,6 +5,7 @@
 #include "../../include/calculation/gpu/eigen_refinement.h"
 #include "../../include/calculation/small_hamiltonian.h"
 #include "../../include/calculation/sparse_propagator.h"
+#include "../../include/calculation/simulator_gcce_bath.h"
 #ifdef CCEX_USE_CUDA
 #include "../../include/calculation/gpu/gpu_backend.h"
 #include <memory>
@@ -289,6 +290,7 @@ MatrixXcd* calCoherenceGcceInto(QubitArray* qa, BathArray* ba, Config* cnf, Puls
         prepareGcceWork(&gw,Htot,strcasecmp(Config_getPropagator(cnf),"expm")!=0,
                         cnf->gcce_refinement,cnf->gcce_refinement_max_sweeps);
         prepareGccePulses(&gw,Upulses,pulse->npulse,bdim);
+        applyBathPulsesGcce(&gw,Upulses,ba,pulse);           // DEER: kron(U_q, U_b) where a bath spin is driven
     }
     };
     if (!useCuda) prepareOnCpu();

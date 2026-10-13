@@ -1,11 +1,12 @@
 # test/code_verification/
 
-Does the code still do what it did, and what it says. Seven checks and the data
-they read; `run.sh` runs all seven in order and then exits with the status of the first that failed.
+Does the code still do what it did, and what it says. Eight checks and the data
+they read; `run.sh` runs all eight in order and then exits with the status of the first that failed.
 
 | folder | question | run |
 |---|---|---|
-| `check_analytic/` | does CCEX give the closed-form coherence of one 13C beside the NV (FID and Hahn echo, order 1, ensemble)? do `delta_A` false and `bath_bath_mean_field` "off" give what they must? the one check not comparing CCEX with CCEX | `bash check_analytic/run.sh` |
+| `check_analytic/` | does CCEX give the closed-form coherence of one 13C beside the NV (FID and Hahn echo, order 1, ensemble)? do `delta_A` false and `bath_bath_mean_field` "off" give what they must? compared with a closed form, not with CCEX (`check_deer/` is the other such check) | `bash check_analytic/run.sh` |
+| `check_deer/` | do bath pump pulses (DEER) act as the closed form says, once each, on the gCCE CPU paths (propagator eigen/expm; sparse refused)? | `bash check_deer/run.sh` |
 | `check_numerics/` | are the numbers the ones earlier builds gave? 25 calculations against this branch's recorded run (largest difference of `_noDiv`/dm ≤ 1e-9; `_wiDiv` shown, not judged) and the tags v1.1.0 and v1.2.2 (with the known differences named) | `bash check_numerics/run.sh` |
 | `check_rotation/` | does the coordinate-frame rotation do what it says? 149 checks: a unit test and runs against a hand-rotated input | `bash check_rotation/run.sh` |
 | `check_refusals/` | are the 172 inputs that must be refused refused, most before anything is read, do three that must run run, and is `--help` `-h`? | `bash check_refusals/run.sh` |

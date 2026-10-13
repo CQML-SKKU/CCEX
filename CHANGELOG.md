@@ -3,6 +3,9 @@
 ## 2.0.0 — unreleased (changes since v1.2.2, 2026-09-04)
 
 ### Added
+- **DEER bath pulses** (the block `pulse.bath`: `count`, `sequence`, `defect`, `energy_shift`, `spin`, `alphams`,
+  `betams`) for gCCE on the CPU (matrix and vector, exact and recursive). Ported from the adding_DEER/adding_MECCE
+  branches, whose flat keys (`bnpulse`, ...) are refused with the new names. See `docs/methods/deer.md`.
 - **Reserved method names `meCCE` and `noise`**: `method` (and `-m`) accepts the names and refuses them as not
   implemented yet; `hamiltonian.meCCE` and `hamiltonian.noise` are empty sections like `hamiltonian.gCCE`.
 - **`hamiltonian.common.bath_bath_mean_field: "off"`** (nstate > 0): the static field of the bath spins outside a cluster
@@ -223,6 +226,12 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
 - SpinTensorReader `--version v1` (it wrote the OUTCAR x 2, right only untagged and for S = 1), and QE `--A` without
   `--spin S`.
 - Combinations a method does not support; `test/code_verification/check_refusals` lists them.
+- `pulse.bath` (DEER) where it cannot act: method cCCE, `cluster_mode` other than `standard`, `backend` `cuda`,
+  `propagator` `sparse`, `gpu_options.warp_max_dim` > 0, `pulse.detuning_factor` ≠ 1, `pulse.per_qubit` true; an
+  unknown key of `pulse.bath`; the branch flat keys (`bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`,
+  `bspin`, `balphams`, `bbetams`); a last bath row that is not identity and two pulses of one sequence on one edge; a
+  `pulse.bath.defect` no bath spin has, a `pulse.bath.spin` other than the driven spins' S, and `alphams`/`betams` that
+  are not two different levels of it (a pump that reaches no spin of that name only warns).
 
 ### Removed
 - The MKL dependency, `hf_cutoff`, the bundled `zlib/`, the top-level `main.cpp` and `config/` (moved into `src/` and the tools).

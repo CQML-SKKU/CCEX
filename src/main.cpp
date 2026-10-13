@@ -14,6 +14,7 @@
 
 // Simulators
 #include "../include/calculation/simulator.h"
+#include "../include/calculation/simulator_gcce_bath.h"
 #include "../include/calculation/gpu/compute_backend.h"
 #include "../include/clustering/bundle/bundle_cluster.h"
 #include "../include/clustering/bundle/bundle_work.h"
@@ -978,6 +979,7 @@ int main(int argc, char* argv[]){
         updateMainSpins_fromDefectArray(dfa,ba);
     }
     MPI_Barrier(MPI_COMM_WORLD);
+    validateBathPulseTargets(ba,dfa,pls);   // DEER: the driven spins exist and fit pulse.bath (bath and detunings set)
 
     if (rank==0){
         printf("    ----------------------------------------------------------------------\n");
