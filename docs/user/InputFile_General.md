@@ -41,8 +41,8 @@ The CCE method: conventional (cCCE, the qubit projected out into its two branche
 cluster Hamiltonian), and each of them with Lindblad dissipation by the jump operators of
 [hamiltonian.\<method\>.jump_operators](#tag_jump_operators) (meCCE, megCCE; [master-equation.md](../methods/master-equation.md)).
 How the bath is cut into clusters is [cluster_mode](InputFile_Cluster.md#tag_cluster_mode)
-(`standard`, `pcce`, `bundle`, `dsj`, `itb`, `dsjitb`). `pcce`, `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE with
-them is refused as not implemented yet. meCCE and megCCE run with `standard` only.
+(`standard`, `pcce`, `bundle`, `dsj`, `itb`, `dsjitb`). `pcce` runs with cCCE, gCCE, meCCE and megCCE; `bundle` with cCCE
+and gCCE; `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE, meCCE and megCCE with them are refused as not implemented.
 
 You can give the method with the "-m" command-line option (`-m cCCE`, `-m gCCE`, `-m meCCE`, `-m megCCE`); it keeps the
 input's `cluster_mode`. <br>
@@ -58,13 +58,14 @@ input's `cluster_mode`. <br>
 | `noise` | reserved: refused as not implemented yet (2026-10-13) |
 
 The values before 2026-10-13 are refused with their new form: `CCE` is `cCCE`; `pCCE`, `dsj`, `itb` and `dsjitb` are
-method `cCCE` with that `cluster_mode` (also on the command line: `-m pCCE` is refused).
+method `cCCE` with that `cluster_mode` (also on the command line: `-m pCCE` is refused); the adding_MECCE branch's
+`pgCCE`, `pmeCCE` and `pmegCCE` are method `gCCE`, `meCCE` and `megCCE` with `"cluster_mode": "pcce"`.
 
 <b>Default:</b> `cCCE`
 
 <b>Example:</b> ``` "method" : "gCCE" ```, ``` "method" : "cCCE", "cluster_mode" : "pcce" ```
 
-<b>Related variable:</b> [Config](#Config)::method (inside: CCE, gCCE, pCCE, dsj, itb, dsjitb, meCCE, megCCE, from method and cluster_mode)
+<b>Related variable:</b> [Config](#Config)::method (inside: CCE, gCCE, pCCE, dsj, itb, dsjitb, meCCE, megCCE, pgCCE, pmeCCE, pmegCCE, from method and cluster_mode)
 
 <a id="tag_quantity"></a>
 ## quantity

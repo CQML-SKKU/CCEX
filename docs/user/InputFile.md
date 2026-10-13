@@ -333,5 +333,6 @@ rewrite them:
 | `bbetams` | `pulse.bath.betams` |
 | `jump_operators` (top level) | `hamiltonian.meCCE.jump_operators` or `hamiltonian.megCCE.jump_operators`, the section of the run's method |
 | jump `operator` `"+-"` / `"-+"` | `"-"` / `"+"` |
+| `"method": "pgCCE"` / `"pmeCCE"` / `"pmegCCE"` (also `-m`) | `"method": "gCCE"` / `"meCCE"` / `"megCCE"` with `"cluster_mode": "pcce"` |
 
 The names of savemode changed the same day and are in [savemode](InputFile_Output.md#tag_savemode).

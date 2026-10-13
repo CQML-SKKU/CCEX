@@ -92,7 +92,7 @@ small clusters.
   `src/main.cpp`): a Manual sequence or a rotation other than an ideal $\pi$ flip for meCCE (the branch used `npulse`
   alone and dropped the fractions and angles), more than one qubit for meCCE or for a qubit jump, quantity `dm`,
   savemode `cluster_density_matrix` (the branch's full density-matrix output is not ported), `pulse.per_qubit`,
-  `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`, `cluster_mode` other than `standard`,
+  `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`, `cluster_mode` other than `standard` and `pcce`,
   `evolution_update: "recursive"` (the default is `exact` for both), `rdip_ladder`; the branch's top-level
   `jump_operators` and its old operator names `+-`/`-+`, each with the new form named. Once the bath is read
   (`validateJumpOperatorNames`), a `bath_name` that is neither the qubit nor the name of a bath spin of the run (bath
@@ -169,7 +169,7 @@ and power, the normalization, the row-major dissipator, the jump rate) are the s
 
 | | meCCE | megCCE |
 |---|---|---|
-| `cluster_mode` | `standard` | `standard` |
+| `cluster_mode` | `standard`, `pcce` (inside pmeCCE; `pcce.cache` refused) | `standard`, `pcce` (inside pmegCCE; same) |
 | backend | CPU (`auto` runs on the CPU; `cuda` refused) | CPU (same) |
 | `propagator` | `eigen` (the name; the ME step is a matrix exponential); `sparse`, `expm` refused | same |
 | `evolution`, `evolution_update` | not used; `vector` and `recursive` refused | same |

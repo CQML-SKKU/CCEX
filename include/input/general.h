@@ -271,6 +271,13 @@ int     Config_getQd_readmode(Config* cnf);
 bool    Config_getHfmedi(Config* cnf);
 bool    Config_getKnight(Config* cnf);
 
+// The internal method names (option.cpp internalMethod): which clusters and which kernel. cluster_mode pcce makes the
+// partition clusters of pCCE (cCCE), pgCCE, pmeCCE and pmegCCE (gCCE, meCCE, megCCE with cluster_mode pcce); the kernel
+// computing a cluster is "cce" (CCE, pCCE, dsj, itb, dsjitb), "gcce" (gCCE, pgCCE), "mecce" (meCCE, pmeCCE) or "megcce"
+// (megCCE, pmegCCE).
+bool methodUsesPcceClusters(const char* m);
+const char* methodKernel(const char* m);
+
 // set 
 void Config_setMethod(Config* cnf, char* method);
 void Config_setQuantity(Config* cnf, char* quantity);

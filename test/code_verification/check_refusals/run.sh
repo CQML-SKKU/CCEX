@@ -570,9 +570,13 @@ reject_case p1_cce2_single rj_old_dfname "${OLDK}Defect.species[0].dfname\" is n
 reject_case p1_cce2_single rj_old_exstatefile "${OLDK}exstatefile\" is now \"Defect.state_file\"" "d['exstatefile'] = 'x'"
 reject_case natab_cce2_hahn rj_old_cli_method "-m \"CCE\" is now \"cCCE\"" "" -m CCE
 reject_case natab_cce2_hahn rj_old_cli_method_pcce "-m \"pCCE\" is now method \"cCCE\" with \"cluster_mode\": \"pcce\" in the input" "" -m pCCE
-# gCCE with the cluster shapes that run with cCCE only: not implemented yet (from the input, and from -m)
-reject_case p1_pcce2_sk2 rj_gcce_pcce "method gCCE with cluster_mode \"pcce\" is not implemented yet" "d['method'] = 'gCCE'"
-reject_case p1_pcce2_sk2 rj_gcce_pcce_cli "method gCCE with cluster_mode \"pcce\" is not implemented yet" "" -m gCCE
+# cluster_mode pcce runs with gCCE, meCCE and megCCE too (internal pgCCE, pmeCCE, pmegCCE); the partition cache stays with
+# cCCE + pcce, and the branch's method names (adding_MECCE) are refused with the new form (from the input, and from -m)
+reject_case p1_pcce2_sk2 rj_pg_cache "enabled cache requires method cCCE with cluster_mode pcce" \
+  "d['method']='gCCE'; d['pcce']['cache']={'mode':'readwrite','file':'x'}"
+reject_case p1_pcce2_sk2 rj_old_pgcce "method \"pgCCE\" is now method \"gCCE\" with \"cluster_mode\": \"pcce\" in the input" "d['method']='pgCCE'"
+reject_case natab_cce2_hahn rj_old_pmecce_cli "-m \"pmeCCE\" is now method \"meCCE\" with \"cluster_mode\": \"pcce\" in the input" "" -m pmeCCE
+# gCCE with the cluster shapes that run with cCCE only: not implemented yet (from the input)
 reject_case natab_dsj2 rj_gcce_dsj "method gCCE with cluster_mode \"dsj\" is not implemented yet" "d['method'] = 'gCCE'"
 reject_case natab_dsj2 rj_gcce_itb "method gCCE with cluster_mode \"itb\" is not implemented yet" "d['method'] = 'gCCE'; d['cluster_mode'] = 'itb'"
 reject_case natab_dsj2 rj_gcce_dsjitb "method gCCE with cluster_mode \"dsjitb\" is not implemented yet" "d['method'] = 'gCCE'; d['cluster_mode'] = 'dsjitb'"
@@ -670,6 +674,9 @@ reject_case natab_manual_hahn rj_me_manual "method meCCE takes its pulses from p
 reject_case p1_cce2_single rj_me_recursive "this run has method=meCCE" \
   "d['method']='meCCE'; d['evolution_update']='recursive'"
 reject_case p1_cce2_single rj_me_qubit_jump "method meCCE does not take qubit jump operators" \
+  "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'qubit','operator':'z','rate':1e-4}]")"
+# meCCE with cluster_mode pcce (inside pmeCCE) projects the qubit out as well; the message names the method as written
+reject_case p1_pcce2_sk2 rj_pme_qubit_jump "method meCCE does not take qubit jump operators" \
   "d['method']='meCCE'; $(MEJ meCCE "[{'bath_name':'qubit','operator':'z','rate':1e-4}]")"
 reject_case p1_cce2_single rj_me_sparse "method meCCE needs propagator eigen" \
   "d['method']='meCCE'; d['propagator'] = {'method': 'sparse', 'min_dim': 1}"

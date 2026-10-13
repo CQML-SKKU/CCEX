@@ -366,11 +366,23 @@ int     Config_getQd_readmode(Config* cnf){
     return cnf->qd_readmode;
 }
 
+bool methodUsesPcceClusters(const char* m){
+    return !strcasecmp(m,"pcce") || !strcasecmp(m,"pgcce") || !strcasecmp(m,"pmecce") || !strcasecmp(m,"pmegcce");
+}
+
+const char* methodKernel(const char* m){
+    if (!strcasecmp(m,"gcce")   || !strcasecmp(m,"pgcce"))   return "gcce";
+    if (!strcasecmp(m,"mecce")  || !strcasecmp(m,"pmecce"))  return "mecce";
+    if (!strcasecmp(m,"megcce") || !strcasecmp(m,"pmegcce")) return "megcce";
+    return "cce";
+}
+
 // set 
 void Config_setMethod(Config* cnf, char* method){
 
-    const int opsize = 9;   // 8 names; the empty 9th entry keeps accepting "" as before (opsize was 7 for 6 names)
-    char options[opsize][MAX_CHARARRAY_LENGTH] = {"gCCE","CCE","dsj","itb","dsjitb","pCCE","meCCE","megCCE"};
+    const int opsize = 12;   // 11 names; the empty 12th entry keeps accepting "" as before (opsize was 7 for 6 names)
+    char options[opsize][MAX_CHARARRAY_LENGTH] = {"gCCE","CCE","dsj","itb","dsjitb","pCCE","meCCE","megCCE","pgCCE",
+                                                  "pmeCCE","pmegCCE"};
 
     int idx = findIndexCharFix(options,0,opsize-1,method);
     if (idx == -1) {
@@ -485,7 +497,7 @@ void Config_setEvolution(Config* cnf, char* evolution){
  */
 void Config_resolveEvolution(Config* cnf){
 
-    bool isGCCE = (strcasecmp(cnf->method,"gcce")==0);
+    bool isGCCE = !strcmp(methodKernel(cnf->method),"gcce");   // gCCE, pgCCE
 
     if (!cnf->evolution_isdefault){
         // Only calCoherenceGcce reads evolution. Any other method would ignore it and run
@@ -523,19 +535,20 @@ void Config_resolveEvolution(Config* cnf){
  */
 void Config_validateEvolutionUpdate(Config* cnf){
 
-    const bool isGCCE = (strcasecmp(cnf->method,"gcce")==0);
+    const bool isGCCE = !strcmp(methodKernel(cnf->method),"gcce");   // gCCE, pgCCE
     const bool eigen = (strcasecmp(cnf->propagator,"eigen")==0);
     char found[96] = "";                    // a CPU path without recursive
     if (isGCCE && !eigen)
         snprintf(found,sizeof(found),"method=gCCE with propagator=%s",cnf->propagator);
     else if (strcasecmp(cnf->propagator,"sparse")==0)   // A2: the Krylov path has no phases to carry over; its clusters
         snprintf(found,sizeof(found),"propagator=sparse");   // below min_dim run exact with it
-    else if (!strcasecmp(cnf->method,"mecce") || !strcasecmp(cnf->method,"megcce"))   // a matrix exponential per step
+    else if (!strcmp(methodKernel(cnf->method),"mecce") || !strcmp(methodKernel(cnf->method),"megcce"))   // a matrix exponential per step
         snprintf(found,sizeof(found),"method=%s",cnf->method);
     // A36: may a cluster reach the GPU large-cluster path? The methods computeBackendInit sends to the GPU, with backend
     // cuda (refused there in the CPU build) or with auto in the GPU build
     const bool cuda = (strcasecmp(cnf->backend,"cuda")==0);
-    const bool gpuMethod = !strcasecmp(cnf->method,"cce") || !strcasecmp(cnf->method,"pcce") || (isGCCE && eigen);
+    const bool gpuMethod = !strcasecmp(cnf->method,"cce") || !strcasecmp(cnf->method,"pcce") ||
+                           (!strcasecmp(cnf->method,"gcce") && eigen);   // gCCE itself: pgCCE runs on the CPU
 #ifdef CCEX_USE_CUDA
     const bool gpuLarge = gpuMethod && (cuda || !strcasecmp(cnf->backend,"auto"));
 #else
@@ -575,7 +588,7 @@ void Config_validateEvolutionUpdate(Config* cnf){
  */
 void Config_validatePropagator(const Config* cnf, int nqubit){
 
-    const bool isGCCE = (strcasecmp(cnf->method,"gcce")==0);
+    const bool isGCCE = !strcmp(methodKernel(cnf->method),"gcce");   // gCCE, pgCCE
     if (!isGCCE && strcasecmp(cnf->propagator,"expm")==0){
         fprintf(stderr,"Error : propagator=expm is implemented for method=gCCE only (this run has method=%s); "
                        "cCCE takes eigen or sparse.\n",cnf->method);

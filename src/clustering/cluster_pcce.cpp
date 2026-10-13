@@ -96,7 +96,7 @@ void clusterizePcce(Cluster* cls, BathArray* ba, Config* config){
         float rdipcut = Config_getRdipcut(config);
     
         // center >> cls->info for on
-        if (strcasecmp(cls->method, "pcce")==0){
+        if (methodUsesPcceClusters(cls->method)){
             const bool spins = !strcasecmp(config->pcce_connections,"spins");
             if (spins) BathArray_connectivity_pcce_spins(&cmap, &stmap, ba, best_assigned_idx, ncenter, rdip, rdipcut);
             else       BathArray_connectivity_pcce(&cmap, &stmap, best_centers, rdip, rdipcut, ncenter);

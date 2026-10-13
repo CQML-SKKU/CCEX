@@ -106,5 +106,22 @@ chk "megCCE bath + qubit z jumps == conj(PyCCE) (S=1/2)" "$W/meg_bath_qz_noDiv" 
 ONE="$W/one"; python3 -c "[print(f'{k*0.04:.10f} (1+0j)') for k in range(50)]" > "$ONE"   # template grid (deltat 0.04, nstep 50)
 chk "megCCE order 0, qubit z == exp(-g t/2)"     "$W/meg0_qz_noDiv" "$ONE" --tol 1e-9 --scale-exp $RATE
 chk "megCCE order 0, qubit - == exp(-g t/2)"     "$W/meg0_qminus_noDiv" "$ONE" --tol 1e-9 --scale-exp $RATE
+# C1, cluster_mode pcce with the gCCE and master-equation kernels (internal pgCCE, pmeCCE, pmegCCE). pcce.partition_size 1
+# gives single-spin partitions (every partition takes exactly N/ncenter = 1 spin, cluster_pcce.cpp
+# assignCentroidsFromPoints), connected by the distance of their centers - the spins - as the standard clusters are, so
+# pgCCE with partition_size 1 is gCCE. partition_size 2 (3 spins in rbath: one partition of 2, the third left out)
+# compares each master-equation kernel at rate 0 with the kernel it reduces to, on the same partition.
+PC="d['cluster_mode']='pcce'"
+mk pg_sk1   "d['method']='gCCE'; $PC; d['pcce']={'partition_size':1}; d['deltat']=0.1; d['nstep']=20"
+mk pc_sk2   "$PC; d['pcce']={'partition_size':2}"
+mk pme_sk2  "d['method']='meCCE'; $PC; d['pcce']={'partition_size':2}"
+mk pg_sk2   "d['method']='gCCE'; $PC; d['pcce']={'partition_size':2}; d['deltat']=0.1; d['nstep']=20"
+mk pmeg_sk2 "d['method']='megCCE'; $PC; d['pcce']={'partition_size':2}; d['deltat']=0.1; d['nstep']=20"
+for c in pg_sk1 pc_sk2 pme_sk2 pg_sk2 pmeg_sk2; do
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+done
+chk "pgCCE partition_size 1 == gCCE"              "$W/pg_sk1_noDiv" "$W/gcce_noDiv" --tol 1e-8
+chk "pmeCCE rate 0 == pCCE (partition 2)"         "$W/pme_sk2_noDiv" "$W/pc_sk2_noDiv" --tol 1e-6
+chk "pmegCCE rate 0 == pgCCE (partition 2)"       "$W/pmeg_sk2_noDiv" "$W/pg_sk2_noDiv" --tol 1e-6
 echo " master-equation checks : PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]

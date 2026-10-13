@@ -154,9 +154,9 @@ def main():
             ('long-path',{'pcce.cache.file':'a'*500},'pcce.cache.file must be',()),
             ('legacy',{'pcce.partition':'legacy'},'enabled cache requires pcce.partition deterministic',()),
             # the cache belongs to cluster_mode pcce: another cluster_mode refuses the pcce block (A47); -m changes the
-            # method only, and gCCE with pcce is not implemented
+            # method only, and the cache stays with cCCE (gCCE with pcce runs, without the cache)
             ('method',{'cluster_mode':'standard'},'the pcce block belongs to cluster_mode pcce',()),
-            ('cli-method',{},'method gCCE with cluster_mode "pcce" is not implemented yet',('-m','gCCE')),
+            ('cli-method',{},'enabled cache requires method cCCE with cluster_mode pcce',('-m','gCCE')),
             ('directory',{'pcce.cache.file':str(root)},'cache path must be a regular file',()),
             ('write-failure',{'pcce.cache.mode':'readwrite','pcce.cache.file':str(root/'absent-dir/p.cache')},'cannot create cache temporary file',()),
         ]:

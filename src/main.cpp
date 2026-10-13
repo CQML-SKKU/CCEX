@@ -147,7 +147,8 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
 // flip. Any other rotation used to be calculated as one without a word; gCCE puts
 // the qubit in the Hamiltonian and applies the rotation that was asked for.
 void validatePulsesForMethod(Config* cnf, Pulse* pls) {
-    if(!strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"megcce")) return;   // ME-gCCE applies any rotation too
+    const char* kernel=methodKernel(cnf->method);   // gCCE, megCCE and their pcce forms (pgCCE, pmegCCE)
+    if(!strcmp(kernel,"gcce") || !strcmp(kernel,"megcce")) return;   // ME-gCCE applies any rotation too
     for(int i=0;i<Pulse_getNpulse(pls);++i) {
         const char axis=pls->pulse_axes[i];
         if((axis=='X' || axis=='Y') && pls->pulse_angles[i]==180.0) continue;
@@ -188,7 +189,11 @@ void validateBathPulses(Config* cnf, Pulse* pls) {
     }
 }
 
-bool isMasterEquationMethod(const char* m) { return !strcasecmp(m,"mecce") || !strcasecmp(m,"megcce"); }   // Phase C: + pmeCCE, pmegCCE
+bool isMasterEquationMethod(const char* m) {   // meCCE, megCCE and their pcce forms (pmeCCE, pmegCCE)
+    return !strcasecmp(m,"mecce") || !strcasecmp(m,"megcce") || !strcasecmp(m,"pmecce") || !strcasecmp(m,"pmegcce");
+}
+
+static const char* inputMethodName(const char* method);   // below, beside validateHamiltonianForMethod
 
 // meCCE / megCCE (adding_MECCE): Lindblad dissipation in Liouville space on the CPU with a matrix exponential per step.
 // What their kernels do not take is refused here, before any reader. The backend (computeBackendInit), evolution
@@ -197,25 +202,26 @@ bool isMasterEquationMethod(const char* m) { return !strcasecmp(m,"mecce") || !s
 void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
     auto refuse = [](const char* msg, const char* m) { if (rank==0) { fprintf(stderr, "Error: "); fprintf(stderr, msg, m); fprintf(stderr, "\n"); } MPI_Abort(MPI_COMM_WORLD,1); };
     if (!isMasterEquationMethod(cnf->method)) return;   // a jump section in another method's run: validateHamiltonianForMethod
-    const bool projected = !strcasecmp(cnf->method,"mecce");
+    const bool projected = !strcmp(methodKernel(cnf->method),"mecce");   // meCCE, pmeCCE
+    const char* method = inputMethodName(cnf->method);                    // pmeCCE, pmegCCE: meCCE, megCCE
     if (projected && !strcasecmp(pls->pulsename,"Manual"))
-        refuse("method %s takes its pulses from pulse.count (Ramsey, HahnEcho, CPMG); a Manual sequence is not supported", cnf->method);
-    if (Pulse_getPulseiter(pls))       refuse("method %s needs pulse.per_qubit = false", cnf->method);
-    if (pls->detuning_factor != 1.0)   refuse("method %s needs pulse.detuning_factor = 1", cnf->method);
-    if (strcasecmp(cnf->propagator,"eigen")) refuse("method %s needs propagator eigen (its own matrix exponential)", cnf->method);
-    if (!strcasecmp(op->savemode,"cluster_density_matrix")) refuse("method %s does not write savemode cluster_density_matrix", cnf->method);
+        refuse("method %s takes its pulses from pulse.count (Ramsey, HahnEcho, CPMG); a Manual sequence is not supported", method);
+    if (Pulse_getPulseiter(pls))       refuse("method %s needs pulse.per_qubit = false", method);
+    if (pls->detuning_factor != 1.0)   refuse("method %s needs pulse.detuning_factor = 1", method);
+    if (strcasecmp(cnf->propagator,"eigen")) refuse("method %s needs propagator eigen (its own matrix exponential)", method);
+    if (!strcasecmp(op->savemode,"cluster_density_matrix")) refuse("method %s does not write savemode cluster_density_matrix", method);
     const int nqubit = QubitArray_getNqubit(qa);
-    if (projected && nqubit > 1) refuse("method %s supports one qubit", cnf->method);
+    if (projected && nqubit > 1) refuse("method %s supports one qubit", method);
     if (cnf->jump_operators)
         for (int i = 0; i < cnf->jump_operators->njump; ++i) {
             const char* name = cnf->jump_operators->ops[i]->bath_name;
             if (strcasecmp(name,"qubit") && QubitArray_getQubitIdx_fromName(qa,name) < 0) continue;
             // meCCE projects the qubit out; the branch's per-cluster scalar entered once per cluster power (M1)
-            if (projected) refuse("method %s does not take qubit jump operators (the qubit is projected out); use megCCE", cnf->method);
-            if (nqubit > 1) refuse("a qubit jump operator needs one qubit (method %s)", cnf->method);
+            if (projected) refuse("method %s does not take qubit jump operators (the qubit is projected out); use megCCE", method);
+            if (nqubit > 1) refuse("a qubit jump operator needs one qubit (method %s)", method);
         }
     // the coherence only: the branch's megCCE density-matrix output is not ported
-    if (strcasecmp(cnf->quantity,"coherence")) refuse("method %s computes quantity coherence only (dm is not implemented)", cnf->method);
+    if (strcasecmp(cnf->quantity,"coherence")) refuse("method %s computes quantity coherence only (dm is not implemented)", method);
     // the ladder's own check (rdipladder::prepare) comes after the clusters
     if (cnf->nrdip_ladder > 0) refuse("rdip_ladder needs method CCE, gCCE or pCCE (this run is method %s)", cnf->method);
 }
@@ -257,21 +263,26 @@ void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, 
 // defined for a bath of nuclear spins: the spins a defect species brings into a cluster and the qubit's mean field
 // (the Overhauser field, computed from the tensors before they are averaged) are refused with it.
 // The method as the input writes it (A47): the cCCE shapes keep the internal names CCE, pCCE, dsj, itb and dsjitb, which
-// the reader refuses as old method names, so a message names them cCCE; gCCE, meCCE and megCCE are written as they are.
+// the reader refuses as old method names, so a message names them cCCE; the pcce forms pgCCE, pmeCCE and pmegCCE (refused
+// as the branch's names) are gCCE, meCCE and megCCE; gCCE, meCCE and megCCE are written as they are.
 static const char* inputMethodName(const char* method) {
     for (const char* m : {"CCE", "pCCE", "dsj", "itb", "dsjitb"}) if (!strcasecmp(method,m)) return "cCCE";
+    if (!strcasecmp(method,"pgcce")) return "gCCE";
+    if (!strcasecmp(method,"pmecce")) return "meCCE";
+    if (!strcasecmp(method,"pmegcce")) return "megCCE";
     return method;
 }
 
 void validateHamiltonianForMethod(Config* cnf, QubitArray* qa, DefectArray* dfa) {
-    if(cnf->jump_operators && strcasecmp(cnf->jump_operators_section,cnf->method)) {
+    const char* kernel=methodKernel(cnf->method);   // the section of a pcce form is its method's (pmeCCE: meCCE)
+    if(cnf->jump_operators && strcasecmp(cnf->jump_operators_section,kernel)) {
         if(rank==0) fprintf(stderr,"Error: hamiltonian.%s (jump_operators) belongs to method %s; this run is %s\n",
                             cnf->jump_operators_section,cnf->jump_operators_section,inputMethodName(cnf->method));
         MPI_Abort(MPI_COMM_WORLD,1);
     }
-    if((!strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"megcce")) && cnf->hamiltonian_ccce_given) {
+    if((!strcmp(kernel,"gcce") || !strcmp(kernel,"megcce")) && cnf->hamiltonian_ccce_given) {
         if(rank==0) fprintf(stderr,"Error: hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE; this run is %s\n",
-                            cnf->method);
+                            inputMethodName(cnf->method));
         MPI_Abort(MPI_COMM_WORLD,1);
     }
     if(!cnf->delta_A && (DefectArray_getNdefect(dfa) > 0 || QubitArray_getOverhaus(qa))) {
@@ -854,7 +865,7 @@ int main(int argc, char* argv[]){
                 printf("  probe_memory_gb (memory of the adaptive probes running at once on a node)\n");
                 printf("  seed: shared RNG seed; omit to generate and report a seed on MPI rank 0\n");
                 printf("  hamiltonian.common.bath_bath_mean_field: off, z (default) or xyz, the static field of the other bath spins (nstate > 0)\n");
-                printf("  cluster_mode: standard (default), pcce, bundle, dsj, itb, dsjitb; the pcce and bundle blocks hold their settings\n");
+                printf("  cluster_mode: standard (default), pcce (cCCE, gCCE, meCCE, megCCE), bundle (cCCE, gCCE), dsj, itb, dsjitb (cCCE); the pcce and bundle blocks hold their settings\n");
                 printf("  input keys renamed 2026-10-13: example/tools/InputKeys/convert_input_keys.py rewrites an old input\n");
                 printf("See docs/user/InputFile_Backend.md, docs/methods/gpu.md and docs/methods/adaptive-cluster-mode.md for defaults and limits.\n");
                 exit(EXIT_SUCCESS);

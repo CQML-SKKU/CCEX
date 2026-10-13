@@ -29,14 +29,17 @@ How the bath is divided into clusters (new values on 2026-10-13: the cluster sha
 | Option | Description | method |
 |---|---|---|
 | `standard` | clusters of up to `order` spins within `rdip` | cCCE, gCCE, meCCE, megCCE |
-| `pcce` | partition CCE: the bath is cut into partitions of [pcce.partition_size](#tag_pcce_partition_size) spins, a cluster is up to `order` partitions (`method: "pCCE"` before) | cCCE |
+| `pcce` | partition CCE: the bath is cut into partitions of [pcce.partition_size](#tag_pcce_partition_size) spins, a cluster is up to `order` partitions (`method: "pCCE"` before) | cCCE, gCCE, meCCE, megCCE |
 | `bundle` | bundle clustering: strongly coupled spins are tied into bundles first, a cluster is up to `order` bundles (`cluster_mode: "adaptive"` before) | cCCE, gCCE |
 | `dsj` | disjoint clusters (`method: "dsj"` before) | cCCE |
 | `itb` | inter-bath clusters, the pair interaction between disjoint clusters | cCCE |
 | `dsjitb` | disjoint + inter-bath (order 2 gives the same result as standard CCE2) | cCCE |
 
-gCCE with `pcce`, `dsj`, `itb` or `dsjitb` is refused (not implemented yet), also when `-m gCCE` makes the run gCCE;
-meCCE and megCCE with any mode but `standard` likewise.
+`pcce` runs with cCCE, gCCE, meCCE and megCCE (inside: pCCE, pgCCE, pmeCCE, pmegCCE; the gCCE and master-equation forms
+on the CPU only, and [pcce.cache](#tag_pcce_cache) stays with cCCE). gCCE with `dsj`, `itb` or `dsjitb` is refused (not
+implemented yet), also when `-m gCCE` makes the run gCCE; meCCE and megCCE with `bundle`, `dsj`, `itb` or `dsjitb`
+likewise. The adding_MECCE branch's method names `pgCCE`, `pmeCCE` and `pmegCCE` are refused with their new form
+(method `gCCE`, `meCCE` or `megCCE` with `"cluster_mode": "pcce"`).
 The [pcce](#tag_pcce) block belongs to `pcce`, the [bundle](#tag_bundle) block to `bundle`, the [adaptive](#tag_adaptive)
 block to `pcce` and `bundle`; each is refused with another mode. `"adaptive"` as a value is refused with its new name.
 
@@ -230,7 +233,7 @@ to the partition size, `spins` is the closer of the two to CCE4.
 ## pcce.cache
 <b>Description:</b><br>
 Reuse a stored partition instead of searching again (`pcce_cache_mode` and `pcce_cache_file` until 2026-10-13). Needs
-[pcce.partition](#tag_pcce_partition) = `deterministic`. `mode`: <br>
+[pcce.partition](#tag_pcce_partition) = `deterministic` and method `cCCE` (refused with gCCE, meCCE and megCCE). `mode`: <br>
 
 | mode | Description |
 |---|---|

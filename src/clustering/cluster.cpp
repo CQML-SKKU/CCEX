@@ -131,7 +131,7 @@ void Cluster_clusterize(Cluster* cls, BathArray* ba, Config* config,QubitArray* 
 
         }
     } 
-    else if (strcasecmp(method, "pcce")==0){
+    else if (methodUsesPcceClusters(method)){   // pCCE, pgCCE, pmeCCE, pmegCCE
         // Clusterize for all order 
         // and Solve tilde (Division) of coherence function
         // Args Returns : cls->clusinfo (new address)
@@ -164,8 +164,8 @@ void Cluster_clusterize(Cluster* cls, BathArray* ba, Config* config,QubitArray* 
     //    freeHashCluster(&hashClusters, order);
     //}
 
-    // the 0th cluster is kept for the methods with the qubit in the cluster space (gCCE, megCCE)
-    if (strcasecmp(method, "gcce")!=0 && strcasecmp(method, "megcce")!=0){
+    // the 0th cluster is kept for the kernels with the qubit in the cluster space (gCCE, megCCE; pgCCE, pmegCCE)
+    if (strcmp(methodKernel(method), "gcce")!=0 && strcmp(methodKernel(method), "megcce")!=0){
         Cluster_setClusinfo_chgiter(cls, 0, 0, 0);
     }
 }
@@ -191,7 +191,7 @@ void Cluster_report(Cluster* cls){
     printStructElementChar("method",cls->method);
     printStructElementBool("addsubclus",Cluster_getAddsubclus(cls));
 
-    if (strcasecmp(cls->method,"pcce")==0){
+    if (methodUsesPcceClusters(cls->method)){
         printSubTitle("Conduct pCCE method");
         printStructElementInt("max_trial",Cluster_getMax_trial(cls));
         printStructElementInt("max_iter",Cluster_getMax_iter(cls));

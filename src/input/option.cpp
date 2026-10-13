@@ -259,11 +259,12 @@ static void refuseOldInputKeys(cJSON* root){
 
 // The calculation method and the cluster shape (A47): "method" is cCCE, gCCE, meCCE or megCCE (the master-equation
 // methods, adding_MECCE), "cluster_mode" standard, pcce, bundle, dsj, itb or dsjitb. Inside, the code keeps the names it
-// compares against - CCE, gCCE, pCCE, dsj, itb, dsjitb, meCCE, megCCE, and cluster_mode adaptive for bundle - so nothing
-// past the readers changed (and the -P inventory writes what it wrote).
-// gCCE with pcce, dsj, itb or dsjitb is not implemented yet (those shapes run with cCCE only; improvements.md A47);
-// meCCE and megCCE run with cluster_mode standard. noise is a reserved method name (A49): accepted by the reader,
-// refused as not implemented yet.
+// compares against - CCE, gCCE, pCCE, dsj, itb, dsjitb, meCCE, megCCE, pgCCE, pmeCCE, pmegCCE, and cluster_mode adaptive for
+// bundle - so nothing past the readers changed (and the -P inventory writes what it wrote).
+// cluster_mode pcce runs with cCCE, gCCE, meCCE and megCCE: inside pCCE, pgCCE, pmeCCE and pmegCCE (methodUsesPcceClusters
+// and methodKernel, general.h); the adding_MECCE branch's method names pgCCE, pmeCCE and pmegCCE are refused with the new
+// form. gCCE also runs with bundle; dsj, itb and dsjitb run with cCCE only (gCCE with them is not implemented yet;
+// improvements.md A47). noise is a reserved method name (A49): accepted by the reader, refused as not implemented yet.
 static void internalMethod(const char* method, const char* shape, const char* where, char* methodOut, char* modeOut){
     const bool gcce = !strcasecmp(method,"gcce");
     const bool mecce = !strcasecmp(method,"mecce"), megcce = !strcasecmp(method,"megcce");
@@ -273,7 +274,12 @@ static void internalMethod(const char* method, const char* shape, const char* wh
         exit(EXIT_FAILURE);
     }
     if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce")){
-        if (!strcasecmp(method,"cce"))
+        static const char* branch[][2] = {{"pgcce","gCCE"}, {"pmecce","meCCE"}, {"pmegcce","megCCE"}};   // adding_MECCE
+        const char* now = nullptr;
+        for (const auto& b : branch) if (!strcasecmp(method,b[0])) now = b[1];
+        if (now)
+            fprintf(stderr,"Error: %s \"%s\" is now method \"%s\" with \"cluster_mode\": \"pcce\" in the input\n",where,method,now);
+        else if (!strcasecmp(method,"cce"))
             fprintf(stderr,"Error: %s \"%s\" is now \"cCCE\"\n",where,method);
         else if (!strcasecmp(method,"pcce") || !strcasecmp(method,"dsj") || !strcasecmp(method,"itb") || !strcasecmp(method,"dsjitb"))
             fprintf(stderr,"Error: %s \"%s\" is now method \"cCCE\" with \"cluster_mode\": \"%s\" in the input\n",where,method,
@@ -293,18 +299,19 @@ static void internalMethod(const char* method, const char* shape, const char* wh
             fprintf(stderr,"Error: cluster_mode must be standard, pcce, bundle, dsj, itb or dsjitb, not \"%s\"\n",shape);
         exit(EXIT_FAILURE);
     }
-    if ((mecce || megcce) && k != 0){   // Phase C1 opens pcce
-        fprintf(stderr,"Error: method %s with cluster_mode \"%s\" is not implemented (cluster_mode standard)\n",
+    if ((mecce || megcce) && k != 0 && k != 1){
+        fprintf(stderr,"Error: method %s with cluster_mode \"%s\" is not implemented (cluster_mode standard or pcce)\n",
                 mecce ? "meCCE" : "megCCE", shapes[k]);
         exit(EXIT_FAILURE);
     }
-    if (gcce && k != 0 && k != 2){
+    if (gcce && k != 0 && k != 1 && k != 2){
         fprintf(stderr,"Error: method gCCE with cluster_mode \"%s\" is not implemented yet; cluster_mode %s runs with method cCCE\n",
                 shapes[k],shapes[k]);
         exit(EXIT_FAILURE);
     }
     static const char* internal[] = {"CCE", "pCCE", "CCE", "dsj", "itb", "dsjitb"};
-    strcpy(methodOut,gcce ? "gCCE" : mecce ? "meCCE" : megcce ? "megCCE" : internal[k]);
+    if (k == 1 && (gcce || mecce || megcce)) strcpy(methodOut,gcce ? "pgCCE" : mecce ? "pmeCCE" : "pmegCCE");
+    else strcpy(methodOut,gcce ? "gCCE" : mecce ? "meCCE" : megcce ? "megCCE" : internal[k]);
     strcpy(modeOut,k == 2 ? "adaptive" : "standard");
 }
 
@@ -320,8 +327,8 @@ static void readMethod(cJSON* root, char* methodOut, char* modeOut){
 
 void cJSON_applyMethodOption(Config* cnf, Cluster* cls, const char* method){
     // -m changes the method and keeps the input's cluster_mode
-    const char* shape = "standard";
-    for (const char* s : {"pcce", "dsj", "itb", "dsjitb"}) if (!strcasecmp(cnf->method,s)) shape = s;
+    const char* shape = methodUsesPcceClusters(cnf->method) ? "pcce" : "standard";
+    for (const char* s : {"dsj", "itb", "dsjitb"}) if (!strcasecmp(cnf->method,s)) shape = s;
     if (!strcasecmp(cnf->cluster_mode,"adaptive")) shape = "bundle";
     char internal[MAX_CHARARRAY_LENGTH], mode[16];
     internalMethod(method,shape,"-m",internal,mode);
@@ -1184,7 +1191,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     // the pcce block: cluster_mode pcce only (partition_size, trials, max_iterations, kmeans_pp and print_trials are read
     // with the clusters, cJSON_readOptionCluster)
     cJSON* pcce=readBlock(root,"pcce");
-    if(pcce && strcasecmp(cnf->method,"pcce")) {
+    if(pcce && !methodUsesPcceClusters(cnf->method)) {   // the rest: standard, bundle (adaptive inside), dsj, itb, dsjitb
         fprintf(stderr,"Error: the pcce block belongs to cluster_mode pcce (this input has cluster_mode %s)\n",
                 !strcasecmp(cnf->cluster_mode,"adaptive") ? "bundle" : !strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"cce")
                 || !strcasecmp(cnf->method,"mecce") || !strcasecmp(cnf->method,"megcce") ? "standard" : cnf->method);
@@ -2074,7 +2081,7 @@ void cJSON_readOptionCluster(Cluster* clus, char* fccein){
     // all element would be "0" in which we consider all pairs within rdip
 
 
-    if (strcasecmp(Cluster_getMethod(clus),"pcce") == 0){
+    if (methodUsesPcceClusters(Cluster_getMethod(clus))){
 
         if (rank==0){
             printMessage("  pcce : [ partition_size, trials, max_iterations, kmeans_pp, print_trials ] \n");

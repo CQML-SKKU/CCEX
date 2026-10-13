@@ -52,18 +52,19 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     // Print the calculation method
     ////////////////////////////////
 
-    // gCCE or conventional CCE
-    if (strcasecmp(method,"gcce")==0 && iter_0th==0){
+    // gCCE or conventional CCE; the kernel decides, whatever the clusters (pgCCE, pmeCCE, pmegCCE: cluster_mode pcce)
+    const char* kernel = methodKernel(method);
+    if (strcmp(kernel,"gcce")==0 && iter_0th==0){
         // gCCE method requires the 0th cluster
         fprintf(stderr,"Error : calculate,, gCCE method requires the 0th cluster\n");
         exit(1);
-    }else if (strcasecmp(method,"gcce")==0 && iter_0th>0){
+    }else if (strcmp(kernel,"gcce")==0 && iter_0th>0){
         isGCCE = true;
     }
     // master equation: meCCE projects the qubit out as the cCCE does (no 0th cluster, L_0 = 1); megCCE keeps it in the
     // cluster space as gCCE does
-    const bool isMECCE = !strcasecmp(method,"mecce");
-    const bool isMEGCCE = !strcasecmp(method,"megcce");
+    const bool isMECCE = !strcmp(kernel,"mecce");
+    const bool isMEGCCE = !strcmp(kernel,"megcce");
     if (isMEGCCE && iter_0th==0){
         fprintf(stderr,"Error : calculate, method %s requires the 0th cluster\n",method);
         exit(1);

@@ -10,6 +10,9 @@
   `hamiltonian.megCCE.jump_operators`) — Lindblad dissipation of bath spins (meCCE, megCCE) and of the qubit (megCCE
   only), CPU. Ported from adding_MECCE; meCCE refuses qubit jump operators, which the branch multiplied into every
   cluster. Method: Onizhuk et al., Phys. Rev. Lett. 132, 250401 (2024). See `docs/methods/master-equation.md`.
+- **`cluster_mode: "pcce"` with gCCE, meCCE and megCCE** (inside pgCCE, pmeCCE, pmegCCE): the pCCE partitions with the
+  gCCE and master-equation kernels, on the CPU; `pcce.cache` stays with cCCE. The adding_MECCE branch's method names
+  `pgCCE`, `pmeCCE` and `pmegCCE` are refused with the new form (method + `"cluster_mode": "pcce"`).
 - **Reserved method name `noise`**: `method` (and `-m`) accepts the name and refuses it as not implemented yet;
   `hamiltonian.noise` is an empty section like `hamiltonian.gCCE`.
 - **`hamiltonian.common.bath_bath_mean_field: "off"`** (nstate > 0): the static field of the bath spins outside a cluster
@@ -215,7 +218,7 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
 - **The input keys before A47** (2026-10-13): an old name, value (`method` `CCE`, `pCCE`, `dsj`, ...; `cluster_mode`
   `adaptive`) or form (`Defect` as a list, `gcce_refinement: true`) stops the run with the new one named and the
   converter pointed to; `DefectTotSpin` (the qubit spin is used) and `CorrTotSpin` (old-format VASP tensor files only)
-  are removed. Also refused: `gCCE` with `cluster_mode` `pcce`/`dsj`/`itb`/`dsjitb` (not implemented yet), a
+  are removed. Also refused: `gCCE` with `cluster_mode` `dsj`/`itb`/`dsjitb` (not implemented yet), a
   `hamiltonian.cCCE` setting in a gCCE run, the `adaptive` block outside `pcce`/`bundle`, the `pcce` block outside `pcce`,
   a qubit state with both `index` and `vector`, 0/1 for the switches.
 - `alphams` at the top of a `qubitfile` (it had been ignored since v1.1.0).
