@@ -353,18 +353,14 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 else strcpy(fullOp.savemode,"coherence");
             }
 
-            if (isMEGCCE){
-                // until the megCCE kernel is added, nothing of a megCCE run is computed (by the gCCE or the cCCE kernel)
-                fprintf(stderr,"Error : calculate, megCCE kernel is not built in this commit\n");
-                ccexFatal();
-            }
-            if (qubitInMatrix){ // gcce
+            if (qubitInMatrix){ // gcce, megcce
                 // Zero-th order
                 if (rank==0){
                     printf("\n");
                     printSubTitle("Calculate 0-th cluster...");
                 }
-                result_0th = calCoherenceGcce(qa,NULL,cnf,pls,allFull ? &fullOp : op);
+                result_0th = isMEGCCE ? calCoherenceMegcce(qa,NULL,cnf,pls,op)
+                                      : calCoherenceGcce(qa,NULL,cnf,pls,allFull ? &fullOp : op);
                 if (rank==0){
                     steptime_end = MPI_Wtime();
                     // make message
@@ -514,6 +510,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         result_nth=batchResults[ic-batchFirst];
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
                         result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
+                        ownedResult = true;
+                    }else if (isMEGCCE){       // megCCE: a new array (the kernel's own), deleted below
+                        result_nth = calCoherenceMegcce(qa, ba_cluster, cnf, pls, op);
                         ownedResult = true;
                     }else if (isGCCE){ // gcce: into the reused buffer (A14)
                         if(allFull)fullOp=Output_fullOutput(op,fullName.data(),cluster,n,istate);

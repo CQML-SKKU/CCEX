@@ -26,8 +26,9 @@ Tags in this section are about the simulation parameters: the method, the number
       [hyperfine](#tag_hyperfine) (`dipole`, `contact`, [file](#tag_hyperfine_file), [missing_row](#tag_hyperfine_missing_row)),
       [quadrupole](#tag_quadrupole) (`structure`, [file](#tag_quadrupole_file),
       [file_without_defect](#tag_quadrupole_file_without_defect), [cell](#tag_quadrupole_cell))
-    - cCCE: [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A)
-    - gCCE, meCCE, noise: no settings yet (meCCE and noise are reserved methods)
+    - cCCE: [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A) (meCCE reads them too)
+    - meCCE, megCCE: [jump_operators](#tag_jump_operators)
+    - gCCE, noise: no settings yet (noise is a reserved method)
 
 The qubit file (`Qubit.file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubit_file); the files of the defect bath
 (`Defect.axis_file`, `Defect.state_file`) are on the [Defect page](InputFile_Defect.md#tag_df_axis_file).
@@ -37,11 +38,14 @@ The qubit file (`Qubit.file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubi
 ## method
 <b>Description:</b><br>
 The CCE method: conventional (cCCE, the qubit projected out into its two branches) or generalized (gCCE, the qubit in the
-cluster Hamiltonian). How the bath is cut into clusters is [cluster_mode](InputFile_Cluster.md#tag_cluster_mode)
+cluster Hamiltonian), and each of them with Lindblad dissipation by the jump operators of
+[hamiltonian.\<method\>.jump_operators](#tag_jump_operators) (meCCE, megCCE; [master-equation.md](../methods/master-equation.md)).
+How the bath is cut into clusters is [cluster_mode](InputFile_Cluster.md#tag_cluster_mode)
 (`standard`, `pcce`, `bundle`, `dsj`, `itb`, `dsjitb`). `pcce`, `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE with
-them is refused as not implemented yet.
+them is refused as not implemented yet. meCCE and megCCE run with `standard` only.
 
-You can give the method with the "-m" command-line option (`-m cCCE`, `-m gCCE`); it keeps the input's `cluster_mode`. <br>
+You can give the method with the "-m" command-line option (`-m cCCE`, `-m gCCE`, `-m meCCE`, `-m megCCE`); it keeps the
+input's `cluster_mode`. <br>
 <b>Data Type:</b> String (case is not significant)
 
 <b>Options:</b><br>
@@ -49,7 +53,8 @@ You can give the method with the "-m" command-line option (`-m cCCE`, `-m gCCE`)
 |---------|-------------------------------------|
 | `cCCE`  | Conventional CCE |
 | `gCCE`  | Generalized CCE |
-| `meCCE` | reserved: refused as not implemented yet (2026-10-13) |
+| `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
+| `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU, any pulse sequence |
 | `noise` | reserved: refused as not implemented yet (2026-10-13) |
 
 The values before 2026-10-13 are refused with their new form: `CCE` is `cCCE`; `pCCE`, `dsj`, `itb` and `dsjitb` are
@@ -59,7 +64,7 @@ method `cCCE` with that `cluster_mode` (also on the command line: `-m pCCE` is r
 
 <b>Example:</b> ``` "method" : "gCCE" ```, ``` "method" : "cCCE", "cluster_mode" : "pcce" ```
 
-<b>Related variable:</b> [Config](#Config)::method (inside: CCE, gCCE, pCCE, dsj, itb, dsjitb, from method and cluster_mode)
+<b>Related variable:</b> [Config](#Config)::method (inside: CCE, gCCE, pCCE, dsj, itb, dsjitb, meCCE, megCCE, from method and cluster_mode)
 
 <a id="tag_quantity"></a>
 ## quantity
@@ -437,12 +442,14 @@ not applied: <br>
 <a id="tag_hamiltonian"></a>
 ## hamiltonian
 <b>Description:</b><br>
-The terms of the Hamiltonian that are chosen, not given by the files: `common` holds what both methods read, `cCCE` and
-`gCCE` what one method reads. A setting in the block of the other method is refused (a `cCCE` setting in a gCCE run, also
-when `-m gCCE` makes the run gCCE); `gCCE` has no settings yet, nor have `meCCE` and `noise`, the sections of the
-two reserved methods (an empty section is allowed, a key in it is refused). Every key has a default, so the block may be left out. <br>
+The terms of the Hamiltonian that are chosen, not given by the files: `common` holds what every method reads, `cCCE`,
+`gCCE`, `meCCE` and `megCCE` what one method reads (meCCE reads `cCCE` too: it builds the cCCE's Hamiltonian). A setting
+in the block of another method is refused (a `cCCE` setting in a gCCE or megCCE run, a `meCCE` or `megCCE` section in a
+run of another method, also when `-m` changes the method); `meCCE` and `megCCE` hold
+[jump_operators](#tag_jump_operators) only; `gCCE` has no settings yet, nor has `noise`, the section of the reserved
+method (an empty section is allowed, a key in it is refused). Every key has a default, so the block may be left out. <br>
 
-<b>Data Type:</b> Object `{"common": {...}, "cCCE": {...}, "gCCE": {}}`
+<b>Data Type:</b> Object `{"common": {...}, "cCCE": {...}, "gCCE": {}, "meCCE": {...}, "megCCE": {...}}`
 
 <b>Example:</b>
     ```
@@ -734,3 +741,34 @@ Hahn echo is 1, with `true` it is not, and order 1 is the same either way. <br>
 <b>Example:</b> ``` "hamiltonian" : {"cCCE": {"delta_A": false}} ```
 
 <b>Related variable:</b> [Config](#Config)::delta_A
+
+<a id="tag_jump_operators"></a>
+## jump_operators
+<b>Description:</b><br>
+`hamiltonian.meCCE` or `hamiltonian.megCCE` (new, 2026-10-13; a top-level `jump_operators` in the adding_MECCE branch,
+refused with its new place). The Lindblad jump operators of the master-equation methods, one entry per operator:
+C = √γ S<sub>op</sub> on every spin named `bath_name`, with γ = `rate` × 2π·10³ rad/ms. `operator` is `-` (S<sub>-</sub>),
+`+` (S<sub>+</sub>), `z`, `x` or `y` (S<sub>z</sub>, S<sub>x</sub>, S<sub>y</sub>) of that spin, of any S; the branch's
+old names `+-` and `-+` are refused with the new ones. `bath_name` is the name of bath spins (as in the bath file, case
+not significant; a name no spin has adds nothing), or `"qubit"` / the qubit's name for a jump of the qubit, which megCCE
+alone takes (one qubit; meCCE refuses it and names megCCE). The section must belong to the run's method (after `-m`), and
+holds `jump_operators` only. Without the key, or with an empty list, the run is the rate-0 limit: the cCCE (meCCE) or the
+gCCE (megCCE). The equations, what is supported and the checks are in
+[master-equation.md](../methods/master-equation.md). <br>
+
+<b>Data Type:</b> Array of objects `{"bath_name": string, "operator": string, "rate": number}`
+
+<b>Unit:</b> `rate` in MHz (≥ 0)
+
+<b>Default:</b> none (no dissipation)
+
+<b>Example:</b>
+    ```
+    "method" : "megCCE",
+    "hamiltonian" : {"megCCE": {"jump_operators": [
+        {"bath_name": "e",     "operator": "-", "rate": 1.5915e-4},
+        {"bath_name": "e",     "operator": "+", "rate": 1.5915e-4},
+        {"bath_name": "qubit", "operator": "z", "rate": 1.5915e-4}]}}
+    ```
+
+<b>Related variable:</b> [Config](#Config)::jump_operators (rates stored in rad/ms), [Config](#Config)::jump_operators_section

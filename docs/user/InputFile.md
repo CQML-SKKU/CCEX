@@ -100,8 +100,10 @@ The method, the numbers of the calculation, the files of the bath, and the `hami
       [quadrupole](InputFile_General.md#tag_quadrupole) (`structure`, [file](InputFile_General.md#tag_quadrupole_file),
       [file_without_defect](InputFile_General.md#tag_quadrupole_file_without_defect), [cell](InputFile_General.md#tag_quadrupole_cell))
     - cCCE: [knight](InputFile_General.md#tag_knight), [hfmedi](InputFile_General.md#tag_hfmedi),
-      [delta_A](InputFile_General.md#tag_delta_A)
-    - gCCE, meCCE, noise: no settings yet (meCCE and noise are reserved methods)
+      [delta_A](InputFile_General.md#tag_delta_A) (meCCE reads them too)
+    - meCCE, megCCE: [jump_operators](InputFile_General.md#tag_jump_operators)
+      ([master-equation.md](../methods/master-equation.md))
+    - gCCE, noise: no settings yet (noise is a reserved method)
 
 <a id="QubitArrayTags"></a>
 ## Qubit-related tags
@@ -314,10 +316,11 @@ names (`quantity`, `order`, `bfield`, `deltat`, `nstep`, `nstate`, `seed`, `rdip
 | Defect entry `eqs` | `quadrupole_moments` |
 | Defect entry `rxyzs` | `nuclear_positions` |
 | Defect entry `hypf` | `hyperfine` |
-| `-m CCE`, `-m pCCE`, ... | `-m cCCE` or `-m gCCE`; the cluster shape is the input's `cluster_mode` |
+| `-m CCE`, `-m pCCE`, ... | `-m cCCE`, `-m gCCE`, `-m meCCE` or `-m megCCE`; the cluster shape is the input's `cluster_mode` |
 
-The DEER keys of the adding_DEER / adding_MECCE branches were never keys of this code; they are refused with their new
-names (`Error: input key "bnpulse" is now "pulse.bath.count"`), and the converter does not rewrite them:
+The DEER and master-equation keys of the adding_DEER / adding_MECCE branches were never keys of this code; they are
+refused with their new names (`Error: input key "bnpulse" is now "pulse.bath.count"`), and the converter does not
+rewrite them:
 
 | adding_DEER / adding_MECCE | Now |
 |---|---|
@@ -328,5 +331,7 @@ names (`Error: input key "bnpulse" is now "pulse.bath.count"`), and the converte
 | `bspin` | `pulse.bath.spin` |
 | `balphams` | `pulse.bath.alphams` |
 | `bbetams` | `pulse.bath.betams` |
+| `jump_operators` (top level) | `hamiltonian.meCCE.jump_operators` or `hamiltonian.megCCE.jump_operators`, the section of the run's method |
+| jump `operator` `"+-"` / `"-+"` | `"-"` / `"+"` |
 
 The names of savemode changed the same day and are in [savemode](InputFile_Output.md#tag_savemode).

@@ -6,8 +6,12 @@
 - **DEER bath pulses** (the block `pulse.bath`: `count`, `sequence`, `defect`, `energy_shift`, `spin`, `alphams`,
   `betams`) for gCCE on the CPU (matrix and vector, exact and recursive). Ported from the adding_DEER/adding_MECCE
   branches, whose flat keys (`bnpulse`, ...) are refused with the new names. See `docs/methods/deer.md`.
-- **Reserved method names `meCCE` and `noise`**: `method` (and `-m`) accepts the names and refuses them as not
-  implemented yet; `hamiltonian.meCCE` and `hamiltonian.noise` are empty sections like `hamiltonian.gCCE`.
+- **ME-CCE / ME-gCCE** (`method`: `meCCE`, `megCCE`; `hamiltonian.meCCE.jump_operators`,
+  `hamiltonian.megCCE.jump_operators`) — Lindblad dissipation of bath spins (meCCE, megCCE) and of the qubit (megCCE
+  only), CPU. Ported from adding_MECCE; meCCE refuses qubit jump operators, which the branch multiplied into every
+  cluster. Method: Onizhuk et al., Phys. Rev. Lett. 132, 250401 (2024). See `docs/methods/master-equation.md`.
+- **Reserved method name `noise`**: `method` (and `-m`) accepts the name and refuses it as not implemented yet;
+  `hamiltonian.noise` is an empty section like `hamiltonian.gCCE`.
 - **`hamiltonian.common.bath_bath_mean_field: "off"`** (nstate > 0): the static field of the bath spins outside a cluster
   left out (`"z"` stays the default, `"xyz"` is the former `vector_mean_field: true`).
 - **`hamiltonian.cCCE.delta_A: false`**: the hyperfine tensors of a cluster's spins replaced by their mean, so the pair
@@ -232,6 +236,14 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
   `bspin`, `balphams`, `bbetams`); a last bath row that is not identity and two pulses of one sequence on one edge; a
   `pulse.bath.defect` no bath spin has, a `pulse.bath.spin` other than the driven spins' S, and `alphams`/`betams` that
   are not two different levels of it (a pump that reaches no spin of that name only warns).
+- meCCE / megCCE where they cannot act: the adding_MECCE top-level `jump_operators` (named with its new place) and the
+  old operator names `+-`/`-+`; a `hamiltonian.meCCE`/`.megCCE` section in a run of another method (also after `-m`), a
+  key other than `jump_operators` in it, jump operators in both sections, an entry without `bath_name`, `operator` and
+  `rate`, an unknown operator, a rate that is negative or not finite; for meCCE a Manual sequence, a rotation other
+  than an ideal π flip and qubit jump operators (megCCE named); more than one qubit for meCCE or with a qubit jump; for
+  both, `pulse.per_qubit` true, `pulse.detuning_factor` ≠ 1, `propagator` other than `eigen`, `cluster_mode` other than
+  `standard`, `evolution_update: "recursive"` given, quantity `dm`, savemode `cluster_density_matrix`, `rdip_ladder`;
+  megCCE with a `hamiltonian.cCCE` setting.
 
 ### Removed
 - The MKL dependency, `hf_cutoff`, the bundled `zlib/`, the top-level `main.cpp` and `config/` (moved into `src/` and the tools).

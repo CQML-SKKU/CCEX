@@ -86,5 +86,21 @@ for tag, g in (("g1", 1.0), ("g10", 10.0)):    # rad/ms: 2g < a (oscillating), 2
 PY
 chk "meCCE 1 spin FID == PRL2024 Eq.6 (2g < a)"  "$W/me1_eq6_g1_noDiv"  "$W/eq6_g1"  --tol 1e-8
 chk "meCCE 1 spin FID == PRL2024 Eq.6 (2g > a)"  "$W/me1_eq6_g10_noDiv" "$W/eq6_g10" --tol 1e-8
+# B4, megCCE: the branch's 2_verify_megcce grid (deltat 0.1, nstep 20, the other keys as the template); the 0th cluster
+# alone (order 0) with a qubit jump, S=1/2 and B || z: z and - both damp rho_ab at g/2, so L = exp(-g t/2)
+mk gcce          "d['method']='gCCE'; d['deltat']=0.1; d['nstep']=20"
+mk meg_r0        "d['method']='megCCE'; d['deltat']=0.1; d['nstep']=20"
+mk meg_bath      "d['method']='megCCE'; d['deltat']=0.1; d['nstep']=20; $(MEJ megCCE "$JUMPS")"
+mk meg0_qz       "d['method']='megCCE'; d['order']=0; $(MEJ megCCE "[{'bath_name':'qubit','operator':'z','rate':$RATE}]")"
+mk meg0_qminus   "d['method']='megCCE'; d['order']=0; $(MEJ megCCE "[{'bath_name':'qubit','operator':'-','rate':$RATE}]")"
+for c in gcce meg_r0 meg_bath meg0_qz meg0_qminus; do
+    run_ccex "$BIN_DEV" "$W/$c.json" "$W/proc_$c" || { echo "  FAIL  $c : CCEX exit"; FAIL=$((FAIL+1)); }
+done
+chk "megCCE rate 0 == gCCE (noDiv)"              "$W/meg_r0_noDiv" "$W/gcce_noDiv" --tol 1e-6
+chk "gCCE == conj(PyCCE) (S=1/2)"                "$W/gcce_noDiv" "$PYREF/pycce_gcce.dat" --conj-b --subset-b --tol 1e-6
+chk "megCCE bath jumps == conj(PyCCE) (S=1/2)"   "$W/meg_bath_noDiv" "$PYREF/pycce_megcce.dat" --conj-b --subset-b --tol 1e-6
+ONE="$W/one"; python3 -c "[print(f'{k*0.04:.10f} (1+0j)') for k in range(50)]" > "$ONE"   # template grid (deltat 0.04, nstep 50)
+chk "megCCE order 0, qubit z == exp(-g t/2)"     "$W/meg0_qz_noDiv" "$ONE" --tol 1e-9 --scale-exp $RATE
+chk "megCCE order 0, qubit - == exp(-g t/2)"     "$W/meg0_qminus_noDiv" "$ONE" --tol 1e-9 --scale-exp $RATE
 echo " master-equation checks : PASS=$PASS FAIL=$FAIL"
 [ "$FAIL" -eq 0 ]
