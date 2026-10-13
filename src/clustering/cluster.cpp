@@ -101,7 +101,8 @@ void Cluster_clusterize(Cluster* cls, BathArray* ba, Config* config,QubitArray* 
     // the information would stored at cls.clusinfo
     ///////////////////////////////////////////////////////////////////
     if (strcasecmp(method, "cce")==0 
-            || strcasecmp(method, "gcce")==0){
+            || strcasecmp(method, "gcce")==0
+            || strcasecmp(method, "mecce")==0 || strcasecmp(method, "megcce")==0){
 
         Cluster_setClusinfo_0th(cls);    // if order == 0
         Cluster_setClusinfo_1th(cls,ba); // if order == 1
@@ -163,7 +164,8 @@ void Cluster_clusterize(Cluster* cls, BathArray* ba, Config* config,QubitArray* 
     //    freeHashCluster(&hashClusters, order);
     //}
 
-    if (strcasecmp(method, "gcce")!=0){
+    // the 0th cluster is kept for the methods with the qubit in the cluster space (gCCE, megCCE)
+    if (strcasecmp(method, "gcce")!=0 && strcasecmp(method, "megcce")!=0){
         Cluster_setClusinfo_chgiter(cls, 0, 0, 0);
     }
 }

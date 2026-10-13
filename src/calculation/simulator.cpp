@@ -60,13 +60,22 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     }else if (strcasecmp(method,"gcce")==0 && iter_0th>0){
         isGCCE = true;
     }
+    // master equation: meCCE projects the qubit out as the cCCE does (no 0th cluster, L_0 = 1); megCCE keeps it in the
+    // cluster space as gCCE does
+    const bool isMECCE = !strcasecmp(method,"mecce");
+    const bool isMEGCCE = !strcasecmp(method,"megcce");
+    if (isMEGCCE && iter_0th==0){
+        fprintf(stderr,"Error : calculate, method %s requires the 0th cluster\n",method);
+        exit(1);
+    }
+    const bool qubitInMatrix = isGCCE || isMEGCCE;
 
     // The Overhauser term reaches the Hamiltonian only through QubitArray_SingleHamil
     // -> HamilQubit (simulator_hamiltonian.cpp:4), and calCoherenceGcce is its only
     // caller. Under CCE the qubit is frozen into the classical labels alphams/betams, so
     // its own Hamiltonian never enters -- the field is still parsed, stored and printed,
     // which reads exactly like it took effect.
-    if (!isGCCE && QubitArray_getOverhaus(qa) && rank==0){
+    if (!qubitInMatrix && QubitArray_getOverhaus(qa) && rank==0){
         fprintf(stderr,"Warning: hamiltonian.common.qubit_bath_mean_field has no effect with method=%s.\n"
                        "         CCE projects the qubit out, so the qubit Hamiltonian --\n"
                        "         where the Overhauser field lives -- is never built.\n"
@@ -96,7 +105,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     Eigen::RowVectorXcd gcceAlphaRho;                      // A14: psia^dagger rho of the gCCE coherence, reused
     const bool checkDisorder = getenv("CCEX_CHECK_DISORDER") && strcmp(getenv("CCEX_CHECK_DISORDER"),"0");
     SmallClusterBatch smallGpu(qa,ba,dfa,cnf,pls,isGCCE,localclusters,order,savemode);   // A26: small cCCE clusters on the GPU; A40: the warp kernel (off: nothing)
-    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE,smallGpu.on());           // A30: small cCCE clusters batched on the CPU
+    // A30: small cCCE clusters batched on the CPU (the cCCE kernel only: never a gCCE or master-equation cluster)
+    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE,smallGpu.on());
     for (int istate=0; istate<=nstate; istate++){
 
         // wall time
@@ -303,7 +313,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             // Preserve a separate exponent through powers, local products and
             // MPI. DSJ/ITB variants retain their existing execution path.
             const bool stableProduct=!strcasecmp(quantity,"coherence") &&
-                (isGCCE || !strcasecmp(method,"cce") || !strcasecmp(method,"pcce"));
+                (qubitInMatrix || isMECCE || !strcasecmp(method,"cce") || !strcasecmp(method,"pcce"));
             std::vector<ScaledComplex> stableWith(stableProduct ? nstep : 0);
             std::vector<ScaledComplex> stableWithout(stableProduct ? nstep : 0);
             // mode "except" (adaptive-regroup-stage3b.md 1절): the run's own product is untouched; beside it P_K, the
@@ -315,7 +325,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             long long exceptMatched=0;
             bool reportedInvalidProduct=false;
             double dmDropped=0.0;   // the largest cluster value in an element the free evolution keeps at zero (dm only)
-            if (isGCCE && strcasecmp(quantity,"dm")==0){
+            if (qubitInMatrix && strcasecmp(quantity,"dm")==0){
                 dim = QubitArray_dim(qa);
             }else{
                 dim = 1;
@@ -343,7 +353,12 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 else strcpy(fullOp.savemode,"coherence");
             }
 
-            if (isGCCE){ // gcce
+            if (isMEGCCE){
+                // until the megCCE kernel is added, nothing of a megCCE run is computed (by the gCCE or the cCCE kernel)
+                fprintf(stderr,"Error : calculate, megCCE kernel is not built in this commit\n");
+                ccexFatal();
+            }
+            if (qubitInMatrix){ // gcce
                 // Zero-th order
                 if (rank==0){
                     printf("\n");
@@ -497,6 +512,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         ownedResult = false;
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
+                    }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
+                        result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
+                        ownedResult = true;
                     }else if (isGCCE){ // gcce: into the reused buffer (A14)
                         if(allFull)fullOp=Output_fullOutput(op,fullName.data(),cluster,n,istate);
                         calCoherenceGcceInto(qa, ba_cluster, cnf, pls, allFull ? &fullOp : op, cceResult.get(), &gcceAlphaRho);
@@ -704,8 +722,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 }
                 MPI_Op_free(&multiply);MPI_Type_free(&type);
                 if(rank==0){
-                    // Only gCCE has the historical L(t=0) normalization.
-                    const auto normalization=isGCCE ? with[0].inverse() : ScaledComplex();
+                    // Only gCCE (and megCCE, the qubit in the cluster space as well) has the historical L(t=0) normalization.
+                    const auto normalization=qubitInMatrix ? with[0].inverse() : ScaledComplex();
                     for(int i=0;i<nstep;++i){
                         result_wD_all[i](0,0)=(with[i]*normalization).value();
                         result_nD_all[i](0,0)=(without[i]*normalization).value();
@@ -732,7 +750,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             ////////////////////////////////
             if (rank == 0 && !stableProduct){
                 std::complex<double> normalization;
-                if ( strcasecmp(quantity,"coherence")==0 && isGCCE){
+                if ( strcasecmp(quantity,"coherence")==0 && qubitInMatrix){
                     normalization = result_wD_all[0].coeff(0);
                 }else{
                     normalization = std::complex<double>(1, 0);

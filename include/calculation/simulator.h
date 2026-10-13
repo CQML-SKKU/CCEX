@@ -25,6 +25,7 @@ void setClusterHyperfineMean(bool on);   // hamiltonian.cCCE.delta_A false: crea
 struct GcceBatch;
 MatrixXcd* calCoherenceGcce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, Output* op, GcceBatch* batch=nullptr);
 MatrixXcd* calCoherenceCce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);
+MatrixXcd* calCoherenceMecce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);   // bath jumps only; no 0th cluster (L_0 = 1, as CCE)
 /**
  * Storage calCoherenceCceInto reuses from one cluster to the next (improvements.md A14): the eigensolvers, the products and the
  * vectors of the time evolution. Owned by the caller (calculate); nothing in it carries a value from one call to the next - every
