@@ -92,6 +92,7 @@ docs/doxygen/xml/
 test/code_verification/check_numerics/_work/
 test/code_verification/check_mean_field/_work/
 test/code_verification/check_rdip_ladder/_work/
+test/code_verification/check_master_equation/_work/
 .vscode/
 
 # per-folder run locks of the standing checks (D29)
