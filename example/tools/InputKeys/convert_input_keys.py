@@ -9,9 +9,14 @@ The table of old and new names is docs/user/InputFile.md; (internal notes) has t
 Comments (# or ! to the end of a line, outside strings) stay: a key that moves into a block takes the comment lines
 above it and the comment after it on its line. A value is copied as written unless its form changes (method, a 0/1
 switch, hf_readmode, ...). An object nothing changed in is left byte for byte. A file in the new form is left alone.
+A key written twice (an old key beside its new name, or two spellings that differ in case only) is kept once when the
+values are the same; different values stop the file before anything is written. Tests: tests/ (python3 -m unittest).
 """
 import json
+import os
+import shutil
 import sys
+import tempfile
 
 WS = ' \t\r\n'
 
@@ -104,6 +109,10 @@ class Obj(Container):
         i, m = self.find(key)
         if m is None:
             return None
+        return self.drop_at(i)
+
+    def drop_at(self, i):
+        m = self.items[i]
         del self.items[i]
         self.dirty = True
         body = m.pre.rsplit('\n', 1)[0] if '\n' in m.pre else ''
@@ -364,12 +373,43 @@ class Converter:
         self.method_shape(R)
         self.radii(R)
         self.renames(R)
+        self.savemode(R, top)
         self.blocks(R, top)
         self.qubit(R, top)
         self.hamiltonian(R, top)
         self.defect(R, top)
+        self.single_keys(R, '')
         self.compact(R)
         return self.prefix + R.render() + self.suffix
+
+    def single_keys(self, node, path):
+        """One member per key, case ignored as CCEX ignores it (review 20261013-180049 C1). An old key whose new name is
+        already written (npulse beside pulse.count) gave the key twice, and CCEX reads the first, Python json the last:
+        the same value is kept once, different values refuse the file before anything is written."""
+        if isinstance(node, Obj):
+            i = 0
+            while i < len(node.items):
+                m = node.items[i]
+                first = next(x for x in node.items if x.key.lower() == m.key.lower())
+                if first is m:
+                    i += 1
+                    continue
+                a, b = plain(first.value), plain(m.value)
+                if json.dumps(a, sort_keys=True) != json.dumps(b, sort_keys=True):     # true is not 1 here
+                    raise ValueError(f'{path}{first.key} is written twice with different values ({json.dumps(a)} and '
+                                     f'{json.dumps(b)}): an old key and its new name were both in the input, or a key in '
+                                     f'two cases; keep one')
+                node.drop_at(i)                 # its comment lines stay; the comment after it goes above the one kept
+                if m.tail.strip():
+                    ind = first.indent()
+                    if ind is not None:
+                        first.pre = first.pre[:len(first.pre) - len(ind)] + ind + m.tail.strip() + '\n' + ind
+                    else:
+                        self.note(f'{path}{m.key}: its comment {m.tail.strip()!r} was not kept (the block is on one line)')
+                self.note(f'{path}{m.key}: the same value was written twice, kept once')
+        for n, m in enumerate(node.items):
+            if isinstance(m.value, Container):
+                self.single_keys(m.value, f'{path}{m.key}.' if m.keyraw is not None else f'{path[:-1]}[{n}].')
 
     def compact(self, obj):
         """A new block of a few plain values on one line: "pulse": {"count": 1}. The comment lines that came with its
@@ -479,6 +519,40 @@ class Converter:
                                  'with example/tools/SpinTensorReader (format v3); the input cannot be converted as it is')
             self.note(f'{name} removed ({v}; ' + ('the qubit spin is used)' if name == 'DefectTotSpin' else 'it was 0)'))
 
+    SAVEMODES = {'normal': 'coherence', 'info': 'coherence_tagged', 'all': 'cluster_coherence',
+                 'allfull': 'cluster_density_matrix'}
+
+    def savemode(self, R, top):
+        """The savemode names before 2026-10-13 (normal, info, all, allfull) and the top-level save_nodiv, which CCEX
+        refuses with their new form: "savemode": "<mode>", or {"mode": ..., "nodiv": ...} when save_nodiv was given."""
+        i, m = R.find('savemode')
+        if m is not None and not isinstance(m.value, Obj):
+            v = plain(m.value)
+            if isinstance(v, str) and v.lower() in self.SAVEMODES:
+                m.value = Scalar('"' + self.SAVEMODES[v.lower()] + '"')
+                R.dirty = True
+                self.note(f'savemode "{v}" -> "{self.SAVEMODES[v.lower()]}"')
+        j, n = R.find('save_nodiv')
+        if n is None:
+            return
+        if m is not None and isinstance(m.value, Obj):
+            raise ValueError('save_nodiv beside a savemode block: write nodiv inside the block')
+        if not isinstance(plain(n.value), bool):     # 0/1 too: CCEX took only a JSON boolean, before and after A47
+            raise ValueError('save_nodiv must be true or false')
+        mode = m.value.render() if m is not None else '"coherence"'
+        pos = i if i is not None else j
+        if m is not None:
+            R.take('savemode')
+        R.take('save_nodiv')
+        block = self.new_block(top)
+        self.put(block, top, 'mode', value=mode)
+        self.put(block, top, 'nodiv', value=n.value.render())
+        mem = self.new_member('savemode', block, top, moved=m) if m is not None else self.new_member('savemode', block, top)
+        mem.value, mem.shift = block, 0
+        R.insert(min(pos, len(R.items)), mem)
+        R.dirty = True
+        self.note('save_nodiv -> savemode {mode, nodiv}')
+
     def move(self, R, top, block_key, pairs, position_keys=None, values=None):
         """Move R[old] to R[block_key][new] for (old, new) in pairs; returns the block (None if nothing moved)."""
         found = [(R.find(old)[0], old, new) for old, new in pairs if R.find(old)[1] is not None]
@@ -539,7 +613,7 @@ class Converter:
             if m is None and n is None:
                 continue
             on = m.value.render() if m is not None else 'false'
-            if m is not None and plain(m.value) not in (True, False):
+            if m is not None and not isinstance(plain(m.value), bool):   # 0/1 too, as CCEX (readStrictBool)
                 raise ValueError(f'{name} must be true or false')
             pos = i if i is not None else R.find(inner)[0]
             if m is not None:
@@ -776,15 +850,19 @@ def main(argv):
         return 0 if argv else 2
     status = 0
     for path in argv:
-        text = open(path).read()
-        try:
+        try:                   # a file that cannot be read (missing, not UTF-8, ...) is reported like one that cannot be converted
+            with open(path, newline='') as f:
+                raw = f.read()
+            crlf = '\r\n' in raw          # converted with \n and written back with \r\n (lines added by the converter too)
+            text = raw.replace('\r\n', '\n') if crlf else raw
             new, log = convert_text(text)
         except Exception as error:
             print(f'{path}: not converted: {error}', file=sys.stderr)
             status = 2
             continue
+        out = new.replace('\n', '\r\n') if crlf else new
         if mode == 'stdout':
-            sys.stdout.write(new)
+            sys.stdout.write(out)
             continue
         if new == text:
             print(f'{path}: already in the new form')
@@ -794,9 +872,27 @@ def main(argv):
             print(f'    {line}')
         if mode == 'check':
             status = max(status, 1)
-        else:
-            open(path, 'w').write(new)
+            continue
+        try:
+            write_atomically(path, out)
+        except Exception as error:
+            print(f'{path}: not written (the file is unchanged): {error}', file=sys.stderr)
+            status = 2
     return status
+
+
+def write_atomically(path, text):
+    """A temporary file beside the target, then os.replace: an interrupted write leaves the original whole."""
+    target = os.path.realpath(path)       # through a symbolic link, as open(path, 'w') did
+    fd, tmp = tempfile.mkstemp(dir=os.path.dirname(target), prefix='.' + os.path.basename(target) + '.')
+    try:
+        with os.fdopen(fd, 'w', newline='') as f:
+            f.write(text)
+        shutil.copymode(target, tmp)
+        os.replace(tmp, target)
+    except BaseException:
+        os.unlink(tmp)
+        raise
 
 
 if __name__ == '__main__':

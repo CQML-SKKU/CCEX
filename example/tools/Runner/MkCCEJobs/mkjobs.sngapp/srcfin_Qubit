@@ -77,22 +77,19 @@ cat << EOF > ${fccein}
     "deltat"        : ${deltaTFix},
     "nstep"         : ${nStepFix},  
 
-    # Qubit 
-    "Qubit"   : { 
+    # Qubit (alphaFix/betaFix are the qubit's alphams/betams)
+    "Qubit"   : {
                    "qubit"  : [ 
                    {   
                        "name"   : "qubit1",
                        "spin"   : 1.0,
                        "gyro"   : -17608.597050,
                        "xyz"    : ${qxyz},
-                       "alphams": -1, 
-                       "betams" : 0,
+                       "alphams": ${alphaFix},
+                       "betams" : ${betaFix},
                        "detuning": [0.0]
                    }]  
     }, 
-
-    "alphams"     : ${alphaFix},
-    "betams"      : ${betaFix},
 
     # Cluster
     "add_subclusters"        : $(switch ${addClus}), # true / false

@@ -18,7 +18,8 @@ built with MKL (A46: the build turns it on when it finds MKL; the run logs of th
 `MKL for large clusters : on`), a float may move by 1e-5 of the golden value instead, and never less than 1e-12
 absolute (the golden value 0, and round-off-sized values such as regroup's max_abs_difference_from_prediction, 1.0e-15
 in golden against 8.9e-16 with MKL), decisions still exact (user decision 2026-10-13). The library changes the last digits of the clusters it takes
-(zgemm from bath dimension 21, zheevd from 63), and the policies' error numbers are differences of nearly equal
+(zgemm in the cCCE ensemble Hahn echo's recursive path from bath dimension 21, zheevd from dimension 63: the bath for
+cCCE, qubit × bath for gCCE), and the policies' error numbers are differences of nearly equal
 coherences, so that carries up to 4.4e-6 relative (WSL, MKL 2026.0: 8 of the 33 cases, scaled_error and
 local_before/after, with the same decisions). The golden answers stay the ones recorded without MKL; `test_adaptive_tools.py`
 (`RegressVerdict`, run by `unit`) holds the rule.

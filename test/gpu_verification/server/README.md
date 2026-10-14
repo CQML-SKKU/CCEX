@@ -34,10 +34,16 @@ the source directory with `SbatchPath`, the wrapper these servers use (it calls
 (job ids are idm's; jobs before that are in `~/JOBpath.idm4-gpu`). The jobs carry their own `--qos` line, so
 `QosChange` is not run on them: it would also rewrite their partition, `--out`,
 task and CPU lines (for a GPU job it writes one task with 32 CPUs). Every job has `--export=NONE`, so idm's login
-modules (intel, anaconda) do not reach the GPU node; `environment.sh` starts from `module purge`. Job 17391
+modules (intel, anaconda) do not reach the GPU node; `environment.sh` starts from `module purge`. The GPU node has its own
+`/scratch` (a local NVMe, `/scratch/$USER`; not seen from idm, no RAID or backup, no automatic deletion): these jobs
+still build and write in the submitted source directory on the shared home, which their outputs are small enough for; a
+large run can work in `/scratch/$USER/<job>` inside the job and copy what it keeps back to home before it ends (never
+leave the only copy there). The node has no outside network (packages come through idm; see the group's server notes). Job 17391
 (2026-10-13, commit a72bba1b9, 32 ranks, MPS) checked the new setup: the card visible, `make gpu-test` 185/0,
 `check_gpu/check_options.py` 95/0, P1 CR0 cCCE2 `main_gpu.out` against `main.out` within 2.2e-10. Job 17401 ran `build.sbatch` with `--export=NONE`: the
 build and the eight `backend=cpu` comparisons passed (max error 0).
+Jobs 17444 and 17447 (2026-10-14, review 20261013-221715 group 4) used the `/scratch` way: `make gpu-test` 201/0, `check_options.py` 110 PASS, and
+P1 gCCE2 warp runs old against new ((internal notes)).
 
 ```bash
 mkdir server-results
@@ -71,6 +77,11 @@ CCE2 fixtures are smaller than that threshold, so gCCE `auto` profiles are expec
 to show CPU computation. Since 2026-10-12 (A26) `auto` with method cCCE (coherence)
 sends cCCE clusters of bath dimension 2 and 4 to the packed GPU kernel by default
 (`gpu_options.packed_max_dim` 4, `Config_resolvePackedMaxDim` in `src/input/general.cpp`).
+Since A48 (2026-10-13) that default is used only where it beats the CPU batch (A30), which the
+GPU binary now also runs: one state from 40000 clusters of bath dimension 2 and 4 per rank per
+state, never for the ensemble (a run the CPU batch does not take keeps the 20000-per-rank
+threshold). The small fixtures therefore leave the packed kernel off unless `packed_max_dim` is
+given, and their `[gpu-packed]` log line says why; such a run writes the bytes of `main.out`.
 Forced-CUDA profiles must show GPU computation.
 
 ## Status of these jobs (2026-10-02)

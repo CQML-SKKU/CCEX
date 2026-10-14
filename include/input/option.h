@@ -20,6 +20,7 @@ void cJSON_readOptionOutput(Output* output, char* fccein); // output.h
 void cJSON_readSavemode(cJSON* item, Output* op, bool readNodiv); // savemode as a string or {"mode", "nodiv"}; readNodiv false takes the mode alone
 void cJSON_readOptionDefectArray(DefectArray* dfa, char* fccein); // defect.h
 void cJSON_applyMethodOption(Config* cnf, Cluster* cls, const char* method); // -m: cCCE, gCCE, meCCE or megCCE, the input's cluster_mode kept (A47)
+void cJSON_setMethodOverride(const char* method); // the last -m (or NULL), read in place of the file's method before the readers judge it with cluster_mode
 
 char* cJSON_ReadFccein(char* fccein);
 void cJSON_checkInputKeys(char* fccein);   // after every cJSON_readOption*: a likely typo of a key stops the run, other unread keys are reported

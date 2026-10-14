@@ -1,5 +1,6 @@
 #include "../../../include/calculation/gpu/compute_backend.h"
 #include "../../../include/calculation/gpu/small_cluster_batch.h"
+#include "../../../include/calculation/small_eigensolver.h"
 #include <climits>
 #include <cstdarg>
 #include <map>
@@ -17,6 +18,7 @@ bool cudaSupported = false;
 int nodeRank = 0, nodeSize = 1;
 int cpuFromDimension = INT_MAX;          // backend auto after an out-of-memory: this dimension and above on the CPU
 long long outOfMemoryClusters = 0;
+bool recovering = false;                 // X12: since an out-of-memory, released device buffers are freed (gpuOutOfMemoryRecovery)
 struct Timing { long long count=0; double build=0, setup=0, evolution=0; };
 std::map<std::tuple<std::string,std::string,int>,Timing> timings;
 struct BatchTiming { long long batches=0, clusters=0; int largest=0; };
@@ -34,19 +36,22 @@ void fail(const char* message){
 }
 }
 
-void computeBackendInit(const Config* config){
-    cudaReady=false; cudaAttempted=false; cudaSupported=false;
-    cpuFromDimension=INT_MAX; outOfMemoryClusters=0;
-    smallClusterWarmUp(config);          // A26: the small-cluster batch's CUDA context, early (nothing unless asked for)
-    if (!strcasecmp(config->backend,"cpu")) return;
-    const bool required = !strcasecmp(config->backend,"cuda");
+bool computeBackendMethodSupported(const Config* config){
     // pCCE changes the cluster partition, then uses the same conditional-bath
     // coherence calculation as conventional CCE.
-    const bool supported = !strcasecmp(config->method,"cce") ||
-                          !strcasecmp(config->method,"pcce") ||
-                          (!strcasecmp(config->method,"gcce") &&
-                           !strcasecmp(config->propagator,"eigen"));
-    if (!supported){
+    return !strcasecmp(config->method,"cce") ||
+           !strcasecmp(config->method,"pcce") ||
+           (!strcasecmp(config->method,"gcce") &&
+            !strcasecmp(config->propagator,"eigen"));
+}
+
+void computeBackendInit(const Config* config, QubitArray* qa, Pulse* pls, const char* savemode){
+    cudaReady=false; cudaAttempted=false; cudaSupported=false;
+    cpuFromDimension=INT_MAX; outOfMemoryClusters=0; recovering=false;
+    smallClusterWarmUp(config,qa,pls,savemode);   // A26: the small-cluster batch's CUDA context, early (nothing unless asked for or ruled out, X7)
+    if (!strcasecmp(config->backend,"cpu")) return;
+    const bool required = !strcasecmp(config->backend,"cuda");
+    if (!computeBackendMethodSupported(config)){
         if (required) fail("backend=cuda supports method cCCE (cluster_mode standard or pcce), or method gCCE with propagator=eigen");
         if (rank==0) fprintf(stdout,"[backend] auto: this method/propagator uses CPU\n");
         return;
@@ -91,6 +96,10 @@ std::size_t computeDeviceMemory(const Config* config){
 
 bool computeUseCuda(const Config* config, int dimension){
     if (!cudaSupported || !strcasecmp(config->backend,"cpu")) return false;
+#ifdef CCEX_USE_CUDA
+    // X12: a new cluster - whatever the last out-of-memory left is destroyed by now, so the cache works again
+    if (recovering){ gpuOutOfMemoryRecovery(false); recovering=false; }
+#endif
     if (!strcasecmp(config->backend,"auto") && (dimension<config->gpu_min_dim || dimension>=cpuFromDimension)) return false;
 #ifdef CCEX_USE_CUDA
     if (!cudaAttempted){
@@ -107,6 +116,11 @@ bool computeUseCuda(const Config* config, int dimension){
 bool computeCudaOutOfMemory(const Config* config, int dimension, const char* what){
     if (strcasecmp(config->backend,"auto")) return false;
     ++outOfMemoryClusters;
+#ifdef CCEX_USE_CUDA
+    // X12 (review 20261013b-gpu-perf I1): the cached buffers, and those the caller's partial work and batch objects
+    // release after this (until the next cluster, computeUseCuda), are freed instead of kept for reuse
+    gpuOutOfMemoryRecovery(true); recovering=true;
+#endif
     if (dimension < cpuFromDimension){
         cpuFromDimension = dimension;
         fprintf(stdout,"[gpu-memory-fallback] rank=%d dim=%d: the GPU is out of memory (%s); backend=auto, so this cluster "
@@ -140,6 +154,12 @@ void computeProfileFlush(){
                std::get<2>(entry.first),t.count,t.build,t.setup,t.evolution);
     }
     timings.clear();
+    {   // A42: the small cCCE eigensystems by Jacobi and the matrices that went to Eigen because it had not converged
+        long long solved=0, fallbacks=0;
+        smalleig::takeCounts(solved,fallbacks);
+        if (profiled && solved+fallbacks)
+            append(text,"[small-eig] rank=%d jacobi=%lld eigen_fallback=%lld\n",rank,solved,fallbacks);
+    }
     for(const auto& entry:clusterBatches)
         append(text,"[gpu-batch] rank=%d dim=%d batches=%lld clusters=%lld max_clusters=%d\n",
                rank,entry.first,entry.second.batches,entry.second.clusters,entry.second.largest);

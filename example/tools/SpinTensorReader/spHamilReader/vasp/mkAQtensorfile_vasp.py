@@ -522,11 +522,10 @@ class do_mkAQDdata:
         self.dfname = dfname
         self._ignoreatm = _ignoreatm
         self.dfposition_frac = dfposition_frac
-        # The defect spin S, written in the provenance line of the A file: from the OUTCAR's total magnetization;
-        # a --spin given on the command line must agree with it (the values themselves do not depend on it).
-        self._spin = spin_from_outcar(foutcar)
-        if _spin is not None and abs(check_spin(_spin) - self._spin) > 1e-9:
-            pyform._error(f"--spin {_spin:g} contradicts the OUTCAR {foutcar}: its total magnetization gives S = {self._spin:g}")
+        # The defect spin S is read for the A file alone (mkAdata): a Q file does not depend on it, and an EFG run need
+        # not be spin polarized (review 20261013-180049 T1).
+        self._spin_given = _spin
+        self._spin = None
         self._addhfcore = _addhfcore
         self._rangeformat = _rangeformat
         print("\n\n\t=========================================\n")
@@ -582,8 +581,14 @@ class do_mkAQDdata:
 
     def mkAdata(self,fout_Afile):
         self.fout_Afile = fout_Afile
-        if 'T' not in self.readA : 
+        if 'T' not in self.readA :
             sys.exit("\t Error, outcar doesn't include A tensor information")
+        # The defect spin S, written in the provenance line of the A file: from the OUTCAR's total magnetization;
+        # a --spin given on the command line must agree with it (the values themselves do not depend on it).
+        self._spin = spin_from_outcar(self.foutcar)
+        if self._spin_given is not None and abs(check_spin(self._spin_given) - self._spin) > 1e-9:
+            pyform._error(f"--spin {self._spin_given:g} contradicts the OUTCAR {self.foutcar}: its total magnetization "
+                          f"gives S = {self._spin:g}")
         self.outcar_spHam.Adata = Afile(self.relativepos, self.outcar_spHam.Adata, self.outcar_spHam.isodata,fout_Afile,self._spin,_rangeformat=self._rangeformat)
     def mkQdata(self,fout_Qfile):
         self.fout_Qfile = fout_Qfile

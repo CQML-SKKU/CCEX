@@ -44,7 +44,7 @@ typedef struct {
 
     /**
      * @brief The spin number of a qubit
-     * @details Read from Qubit.qubit[i].spin, or the top-level "qspin" with a qubitfile (default : 1)
+     * @details Read from Qubit.qubit[i].spin, or Qubit.spin with Qubit.file (default : 1)
     */
     float spin;
 
@@ -75,7 +75,7 @@ typedef struct {
 
     /**
      * @brief The energy detuning from spin bath (Unit : radkHz)
-     * @details Set automatically when Qubit.overhaus is true (default : 0.0)
+     * @details Set automatically when hamiltonian.common.qubit_bath_mean_field is true (default : 0.0)
     */
     double overhaus; 
 
@@ -84,15 +84,15 @@ typedef struct {
     /**
      * @brief The projected state of a qubit (alpha)
      * @details Built from Qubit.qubit[i].alphams, the z-basis sublevel (S, S-1, ..., -S; default : 1),
-     *          or the top-level "qalphams" with a qubitfile. Dimension : 2*spin+1.
-     *          The whole-register vectors Qubit.psia/psib and Qubit.alphaidx/betaidx are separate (QubitArray).
+     *          or Qubit.alphams with Qubit.file. Dimension : 2*spin+1.
+     *          The whole-register states Qubit.alpha_state/beta_state ({"vector": ...} or {"index": n}) are separate (QubitArray).
     */
     MatrixXcd alpha; 
 
     /**
      * @brief The projected state of a qubit (beta)
      * @details Built from Qubit.qubit[i].betams, the z-basis sublevel (default : 0),
-     *          or the top-level "qbetams" with a qubitfile. Dimension : 2*spin+1.
+     *          or Qubit.betams with Qubit.file. Dimension : 2*spin+1.
     */
     MatrixXcd beta;
     

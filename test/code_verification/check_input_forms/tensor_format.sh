@@ -9,11 +9,15 @@
 # T2  an old file is read as before: the VASP-tagged v1 file (the _tag file until 2026-10-13, made here as "VASP" + the
 #     untagged file) gives the bytes of a v3 file holding the same numbers (v3 x 2) - the old rule is x 1 for a VASP
 #     line - and, while reference/head-20261012-aa883d0d4 (recorded with that _tag file) exists, its bytes (a binary
-#     built with MKL, A46: its _noDiv/dm within 1e-12 relative, as check_numerics judges such a binary);
+#     built with MKL, A46: its _noDiv/dm within 1e-12 relative, as check_numerics judges such a binary); on a CI runner
+#     (CI set) the reference half is skipped and says so (A56: the reference is one machine's digits);
 # T3  the log of an old file has the warning, the log of a v3 file the format-v3 line and SpinFactor = 1.
 # T4  values of 10 characters or more (1234.56789, -12345.6) in the A and Q files of SpinTensorReader's VASP and QE
 #     writers, in their format now and in the one before 2026-10-13 (tab-glued fields), are read as written
 #     (example/tools/SpinTensorReader/tests/check_wide_fields.py).
+# T5  a Q file alone from a VASP OUTCAR whose magnetization is 0 or missing is written (the same Q file), while an A file
+#     from it, or with a --spin it contradicts, is still refused (review 20261013-180049 T1;
+#     example/tools/SpinTensorReader/tests/check_qfile_spin.py).
 # The refused files (a tag that contradicts the source, S other than the qubit spin, a malformed line) are in
 # ../check_refusals/.
 #
@@ -63,7 +67,12 @@ for d in "$NUM"/cases/hbn_*/; do
     else echo "  FAIL  T1 $case (see $W/$case)"; FAIL=$((FAIL+1)); fi
     ok=1
     same_bytes "$W/$case/v1_tagged" "$W/$case/v3_double" || { echo "    $case: the VASP-tagged v1 file is not read x 1"; ok=0; }
-    if [ -d "$OLDREF/$case" ] && grep -q "MKL for large clusters : on" "$W/$case/v1_tagged.log"; then
+    if [ -d "$OLDREF/$case" ] && [ -n "${CI:-}" ]; then
+        # A56: the reference holds one machine's digits (WSL); on a CI runner (CI set, as GitHub Actions sets it, like
+        # evolution_update.sh E1) only the self-contained half is judged (CI run 38487968260: three of five cases differ)
+        echo "  SKIP  T2 $case: the bytes of $(basename "$OLDREF") on a CI runner (one machine's digits)"
+        what="(the bytes of $(basename "$OLDREF") skipped on a CI runner)"
+    elif [ -d "$OLDREF/$case" ] && grep -q "MKL for large clusters : on" "$W/$case/v1_tagged.log"; then
         # A46: a binary built with MKL is held to the reference as check_numerics holds it (its README): the _noDiv
         # and density-matrix files within 1e-12 of the reference relative to it (absolute where it is 0), _wiDiv not judged
         python3 - "$OLDREF/$case" "$W/$case/v1_tagged" <<'PY' || ok=0
@@ -95,6 +104,9 @@ PY
 done
 out=$(python3 "$EX/tools/SpinTensorReader/tests/check_wide_fields.py" "$BIN_DEV" "$MPIRUN" "$W/wide_fields" 2>&1); rc=$?
 echo "$out" | sed 's/^  PASS  /  PASS  T4 /; s/^  FAIL  /  FAIL  T4 /'
+if [ $rc -eq 0 ]; then PASS=$((PASS+$(grep -c "^  PASS" <<<"$out"))); else FAIL=$((FAIL+1)); fi
+out=$(python3 "$EX/tools/SpinTensorReader/tests/check_qfile_spin.py" "$W/qfile_spin" 2>&1); rc=$?
+echo "$out" | sed 's/^  PASS  /  PASS  T5 /; s/^  FAIL  /  FAIL  T5 /'
 if [ $rc -eq 0 ]; then PASS=$((PASS+$(grep -c "^  PASS" <<<"$out"))); else FAIL=$((FAIL+1)); fi
 echo "tensor_format: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ]

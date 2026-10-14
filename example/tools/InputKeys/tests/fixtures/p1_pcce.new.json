@@ -1,0 +1,71 @@
+{
+    # Config - Method 
+    "method"        : "cCCE",
+    "cluster_mode"  : "pcce", 
+    "quantity"      : "coherence",
+    
+    "Qubit"         : {
+        # Config - File
+        "file"          :  "../bath/14N_1ppm/bath_DiaP1_1ppm_Defect",
+        # Qubit
+        "alphams"      : -1,
+        "betams"       : 0
+    },
+    "gyrofile"      :  "../bath/DiaP1_gyro",
+    "bathfile"      : ["../bath/14N_1ppm/bath_DiaP1_1ppm_"],
+  #"avaaxfile"     :  "Random",
+  #"statefile"     :  "Random",
+  #"exstatefile"   :  "Random",
+
+    # Config - General
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 850,
+    "rdip"          : 620,
+    "deltat"        : 0.01,
+    "nstep"         : 300,
+
+    # Cluster
+    "add_subclusters" : false, # true / false
+    "max_clusters_per_order" : [0,0,0], # default : [0] (all) or [0,0,30,40,50]
+    "pcce"          : {
+        "partition_size" : 2,  # int
+        "trials"        : 1000, # int
+        "max_iterations" : 1000,  # int
+        "kmeans_pp"     : true, # true / false
+        "print_trials"  : true # true / false
+    },
+
+    # Pulse
+    "pulse"         : {"count": 1},
+
+    # Config - Spin tensor 
+#  "hf_tensorfile" : "0",
+#  "qd_readmode"   : 0,
+
+    # Output
+    "savemode"    : "coherence",
+
+  "Defect"         : {
+        "species"       : [
+    		{   
+                "name": "P1",
+                "n_nuclear_spins" : 0,
+                "n_configurations" : 12, 
+                "detuning" : [ [1,  "e",   84.946496],
+                               [2,  "e",   84.946496],
+                               [3,  "e",   84.946496],
+                               [4,  "e",     0.00000],
+                               [5,  "e",     0.00000],
+                               [6,  "e",     0.00000],
+                               [7,  "e",  -84.946496],
+                               [8,  "e",  -84.946496],
+                               [9,  "e",  -84.946496],
+                               [10, "e",  114.026400],
+                               [11, "e",     0.00000],
+                               [12, "e", -114.026400]]
+            }   
+
+                           ]
+    }
+}

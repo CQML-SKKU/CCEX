@@ -274,7 +274,7 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* puls
     if (!isEnsemble){
         psi0 = BathArray_Psi0(ba);
     }
-    cceSetup(ws, isEnsemble ? nullptr : &psi0);
+    if (!cceSetupSmallAlone(ws, isEnsemble ? nullptr : &psi0)) cceSetup(ws, isEnsemble ? nullptr : &psi0);   // A42
 
     // Quantity
     char* quantity = Config_getQuantity(cnf);
@@ -350,6 +350,12 @@ void cceEvolve(Config* cnf, Pulse* pulse, MatrixXcd* result, CceWorkspace& ws){
         // the exact branches here compile as before)
         evolveEnsembleRecursiveCce(M,M_up,M_down,es_up_Val,es_down_Val,pulse,manualIntervals,nstep,deltat,result);
 
+    }else if (isEnsemble && !manualIntervals && npulse==0){
+        // X8: Ramsey reads only Tr[M U_down M^dagger U_up^dagger] = U_up^dagger |M|^2 U_down (D^2 per step instead of a
+        // D^3 product); in simulator_cce_recursive.cpp, so that the branches here compile as before (written here, or
+        // with the old Ramsey branch below removed, the single-state branch moved in the last bits: p1_pcce2_sk2)
+        evolveEnsembleRamseyCce(M,es_up_Val,es_down_Val,nstep,deltat,result);
+
     }else if (isEnsemble && !manualIntervals){
 
         MatrixXcd U_up; MatrixXcd U_down;
@@ -385,7 +391,8 @@ void cceEvolve(Config* cnf, Pulse* pulse, MatrixXcd* result, CceWorkspace& ws){
                 X2 = X.cwiseAbs2();
                 overlap = (Uu.adjoint() * X2.cast<doublec>() * Uu)(0,0);
             }
-            //T2_star (Ramsey)
+            //T2_star (Ramsey): no longer reached (X8, evolveEnsembleRamseyCce above), but kept: without it g++ compiles the
+            // single-state branch of this function differently (check_numerics p1_pcce2_sk2 moved in the last bits)
             else if(npulse==0){
 
                 Eigen::VectorXcd es_up_Val_tau      =es_up_Val*tfree;

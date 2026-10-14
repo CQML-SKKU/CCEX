@@ -15,11 +15,8 @@ namespace rdipladder {
 // meet and stop with exit 1 instead of MPI_Abort: an abort let mpirun drop the message now and then (check_rdip_ladder
 // bad_saveall failed twice on 2026-10-08 with no message in the log).
 [[noreturn]] void refuse(const char* why){
-    if(rank==0)fprintf(stderr,"Error: rdip_ladder %s\n",why);
-    fflush(stdout);fflush(stderr);
-    MPI_Barrier(MPI_COMM_WORLD);
-    MPI_Finalize();
-    exit(1);
+    ccexRefusalPrint(stderr,"Error: rdip_ladder %s\n",why);
+    ccexRefuse();   // the same stop as every input refusal (A55, include/common/utilities.h)
 }
 
 // pCCE: the partition this run's clusterize made or read (pcce_partition_cache.cpp), after the remainder spins were cut.

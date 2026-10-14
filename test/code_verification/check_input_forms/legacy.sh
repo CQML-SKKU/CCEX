@@ -119,7 +119,7 @@ d = {"method":"cCCE","quantity":"coherence",
      "Qubit":{"file":f"{H}/defect","alphams":1,"betams":0},"gyrofile":f"{fix}/ensemble_data/Gyro_h_BN",
      "bathfile":[f"{H}/bath_1"],
      "order":2,"bfield":30000,"rbath":6,"rdip":4,"deltat":0.002,"nstep":20,
-     "nstate":0,"pulse":{"count":1},"hf_cutoff":0,
+     "nstate":0,"pulse":{"count":1},
      "hamiltonian":{"common":{
      # missing_row point_dipole: the MinDif/MaxDif box in Afile is wider than the set of atoms
      # the file lists, so a spin can sit inside the box with no row of its own. Without

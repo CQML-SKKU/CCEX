@@ -106,8 +106,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     Eigen::RowVectorXcd gcceAlphaRho;                      // A14: psia^dagger rho of the gCCE coherence, reused
     const bool checkDisorder = getenv("CCEX_CHECK_DISORDER") && strcmp(getenv("CCEX_CHECK_DISORDER"),"0");
     SmallClusterBatch smallGpu(qa,ba,dfa,cnf,pls,isGCCE,localclusters,order,savemode);   // A26: small cCCE clusters on the GPU; A40: the warp kernel (off: nothing)
-    // A30: small cCCE clusters batched on the CPU (the cCCE kernel only: never a gCCE or master-equation cluster)
-    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE,smallGpu.on());
+    // A30: small cCCE clusters batched on the CPU (A48: also beside the GPU batch); the cCCE kernel only: never a gCCE or
+    // master-equation cluster
+    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE);
     for (int istate=0; istate<=nstate; istate++){
 
         // wall time
@@ -450,9 +451,11 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     int smallDim=0,smallPer=1;
                     const std::complex<double>* small = smallGpu.on() ? smallGpu.get(ic,smallDim,smallPer) : nullptr;
                     // A30: or when the CPU batch did (then no bath array either; one value per time point); one it left
-                    // to the scalar path may come with its bath array already made
+                    // to the scalar path may come with its bath array already made. A48: in the GPU build only the clusters
+                    // the GPU batch leaves to the CPU (its window stops where the GPU's takes over), and none inside a CUDA
+                    // cluster batch (that one made its bath arrays itself)
                     BathArray* made = nullptr;
-                    if(!small && cpuBatch.on()) small = cpuBatch.get(ic,smallDim,&made);
+                    if(!small && cpuBatch.on() && batchResults.empty()) small = cpuBatch.get(ic,smallDim,&made,smallGpu.cpuEnd(ic));
 
                     // Create the bath array for the cluster
                     BathArray* ba_cluster = small ? nullptr : made ? made : batchResults.empty() ?
@@ -504,7 +507,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         result_nth = cceResult.get();
                         ownedResult = false;
                     }else if(small){
-                        for(int istep=0;istep<nstep;istep++){ cceResult[istep].resize(1,1); cceResult[istep](0,0)=small[istep]; }
+                        // review 20261013-221715 X6: under gather (nothing but the product reads the cluster's values:
+                        // no savemode cluster_coherence, except, ladder or contributions) the product reads small itself
+                        if(!gather) for(int istep=0;istep<nstep;istep++){ cceResult[istep].resize(1,1); cceResult[istep](0,0)=small[istep]; }
                         result_nth = cceResult.get();
                         ownedResult = false;
                     }else if(!batchResults.empty()){
@@ -544,10 +549,11 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     // total result : result = result * ( L_C_(k=n) / L_C_(k=0) ) ^ power
                     ladder.add(cluster,n,power,result_nth,inverseZero,unitZero);
                     if(gather && power!=1 && ngathered>0)flushGathered();
+                    const std::complex<double>* direct=(small && smallPer==1 && gather) ? small : nullptr;   // X6
                     for (int istep=0; istep<nstep; istep++){
                         if((cnf->cluster_contributions || ladder.on) && power==0)continue;
                         if(stableProduct){
-                            const auto raw=result_nth[istep](0,0),zero=result_0th[istep](0,0);
+                            const auto raw=direct ? direct[istep] : result_nth[istep](0,0),zero=result_0th[istep](0,0);
                             const bool invalid=!std::isfinite(raw.real()) || !std::isfinite(raw.imag()) ||
                                 !std::isfinite(zero.real()) || !std::isfinite(zero.imag()) || zero==doublec(0,0) ||
                                 (power<0 && raw==doublec(0,0));

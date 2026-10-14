@@ -1,0 +1,42 @@
+{
+    # Config (General)
+    "method"        : "cCCE",
+    "quantity"      : "coherence",
+    "Qubit"         : {
+        "file"          : "../bath/bath_Diamond_NV_natab_defect",
+        # Qubit : ms = +1 / 0 of the NV, one pi pulse (Hahn echo)
+        "alphams"        : 1,
+        "betams"         : 0
+    },
+    "gyrofile"      : "../bath/gyro_13C",
+    "bathfile"      : ["../bath/bath_Diamond_NV_natab_1"],
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 20,
+    "rdip"          : 10,
+    "deltat"        : 0.01,
+    "nstep"         : 200,
+    # seed : the refinement recomputes the same system round after round, so the seed must be explicit
+    "seed"          : 9407,
+
+    # Clustering : bundles as in ../CCE2_bundle/ccein_bundle.json
+    "cluster_mode"    : "bundle",
+    "bundle"        : {"max_dim": 8},
+    "pulse"         : {"count": 1},
+
+    # Adaptive : with this block the bundled calculation is refined (docs/adaptive-input-block.md);
+    #            without it, it runs once. The run computes, measures the error at each bundle
+    #            boundary, re-bundles and computes again, until the curve changes by less than
+    #            atol (absolute) + rtol (relative) or max_rounds is reached.
+    #            policy : merge, the only one (the default; four others were removed on 2026-10-10)
+    #            Everything goes to "output": one folder per step (0001-run, 0002-probe, ...) and summary.json.
+    "adaptive" : {
+        "policy"     : "merge",
+        "output"     : "./results/adaptive",
+        "atol"       : 1e-3,
+        "rtol"       : 0,
+        "max_rounds" : 4
+    },
+
+    "outfile"       : "./results/CCE2_adaptive_1"
+}

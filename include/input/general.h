@@ -175,8 +175,8 @@ typedef struct {
      *          computational basis and are left alone. It says nothing about the POSITION
      *          columns of the tensor file, which are always read in the original frame,
      *          because that is what the lookup matches against.
-     *          Empty = not given; required when the rotation is on and hf_readmode is 2 or 3.
-     *          At hf_readmode 1 the anisotropic part is rebuilt as a point dipole from the
+     *          Empty = not given; required when the rotation is on and hamiltonian.common.hyperfine
+     *          has "dipole": "dft". With "dipole": "point" and "contact": true the anisotropic part is rebuilt as a point dipole from the
      *          source geometry, so a given frame is not used (only noted in the log).
     */
     char rot_hf_tensor_frame[MAX_CHARARRAY_LENGTH];

@@ -259,15 +259,15 @@ void Output_setSavemode(Output* op, char* savemode){
     const char* names[] = {"coherence", "coherence_tagged", "cluster_coherence", "cluster_density_matrix"};
     for (int k=0; k<4; ++k)
         if (strcasecmp(savemode, oldNames[k]) == 0){
-            fprintf(stderr, "Error: savemode \"%s\" is now \"%s\"\n", oldNames[k], names[k]);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: savemode \"%s\" is now \"%s\"\n", oldNames[k], names[k]);
+            ccexRefuse();   // read from the input on every rank (A55)
         }
     int k = 0;
     while (k<4 && strcasecmp(savemode, names[k])) ++k;
     if (k == 4) {
-        fprintf(stderr, "Error: savemode \"%s\" is not one of coherence, coherence_tagged, cluster_coherence, "
+        ccexRefusalPrint(stderr, "Error: savemode \"%s\" is not one of coherence, coherence_tagged, cluster_coherence, "
                         "cluster_density_matrix\n", savemode);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     strcpy(op->savemode, savemode);   // one of the names above (any case), which fits
 }

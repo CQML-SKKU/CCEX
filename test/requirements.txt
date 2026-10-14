@@ -1,5 +1,8 @@
 # Python packages the checks under test/ need (README.md, test/README.md).
 # scipy: the coherence analyzer the error-correction stages call imports it.
+# pandas, psutil: SpinTensorReader, which check_input_forms tensor_format T5 runs whole (main.py).
 numpy
 scipy
 matplotlib
+pandas
+psutil

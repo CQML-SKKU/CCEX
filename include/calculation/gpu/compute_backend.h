@@ -2,10 +2,16 @@
 #define CCEX_COMPUTE_BACKEND_H
 
 #include "../../input/general.h"
+#include "../../physical/pulse.h"
+#include "../../physical/qubit.h"
 
-// Called after all JSON/CLI overrides, before reading bath/tensor files.
-void computeBackendInit(const Config* config);
+// Called after all JSON/CLI overrides, before reading bath/tensor files. qa, pls, savemode (optional): for the early start
+// of the small-cluster batch (smallClusterWarmUp, review 20261013-221715 X7).
+void computeBackendInit(const Config* config, QubitArray* qa = nullptr, Pulse* pls = nullptr, const char* savemode = nullptr);
 bool computeUseCuda(const Config* config, int dimension);
+// The methods whose clusters may go to the GPU: cCCE (cluster_mode standard or pcce) and gCCE with propagator=eigen.
+// computeBackendInit and the evolution_update default (Config_validateEvolutionUpdate, A36) ask the same.
+bool computeBackendMethodSupported(const Config* config);
 // A cluster of this dimension ran out of GPU memory (GpuOutOfMemory, gpu_backend.h; what = its message). backend auto
 // (user 2026-10-13, A37 job 699): true - the caller computes the cluster on the CPU, and from now on this rank sends no
 // cluster of this dimension or larger to the GPU (computeUseCuda says no); one line on stdout. Otherwise (cuda) false: the

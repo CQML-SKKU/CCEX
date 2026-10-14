@@ -187,8 +187,9 @@ mac)
     ;;
 esac
 
-# CCEX_BLAS (A46): the cCCE ensemble Hahn step's D^3 product from bath dimension 21 and the
-# cCCE/gCCE cluster eigensolve from dimension 63 by MKL's zgemm/zheevd (include/common/blas_option.h).
+# CCEX_BLAS (A46): the cCCE ensemble Hahn step's D^3 product (the recursive path) from bath dimension 21
+# and the cluster eigensolve from dimension 63 (cCCE: the bath dimension; gCCE: the whole qubit x bath
+# dimension) by MKL's zgemm/zheevd (include/common/blas_option.h).
 # idm job 17337: h-BN r 0.72-0.88 where the time is in such clusters, P1 untouched; the curves move
 # in the last digits (h-BN gCCE late times up to 9e-8). auto (the default; user decision 2026-10-13):
 # on when $MKLROOT (set by setvars.sh or an intel module, so decided here, after the preset) holds
@@ -373,6 +374,8 @@ endef
 \$(eval \$(call COMPILE_RULES,\$(OBJ_GPU_DIR),-DCCEX_USE_CUDA))
 # A30: the batched small-cluster kernel writes out every fused multiply-add it needs; the compiler adds none
 \$(OBJ_DIR)/cce_batch_kernel.o \$(OBJ_GPU_DIR)/cce_batch_kernel.o: CXXFLAGS += -ffp-contract=off
+# A42: the small eigensolver's lanes must compute what one matrix alone computes: nothing fused
+\$(OBJ_DIR)/small_eigensolver.o \$(OBJ_GPU_DIR)/small_eigensolver.o: CXXFLAGS += -ffp-contract=off
 
 \$(OBJ_GPU_DIR)/gpu_backend.o: \$(SRC_DIR)/calculation/gpu/gpu_backend.cu \$(wildcard ./include/calculation/gpu/*.h) | \$(OBJ_GPU_DIR)
 	\$(NVCC) -std=c++17 -O3 -lineinfo -I./include \\
@@ -435,6 +438,9 @@ FIXED_TEST_OBJS := \$(filter-out \$(OBJ_DIR)/main.o \$(OBJ_DIR)/simulator_cce.o,
 # check_gpu/data/small_cluster; it links the objects of main.out but main.o.
 \$(BIN_DIR)/test_cce_batch.out: test/code_verification/check_numerics/test_cce_batch.cpp \$(filter-out \$(OBJ_DIR)/main.o,\$(OBJS)) | \$(BIN_DIR) \$(OBJ_DIR)
 	\$(CXX) \$(INCLUDE) \$(CXXFLAGS) -UNDEBUG -MMD -MP -MF \$(OBJ_DIR)/test_cce_batch.test.d -MT \$@ \$< \$(filter-out \$(OBJ_DIR)/main.o,\$(OBJS)) \$(LIBRARY) -o \$@
+# A42: the small cCCE eigensolver (fixed-sweep Jacobi) against Eigen and lane against lane
+\$(BIN_DIR)/test_small_eigensolver.out: test/code_verification/check_numerics/test_small_eigensolver.cpp \$(filter-out \$(OBJ_DIR)/main.o,\$(OBJS)) | \$(BIN_DIR) \$(OBJ_DIR)
+	\$(CXX) \$(INCLUDE) \$(CXXFLAGS) -UNDEBUG -MMD -MP -MF \$(OBJ_DIR)/test_small_eigensolver.test.d -MT \$@ \$< \$(filter-out \$(OBJ_DIR)/main.o,\$(OBJS)) \$(LIBRARY) -o \$@
 BUNDLE_SRCS := src/clustering/bundle/bundle_partition.cpp src/clustering/bundle/bundle_expansion.cpp src/clustering/bundle/bundle_powers.cpp
 \$(addprefix \$(BIN_DIR)/,\$(addsuffix .out,\$(BUNDLE_TESTS))): \$(BIN_DIR)/%.out: test/cluster_verification/check_pcce/%.cpp \$(BUNDLE_SRCS) | \$(BIN_DIR) \$(OBJ_DIR)
 	\$(CXX) \$(INCLUDE) \$(CXXFLAGS) -UNDEBUG -MMD -MP -MF \$(OBJ_DIR)/\$*.test.d -MT \$@ \$< \$(BUNDLE_SRCS) -o \$@
@@ -462,7 +468,7 @@ numeric-test: \$(BIN_DIR)/test_scaled_product.out \$(BIN_DIR)/test_hamiltonian_c
 	./\$(BIN_DIR)/test_scaled_product.out
 	./\$(BIN_DIR)/test_hamiltonian_check.out
 	./\$(BIN_DIR)/test_small_cluster_host.out test/gpu_verification/check_gpu/data/small_cluster/*.bin
-cpu-test: \$(addprefix \$(BIN_DIR)/,\$(addsuffix .out,\$(CPU_TESTS) \$(BUNDLE_TESTS) test_partition_cache_format test_fixed_size test_cce_batch))
+cpu-test: \$(addprefix \$(BIN_DIR)/,\$(addsuffix .out,\$(CPU_TESTS) \$(BUNDLE_TESTS) test_partition_cache_format test_fixed_size test_cce_batch test_small_eigensolver))
 	./\$(BIN_DIR)/test_cluster_log.out
 	./\$(BIN_DIR)/test_review_controls.out
 	\$(MPIRUN) -n 1 ./\$(BIN_DIR)/test_mpi_seed.out
@@ -475,6 +481,7 @@ cpu-test: \$(addprefix \$(BIN_DIR)/,\$(addsuffix .out,\$(CPU_TESTS) \$(BUNDLE_TE
 	./\$(BIN_DIR)/test_partition_cache_format.out \$(OBJ_DIR)/test_partition_cache.bin
 	./\$(BIN_DIR)/test_fixed_size.out
 	./\$(BIN_DIR)/test_cce_batch.out test/gpu_verification/check_gpu/data/small_cluster/*.bin
+	./\$(BIN_DIR)/test_small_eigensolver.out test/gpu_verification/check_gpu/data/small_cluster/*.bin
 gpu-test: numeric-test \$(addprefix \$(BIN_DIR)/,\$(addsuffix .out,\$(GPU_TESTS)))
 	./\$(BIN_DIR)/test_gcce_cuda.out
 	./\$(BIN_DIR)/test_cce_cuda.out

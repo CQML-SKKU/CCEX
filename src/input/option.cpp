@@ -3,6 +3,7 @@
 #include "../../include/input/json.h"
 #include "../../include/common/memory.h"
 #include "../../include/calculation/superoperator.h"
+#include "../../include/auto_convergence/rdip_ladder.h"
 
 #include <cmath>
 #include <limits>
@@ -76,24 +77,24 @@ static void readAxis3(cJSON* section, const char* section_name, const char* key,
     cJSON* item = cJSON_GetObjectItem(section,key);
     if (item == NULL){
         if (required){
-            fprintf(stderr,"Error: %s.%s is required\n",section_name,key);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: %s.%s is required\n",section_name,key);
+            ccexRefuse();
         }
         return; // absent and optional : keep the default
     }
 
     if (!cJSON_IsArray(item) || cJSON_GetArraySize(item) != 3){
-        fprintf(stderr,"Error: %s.%s must be an array of exactly 3 numbers\n",section_name,key);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s.%s must be an array of exactly 3 numbers\n",section_name,key);
+        ccexRefuse();
     }
 
     int i = 0;
     cJSON* element;
     cJSON_ArrayForEach(element,item){
         if (!cJSON_IsNumber(element)){
-            fprintf(stderr,"Error: %s.%s[%d] is not a number\n",section_name,key,i);
-            fprintf(stderr,"Write the axis as plain numbers, e.g. [0, 0, 1] -- not strings, null or booleans.\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: %s.%s[%d] is not a number\n",section_name,key,i);
+            ccexRefusalPrint(stderr,"Write the axis as plain numbers, e.g. [0, 0, 1] -- not strings, null or booleans.\n");
+            ccexRefuse();
         }
         out[i] = element->valuedouble;
         i++;
@@ -107,8 +108,8 @@ static bool readStrictBool(cJSON* section, const char* section_name, const char*
     cJSON* item = cJSON_GetObjectItem(section,key);
     if (item == NULL){ return default_value; }
     if (!cJSON_IsBool(item)){
-        fprintf(stderr,"Error: %s.%s must be a boolean (true or false)\n",section_name,key);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s.%s must be a boolean (true or false)\n",section_name,key);
+        ccexRefuse();
     }
     return (bool)item->valueint;
 }
@@ -251,10 +252,10 @@ static void refuseOldInputKeys(cJSON* root){
     }
     if (found.empty()) return;
     if (rank==0){
-        for (const std::string& f : found) fprintf(stderr,"Error: %s\n",f.c_str());
-        fprintf(stderr,"%s (docs/user/InputFile.md has the table of old and new names)\n",kConvertHint);
+        for (const std::string& f : found) ccexRefusalPrint(stderr,"Error: %s\n",f.c_str());
+        ccexRefusalPrint(stderr,"%s (docs/user/InputFile.md has the table of old and new names)\n",kConvertHint);
     }
-    exit(EXIT_FAILURE);
+    ccexRefuse();
 }
 
 // The calculation method and the cluster shape (A47): "method" is cCCE, gCCE, meCCE or megCCE (the master-equation
@@ -265,49 +266,56 @@ static void refuseOldInputKeys(cJSON* root){
 // and methodKernel, general.h); the adding_MECCE branch's method names pgCCE, pmeCCE and pmegCCE are refused with the new
 // form. gCCE also runs with bundle; dsj, itb and dsjitb run with cCCE only (gCCE with them is not implemented yet;
 // improvements.md A47). noise is a reserved method name (A49): accepted by the reader, refused as not implemented yet.
-static void internalMethod(const char* method, const char* shape, const char* where, char* methodOut, char* modeOut){
+// A method name: cCCE, gCCE, meCCE or megCCE (true for gCCE); reserved, old and unknown names are refused.
+static bool checkedMethodName(const char* method, const char* where){
     const bool gcce = !strcasecmp(method,"gcce");
     const bool mecce = !strcasecmp(method,"mecce"), megcce = !strcasecmp(method,"megcce");
     if (!strcasecmp(method,"noise")){
-        fprintf(stderr,"Error: %s \"%s\" is not implemented yet (a reserved name; the methods that run are cCCE, gCCE, meCCE "
+        ccexRefusalPrint(stderr,"Error: %s \"%s\" is not implemented yet (a reserved name; the methods that run are cCCE, gCCE, meCCE "
                        "and megCCE)\n",where,method);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce")){
         static const char* branch[][2] = {{"pgcce","gCCE"}, {"pmecce","meCCE"}, {"pmegcce","megCCE"}};   // adding_MECCE
         const char* now = nullptr;
         for (const auto& b : branch) if (!strcasecmp(method,b[0])) now = b[1];
         if (now)
-            fprintf(stderr,"Error: %s \"%s\" is now method \"%s\" with \"cluster_mode\": \"pcce\" in the input\n",where,method,now);
+            ccexRefusalPrint(stderr,"Error: %s \"%s\" is now method \"%s\" with \"cluster_mode\": \"pcce\" in the input\n",where,method,now);
         else if (!strcasecmp(method,"cce"))
-            fprintf(stderr,"Error: %s \"%s\" is now \"cCCE\"\n",where,method);
+            ccexRefusalPrint(stderr,"Error: %s \"%s\" is now \"cCCE\"\n",where,method);
         else if (!strcasecmp(method,"pcce") || !strcasecmp(method,"dsj") || !strcasecmp(method,"itb") || !strcasecmp(method,"dsjitb"))
-            fprintf(stderr,"Error: %s \"%s\" is now method \"cCCE\" with \"cluster_mode\": \"%s\" in the input\n",where,method,
+            ccexRefusalPrint(stderr,"Error: %s \"%s\" is now method \"cCCE\" with \"cluster_mode\": \"%s\" in the input\n",where,method,
                     lowerKey(method).c_str());
         else
-            fprintf(stderr,"Error: %s must be cCCE, gCCE, meCCE or megCCE (noise is reserved, not implemented yet), not \"%s\"\n",
+            ccexRefusalPrint(stderr,"Error: %s must be cCCE, gCCE, meCCE or megCCE (noise is reserved, not implemented yet), not \"%s\"\n",
                     where,method);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
+    return gcce;
+}
+
+static void internalMethod(const char* method, const char* shape, const char* where, char* methodOut, char* modeOut){
+    const bool gcce = checkedMethodName(method,where);
+    const bool mecce = !strcasecmp(method,"mecce"), megcce = !strcasecmp(method,"megcce");
     static const char* shapes[] = {"standard", "pcce", "bundle", "dsj", "itb", "dsjitb"};
     int k = 0;
     while (k < 6 && strcasecmp(shape,shapes[k])) ++k;
     if (k == 6){
         if (!strcasecmp(shape,"adaptive"))
-            fprintf(stderr,"Error: cluster_mode \"adaptive\" is now \"bundle\"\n");
+            ccexRefusalPrint(stderr,"Error: cluster_mode \"adaptive\" is now \"bundle\"\n");
         else
-            fprintf(stderr,"Error: cluster_mode must be standard, pcce, bundle, dsj, itb or dsjitb, not \"%s\"\n",shape);
-        exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: cluster_mode must be standard, pcce, bundle, dsj, itb or dsjitb, not \"%s\"\n",shape);
+        ccexRefuse();
     }
     if ((mecce || megcce) && k != 0 && k != 1){
-        fprintf(stderr,"Error: method %s with cluster_mode \"%s\" is not implemented (cluster_mode standard or pcce)\n",
+        ccexRefusalPrint(stderr,"Error: method %s with cluster_mode \"%s\" is not implemented (cluster_mode standard or pcce)\n",
                 mecce ? "meCCE" : "megCCE", shapes[k]);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     if (gcce && k != 0 && k != 1 && k != 2){
-        fprintf(stderr,"Error: method gCCE with cluster_mode \"%s\" is not implemented yet; cluster_mode %s runs with method cCCE\n",
+        ccexRefusalPrint(stderr,"Error: method gCCE with cluster_mode \"%s\" is not implemented yet; cluster_mode %s runs with method cCCE\n",
                 shapes[k],shapes[k]);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     static const char* internal[] = {"CCE", "pCCE", "CCE", "dsj", "itb", "dsjitb"};
     if (k == 1 && (gcce || mecce || megcce)) strcpy(methodOut,gcce ? "pgCCE" : mecce ? "pmeCCE" : "pmegCCE");
@@ -315,14 +323,26 @@ static void internalMethod(const char* method, const char* shape, const char* wh
     strcpy(modeOut,k == 2 ? "adaptive" : "standard");
 }
 
+// The last -m of the command line, or NULL (cJSON_setMethodOverride). It replaces the file's method before the
+// combination with cluster_mode is judged, so a file with gCCE + pcce runs under -m cCCE (review 20261013-180049 I02).
+static const char* methodOverride = NULL;
+
 static void readMethod(cJSON* root, char* methodOut, char* modeOut){
     cJSON* mode = cJSON_GetObjectItem(root,"cluster_mode");
     if (mode && (!cJSON_IsString(mode) || !mode->valuestring)){
-        fprintf(stderr,"Error: cluster_mode must be a string (standard, pcce, bundle, dsj, itb, dsjitb)\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: cluster_mode must be a string (standard, pcce, bundle, dsj, itb, dsjitb)\n");
+        ccexRefuse();
     }
-    internalMethod(cJSON_ReadString(root,(char*)"method",true,(char*)"cCCE"),mode ? mode->valuestring : "standard","method",
-                   methodOut,modeOut);
+    const char* method = cJSON_ReadString(root,(char*)"method",true,(char*)"cCCE");
+    if (methodOverride){
+        checkedMethodName(method,"method");   // the file's own value is still a method name
+        method = methodOverride;
+    }
+    internalMethod(method,mode ? mode->valuestring : "standard",methodOverride ? "-m" : "method",methodOut,modeOut);
+}
+
+void cJSON_setMethodOverride(const char* method){
+    methodOverride = method;
 }
 
 void cJSON_applyMethodOption(Config* cnf, Cluster* cls, const char* method){
@@ -340,8 +360,8 @@ void cJSON_applyMethodOption(Config* cnf, Cluster* cls, const char* method){
 static cJSON* readBlock(cJSON* parent, const char* key){
     cJSON* item = parent ? cJSON_GetObjectItem(parent,key) : NULL;
     if (item && !cJSON_IsObject(item)){
-        fprintf(stderr,"Error: %s must be an object\n",shownKey(parent,key).c_str());
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s must be an object\n",shownKey(parent,key).c_str());
+        ccexRefuse();
     }
     return item;
 }
@@ -353,8 +373,8 @@ static cJSON* radiusItem(cJSON* root, const char* key, cJSON** inner){
     *inner = NULL;
     if (!cJSON_IsArray(item)) return item;
     if (cJSON_GetArraySize(item) != 2){
-        fprintf(stderr,"Error: %s must be a number or [inner, outer]\n",key);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s must be a number or [inner, outer]\n",key);
+        ccexRefuse();
     }
     *inner = cJSON_GetArrayItem(item,0);
     return cJSON_GetArrayItem(item,1);
@@ -377,16 +397,16 @@ static DefectCoordinateFrame readDefectCoordinateFrame(cJSON* defect, const char
     if (item == NULL){ return DEFECT_COORDINATE_FRAME_QUBIT; }
 
     if (!cJSON_IsString(item) || item->valuestring == NULL){
-        fprintf(stderr,"Error: Defect.species[%s].coordinate_frame must be \"bath\" or \"qubit\"\n",dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].coordinate_frame must be \"bath\" or \"qubit\"\n",dfname);
+        ccexRefuse();
     }
     if (strcasecmp(item->valuestring,"bath") == 0){ return DEFECT_COORDINATE_FRAME_BATH; }
     if (strcasecmp(item->valuestring,"qubit") == 0){ return DEFECT_COORDINATE_FRAME_QUBIT; }
 
-    fprintf(stderr,"Error: Defect.species[%s].coordinate_frame = \"%s\" is not supported\n",
+    ccexRefusalPrint(stderr,"Error: Defect.species[%s].coordinate_frame = \"%s\" is not supported\n",
             dfname,item->valuestring);
-    fprintf(stderr,"Use \"bath\" for crystal/bath-file components or \"qubit\" for computational-frame components.\n");
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Use \"bath\" for crystal/bath-file components or \"qubit\" for computational-frame components.\n");
+    ccexRefuse();
 }
 
 static double readDefectFrequencyScaleToMHz(cJSON* object, const char* dfname,
@@ -395,8 +415,8 @@ static double readDefectFrequencyScaleToMHz(cJSON* object, const char* dfname,
     cJSON* item = cJSON_GetObjectItem(object,"unit");
     if (item == NULL){ return 1.0; } // documented default
     if (!cJSON_IsString(item) || item->valuestring == NULL){
-        fprintf(stderr,"Error: Defect.species[%s].%s.unit must be a string\n",dfname,field_name);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.unit must be a string\n",dfname,field_name);
+        ccexRefuse();
     }
 
     if (strcasecmp(item->valuestring,"Hz")  == 0){ return 1.0e-6; }
@@ -404,10 +424,10 @@ static double readDefectFrequencyScaleToMHz(cJSON* object, const char* dfname,
     if (strcasecmp(item->valuestring,"MHz") == 0){ return 1.0; }
     if (strcasecmp(item->valuestring,"GHz") == 0){ return 1.0e3; }
 
-    fprintf(stderr,"Error: Defect.species[%s].%s.unit = \"%s\" is not supported\n",
+    ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.unit = \"%s\" is not supported\n",
             dfname,field_name,item->valuestring);
-    fprintf(stderr,"Supported frequency units are Hz, kHz, MHz and GHz.\n");
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Supported frequency units are Hz, kHz, MHz and GHz.\n");
+    ccexRefuse();
 }
 
 static double readIntmapFrequencyScaleToKHz(cJSON* intmap, const char* qubit1_name,
@@ -416,9 +436,9 @@ static double readIntmapFrequencyScaleToKHz(cJSON* intmap, const char* qubit1_na
     cJSON* item = cJSON_GetObjectItem(intmap,"unit");
     if (item == NULL){ return 1.0; } // legacy Qubit.intmap tensors are in kHz
     if (!cJSON_IsString(item) || item->valuestring == NULL){
-        fprintf(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].unit must be a string\n",
+        ccexRefusalPrint(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].unit must be a string\n",
                 qubit1_name,qubit2_name);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
 
     if (strcasecmp(item->valuestring,"Hz")  == 0){ return 1.0e-3; }
@@ -426,16 +446,16 @@ static double readIntmapFrequencyScaleToKHz(cJSON* intmap, const char* qubit1_na
     if (strcasecmp(item->valuestring,"MHz") == 0){ return 1.0e3; }
     if (strcasecmp(item->valuestring,"GHz") == 0){ return 1.0e6; }
 
-    fprintf(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].unit = \"%s\" is not supported\n",
+    ccexRefusalPrint(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].unit = \"%s\" is not supported\n",
             qubit1_name,qubit2_name,item->valuestring);
-    fprintf(stderr,"Supported frequency units are Hz, kHz, MHz and GHz.\n");
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Supported frequency units are Hz, kHz, MHz and GHz.\n");
+    ccexRefuse();
 }
 
 static double readFiniteNumber(cJSON* item, const char* what){
     if (!cJSON_IsNumber(item) || !std::isfinite(item->valuedouble)){
-        fprintf(stderr,"Error: %s must be a finite JSON number\n",what);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s must be a finite JSON number\n",what);
+        ccexRefuse();
     }
     return item->valuedouble;
 }
@@ -443,8 +463,8 @@ static double readFiniteNumber(cJSON* item, const char* what){
 static MatrixXcd readDefectTensor3x3(cJSON* item, const char* what, double scale){
 
     if (!cJSON_IsArray(item)){
-        fprintf(stderr,"Error: %s must be a flat 9-number or nested 3x3 array\n",what);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s must be a flat 9-number or nested 3x3 array\n",what);
+        ccexRefuse();
     }
 
     MatrixXcd tensor = MatrixXcd::Zero(3,3);
@@ -463,8 +483,8 @@ static MatrixXcd readDefectTensor3x3(cJSON* item, const char* what, double scale
         for (int i=0; i<3; i++){
             cJSON* row = cJSON_GetArrayItem(item,i);
             if (!cJSON_IsArray(row) || cJSON_GetArraySize(row) != 3){
-                fprintf(stderr,"Error: %s row %d must contain exactly 3 numbers\n",what,i);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: %s row %d must contain exactly 3 numbers\n",what,i);
+                ccexRefuse();
             }
             for (int j=0; j<3; j++){
                 char element_label[220];
@@ -475,8 +495,8 @@ static MatrixXcd readDefectTensor3x3(cJSON* item, const char* what, double scale
         return tensor;
     }
 
-    fprintf(stderr,"Error: %s must be a flat 9-number or nested 3x3 array\n",what);
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Error: %s must be a flat 9-number or nested 3x3 array\n",what);
+    ccexRefuse();
 }
 
 static void readDefectZfs(cJSON* defect, DefectArray* dfa, int idf, int nconfig,
@@ -498,30 +518,30 @@ static void readDefectZfs(cJSON* defect, DefectArray* dfa, int idf, int nconfig,
     }
 
     if (!cJSON_IsObject(item)){
-        fprintf(stderr,"Error: Defect.species[%s].zfs must be an object or the legacy indexed array\n",df->dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].zfs must be an object or the legacy indexed array\n",df->dfname);
+        ccexRefuse();
     }
     if (!coordinate_frame_explicit){
-        fprintf(stderr,"Error: Defect.species[%s] uses an object-form zfs but has no coordinate_frame\n",df->dfname);
-        fprintf(stderr,"Set coordinate_frame to \"bath\" or \"qubit\" so the tensor basis is explicit.\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s] uses an object-form zfs but has no coordinate_frame\n",df->dfname);
+        ccexRefusalPrint(stderr,"Set coordinate_frame to \"bath\" or \"qubit\" so the tensor basis is explicit.\n");
+        ccexRefuse();
     }
     if (nconfig < 1){
-        fprintf(stderr,"Error: Defect.species[%s] has an object-form zfs but n_configurations = %d\n",df->dfname,nconfig);
-        fprintf(stderr,"At least one indexed configuration is required.\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s] has an object-form zfs but n_configurations = %d\n",df->dfname,nconfig);
+        ccexRefusalPrint(stderr,"At least one indexed configuration is required.\n");
+        ccexRefuse();
     }
 
     cJSON* D_item = cJSON_GetObjectItem(item,"D");
     cJSON* E_item = cJSON_GetObjectItem(item,"E");
     cJSON* tensor_item = cJSON_GetObjectItem(item,"tensor");
     if ((D_item != NULL) == (tensor_item != NULL)){
-        fprintf(stderr,"Error: Defect.species[%s].zfs must contain exactly one of D or tensor\n",df->dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].zfs must contain exactly one of D or tensor\n",df->dfname);
+        ccexRefuse();
     }
     if (tensor_item != NULL && E_item != NULL){
-        fprintf(stderr,"Error: Defect.species[%s].zfs.E cannot be combined with zfs.tensor\n",df->dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].zfs.E cannot be combined with zfs.tensor\n",df->dfname);
+        ccexRefuse();
     }
 
     double scale_to_mhz = readDefectFrequencyScaleToMHz(item,df->dfname,"zfs");
@@ -530,10 +550,10 @@ static void readDefectZfs(cJSON* defect, DefectArray* dfa, int idf, int nconfig,
 
     if (D_item != NULL){
         if (!df->axis_set){
-            fprintf(stderr,"Error: Defect.species[%s].zfs uses D/E form but Defect.species[%s].axis is missing\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].zfs uses D/E form but Defect.species[%s].axis is missing\n",
                     df->dfname,df->dfname);
-            fprintf(stderr,"The symmetry axis is required to construct the Cartesian ZFS tensor.\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"The symmetry axis is required to construct the Cartesian ZFS tensor.\n");
+            ccexRefuse();
         }
 
         char what[160];
@@ -545,9 +565,9 @@ static void readDefectZfs(cJSON* defect, DefectArray* dfa, int idf, int nconfig,
             E_mhz = scale_to_mhz * readFiniteNumber(E_item,what);
         }
         if (fabs(E_mhz) > 1.0e-12){
-            fprintf(stderr,"Error: Defect.species[%s].zfs.E is non-zero (%g MHz)\n",df->dfname,E_mhz);
-            fprintf(stderr,"An axis fixes z but not the transverse x/y directions needed by E. Use zfs.tensor instead.\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].zfs.E is non-zero (%g MHz)\n",df->dfname,E_mhz);
+            ccexRefusalPrint(stderr,"An axis fixes z but not the transverse x/y directions needed by E. Use zfs.tensor instead.\n");
+            ccexRefuse();
         }
 
         // H_ZFS = S . [D (n n^T - I/3)] . S. For n=[1,1,1]/sqrt(3),
@@ -583,16 +603,16 @@ static void readDefectDetuning(cJSON* defect, DefectArray* dfa, int idf, int nco
     }
 
     if (!cJSON_IsObject(item)){
-        fprintf(stderr,"Error: Defect.species[%s].detuning must be an object or the legacy indexed array\n",
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].detuning must be an object or the legacy indexed array\n",
                 df->dfname);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
 
     cJSON* values = cJSON_GetObjectItem(item,"values");
     if (!cJSON_IsArray(values)){
-        fprintf(stderr,"Error: Defect.species[%s].detuning.values must be an indexed array\n",df->dfname);
-        fprintf(stderr,"Example: \"detuning\": {\"values\": [[1,\"e\",-2.14]], \"unit\": \"MHz\"}\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].detuning.values must be an indexed array\n",df->dfname);
+        ccexRefusalPrint(stderr,"Example: \"detuning\": {\"values\": [[1,\"e\",-2.14]], \"unit\": \"MHz\"}\n");
+        ccexRefuse();
     }
 
     for (int iax=0; iax<=nconfig; iax++){ df->detuning[iax] = 0.0; }
@@ -602,26 +622,26 @@ static void readDefectDetuning(cJSON* defect, DefectArray* dfa, int idf, int nco
     for (int i=0; i<nentry; i++){
         cJSON* entry = cJSON_GetArrayItem(values,i);
         if (!cJSON_IsArray(entry) || cJSON_GetArraySize(entry) != 3){
-            fprintf(stderr,"Error: Defect.species[%s].detuning.values[%d] must be [configuration, \"e\", value]\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].detuning.values[%d] must be [configuration, \"e\", value]\n",
                     df->dfname,i);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
 
         cJSON* iax_item = cJSON_GetArrayItem(entry,0);
         if (!cJSON_IsNumber(iax_item)
             || iax_item->valuedouble != (double)iax_item->valueint
             || iax_item->valueint < 1 || iax_item->valueint > nconfig){
-            fprintf(stderr,"Error: Defect.species[%s].detuning.values[%d] configuration must be an integer in 1..%d\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].detuning.values[%d] configuration must be an integer in 1..%d\n",
                     df->dfname,i,nconfig);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
 
         cJSON* spin_item = cJSON_GetArrayItem(entry,1);
         if (!cJSON_IsString(spin_item) || spin_item->valuestring == NULL
             || strcasecmp(spin_item->valuestring,"e") != 0){
-            fprintf(stderr,"Error: Defect.species[%s].detuning.values[%d] spin label must be \"e\"\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].detuning.values[%d] spin label must be \"e\"\n",
                     df->dfname,i);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
 
         char what[180];
@@ -636,8 +656,8 @@ static double readDefectGyroScaleToRadkHzPerG(cJSON* object, const char* dfname)
     cJSON* item = cJSON_GetObjectItem(object,"unit");
     if (item == NULL){ return 1.0; }
     if (!cJSON_IsString(item) || item->valuestring == NULL){
-        fprintf(stderr,"Error: Defect.species[%s].gyros.unit must be a string\n",dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].gyros.unit must be a string\n",dfname);
+        ccexRefuse();
     }
 
     const char* unit = item->valuestring;
@@ -649,9 +669,9 @@ static double readDefectGyroScaleToRadkHzPerG(cJSON* object, const char* dfname)
     if (strcasecmp(unit,"radMHz/T") == 0 || strcasecmp(unit,"rad/us/T") == 0){ return 1.0e-1; }
     if (strcasecmp(unit,"rad/s/T") == 0){ return 1.0e-7; }
 
-    fprintf(stderr,"Error: Defect.species[%s].gyros.unit = \"%s\" is not supported\n",dfname,unit);
-    fprintf(stderr,"Supported gyro units are radkHz/G, rad/ms/G, kHz/G, MHz/G, MHz/T, Hz/T, radMHz/T and rad/s/T.\n");
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Error: Defect.species[%s].gyros.unit = \"%s\" is not supported\n",dfname,unit);
+    ccexRefusalPrint(stderr,"Supported gyro units are radkHz/G, rad/ms/G, kHz/G, MHz/G, MHz/T, Hz/T, radMHz/T and rad/s/T.\n");
+    ccexRefuse();
 }
 
 static double readDefectEqScaleTo1eMinus30m2(cJSON* object, const char* dfname){
@@ -659,8 +679,8 @@ static double readDefectEqScaleTo1eMinus30m2(cJSON* object, const char* dfname){
     cJSON* item = cJSON_GetObjectItem(object,"unit");
     if (item == NULL){ return 1.0; }
     if (!cJSON_IsString(item) || item->valuestring == NULL){
-        fprintf(stderr,"Error: Defect.species[%s].quadrupole_moments.unit must be a string\n",dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].quadrupole_moments.unit must be a string\n",dfname);
+        ccexRefuse();
     }
 
     const char* unit = item->valuestring;
@@ -674,9 +694,9 @@ static double readDefectEqScaleTo1eMinus30m2(cJSON* object, const char* dfname){
     if (strcasecmp(unit,"mbarn") == 0 || strcasecmp(unit,"millibarn") == 0
         || strcasecmp(unit,"mb") == 0){ return 1.0e-1; }
 
-    fprintf(stderr,"Error: Defect.species[%s].quadrupole_moments.unit = \"%s\" is not supported\n",dfname,unit);
-    fprintf(stderr,"Supported quadrupole-moment units are 1e-30 m^2, fm^2, m^2, cm^2, barn and mbarn.\n");
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Error: Defect.species[%s].quadrupole_moments.unit = \"%s\" is not supported\n",dfname,unit);
+    ccexRefusalPrint(stderr,"Supported quadrupole-moment units are 1e-30 m^2, fm^2, m^2, cm^2, barn and mbarn.\n");
+    ccexRefuse();
 }
 
 static double readDefectEfgScaleToHartreePerBohr2(cJSON* object, const char* dfname){
@@ -684,8 +704,8 @@ static double readDefectEfgScaleToHartreePerBohr2(cJSON* object, const char* dfn
     cJSON* item = cJSON_GetObjectItem(object,"unit");
     if (item == NULL){ return 1.0; }
     if (!cJSON_IsString(item) || item->valuestring == NULL){
-        fprintf(stderr,"Error: Defect.species[%s].efg.unit must be a string\n",dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].efg.unit must be a string\n",dfname);
+        ccexRefuse();
     }
 
     const char* unit = item->valuestring;
@@ -708,9 +728,9 @@ static double readDefectEfgScaleToHartreePerBohr2(cJSON* object, const char* dfn
         return 1.0e20*volt_per_m2_to_au;
     }
 
-    fprintf(stderr,"Error: Defect.species[%s].efg.unit = \"%s\" is not supported\n",dfname,unit);
-    fprintf(stderr,"Supported EFG units are Hartree/Bohr^2 (a.u.), V/m^2 and V/angstrom^2.\n");
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr,"Error: Defect.species[%s].efg.unit = \"%s\" is not supported\n",dfname,unit);
+    ccexRefusalPrint(stderr,"Supported EFG units are Hartree/Bohr^2 (a.u.), V/m^2 and V/angstrom^2.\n");
+    ccexRefuse();
 }
 
 static cJSON* readDefectObjectValues(cJSON* object, const char* dfname,
@@ -718,9 +738,9 @@ static cJSON* readDefectObjectValues(cJSON* object, const char* dfname,
 
     cJSON* values = cJSON_GetObjectItem(object,"values");
     if (!cJSON_IsArray(values) || cJSON_GetArraySize(values) != expected_count){
-        fprintf(stderr,"Error: Defect.species[%s].%s.values must be an array of exactly %d numbers\n",
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.values must be an array of exactly %d numbers\n",
                 dfname,field_name,expected_count);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     return values;
 }
@@ -738,8 +758,8 @@ static void readDefectGyros(cJSON* defect, DefectArray* dfa, int idf,
         return;
     }
     if (!cJSON_IsObject(item)){
-        fprintf(stderr,"Error: Defect.species[%s].gyros must be an object or the legacy value array\n",df->dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].gyros must be an object or the legacy value array\n",df->dfname);
+        ccexRefuse();
     }
 
     cJSON* values = readDefectObjectValues(item,df->dfname,"gyros",naddspin);
@@ -769,8 +789,8 @@ static void readDefectEqs(cJSON* defect, DefectArray* dfa, int idf, int naddspin
         return;
     }
     if (!cJSON_IsObject(item)){
-        fprintf(stderr,"Error: Defect.species[%s].quadrupole_moments must be an object or the legacy value array\n",df->dfname);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].quadrupole_moments must be an object or the legacy value array\n",df->dfname);
+        ccexRefuse();
     }
 
     cJSON* values = readDefectObjectValues(item,df->dfname,"quadrupole_moments",naddspin);
@@ -803,22 +823,22 @@ static void readDefectIndexedTensorWithUnit(cJSON* defect, DefectArray* dfa, int
         return;
     }
     if (!cJSON_IsObject(item)){
-        fprintf(stderr,"Error: Defect.species[%s].%s must be an object or the legacy indexed array\n",
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s must be an object or the legacy indexed array\n",
                 df->dfname,field_name);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     if (!coordinate_frame_explicit){
-        fprintf(stderr,"Error: Defect.species[%s] uses object-form %s but has no coordinate_frame\n",
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s] uses object-form %s but has no coordinate_frame\n",
                 df->dfname,field_name);
-        fprintf(stderr,"Set coordinate_frame to \"bath\" or \"qubit\" so the tensor basis is explicit.\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Set coordinate_frame to \"bath\" or \"qubit\" so the tensor basis is explicit.\n");
+        ccexRefuse();
     }
 
     cJSON* values = cJSON_GetObjectItem(item,"values");
     if (!cJSON_IsArray(values)){
-        fprintf(stderr,"Error: Defect.species[%s].%s.values must be an indexed tensor array\n",
+        ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.values must be an indexed tensor array\n",
                 df->dfname,field_name);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
 
     double scale = (strcasecmp(field_name,"hyperfine") == 0)
@@ -833,31 +853,31 @@ static void readDefectIndexedTensorWithUnit(cJSON* defect, DefectArray* dfa, int
     for (int i=0; i<nentry; i++){
         cJSON* entry = cJSON_GetArrayItem(values,i);
         if (!cJSON_IsArray(entry) || cJSON_GetArraySize(entry) != 3){
-            fprintf(stderr,"Error: Defect.species[%s].%s.values[%d] must be [configuration, spin, tensor]\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.values[%d] must be [configuration, spin, tensor]\n",
                     df->dfname,field_name,i);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
 
         cJSON* iax_item = cJSON_GetArrayItem(entry,0);
         if (!cJSON_IsNumber(iax_item)
             || iax_item->valuedouble != (double)iax_item->valueint
             || iax_item->valueint < 1 || iax_item->valueint > nconfig){
-            fprintf(stderr,"Error: Defect.species[%s].%s.values[%d] configuration must be an integer in 1..%d\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.values[%d] configuration must be an integer in 1..%d\n",
                     df->dfname,field_name,i,nconfig);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
 
         cJSON* spin_item = cJSON_GetArrayItem(entry,1);
         if (!cJSON_IsString(spin_item) || spin_item->valuestring == NULL){
-            fprintf(stderr,"Error: Defect.species[%s].%s.values[%d] spin label must be a string\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.values[%d] spin label must be a string\n",
                     df->dfname,field_name,i);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
         int isp = findDefectSpinType(df,spin_item->valuestring);
         if (isp < 0){
-            fprintf(stderr,"Error: Defect.species[%s].%s.values[%d] spin type \"%s\" is not in types\n",
+            ccexRefusalPrint(stderr,"Error: Defect.species[%s].%s.values[%d] spin type \"%s\" is not in types\n",
                     df->dfname,field_name,i,spin_item->valuestring);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
 
         char tensor_label[220];
@@ -925,9 +945,9 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
 
     if (root == NULL){
         if (rank==0){
-            printf("Error before: %s\n", cJSON_GetErrorPtr());
+            ccexRefusalPrint(stdout,"Error before: %s\n", cJSON_GetErrorPtr());
         }
-        exit(EXIT_FAILURE);
+        ccexRefuse();
         freeChar1d(&data);
     }else{
 		;//printf("%s",cJSON_Print(root));
@@ -964,43 +984,43 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     cJSON* propagatorItem = cJSON_GetObjectItem(root,"propagator");
     if (cJSON_IsObject(propagatorItem)){
         for (cJSON* key = propagatorItem->child; key; key = key->next)
-            if (strcmp(key->string,"method") && strcmp(key->string,"min_dim") && strcmp(key->string,"tol")){
-                fprintf(stderr,"Error: propagator has no key \"%s\" (method, min_dim, tol)\n",key->string);
-                exit(EXIT_FAILURE);
+            if (strcasecmp(key->string,"method") && strcasecmp(key->string,"min_dim") && strcasecmp(key->string,"tol")){
+                ccexRefusalPrint(stderr,"Error: propagator has no key \"%s\" (method, min_dim, tol)\n",key->string);
+                ccexRefuse();
             }
         cJSON* method = cJSON_GetObjectItem(propagatorItem,"method");
         if (!cJSON_IsString(method) || !method->valuestring){
-            fprintf(stderr,"Error: propagator.method must be a string (eigen, expm or sparse)\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: propagator.method must be a string (eigen, expm or sparse)\n");
+            ccexRefuse();
         }
         Config_setPropagator(cnf,method->valuestring);
         cJSON* minDim = cJSON_GetObjectItem(propagatorItem,"min_dim");
         cJSON* tol = cJSON_GetObjectItem(propagatorItem,"tol");
         if ((minDim || tol) && strcasecmp(cnf->propagator,"sparse")){
-            fprintf(stderr,"Error: propagator.min_dim and propagator.tol belong to method sparse (this has %s)\n",cnf->propagator);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: propagator.min_dim and propagator.tol belong to method sparse (this has %s)\n",cnf->propagator);
+            ccexRefuse();
         }
         if (minDim){
             const double value = readFiniteNumber(minDim,"propagator.min_dim");
             if (value < 1 || value > 2147483647.0 || std::floor(value) != value){
-                fprintf(stderr,"Error: propagator.min_dim must be a positive 32-bit integer\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: propagator.min_dim must be a positive 32-bit integer\n");
+                ccexRefuse();
             }
             cnf->sparse_min_dim = (long)value;
         }
         if (tol){
             const double value = readFiniteNumber(tol,"propagator.tol");
             if (!(value > 0.0 && value < 1.0)){
-                fprintf(stderr,"Error: propagator.tol must be a number between 0 and 1 (exclusive)\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: propagator.tol must be a number between 0 and 1 (exclusive)\n");
+                ccexRefuse();
             }
             cnf->sparse_tol = value;
         }
     }else{
         if (propagatorItem && !cJSON_IsString(propagatorItem)){
-            fprintf(stderr,"Error: propagator must be a string (eigen, expm or sparse) or an object {\"method\": ..., "
+            ccexRefusalPrint(stderr,"Error: propagator must be a string (eigen, expm or sparse) or an object {\"method\": ..., "
                            "\"min_dim\": ..., \"tol\": ...}\n");
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
         char* propagator = cJSON_ReadString(root,"propagator",true,"eigen");
         Config_setPropagator(cnf,propagator);
@@ -1020,8 +1040,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         if (!cJSON_IsString(evolutionUpdate) || !evolutionUpdate->valuestring ||
             (strcasecmp(evolutionUpdate->valuestring,"exact") &&
              strcasecmp(evolutionUpdate->valuestring,"recursive"))){
-            fprintf(stderr,"Error: evolution_update must be exact or recursive\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: evolution_update must be exact or recursive\n");
+            ccexRefuse();
         }
         strcpy(cnf->evolution_update,evolutionUpdate->valuestring);
     }
@@ -1032,8 +1052,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             (strcasecmp(backend->valuestring,"cpu") &&
              strcasecmp(backend->valuestring,"cuda") &&
              strcasecmp(backend->valuestring,"auto"))){
-            fprintf(stderr,"Error: backend must be cpu, cuda, or auto\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: backend must be cpu, cuda, or auto\n");
+            ccexRefuse();
         }
         strcpy(cnf->backend,backend->valuestring);
     }
@@ -1046,21 +1066,21 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
                         &cnf->gpu_packed_max_dim, &cnf->gpu_warp_max_dim};
     for (int k=0; k<5; ++k)
         if (cJSON_GetObjectItem(root,oldGpuKeys[k])){
-            fprintf(stderr,"Error: %s is now gpu_options.%s (\"gpu_options\": {\"%s\": ...})\n",oldGpuKeys[k],gpuKeys[k],gpuKeys[k]);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: %s is now gpu_options.%s (\"gpu_options\": {\"%s\": ...})\n",oldGpuKeys[k],gpuKeys[k],gpuKeys[k]);
+            ccexRefuse();
         }
     if (cJSON* block = cJSON_GetObjectItem(root,"gpu_options")){
         if (!cJSON_IsObject(block)){
-            fprintf(stderr,"Error: gpu_options must be an object, e.g. \"gpu_options\": {\"min_dim\": 256}\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: gpu_options must be an object, e.g. \"gpu_options\": {\"min_dim\": 256}\n");
+            ccexRefuse();
         }
         for (cJSON* item = block->child; item; item = item->next){
             int k = 0;
             while (k<7 && strcasecmp(item->string,gpuKeys[k])) ++k;
             if (k==7){
-                fprintf(stderr,"Error: unknown key gpu_options.%s (min_dim, packed_max_dim, warp_max_dim, evolution_batch_size, "
+                ccexRefusalPrint(stderr,"Error: unknown key gpu_options.%s (min_dim, packed_max_dim, warp_max_dim, evolution_batch_size, "
                                "evolution_batch_steps, cluster_batch_mb, cache_mb)\n",item->string);
-                exit(EXIT_FAILURE);
+                ccexRefuse();
             }
         }
         for (int k=0; k<7; ++k){
@@ -1072,18 +1092,18 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             if (k==6){
                 // the warp kernel (A40): clusters of a compiled total dimension up to this value; 0 switches it off
                 if (value < 0 || value > 32 || std::floor(value) != value){
-                    fprintf(stderr,"Error: gpu_options.warp_max_dim must be 0 (off) or an integer up to 32\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: gpu_options.warp_max_dim must be 0 (off) or an integer up to 32\n");
+                    ccexRefuse();
                 }
             } else if (k==5){
                 // the packed kernel exists for bath dimension 2 and 4 (small_cluster_math.h); 0 switches it off
                 if (value!=0 && value!=2 && value!=4){
-                    fprintf(stderr,"Error: gpu_options.packed_max_dim must be 0 (off), 2 or 4\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: gpu_options.packed_max_dim must be 0 (off), 2 or 4\n");
+                    ccexRefuse();
                 }
             } else if (value < (k==2 ? 0 : 1) || value > 2147483647.0 || std::floor(value) != value){
-                fprintf(stderr,"Error: %s must be a %s 32-bit integer\n",name,k==2 ? "nonnegative" : "positive");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: %s must be a %s 32-bit integer\n",name,k==2 ? "nonnegative" : "positive");
+                ccexRefuse();
             }
             *gpuValues[k] = (int)value;
         }
@@ -1091,7 +1111,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     // A1: the memory the probes of an adaptive probe step may hold at once on a node, in GB (0: automatic)
     if (cJSON* item = cJSON_GetObjectItem(root,"probe_memory_gb")){
         const double value = readFiniteNumber(item,"probe_memory_gb");
-        if (value < 0){ fprintf(stderr,"Error: probe_memory_gb must be nonnegative\n"); exit(EXIT_FAILURE); }
+        if (value < 0){ ccexRefusalPrint(stderr,"Error: probe_memory_gb must be nonnegative\n"); ccexRefuse(); }
         cnf->probe_memory_gb = value;
     }
     // gcce_refinement and cluster_contributions are blocks (A47): {"enabled", ...}; a block without "enabled" is on, as an
@@ -1101,8 +1121,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         if(auto* item=cJSON_GetObjectItem(block,"max_sweeps")) {
             const double value=readFiniteNumber(item,"gcce_refinement.max_sweeps");
             if(value<1 || value>INT_MAX || std::floor(value)!=value) {
-                fprintf(stderr,"Error: gcce_refinement.max_sweeps must be a positive 32-bit integer\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: gcce_refinement.max_sweeps must be a positive 32-bit integer\n");
+                ccexRefuse();
             }
             cnf->gcce_refinement_max_sweeps=int(value);
         }
@@ -1113,20 +1133,23 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         if(auto* item=cJSON_GetObjectItem(block,"max_mb")) {
             const double value=readFiniteNumber(item,"cluster_contributions.max_mb");
             if(value<1 || value>INT_MAX || std::floor(value)!=value) {
-                fprintf(stderr,"Error: cluster_contributions.max_mb must be a positive 32-bit integer\n");exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: cluster_contributions.max_mb must be a positive 32-bit integer\n");ccexRefuse();
             }
             cnf->cluster_contribution_max_mb=int(value);
         }
     }
-    if(auto* item=cJSON_GetObjectItem(root,"rdip_ladder")) {           // checked against rdip and the method in rdip_ladder.h
+    // checked against rdip and the method in rdip_ladder.h. Every rank reads the input, so a refusal here stops the ranks together
+    // (rdipladder::refuse: one message, MPI_Finalize, exit 1); a plain exit on each rank let mpirun kill the slower rank and
+    // report 1 or 255 at random, sometimes with one message (A54)
+    if(auto* item=cJSON_GetObjectItem(root,"rdip_ladder")) {
         const int count=cJSON_IsArray(item) ? cJSON_GetArraySize(item) : -1;
         if(count<1 || count>64) {
-            fprintf(stderr,"Error: rdip_ladder must be an array of 1 to 64 numbers\n");exit(EXIT_FAILURE);
+            rdipladder::refuse("must be an array of 1 to 64 numbers");
         }
         for(int k=0;k<count;++k) {
             const double value=readFiniteNumber(cJSON_GetArrayItem(item,k),"rdip_ladder");
             if(value<=0 || (k>0 && float(value)<=cnf->rdip_ladder[k-1])) {
-                fprintf(stderr,"Error: rdip_ladder must be positive and strictly increasing\n");exit(EXIT_FAILURE);
+                rdipladder::refuse("must be positive and strictly increasing");
             }
             cnf->rdip_ladder[k]=float(value);
         }
@@ -1143,11 +1166,11 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         double value=readFiniteNumber(item,name.c_str());
         if(k<1) {
             if(value<1 || value>2147483647.0 || std::floor(value)!=value) {
-                fprintf(stderr,"Error: %s must be a positive 32-bit integer\n",name.c_str());exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: %s must be a positive 32-bit integer\n",name.c_str());ccexRefuse();
             }
             cnf->bundle_max_dim=int(value);
         } else {
-            if(value<0) { fprintf(stderr,"Error: bundle.merge_cutoff must be nonnegative\n");exit(EXIT_FAILURE); }
+            if(value<0) { ccexRefusalPrint(stderr,"Error: bundle.merge_cutoff must be nonnegative\n");ccexRefuse(); }
             cnf->bundle_merge_cutoff=value;
         }
     }
@@ -1157,7 +1180,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         const std::string name="bundle."+std::string(expansionKeys[k]);
         const double value=readFiniteNumber(item,name.c_str());
         if(value<1 || value>INT_MAX || std::floor(value)!=value) {
-            fprintf(stderr,"Error: %s must be a positive 32-bit integer\n",name.c_str());exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: %s must be a positive 32-bit integer\n",name.c_str());ccexRefuse();
         }
         *expansionValues[k]=int(value);
     }
@@ -1165,7 +1188,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if(connections) {
         if(!cJSON_IsString(connections) || !connections->valuestring ||
            (strcasecmp(connections->valuestring,"distance") && strcasecmp(connections->valuestring,"auto"))) {
-            fprintf(stderr,"Error: bundle.connections must be distance or auto\n");exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: bundle.connections must be distance or auto\n");ccexRefuse();
         }
         strcpy(cnf->bundle_connections,connections->valuestring);
     }
@@ -1173,7 +1196,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if(connectionBudget) {
         cnf->bundle_connection_budget=readFiniteNumber(connectionBudget,"bundle.connection_budget");
         if(cnf->bundle_connection_budget<0) {
-            fprintf(stderr,"Error: bundle.connection_budget must be nonnegative\n");exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: bundle.connection_budget must be nonnegative\n");ccexRefuse();
         }
     }
     // adaptive.work_file: the request the refinement driver writes into a step's input; the rest of the adaptive block is
@@ -1184,7 +1207,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         cnf->adaptive_options_present=true;
         if(!cJSON_IsString(adaptiveWork) || !adaptiveWork->valuestring || !*adaptiveWork->valuestring ||
            strlen(adaptiveWork->valuestring)>=MAX_FILEPATH) {
-            fprintf(stderr,"Error: adaptive.work_file must be a nonempty bounded path\n");exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: adaptive.work_file must be a nonempty bounded path\n");ccexRefuse();
         }
         strcpy(cnf->adaptive_work_file,adaptiveWork->valuestring);
     }
@@ -1192,16 +1215,16 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     // with the clusters, cJSON_readOptionCluster)
     cJSON* pcce=readBlock(root,"pcce");
     if(pcce && !methodUsesPcceClusters(cnf->method)) {   // the rest: standard, bundle (adaptive inside), dsj, itb, dsjitb
-        fprintf(stderr,"Error: the pcce block belongs to cluster_mode pcce (this input has cluster_mode %s)\n",
+        ccexRefusalPrint(stderr,"Error: the pcce block belongs to cluster_mode pcce (this input has cluster_mode %s)\n",
                 !strcasecmp(cnf->cluster_mode,"adaptive") ? "bundle" : !strcasecmp(cnf->method,"gcce") || !strcasecmp(cnf->method,"cce")
                 || !strcasecmp(cnf->method,"mecce") || !strcasecmp(cnf->method,"megcce") ? "standard" : cnf->method);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     if(auto* item=pcce ? cJSON_GetObjectItem(pcce,"print_limit") : NULL) {
         const double value=readFiniteNumber(item,"pcce.print_limit");
         if(value<0 || value>INT_MAX || std::floor(value)!=value) {
-            fprintf(stderr,"Error: pcce.print_limit must be a nonnegative 32-bit integer\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: pcce.print_limit must be a nonnegative 32-bit integer\n");
+            ccexRefuse();
         }
         cnf->pcce_detail_limit=int(value);
     }
@@ -1210,8 +1233,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         if (!cJSON_IsString(partition) || !partition->valuestring ||
             (strcasecmp(partition->valuestring,"deterministic") &&
              strcasecmp(partition->valuestring,"legacy"))){
-            fprintf(stderr,"Error: pcce.partition must be deterministic or legacy\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: pcce.partition must be deterministic or legacy\n");
+            ccexRefuse();
         }
         strcpy(cnf->pcce_partition,partition->valuestring);
     }
@@ -1220,8 +1243,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         if (!cJSON_IsString(pcceConnections) || !pcceConnections->valuestring ||
             (strcasecmp(pcceConnections->valuestring,"centers") &&
              strcasecmp(pcceConnections->valuestring,"spins"))){
-            fprintf(stderr,"Error: pcce.connections must be centers or spins\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: pcce.connections must be centers or spins\n");
+            ccexRefuse();
         }
         strcpy(cnf->pcce_connections,pcceConnections->valuestring);
     }
@@ -1233,8 +1256,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             (strcasecmp(cacheMode->valuestring,"off") &&
              strcasecmp(cacheMode->valuestring,"read") &&
              strcasecmp(cacheMode->valuestring,"readwrite"))){
-            fprintf(stderr,"Error: pcce.cache.mode must be off, read, or readwrite\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: pcce.cache.mode must be off, read, or readwrite\n");
+            ccexRefuse();
         }
         strcpy(cnf->pcce_cache_mode,cacheMode->valuestring);
     }
@@ -1242,8 +1265,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if (cacheFile){
         if (!cJSON_IsString(cacheFile) || !cacheFile->valuestring ||
             !cacheFile->valuestring[0] || strlen(cacheFile->valuestring)>=MAX_FILEPATH){
-            fprintf(stderr,"Error: pcce.cache.file must be a nonempty path shorter than %d bytes\n",MAX_FILEPATH);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: pcce.cache.file must be a nonempty path shorter than %d bytes\n",MAX_FILEPATH);
+            ccexRefuse();
         }
         strcpy(cnf->pcce_cache_file,cacheFile->valuestring);
     }
@@ -1252,8 +1275,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if(!strcasecmp(cnf->cluster_mode,"adaptive")) {
         const double value=readFiniteNumber(cJSON_GetObjectItem(root,"order"),"order");
         if(value<1 || value>=INT_MAX || value>cnf->expansion_max_clusters || std::floor(value)!=value) {
-            fprintf(stderr,"Error: cluster_mode bundle requires a positive integer order (of bundles) up to bundle.max_clusters\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: cluster_mode bundle requires a positive integer order (of bundles) up to bundle.max_clusters\n");
+            ccexRefuse();
         }
     }
     Config_setOrder(cnf,order);
@@ -1281,16 +1304,16 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     // leave an old input running with a field direction it no longer describes, so the
     // key is refused outright rather than skipped.
     if (cJSON_GetObjectItem(root,"magnetic_field_axis") != NULL){
-        fprintf(stderr,"Error: \"magnetic_field_axis\" was removed.\n");
-        fprintf(stderr,"Use \"bfield\": [0,0,Bz] with coordinate_frame_rotation.\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: \"magnetic_field_axis\" was removed.\n");
+        ccexRefusalPrint(stderr,"Use \"bfield\": [0,0,Bz] with coordinate_frame_rotation.\n");
+        ccexRefuse();
     }
     ////////////////////////////////////////////////////////////////////////
     
     // rbath and rdip are a number (the outer radius) or [inner, outer] (A47: the inner radius was rbathcut, rdipcut)
     cJSON* rbathInner = NULL;
     cJSON* rbathOuter = radiusItem(root,"rbath",&rbathInner);
-    if (!rbathOuter){ fprintf(stderr,"Error: rbath is not found in the input file\n"); exit(EXIT_FAILURE); }
+    if (!rbathOuter){ ccexRefusalPrint(stderr,"Error: rbath is not found in the input file\n"); ccexRefuse(); }
     float rbath = readFloatItem(rbathOuter,rbathInner ? "rbath[1]" : "rbath");
     Config_setRbath(cnf,rbath);
 
@@ -1308,11 +1331,11 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if(adaptive && radius) {
         rdip=float(readFiniteNumber(radius,rdipName));
         if(!std::isfinite(rdip) || rdip<=0) {
-            fprintf(stderr,"Error: explicit cluster_mode bundle rdip must be finite and positive; omit it for unlimited auto connections\n");exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: explicit cluster_mode bundle rdip must be finite and positive; omit it for unlimited auto connections\n");ccexRefuse();
         }
     } else if(radius) rdip=readFloatItem(radius,rdipName);
     else if(autoConnections) rdip=0;
-    else { fprintf(stderr,"Error: rdip is not found in the input file\n"); exit(EXIT_FAILURE); }
+    else { ccexRefusalPrint(stderr,"Error: rdip is not found in the input file\n"); ccexRefuse(); }
     Config_setRdip(cnf,rdip);
 
     double deltat = cJSON_ReadDouble(root,"deltat",false,-1);
@@ -1325,8 +1348,6 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     Config_setRbathcut(cnf,rbathcut);
 
     float rdipcut = rdipInner ? readFloatItem(rdipInner,"rdip[0]") : 0.0f;
-    if(adaptive && rdipInner)
-        rdipcut=float(readFiniteNumber(rdipInner,"rdip[0]"));
     Config_setRdipcut(cnf,rdipcut);
 
     int nstate = cJSON_ReadInt(root,"nstate",true,0);
@@ -1403,9 +1424,9 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     cJSON* RotSectionOld = cJSON_GetObjectItem(root,"bath_coordinate_rotation");
 
     if (RotSection != NULL && RotSectionOld != NULL){
-        fprintf(stderr,"Error: both \"coordinate_frame_rotation\" and \"bath_coordinate_rotation\" are present\n");
-        fprintf(stderr,"They are the same option under two names. Keep \"coordinate_frame_rotation\".\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: both \"coordinate_frame_rotation\" and \"bath_coordinate_rotation\" are present\n");
+        ccexRefusalPrint(stderr,"They are the same option under two names. Keep \"coordinate_frame_rotation\".\n");
+        ccexRefuse();
     }
 
     if (RotSection == NULL && RotSectionOld != NULL){
@@ -1423,9 +1444,9 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         // children, so every sub-key below would read as missing and the run would go on
         // silently WITHOUT the rotation the input clearly asked for.
         if (!cJSON_IsObject(RotSection)){
-            fprintf(stderr,"Error: %s must be an object, e.g.\n",ROTKEY);
-            fprintf(stderr,"  \"%s\" : { \"enabled\" : true, \"bath_axis\" : [0,0,1], \"qubit_axis\" : [1,1,1] }\n",ROTKEY);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: %s must be an object, e.g.\n",ROTKEY);
+            ccexRefusalPrint(stderr,"  \"%s\" : { \"enabled\" : true, \"bath_axis\" : [0,0,1], \"qubit_axis\" : [1,1,1] }\n",ROTKEY);
+            ccexRefuse();
         }
 
         bool rot_enabled = readStrictBool(RotSection,ROTKEY,"enabled",false);
@@ -1453,8 +1474,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             cJSON* hfFrame = cJSON_GetObjectItem(RotSection,"hf_tensor_frame");
             if (hfFrame != NULL){
                 if (!cJSON_IsString(hfFrame) || hfFrame->valuestring == NULL){
-                    fprintf(stderr,"Error: %s.hf_tensor_frame must be \"bath\" or \"qubit\"\n",ROTKEY);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: %s.hf_tensor_frame must be \"bath\" or \"qubit\"\n",ROTKEY);
+                    ccexRefuse();
                 }
                 Config_setRot_hf_tensor_frame(cnf,hfFrame->valuestring);
             }
@@ -1462,8 +1483,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             cJSON* qdFrame = cJSON_GetObjectItem(RotSection,"qd_tensor_frame");
             if (qdFrame != NULL){
                 if (!cJSON_IsString(qdFrame) || qdFrame->valuestring == NULL){
-                    fprintf(stderr,"Error: %s.qd_tensor_frame must be \"bath\" or \"qubit\"\n",ROTKEY);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: %s.qd_tensor_frame must be \"bath\" or \"qubit\"\n",ROTKEY);
+                    ccexRefuse();
                 }
                 Config_setRot_qd_tensor_frame(cnf,qdFrame->valuestring);
             }
@@ -1474,8 +1495,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             cJSON* posFrame = cJSON_GetObjectItem(RotSection,"qubit_position_frame");
             if (posFrame != NULL){
                 if (!cJSON_IsString(posFrame) || posFrame->valuestring == NULL){
-                    fprintf(stderr,"Error: %s.qubit_position_frame must be the string \"bath\"\n",ROTKEY);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: %s.qubit_position_frame must be the string \"bath\"\n",ROTKEY);
+                    ccexRefuse();
                 }
                 Config_setRot_qubit_position_frame(cnf,posFrame->valuestring);
             }
@@ -1483,8 +1504,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             cJSON* refItem = cJSON_GetObjectItem(RotSection,"reference_qubit");
             if (refItem != NULL){
                 if (!cJSON_IsString(refItem) || refItem->valuestring == NULL){
-                    fprintf(stderr,"Error: %s.reference_qubit must be a qubit name (a string)\n",ROTKEY);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: %s.reference_qubit must be a qubit name (a string)\n",ROTKEY);
+                    ccexRefuse();
                 }
                 Config_setRot_reference_qubit(cnf,refItem->valuestring);
             }
@@ -1530,8 +1551,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     for (const char* name : {"gCCE", "noise"}){
         cJSON* section = hamiltonian ? readBlock(hamiltonian,name) : NULL;
         if (section && section->child){
-            fprintf(stderr,"Error: hamiltonian.%s has no settings yet (\"%s\")\n",name,section->child->string);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.%s has no settings yet (\"%s\")\n",name,section->child->string);
+            ccexRefuse();
         }
     }
     // the master-equation methods: jump_operators only; which method the section belongs to is checked once -m
@@ -1546,8 +1567,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if (cJSON* item = common ? cJSON_GetObjectItem(common,"bath_bath_mean_field") : NULL){
         const char* v = cJSON_IsString(item) && item->valuestring ? item->valuestring : "";
         if (strcasecmp(v,"off") && strcasecmp(v,"z") && strcasecmp(v,"xyz")){
-            fprintf(stderr,"Error: hamiltonian.common.bath_bath_mean_field must be \"off\", \"z\" or \"xyz\"\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.bath_bath_mean_field must be \"off\", \"z\" or \"xyz\"\n");
+            ccexRefuse();
         }
         cnf->vector_mean_field = !strcasecmp(v,"xyz");
         cnf->bath_mean_field_off = !strcasecmp(v,"off");
@@ -1562,8 +1583,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if (hyperfine){
         const char* dipole = cJSON_ReadString(hyperfine,(char*)"dipole",true,(char*)"point");
         if (strcasecmp(dipole,"point") && strcasecmp(dipole,"dft")){
-            fprintf(stderr,"Error: hamiltonian.common.hyperfine.dipole must be \"point\" or \"dft\"\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.hyperfine.dipole must be \"point\" or \"dft\"\n");
+            ccexRefuse();
         }
         const bool contact = readStrictBool(hyperfine,"hamiltonian.common.hyperfine","contact",false);
         hf_readmode = (strcasecmp(dipole,"dft") ? 0 : 2) + (contact ? 1 : 0);
@@ -1578,8 +1599,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         // a bath spin outside the file's range: stop (0), or take the point-dipole tensor (1)
         const char* missing = cJSON_ReadString(hyperfine,(char*)"missing_row",true,(char*)"stop");
         if (strcasecmp(missing,"stop") && strcasecmp(missing,"point_dipole")){
-            fprintf(stderr,"Error: hamiltonian.common.hyperfine.missing_row must be \"stop\" or \"point_dipole\"\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.hyperfine.missing_row must be \"stop\" or \"point_dipole\"\n");
+            ccexRefuse();
         }
         Config_setHf_ignore_oor(cnf,strcasecmp(missing,"stop") ? 1 : 0);
     }
@@ -1592,16 +1613,16 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     int qd_readmode = 0;
     if (quadrupole && !(cJSON_IsString(quadrupole) && !strcasecmp(quadrupole->valuestring,"off"))){
         if (!cJSON_IsObject(quadrupole)){
-            fprintf(stderr,"Error: hamiltonian.common.quadrupole must be \"off\" or an object {\"structure\": \"plain\"|\"strained\"|"
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.quadrupole must be \"off\" or an object {\"structure\": \"plain\"|\"strained\"|"
                            "\"bubble\", \"file\": ..., \"file_without_defect\": ..., \"cell\": [a, b, c]}\n");
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
         const char* structure = cJSON_ReadString(quadrupole,(char*)"structure",false,NULL);
         static const char* structures[] = {"plain", "strained", "bubble"};
         for (int k=0; k<3; ++k) if (!strcasecmp(structure,structures[k])) qd_readmode = 2+k;
         if (qd_readmode == 0){
-            fprintf(stderr,"Error: hamiltonian.common.quadrupole.structure must be \"plain\", \"strained\" or \"bubble\"\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.quadrupole.structure must be \"plain\", \"strained\" or \"bubble\"\n");
+            ccexRefuse();
         }
     }
     Config_setQd_readmode(cnf,qd_readmode);
@@ -1658,21 +1679,21 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     if (DefAxisItem != NULL){
 
         if (!cJSON_IsString(DefAxisItem) || DefAxisItem->valuestring == NULL){
-            fprintf(stderr,"Error: defect_axis_reference must be a string\n");
-            fprintf(stderr,"The only accepted value is \"qubit_axis\".\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: defect_axis_reference must be a string\n");
+            ccexRefusalPrint(stderr,"The only accepted value is \"qubit_axis\".\n");
+            ccexRefuse();
         }
         if (strcasecmp(DefAxisItem->valuestring,"qubit_axis") != 0){
-            fprintf(stderr,"Error: defect_axis_reference = \"%s\" is not available\n",
+            ccexRefusalPrint(stderr,"Error: defect_axis_reference = \"%s\" is not available\n",
                     DefAxisItem->valuestring);
-            fprintf(stderr,"The only accepted value is \"qubit_axis\".\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"The only accepted value is \"qubit_axis\".\n");
+            ccexRefuse();
         }
         if (!Config_getRot_enabled(cnf)){
-            fprintf(stderr,"Error: defect_axis_reference = \"qubit_axis\" needs a qubit axis,\n");
-            fprintf(stderr,"and coordinate_frame_rotation is what defines one in the source frame.\n");
-            fprintf(stderr,"Enable coordinate_frame_rotation, or drop defect_axis_reference.\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: defect_axis_reference = \"qubit_axis\" needs a qubit axis,\n");
+            ccexRefusalPrint(stderr,"and coordinate_frame_rotation is what defines one in the source frame.\n");
+            ccexRefusalPrint(stderr,"Enable coordinate_frame_rotation, or drop defect_axis_reference.\n");
+            ccexRefuse();
         }
         Config_setDefect_axis_reference(cnf,DEFECT_AXIS_REFERENCE_QUBIT_AXIS);
     }
@@ -1694,22 +1715,22 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
 
         if ((Config_getHf_readmode(cnf) == 2 || Config_getHf_readmode(cnf) == 3)
             && Config_getRot_hf_tensor_frame(cnf)[0] == '\0'){
-            fprintf(stderr,"Error: hamiltonian.common.hyperfine dipole \"dft\" with the coordinate frame rotation on, but\n");
-            fprintf(stderr,"coordinate_frame_rotation.hf_tensor_frame is not set.\n");
-            fprintf(stderr,"State the basis the tensor COMPONENTS in hamiltonian.common.hyperfine.file are written in:\n");
-            fprintf(stderr,"  \"bath\"  : the original bath Cartesian basis -- they get transformed\n");
-            fprintf(stderr,"  \"qubit\" : already the qubit-aligned basis -- they are left alone\n");
-            fprintf(stderr,"(The POSITION columns of that file are always read in the original frame.)\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.hyperfine dipole \"dft\" with the coordinate frame rotation on, but\n");
+            ccexRefusalPrint(stderr,"coordinate_frame_rotation.hf_tensor_frame is not set.\n");
+            ccexRefusalPrint(stderr,"State the basis the tensor COMPONENTS in hamiltonian.common.hyperfine.file are written in:\n");
+            ccexRefusalPrint(stderr,"  \"bath\"  : the original bath Cartesian basis -- they get transformed\n");
+            ccexRefusalPrint(stderr,"  \"qubit\" : already the qubit-aligned basis -- they are left alone\n");
+            ccexRefusalPrint(stderr,"(The POSITION columns of that file are always read in the original frame.)\n");
+            ccexRefuse();
         }
         if (Config_getQd_readmode(cnf) != 0 && Config_getRot_qd_tensor_frame(cnf)[0] == '\0'){
-            fprintf(stderr,"Error: hamiltonian.common.quadrupole (structure %s) with the coordinate frame rotation on, but\n",
+            ccexRefusalPrint(stderr,"Error: hamiltonian.common.quadrupole (structure %s) with the coordinate frame rotation on, but\n",
                     Config_getQd_readmode(cnf) == 2 ? "plain" : Config_getQd_readmode(cnf) == 3 ? "strained" : "bubble");
-            fprintf(stderr,"coordinate_frame_rotation.qd_tensor_frame is not set.\n");
-            fprintf(stderr,"State the basis the tensor COMPONENTS in hamiltonian.common.quadrupole.file are written in:\n");
-            fprintf(stderr,"  \"bath\"  : the original bath Cartesian basis -- they get transformed\n");
-            fprintf(stderr,"  \"qubit\" : already the qubit-aligned basis -- they are left alone\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"coordinate_frame_rotation.qd_tensor_frame is not set.\n");
+            ccexRefusalPrint(stderr,"State the basis the tensor COMPONENTS in hamiltonian.common.quadrupole.file are written in:\n");
+            ccexRefusalPrint(stderr,"  \"bath\"  : the original bath Cartesian basis -- they get transformed\n");
+            ccexRefusalPrint(stderr,"  \"qubit\" : already the qubit-aligned basis -- they are left alone\n");
+            ccexRefuse();
         }
     }
 
@@ -1740,9 +1761,9 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
 
     if (root == NULL){
         if (rank==0){
-            printf("Error before: %s\n", cJSON_GetErrorPtr());
+            ccexRefusalPrint(stdout,"Error before: %s\n", cJSON_GetErrorPtr());
         }
-        exit(EXIT_FAILURE);
+        ccexRefuse();
         freeChar1d(&data);
     }
 
@@ -1770,10 +1791,10 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
         for (const char* key : {"qubit", "intmap", "alpha_state", "beta_state", "psi0"})
             if (cJSON_GetObjectItem(QubitSection,key) != NULL){
                 if (rank==0){
-                    fprintf(stderr,"Error: the Qubit block has both \"file\" and \"%s\"; keep one form (\"file\" for one "
+                    ccexRefusalPrint(stderr,"Error: the Qubit block has both \"file\" and \"%s\"; keep one form (\"file\" for one "
                                    "qubit from a defect file, \"qubit\" for one or more qubits written out)\n",key);
                 }
-                exit(EXIT_FAILURE);
+                ccexRefuse();
             }
     }
 
@@ -1840,9 +1861,9 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
         ////////////////////////////////////////////////////////////////////////
         cJSON* qubitArray = QubitSection ? cJSON_GetObjectItem(QubitSection,"qubit") : NULL;
         if (!cJSON_IsArray(qubitArray) || cJSON_GetArraySize(qubitArray) < 1){
-            fprintf(stderr, "Error: Qubit.qubit must be an array of one entry per qubit (or Qubit.file for one qubit from a "
+            ccexRefusalPrint(stderr, "Error: Qubit.qubit must be an array of one entry per qubit (or Qubit.file for one qubit from a "
                             "defect file)\n");
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
         int nqubit = cJSON_GetArraySize(qubitArray);
         QubitArray_setNqubit(qa,nqubit);
@@ -1855,8 +1876,8 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
 
         cJSON_ArrayForEach(qubit, qubitArray){
             if (qubit == NULL) {
-                fprintf(stderr, "Error: The length of \"qubit\" is different from nqubit(%d) \n", nqubit);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: The length of \"qubit\" is different from nqubit(%d) \n", nqubit);
+                ccexRefuse();
             }
             // read qubit properties from the input file
             snprintf(nameDefault,MAX_CHARARRAY_LENGTH,"q%d",iqubit);
@@ -1870,8 +1891,8 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
             cJSON* detuningItem = cJSON_GetObjectItem(qubit,"detuning");
             if (cJSON_IsArray(detuningItem)){
                 if (cJSON_GetArraySize(detuningItem) != 1 || !cJSON_IsNumber(cJSON_GetArrayItem(detuningItem,0))){
-                    fprintf(stderr,"Error: Qubit.qubit[%d].detuning must be a number (or [number])\n",iqubit);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: Qubit.qubit[%d].detuning must be a number (or [number])\n",iqubit);
+                    ccexRefuse();
                 }
             }
             double detuning = cJSON_IsArray(detuningItem) ? cJSON_GetArrayItem(detuningItem,0)->valuedouble
@@ -1924,19 +1945,19 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
                 qubit2_idx = QubitArray_getQubitIdx_fromName(qa,qubit2_name);
                 // check if the qubit name exists
                 if (qubit1_idx == -1 || qubit2_idx == -1 ) {
-                    fprintf(stderr, "Error: The qubit name is not found in the input file\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: The qubit name is not found in the input file\n");
+                    ccexRefuse();
                 }
                 if (qubit1_idx > qubit2_idx){
-                    fprintf(stderr, "Error: First qubit index is greater than second qubit index\n");
-                    fprintf(stderr, "       qubit1_name = %s, qubit2_name = %s\n", qubit1_name, qubit2_name);
-                    fprintf(stderr, "       qubit1_idx = %d, qubit2_idx = %d\n", qubit1_idx, qubit2_idx);
-                    fprintf(stderr, "       qubit1_idx should be less than qubit2_idx\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: First qubit index is greater than second qubit index\n");
+                    ccexRefusalPrint(stderr, "       qubit1_name = %s, qubit2_name = %s\n", qubit1_name, qubit2_name);
+                    ccexRefusalPrint(stderr, "       qubit1_idx = %d, qubit2_idx = %d\n", qubit1_idx, qubit2_idx);
+                    ccexRefusalPrint(stderr, "       qubit1_idx should be less than qubit2_idx\n");
+                    ccexRefuse();
                 }
             }else{
-                fprintf(stderr, "Error: \"between\" is not found in the input file\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: \"between\" is not found in the input file\n");
+                ccexRefuse();
             }
 
             // read tensor properties from the input file
@@ -1956,21 +1977,21 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
             cJSON* tframe = cJSON_GetObjectItem(intmap,"tensor_frame");
             if (tframe != NULL){
                 if (!cJSON_IsString(tframe) || tframe->valuestring == NULL){
-                    fprintf(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].tensor_frame must be \"bath\" or \"qubit\"\n",
+                    ccexRefusalPrint(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].tensor_frame must be \"bath\" or \"qubit\"\n",
                             qubit1_name,qubit2_name);
-                    exit(EXIT_FAILURE);
+                    ccexRefuse();
                 }
                 if (strcasecmp(tframe->valuestring,"bath") == 0){
                     frame = INTMAP_EXPLICIT_BATH;
                 }else if (strcasecmp(tframe->valuestring,"qubit") == 0){
                     frame = INTMAP_EXPLICIT_QUBIT;
                 }else{
-                    fprintf(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].tensor_frame = \"%s\" is not available\n",
+                    ccexRefusalPrint(stderr,"Error: Qubit.intmap[\"%s\",\"%s\"].tensor_frame = \"%s\" is not available\n",
                             qubit1_name,qubit2_name,tframe->valuestring);
-                    fprintf(stderr,"  \"bath\"  : components are in the original bath Cartesian basis\n");
-                    fprintf(stderr,"  \"qubit\" : components are already in the common computational basis\n");
-                    fprintf(stderr,"            (reference-qubit-aligned; NOT an individual local frame)\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"  \"bath\"  : components are in the original bath Cartesian basis\n");
+                    ccexRefusalPrint(stderr,"  \"qubit\" : components are already in the common computational basis\n");
+                    ccexRefusalPrint(stderr,"            (reference-qubit-aligned; NOT an individual local frame)\n");
+                    ccexRefuse();
                 }
             }
 
@@ -1995,16 +2016,16 @@ void cJSON_readOptionQubitArray(QubitArray* qa, char* fccein){
                 cJSON* indexItem = cJSON_GetObjectItem(state,"index");
                 cJSON* vectorItem = cJSON_GetObjectItem(state,"vector");
                 if ((indexItem != NULL) == (vectorItem != NULL)){
-                    fprintf(stderr,"Error: Qubit.%s must have one of \"index\" and \"vector\" (%s)\n",sides[side],
+                    ccexRefusalPrint(stderr,"Error: Qubit.%s must have one of \"index\" and \"vector\" (%s)\n",sides[side],
                             indexItem ? "it has both" : "it has neither");
-                    exit(EXIT_FAILURE);
+                    ccexRefuse();
                 }
                 if (indexItem){
                     const int index = cJSON_ReadInt(state,(char*)"index",false,0);
                     if (index < 0 || index >= dim){
-                        fprintf(stderr,"Error: Qubit.%s.index must be 0 to %d (the qubit eigenstates by descending energy)\n",
+                        ccexRefusalPrint(stderr,"Error: Qubit.%s.index must be 0 to %d (the qubit eigenstates by descending energy)\n",
                                 sides[side],dim-1);
-                        exit(EXIT_FAILURE);
+                        ccexRefuse();
                     }
                     int*& slot = side == 0 ? qa->_alphaidx : qa->_betaidx;
                     slot = (int*)allocArray1d(1,sizeof(int));
@@ -2048,9 +2069,9 @@ void cJSON_readOptionCluster(Cluster* clus, char* fccein){
 
     if (root == NULL){
         if (rank==0){
-            printf("Error before: %s\n", cJSON_GetErrorPtr());
+            ccexRefusalPrint(stdout,"Error before: %s\n", cJSON_GetErrorPtr());
         }
-        exit(EXIT_FAILURE);
+        ccexRefuse();
         freeChar1d(&data);
     }
 
@@ -2065,8 +2086,8 @@ void cJSON_readOptionCluster(Cluster* clus, char* fccein){
     bool addsubclus = true;
     if (cJSON* item = cJSON_GetObjectItem(root,"add_subclusters")){
         if (!cJSON_IsBool(item)){
-            fprintf(stderr,"Error: add_subclusters must be true or false\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: add_subclusters must be true or false\n");
+            ccexRefuse();
         }
         addsubclus = cJSON_IsTrue(item);
     }
@@ -2096,16 +2117,16 @@ void cJSON_readOptionCluster(Cluster* clus, char* fccein){
             cJSON* item = pcce ? cJSON_GetObjectItem(pcce,keys[k]) : NULL;
             if (!item){
                 if (k==0){
-                    fprintf(stderr,"Error: cluster_mode pcce requires pcce.partition_size\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr,"Error: cluster_mode pcce requires pcce.partition_size\n");
+                    ccexRefuse();
                 }
                 continue;
             }
             const std::string name = "pcce." + std::string(keys[k]);
             double value = readFiniteNumber(item,name.c_str());
             if (value < 1 || value > 2147483647.0 || std::floor(value) != value){
-                fprintf(stderr,"Error: %s must be a positive 32-bit integer\n",name.c_str());
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: %s must be a positive 32-bit integer\n",name.c_str());
+                ccexRefuse();
             }
             values[k] = (int)value;
         }
@@ -2141,24 +2162,24 @@ static double readSequenceFraction(cJSON* item, int row) {
             const bool numOk = end == slash && slash != text;
             const long den = strtol(slash+1, &end, 10);
             if (!numOk || end == slash+1 || *end != '\0' || errno == ERANGE || den == 0) {
-                fprintf(stderr, "Error: sequence[%d] fraction \"%s\" must be a/b with integers and b != 0\n", row, text);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: sequence[%d] fraction \"%s\" must be a/b with integers and b != 0\n", row, text);
+                ccexRefuse();
             }
             value = double(num)/double(den);
         } else {
             errno = 0; value = strtod(text, &end);
             if (end == text || *end != '\0' || errno == ERANGE) {
-                fprintf(stderr, "Error: sequence[%d] fraction \"%s\" is not a number\n", row, text);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: sequence[%d] fraction \"%s\" is not a number\n", row, text);
+                ccexRefuse();
             }
         }
     } else {
-        fprintf(stderr, "Error: sequence[%d] fraction must be a number or a string such as \"1/2\"\n", row);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: sequence[%d] fraction must be a number or a string such as \"1/2\"\n", row);
+        ccexRefuse();
     }
     if (!std::isfinite(value) || value < 0) {
-        fprintf(stderr, "Error: sequence[%d] fraction must be finite and not negative\n", row);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: sequence[%d] fraction must be finite and not negative\n", row);
+        ccexRefuse();
     }
     return value;
 }
@@ -2166,20 +2187,20 @@ static double readSequenceFraction(cJSON* item, int row) {
 char parse_axis(cJSON* axis_json, int row_index) {
 //char parse_axis(cJSON* axis_json) {
     if (!cJSON_IsString(axis_json)) {
-        fprintf(stderr, "[Error] Axis at row %d is not a string.\n", row_index);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "[Error] Axis at row %d is not a string.\n", row_index);
+        ccexRefuse();
     }
 
     const char* axis_str = axis_json->valuestring;
     if (!axis_str || strlen(axis_str) == 0) {
-        fprintf(stderr, "[Error] Axis at row %d is empty.\n", row_index);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "[Error] Axis at row %d is empty.\n", row_index);
+        ccexRefuse();
     }
 
     // Check if the string is one of the allowed axes: X, Y, Z, I
     if (strlen(axis_str) > 1) {
-        fprintf(stderr, "[Error] Axis at row %d is too long. Only single characters are allowed.\n", row_index);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "[Error] Axis at row %d is too long. Only single characters are allowed.\n", row_index);
+        ccexRefuse();
     }
 
     char c = toupper(axis_str[0]);
@@ -2188,8 +2209,8 @@ char parse_axis(cJSON* axis_json, int row_index) {
         return c;
     }
 
-    fprintf(stderr, "[Error] Invalid axis '%s'. Only 'X', 'Y', 'Z', 'I' are allowed.\n", axis_str);
-    exit(EXIT_FAILURE);
+    ccexRefusalPrint(stderr, "[Error] Invalid axis '%s'. Only 'X', 'Y', 'Z', 'I' are allowed.\n", axis_str);
+    ccexRefuse();
 }
 
 std::string read_json_file(const std::string& fccein) {
@@ -2215,18 +2236,18 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
 
     if (root == NULL){
         if (rank == 0) {
-            printf("Error before: %s\n", cJSON_GetErrorPtr());
+            ccexRefusalPrint(stdout,"Error before: %s\n", cJSON_GetErrorPtr());
         }
-        exit(EXIT_FAILURE);
+        ccexRefuse();
         freeChar1d(&data);
     }
 
     // the pulse block (npulse, pulsename, sequence, pulseiter, pulse_time and detuning_factor until A47)
     cJSON* block = readBlock(root,"pulse");
     if (block == NULL){
-        fprintf(stderr,"Error: pulse is not found in the input file (\"pulse\": {\"count\": 1} for a Hahn echo, 0 for a "
+        ccexRefusalPrint(stderr,"Error: pulse is not found in the input file (\"pulse\": {\"count\": 1} for a Hahn echo, 0 for a "
                        "Ramsey, n > 1 for CPMG)\n");
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
 
     bool pulseiter = readStrictBool(block,"pulse","per_qubit",false);
@@ -2263,8 +2284,8 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
     }
     if (strcasecmp(pulse->pulsename, "Manual") == 0) {
         if (!(sequence_array && cJSON_IsArray(sequence_array))) {
-            fprintf(stderr, "[Error] pulse.sequence is missing or not a valid JSON array. [case pulse name = manual]\n");
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "[Error] pulse.sequence is missing or not a valid JSON array. [case pulse name = manual]\n");
+            ccexRefuse();
         }
 
         int count = cJSON_GetArraySize(sequence_array);
@@ -2277,8 +2298,8 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
             cJSON* item = cJSON_GetArrayItem(sequence_array, i);
             // every row is [fraction, axis, angle]; a malformed row used to be skipped and leave zeros (R2)
             if (!cJSON_IsArray(item) || cJSON_GetArraySize(item) != 3) {
-                fprintf(stderr, "Error: sequence[%d] must be [fraction, axis, angle]\n", i);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: sequence[%d] must be [fraction, axis, angle]\n", i);
+                ccexRefuse();
             }
             cJSON* frac  = cJSON_GetArrayItem(item, 0);
             cJSON* axis  = cJSON_GetArrayItem(item, 1);
@@ -2297,8 +2318,8 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
         assign_sequence_indices(pulse);
         // the fractions make up the whole time: a sum short of 1 used to pass (R2)
         if (std::fabs(total_frac - 1.0) > 1e-9){
-            fprintf(stderr, "Error: the fractions of the Manual sequence sum to %.12g, not 1\n", total_frac);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: the fractions of the Manual sequence sum to %.12g, not 1\n", total_frac);
+            ccexRefuse();
         }
     }
 
@@ -2381,25 +2402,25 @@ void cJSON_readSavemode(cJSON* item, Output* op, bool readNodiv){
         return;
     }
     if (!cJSON_IsObject(item)){
-        fprintf(stderr,"Error: savemode must be a string (coherence, coherence_tagged, cluster_coherence, cluster_density_matrix) "
+        ccexRefusalPrint(stderr,"Error: savemode must be a string (coherence, coherence_tagged, cluster_coherence, cluster_density_matrix) "
                        "or an object {\"mode\": ..., \"nodiv\": true|false}\n");
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     for (cJSON* key = item->child; key; key = key->next)
-        if (strcmp(key->string,"mode") && strcmp(key->string,"nodiv")){
-            fprintf(stderr,"Error: savemode has no key \"%s\" (mode, nodiv)\n",key->string);
-            exit(EXIT_FAILURE);
+        if (strcasecmp(key->string,"mode") && strcasecmp(key->string,"nodiv")){
+            ccexRefusalPrint(stderr,"Error: savemode has no key \"%s\" (mode, nodiv)\n",key->string);
+            ccexRefuse();
         }
     cJSON* mode = cJSON_GetObjectItem(item,"mode");
     if (mode && (!cJSON_IsString(mode) || !mode->valuestring)){
-        fprintf(stderr,"Error: savemode.mode must be a string (coherence, coherence_tagged, cluster_coherence, cluster_density_matrix)\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: savemode.mode must be a string (coherence, coherence_tagged, cluster_coherence, cluster_density_matrix)\n");
+        ccexRefuse();
     }
     Output_setSavemode(op,mode ? mode->valuestring : (char*)"coherence");
     cJSON* nodiv = cJSON_GetObjectItem(item,"nodiv");
     if (nodiv && !cJSON_IsBool(nodiv)){
-        fprintf(stderr,"Error: savemode.nodiv must be a boolean (true or false)\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: savemode.nodiv must be a boolean (true or false)\n");
+        ccexRefuse();
     }
     if (readNodiv) op->save_nodiv = nodiv ? (bool)nodiv->valueint : true;
 }
@@ -2416,16 +2437,16 @@ void cJSON_readOptionOutput(Output* op, char* fccein){
 
     if (root == NULL){
         if (rank==0){
-            printf("Error before: %s\n", cJSON_GetErrorPtr());
+            ccexRefusalPrint(stdout,"Error before: %s\n", cJSON_GetErrorPtr());
         }
-        exit(EXIT_FAILURE);
+        ccexRefuse();
         freeChar1d(&data);
     }
 
     // save_nodiv is savemode.nodiv since 2026-10-13 (refused with the new form, as the flat gpu_* keys)
     if (cJSON_GetObjectItem(root,"save_nodiv")){
-        fprintf(stderr,"Error: save_nodiv is now savemode.nodiv (\"savemode\": {\"mode\": \"coherence\", \"nodiv\": false})\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: save_nodiv is now savemode.nodiv (\"savemode\": {\"mode\": \"coherence\", \"nodiv\": false})\n");
+        ccexRefuse();
     }
     Output_setSavemode(op,(char*)"coherence");
     op->save_nodiv = true;
@@ -2471,9 +2492,9 @@ void cJSON_readOptionDefectArray(DefectArray* dfa, char* fccein){
 
     if (root == NULL){
         if (rank==0){
-            printf("Error before: %s\n", cJSON_GetErrorPtr());
+            ccexRefusalPrint(stdout,"Error before: %s\n", cJSON_GetErrorPtr());
         }
-        exit(EXIT_FAILURE);
+        ccexRefuse();
         freeChar1d(&data);
     }
 
@@ -2483,8 +2504,8 @@ void cJSON_readOptionDefectArray(DefectArray* dfa, char* fccein){
     cJSON* defectBlock = readBlock(root,"Defect");
     cJSON* defectArray = defectBlock ? cJSON_GetObjectItem(defectBlock,"species") : NULL;
     if (defectArray && !cJSON_IsArray(defectArray)){
-        fprintf(stderr,"Error: Defect.species must be an array of the defect species\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect.species must be an array of the defect species\n");
+        ccexRefuse();
     }
     cJSON* defect;
 
@@ -2528,9 +2549,9 @@ void cJSON_readOptionDefectArray(DefectArray* dfa, char* fccein){
         cJSON* axis_item = cJSON_GetObjectItem(defect,"axis");
         if (axis_item != NULL){
             if (!coordinate_frame_explicit){
-                fprintf(stderr,"Error: Defect.species[%s].axis is present but coordinate_frame is missing\n",dfname);
-                fprintf(stderr,"Set coordinate_frame to \"bath\" or \"qubit\" so the axis basis is explicit.\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr,"Error: Defect.species[%s].axis is present but coordinate_frame is missing\n",dfname);
+                ccexRefusalPrint(stderr,"Set coordinate_frame to \"bath\" or \"qubit\" so the axis basis is explicit.\n");
+                ccexRefuse();
             }
             double axis_raw[3] = {0.0,0.0,0.0};
             double axis_normalized[3];
@@ -2598,8 +2619,8 @@ char* cJSON_ReadFccein(char* fccein){
     FILE* inputFile = fopen(fccein, "r");
     
     if (inputFile == NULL) {
-        perror("Error opening file");
-        exit(EXIT_FAILURE);
+        ccexRefusalPerror("Error opening file");
+        ccexRefuse();
     }
 
     // '#' and '!' start a comment to the end of the line, but only outside a JSON string: a key such as "#note" or a
@@ -2641,8 +2662,8 @@ char* cJSON_ReadFccein(char* fccein){
 // default value" in the log (D18, 2026-10-02). Absent keys keep their defaults.
 static void refuseWrongType(cJSON* item, const char* key, bool right, const char* what){
     if (item != NULL && !right){
-        fprintf(stderr, "Error: %s must be %s in the input file\n", key, what);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s must be %s in the input file\n", key, what);
+        ccexRefuse();
     }
 }
 
@@ -2650,8 +2671,8 @@ static void refuseWrongType(cJSON* item, const char* key, bool right, const char
 static int integerValue(cJSON* item, const char* key){
     const double v = item->valuedouble;
     if (!(v >= INT_MIN && v <= INT_MAX) || std::floor(v) != v){
-        fprintf(stderr, "Error: %s must be an integer in the input file\n", key);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s must be an integer in the input file\n", key);
+        ccexRefuse();
     }
     return (int)v;
 }
@@ -2679,8 +2700,8 @@ char* cJSON_ReadFilePath(cJSON* root, char* key, bool _default, char* default_va
             if (rank==0){printf("           %s : use default value .. \n",name);}
             return default_value;
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2689,8 +2710,8 @@ char* cJSON_ReadFilePath(cJSON* root, char* key, bool _default, char* default_va
 // from NULL was a segfault (`"bathfile": [123]`, found 2026-09-19).
 static const char* stringElement(cJSON* element, const char* key, int i){
     if (!cJSON_IsString(element) || element->valuestring == NULL){
-        fprintf(stderr, "Error: %s[%d] is not a string in the input file\n",key,i);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s[%d] is not a string in the input file\n",key,i);
+        ccexRefuse();
     }
     return element->valuestring;
 }
@@ -2729,8 +2750,8 @@ char** cJSON_ReadFilePath1d(int* length, cJSON* root, char* key, bool _default, 
             return default_value;
             
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2746,8 +2767,8 @@ char* cJSON_ReadString(cJSON* root, char* key, bool _default, char* default_valu
             if (rank==0){printf("           %s : use default value .. \n",name);}
             return default_value;
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2764,16 +2785,16 @@ char** cJSON_ReadString1d(cJSON* root, char* key, bool _default, char** default_
         cJSON* itemElement;
         cJSON_ArrayForEach(itemElement, item){
             if (i>=size){
-                fprintf(stderr, "Error: %s is too long in the input file\n",name);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s is too long in the input file\n",name);
+                ccexRefuse();
             }else{
                 copyBounded(array[i],stringElement(itemElement,name,i),MAX_CHARARRAY_LENGTH,name);
             }
             i++;
         }
         if (i < size){   // a short array was filled with empty strings and used (D42)
-            fprintf(stderr, "Error: %s has %d entries in the input file, %d are needed\n",name,i,size);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s has %d entries in the input file, %d are needed\n",name,i,size);
+            ccexRefuse();
         }
         return array;
     }else{
@@ -2782,8 +2803,8 @@ char** cJSON_ReadString1d(cJSON* root, char* key, bool _default, char** default_
             return default_value;
             
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2800,8 +2821,8 @@ int cJSON_ReadInt(cJSON* root, char* key, bool _default, int default_value){
             if (rank==0){printf("           %s : use default value .. \n",name);}
             return default_value;
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2817,20 +2838,20 @@ int* cJSON_ReadInt1d(cJSON* root, char* key, bool _default, int* default_value, 
         cJSON* itemElement;
         cJSON_ArrayForEach(itemElement, item){
             if(i >= size){
-                fprintf(stderr, "Error: %s is too long in the input file\n",name);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s is too long in the input file\n",name);
+                ccexRefuse();
             }else{
                 if (!cJSON_IsNumber(itemElement)){
-                    fprintf(stderr, "Error: %s[%d] must be an integer in the input file\n",name,i);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: %s[%d] must be an integer in the input file\n",name,i);
+                    ccexRefuse();
                 }
                 array[i] = integerValue(itemElement, name);
             }
             i++;
         }
         if (i != size) {
-            fprintf(stderr, "Error: %s is too short(%d) in the input file (expected size = %d)\n",name,i,size);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is too short(%d) in the input file (expected size = %d)\n",name,i,size);
+            ccexRefuse();
         }
         return array;
     }else{
@@ -2839,8 +2860,8 @@ int* cJSON_ReadInt1d(cJSON* root, char* key, bool _default, int* default_value, 
             return default_value;
             
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2852,9 +2873,9 @@ static double finiteNumber(cJSON* item, const char* key, int i, int j, bool asFl
     if (!std::isfinite(v) || (asFloat && std::fabs(v) > std::numeric_limits<float>::max())){
         char where[64] = "";
         if (i >= 0) snprintf(where, sizeof(where), j >= 0 ? "[%d][%d]" : "[%d]", i, j);
-        fprintf(stderr, "Error: %s%s must be a finite number%s in the input file\n", key, where,
+        ccexRefusalPrint(stderr, "Error: %s%s must be a finite number%s in the input file\n", key, where,
                 asFloat ? " within the float range" : "");
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     return v;
 }
@@ -2870,8 +2891,8 @@ double cJSON_ReadDouble(cJSON* root, char* key, bool _default, double default_va
             if (rank==0){printf("           %s : use default value .. \n",name);}
             return default_value;    
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2887,21 +2908,21 @@ double* cJSON_ReadDouble1d(cJSON* root, char* key, bool _default, double* defaul
         cJSON* itemElement;
         cJSON_ArrayForEach(itemElement, item){
             if(i >= size){
-                fprintf(stderr, "Error: %s is too long in the input file\n",name);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s is too long in the input file\n",name);
+                ccexRefuse();
             }
             // A non-number element used to be read anyway: cJSON leaves valuedouble at 0
             // for a string or a bool, so "bfield": [0,0,"500"] became [0,0,0] silently.
             if (!cJSON_IsNumber(itemElement)){
-                fprintf(stderr, "Error: %s[%d] must be a number in the input file\n",name,i);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s[%d] must be a number in the input file\n",name,i);
+                ccexRefuse();
             }
             array[i] = finiteNumber(itemElement, name, i, -1, false);
             i++;
         }
         if (i != size) {
-            fprintf(stderr, "Error: %s is too short(%d) in the input file (expected size = %d)\n",name,i,size);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is too short(%d) in the input file (expected size = %d)\n",name,i,size);
+            ccexRefuse();
         }
         return array;
     }else{
@@ -2910,8 +2931,8 @@ double* cJSON_ReadDouble1d(cJSON* root, char* key, bool _default, double* defaul
             return default_value;
             
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2929,38 +2950,38 @@ double** cJSON_ReadDouble2d(cJSON* root, char* key, bool _default, double** defa
         cJSON* itemElement;
         cJSON_ArrayForEach(itemElement, item){
             if(i >= row){
-                fprintf(stderr, "Error: %s is too long in the input file\n",name);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s is too long in the input file\n",name);
+                ccexRefuse();
             }else{
                 if (!cJSON_IsArray(itemElement)){
-                    fprintf(stderr, "Error: %s[%d] must be an array of numbers in the input file\n",name,i);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: %s[%d] must be an array of numbers in the input file\n",name,i);
+                    ccexRefuse();
                 }
                 int j = 0;
                 cJSON* itemElement_j;
                 cJSON_ArrayForEach(itemElement_j, itemElement){
                     if(j >= col){
-                        fprintf(stderr, "Error: %s is too long in the input file\n",name);
-                        exit(EXIT_FAILURE);
+                        ccexRefusalPrint(stderr, "Error: %s is too long in the input file\n",name);
+                        ccexRefuse();
                     }else{
                         if (!cJSON_IsNumber(itemElement_j)){
-                            fprintf(stderr, "Error: %s[%d][%d] must be a number in the input file\n",name,i,j);
-                            exit(EXIT_FAILURE);
+                            ccexRefusalPrint(stderr, "Error: %s[%d][%d] must be a number in the input file\n",name,i,j);
+                            ccexRefuse();
                         }
                         array[i][j] = finiteNumber(itemElement_j, name, i, j, false);
                     }
                     j++;
                 }
                 if (j < col){   // a short row was filled with 0 and used (D42)
-                    fprintf(stderr, "Error: %s[%d] has %d numbers in the input file, %d are needed\n",name,i,j,col);
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: %s[%d] has %d numbers in the input file, %d are needed\n",name,i,j,col);
+                    ccexRefuse();
                 }
             }
             i++;
         }
         if (i < row){
-            fprintf(stderr, "Error: %s has %d rows in the input file, %d are needed\n",name,i,row);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s has %d rows in the input file, %d are needed\n",name,i,row);
+            ccexRefuse();
         }
         return array;
     }else{
@@ -2970,8 +2991,8 @@ double** cJSON_ReadDouble2d(cJSON* root, char* key, bool _default, double** defa
             return array;
             
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -2987,8 +3008,8 @@ float cJSON_ReadFloat(cJSON* root, char* key, bool _default, float default_value
             if (rank==0){printf("           %s : use default value .. \n",name);}
             return default_value;    
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -3004,21 +3025,21 @@ float* cJSON_ReadFloat1d(cJSON* root, char* key, bool _default, float* default_v
         cJSON* itemElement;
         cJSON_ArrayForEach(itemElement, item){
             if(i >= size){
-                fprintf(stderr, "Error: %s is too long in the input file\n",name);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s is too long in the input file\n",name);
+                ccexRefuse();
             }
             // A non-number element used to be read anyway: cJSON leaves valuedouble at 0
             // for a string or a bool, so "bfield": [0,0,"500"] became [0,0,0] silently.
             if (!cJSON_IsNumber(itemElement)){
-                fprintf(stderr, "Error: %s[%d] must be a number in the input file\n",name,i);
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: %s[%d] must be a number in the input file\n",name,i);
+                ccexRefuse();
             }
             array[i] = finiteNumber(itemElement, name, i, -1, true);
             i++;
         }
         if (i != size) {
-            fprintf(stderr, "Error: %s is too short(%d) in the input file (expected size = %d)\n",name,i,size);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is too short(%d) in the input file (expected size = %d)\n",name,i,size);
+            ccexRefuse();
         }
         return array;
     }else{
@@ -3027,8 +3048,8 @@ float* cJSON_ReadFloat1d(cJSON* root, char* key, bool _default, float* default_v
             return default_value;
             
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -3050,8 +3071,8 @@ bool cJSON_ReadBool(cJSON* root, char* key, bool _default, bool default_value){
             if (rank==0){printf("           %s : use default value .. \n",name);}
             return default_value;    
         }else{
-            fprintf(stderr, "Error: %s is not found in the input file\n",name);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+            ccexRefuse();
         }
     }
 }
@@ -3063,21 +3084,21 @@ MatrixXcd cJSON_ReadTensor(cJSON* root, char* key, bool _default, MatrixXcd defa
     refuseWrongType(tensor, name, cJSON_IsArray(tensor), "a 3x3 array of numbers");
     if (!cJSON_IsArray(tensor)){
         if(_default) return default_value;
-        fprintf(stderr, "Error: %s is not found in the input file\n",name);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",name);
+        ccexRefuse();
     }
     // Exactly 3 rows of 3 finite numbers (D28, 2026-10-02): a shorter array used to be padded with
     // zeros ("tensor": [[1]] ran as diag(1,0,0)), as the object form of Defect never allowed.
     if (cJSON_GetArraySize(tensor) != 3){
-        fprintf(stderr, "Error: %s must be a 3x3 array of numbers (it has %d rows)\n",name,cJSON_GetArraySize(tensor));
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s must be a 3x3 array of numbers (it has %d rows)\n",name,cJSON_GetArraySize(tensor));
+        ccexRefuse();
     }
     MatrixXcd mat = MatrixXcd::Zero(3,3);
     for (int i = 0; i < 3; ++i){
         cJSON* tensor_i = cJSON_GetArrayItem(tensor, i);
         if (!cJSON_IsArray(tensor_i) || cJSON_GetArraySize(tensor_i) != 3){
-            fprintf(stderr, "Error: %s row %d must contain exactly 3 numbers\n",name,i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: %s row %d must contain exactly 3 numbers\n",name,i);
+            ccexRefuse();
         }
         for (int j = 0; j < 3; ++j){
             char label[160]; snprintf(label,sizeof(label),"%s[%d][%d]",name,i,j);
@@ -3092,24 +3113,24 @@ MatrixXcd cJSON_ReadTensor(cJSON* root, char* key, bool _default, MatrixXcd defa
 // truncated, a string value read as 0, and a field that was not an array was skipped.
 static void refuseNonArrayField(cJSON* item, const char* key){
     if (item && !cJSON_IsArray(item)){
-        fprintf(stderr,"Error: Defect %s must be an array of [index, name, values] entries\n",key);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: Defect %s must be an array of [index, name, values] entries\n",key);
+        ccexRefuse();
     }
 }
 static int indexedEntryIndex(cJSON* entry, const char* key, int i, int navaax){
     cJSON* item = cJSON_GetArrayItem(entry,0);
     if (!cJSON_IsNumber(item) || !std::isfinite(item->valuedouble) || item->valuedouble != std::floor(item->valuedouble)
         || item->valuedouble < 0 || item->valuedouble >= navaax){
-        fprintf(stderr,"Error: %s[%d] index is out of range: it must be an integer in 0..%d\n",key,i,navaax-1);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s[%d] index is out of range: it must be an integer in 0..%d\n",key,i,navaax-1);
+        ccexRefuse();
     }
     return (int)item->valuedouble;
 }
 static const char* indexedEntryName(cJSON* entry, const char* key, int i){
     cJSON* item = cJSON_GetArrayItem(entry,1);
     if (!cJSON_IsString(item)){
-        fprintf(stderr,"Error: %s[%d] spin name must be a string\n",key,i);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s[%d] spin name must be a string\n",key,i);
+        ccexRefuse();
     }
     return item->valuestring;
 }
@@ -3146,9 +3167,9 @@ void cJSON_ReadDefectInfo_IntCharDoubleArray(cJSON* root, char* key, int valueco
         cJSON* itemArray1d = cJSON_GetArrayItem(itemArray2d, i);
 
         if (!cJSON_IsArray(itemArray1d) || cJSON_GetArraySize(itemArray1d) != 3) {
-            fprintf(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
-            fprintf(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
+            ccexRefusalPrint(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
+            ccexRefuse();
         }
 
         // Find axis index.
@@ -3164,27 +3185,27 @@ void cJSON_ReadDefectInfo_IntCharDoubleArray(cJSON* root, char* key, int valueco
         // v1.1.0 input that used to complete.
         int iax = indexedEntryIndex(itemArray1d, key, i, navaax);
         if (iax < 0 || iax >= navaax) {
-            fprintf(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
-            fprintf(stderr, "Error: %s[%d] is out of range\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
+            ccexRefusalPrint(stderr, "Error: %s[%d] is out of range\n", key, i);
+            ccexRefuse();
         }
         
         // Find spin index
         const char* spname = indexedEntryName(itemArray1d, key, i);
         int isp = findIndexChar(types,0,naddspin-1,(char*)spname);
         if (isp == -1) {
-            fprintf(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
-            fprintf(stderr, "Error: %s is not found in the input file\n",spname);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",spname);
+            ccexRefuse();
         }
         
         // Find double array values
         cJSON* values = cJSON_GetArrayItem(itemArray1d, 2);
 
         if (!cJSON_IsArray(values) || cJSON_GetArraySize(values) != valuecount) {
-            fprintf(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
-            fprintf(stderr, "The third element of '%s[%d]' should be an array or the length is not %d\n", key, i,valuecount);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error : cJSON_ReadDefectInfo_IntCharDoubleArray");
+            ccexRefusalPrint(stderr, "The third element of '%s[%d]' should be an array or the length is not %d\n", key, i,valuecount);
+            ccexRefuse();
         }
     
         for (int j = 0; j < valuecount; j++) {
@@ -3196,8 +3217,8 @@ void cJSON_ReadDefectInfo_IntCharDoubleArray(cJSON* root, char* key, int valueco
 void cJSON_ReadDefectInfo_IntCharMatrixXcd2d(cJSON* root, char* key, int valuecount, MatrixXcd*** array, char** types, int navaax, int naddspin){
 
     if (valuecount != 9){
-        fprintf(stderr, "Error: valuecount should be 9\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: valuecount should be 9\n");
+        ccexRefuse();
     }
 
     // itemArray2d : (int, char, MatrixXcd) * n
@@ -3225,9 +3246,9 @@ void cJSON_ReadDefectInfo_IntCharMatrixXcd2d(cJSON* root, char* key, int valueco
         cJSON* itemArray1d = cJSON_GetArrayItem(itemArray2d, i);
 
         if (!cJSON_IsArray(itemArray1d) || cJSON_GetArraySize(itemArray1d) != 3) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
-            fprintf(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
+            ccexRefusalPrint(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
+            ccexRefuse();
         }
 
         // Find axis index. navaax here is the caller's navaax + 1; valid range is
@@ -3235,27 +3256,27 @@ void cJSON_ReadDefectInfo_IntCharMatrixXcd2d(cJSON* root, char* key, int valueco
         // `>=` and not `>`.
         int iax = indexedEntryIndex(itemArray1d, key, i, navaax);
         if (iax < 0 || iax >= navaax) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
-            fprintf(stderr, "Error: %s[%d] is out of range\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
+            ccexRefusalPrint(stderr, "Error: %s[%d] is out of range\n", key, i);
+            ccexRefuse();
         }
 
         // Find spin index
         const char* spname = indexedEntryName(itemArray1d, key, i);
         int isp = findIndexChar(types,0,naddspin-1,(char*)spname);
         if (isp == -1) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
-            fprintf(stderr, "Error: %s is not found in the input file\n",spname);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
+            ccexRefusalPrint(stderr, "Error: %s is not found in the input file\n",spname);
+            ccexRefuse();
         }
 
         // Find double array values
         cJSON* values = cJSON_GetArrayItem(itemArray1d, 2);
 
         if (!cJSON_IsArray(values) || cJSON_GetArraySize(values) != valuecount) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
-            fprintf(stderr, "The third element of '%s[%d]' should be an array or the length is not %d\n", key, i,valuecount);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd2d");
+            ccexRefusalPrint(stderr, "The third element of '%s[%d]' should be an array or the length is not %d\n", key, i,valuecount);
+            ccexRefuse();
         }
 
         for (int j = 0; j < valuecount; j++) {
@@ -3270,8 +3291,8 @@ void cJSON_ReadDefectInfo_IntCharMatrixXcd2d(cJSON* root, char* key, int valueco
 void cJSON_ReadDefectInfo_IntCharMatrixXcd1d(cJSON* root, char* key, int valuecount, MatrixXcd** array, int navaax){
 
     if (valuecount != 9){
-        fprintf(stderr, "Error: valuecount should be 9\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: valuecount should be 9\n");
+        ccexRefuse();
     }
 
     // itemArray2d : (int, char, MatrixXcd) * n
@@ -3295,9 +3316,9 @@ void cJSON_ReadDefectInfo_IntCharMatrixXcd1d(cJSON* root, char* key, int valueco
         cJSON* itemArray1d = cJSON_GetArrayItem(itemArray2d, i);
 
         if (!cJSON_IsArray(itemArray1d) || cJSON_GetArraySize(itemArray1d) != 3) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
-            fprintf(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
+            ccexRefusalPrint(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
+            ccexRefuse();
         }
 
         // Find axis index. navaax here is the caller's navaax + 1; valid range is
@@ -3305,26 +3326,26 @@ void cJSON_ReadDefectInfo_IntCharMatrixXcd1d(cJSON* root, char* key, int valueco
         // `>=` and not `>`.
         int iax = indexedEntryIndex(itemArray1d, key, i, navaax);
         if (iax < 0 || iax >= navaax) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
-            fprintf(stderr, "Error: %s[%d] is out of range\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
+            ccexRefusalPrint(stderr, "Error: %s[%d] is out of range\n", key, i);
+            ccexRefuse();
         }
 
         // Find spin index
         const char* spname = indexedEntryName(itemArray1d, key, i);
         if (strcasecmp(spname,"e") != 0) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
-            fprintf(stderr, "Error: key : %s, %s is not found in the input file\n",key,spname);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
+            ccexRefusalPrint(stderr, "Error: key : %s, %s is not found in the input file\n",key,spname);
+            ccexRefuse();
         }
 
         // Find double array values
         cJSON* values = cJSON_GetArrayItem(itemArray1d, 2);
 
         if (!cJSON_IsArray(values) || cJSON_GetArraySize(values) != valuecount) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
-            fprintf(stderr, "The third element of '%s[%d]' should be an array or the length is not %d\n", key, i,valuecount);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharMatrixXcd1d");
+            ccexRefusalPrint(stderr, "The third element of '%s[%d]' should be an array or the length is not %d\n", key, i,valuecount);
+            ccexRefuse();
         }
 
         for (int j = 0; j < valuecount; j++) {
@@ -3361,9 +3382,9 @@ void cJSON_ReadDefectInfo_IntCharDouble(cJSON* root, char* key, double** array, 
         cJSON* itemArray1d = cJSON_GetArrayItem(itemArray2d, i);
 
         if (!cJSON_IsArray(itemArray1d) || cJSON_GetArraySize(itemArray1d) != 3) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharDouble");
-            fprintf(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharDouble");
+            ccexRefusalPrint(stderr, "Each '%s[%d]' entry should be an array of three elements\n", key, i);
+            ccexRefuse();
         }
 
         // Find axis index. navaax here is the caller's navaax + 1; valid range is
@@ -3371,17 +3392,17 @@ void cJSON_ReadDefectInfo_IntCharDouble(cJSON* root, char* key, double** array, 
         // `>=` and not `>`.
         int iax = indexedEntryIndex(itemArray1d, key, i, navaax);
         if (iax < 0 || iax >= navaax) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharDouble");
-            fprintf(stderr, "Error: %s[%d] is out of range\n", key, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharDouble");
+            ccexRefusalPrint(stderr, "Error: %s[%d] is out of range\n", key, i);
+            ccexRefuse();
         }
 
         // Find spin index
         const char* spname = indexedEntryName(itemArray1d, key, i);
         if (strcasecmp(spname,"e") != 0) {
-            fprintf(stderr, "cJSON_ReadDefectInfo_IntCharDouble");
-            fprintf(stderr, "Error: key : %s, %s is not found in the input file\n",key,spname);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "cJSON_ReadDefectInfo_IntCharDouble");
+            ccexRefusalPrint(stderr, "Error: key : %s, %s is not found in the input file\n",key,spname);
+            ccexRefuse();
         }
 
         // Find double array values
@@ -3469,7 +3490,7 @@ void cJSON_checkInputKeys(char* fccein){
     }
     if (!typos.empty()){
         if (rank == 0)
-            for (const std::string& t : typos) fprintf(stderr, "Error: input key %s\n", t.c_str());
-        exit(EXIT_FAILURE);
+            for (const std::string& t : typos) ccexRefusalPrint(stderr, "Error: input key %s\n", t.c_str());
+        ccexRefuse();
     }
 }

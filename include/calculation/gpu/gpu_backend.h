@@ -18,6 +18,10 @@ void gpuFinalize();
 // the global memory of the smallest visible device, 0 without one (or with CUDA_VISIBLE_DEVICES hiding them all)
 std::size_t gpuDeviceMemorySmallest();
 void gpuSetCacheLimit(std::size_t bytes);
+// X12 (review 20261013b-gpu-perf I1): after an out-of-memory, true empties the reuse cache and frees every buffer
+// released from then on (the partial work and the batch objects are destroyed after the exception was caught), so that
+// none stays held on the card; false (the next cluster) caches again. The cache limit is not changed.
+void gpuOutOfMemoryRecovery(bool on);
 struct GpuMemoryStats {
     std::size_t allocations, reuses, cachedBytes, peakCachedBytes, pointerUploads;
 };

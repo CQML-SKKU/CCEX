@@ -87,7 +87,6 @@ common = {}
 if int(hf) != 0:
     common["hyperfine"] = {"dipole": "dft" if int(hf) >= 2 else "point", "contact": int(hf) in (1, 3),
                            "file": hex_dir + "/Afile_vertex", "missing_row": "stop"}
-    cfg["hf_cutoff"] = 0
 if int(qd) != 0:
     common["quadrupole"] = {"structure": "plain", "file": hex_dir + "/Qfile_vertex"}
 if common:

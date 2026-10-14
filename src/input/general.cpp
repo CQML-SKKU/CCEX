@@ -1,4 +1,5 @@
 #include "../../include/calculation/gpu/accelerator_defaults.h"
+#include "../../include/calculation/gpu/compute_backend.h"
 #include "../../include/clustering/bundle/bundle_defaults.h"
 #include "../../include/input/general.h"
 #include "../../include/calculation/superoperator.h"
@@ -394,14 +395,14 @@ void Config_setMethod(Config* cnf, char* method){
 
     int idx = findIndexCharFix(options,0,opsize-1,method);
     if (idx == -1) {
-        fprintf(stderr, "Error: current method options (%s) is not available\n",method);
-        fprintf(stderr, "Available options are : ");
+        ccexRefusalPrint(stderr, "Error: current method options (%s) is not available\n",method);
+        ccexRefusalPrint(stderr, "Available options are : ");
         for (int i = 0; i < opsize; i++){
-            fprintf(stderr, "%s ",options[i]);
+            ccexRefusalPrint(stderr, "%s ",options[i]);
         }
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Please check the input file or change the possible option set\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "\n");
+        ccexRefusalPrint(stderr, "Please check the input file or change the possible option set\n");
+        ccexRefuse();
     }
 
     strcpy(cnf->method,options[idx]);
@@ -411,22 +412,22 @@ void Config_setQuantity(Config* cnf, char* quantity){
 
     // "noise" used to be accepted, but nothing computes it: the run gave the coherence under that name (review 20261013-doxygen D22)
     if (strcasecmp(quantity,"noise") == 0) {
-        fprintf(stderr, "Error: quantity \"noise\" is not supported (no noise calculation exists); use coherence or dm\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: quantity \"noise\" is not supported (no noise calculation exists); use coherence or dm\n");
+        ccexRefuse();
     }
 
     const int opsize = 2;
     char options[opsize][MAX_CHARARRAY_LENGTH] = {"coherence","dm"};
     int idx = findIndexCharFix(options,0,opsize-1,quantity);
     if (idx == -1) {
-        fprintf(stderr, "Error: current quantity options (%s) is not available\n",quantity);
-        fprintf(stderr, "Available options are : ");
+        ccexRefusalPrint(stderr, "Error: current quantity options (%s) is not available\n",quantity);
+        ccexRefusalPrint(stderr, "Available options are : ");
         for (int i = 0; i < opsize; i++){
-            fprintf(stderr, "%s ",options[i]);
+            ccexRefusalPrint(stderr, "%s ",options[i]);
         }
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Please check the input file or change the possible option set\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "\n");
+        ccexRefusalPrint(stderr, "Please check the input file or change the possible option set\n");
+        ccexRefuse();
     }
 
     strcpy(cnf->quantity,quantity);
@@ -443,14 +444,14 @@ void Config_setPropagator(Config* cnf, char* propagator){
     char options[opsize][MAX_CHARARRAY_LENGTH] = {"eigen","expm","sparse"};
     int idx = findIndexCharFix(options,0,opsize-1,propagator);
     if (idx == -1) {
-        fprintf(stderr, "Error: current propagator options (%s) is not available\n",propagator);
-        fprintf(stderr, "Available options are : ");
+        ccexRefusalPrint(stderr, "Error: current propagator options (%s) is not available\n",propagator);
+        ccexRefusalPrint(stderr, "Available options are : ");
         for (int i = 0; i < opsize; i++){
-            fprintf(stderr, "%s ",options[i]);
+            ccexRefusalPrint(stderr, "%s ",options[i]);
         }
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Please check the input file or change the possible option set\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "\n");
+        ccexRefusalPrint(stderr, "Please check the input file or change the possible option set\n");
+        ccexRefuse();
     }
 
     strcpy(cnf->propagator,propagator);
@@ -478,14 +479,14 @@ void Config_setEvolution(Config* cnf, char* evolution){
     char options[opsize][MAX_CHARARRAY_LENGTH] = {"matrix","vector"};
     int idx = findIndexCharFix(options,0,opsize-1,evolution);
     if (idx == -1) {
-        fprintf(stderr, "Error: current evolution options (%s) is not available\n",evolution);
-        fprintf(stderr, "Available options are : ");
+        ccexRefusalPrint(stderr, "Error: current evolution options (%s) is not available\n",evolution);
+        ccexRefusalPrint(stderr, "Available options are : ");
         for (int i = 0; i < opsize; i++){
-            fprintf(stderr, "%s ",options[i]);
+            ccexRefusalPrint(stderr, "%s ",options[i]);
         }
-        fprintf(stderr, "\n");
-        fprintf(stderr, "Please check the input file or change the possible option set\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "\n");
+        ccexRefusalPrint(stderr, "Please check the input file or change the possible option set\n");
+        ccexRefuse();
     }
 
     strcpy(cnf->evolution,evolution);
@@ -512,9 +513,9 @@ void Config_resolveEvolution(Config* cnf){
         // the density-matrix path anyway, so refuse rather than let the input claim
         // something the run does not do.
         if (strcasecmp(cnf->evolution,"matrix")!=0 && !isGCCE){
-            fprintf(stderr,"Error : evolution=%s is implemented for method=gCCE only "
+            ccexRefusalPrint(stderr,"Error : evolution=%s is implemented for method=gCCE only "
                            "(this run has method=%s).\n",cnf->evolution,inputMethodName(cnf->method));
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
         return;
     }
@@ -555,8 +556,7 @@ void Config_validateEvolutionUpdate(Config* cnf){
     // A36: may a cluster reach the GPU large-cluster path? The methods computeBackendInit sends to the GPU, with backend
     // cuda (refused there in the CPU build) or with auto in the GPU build
     const bool cuda = (strcasecmp(cnf->backend,"cuda")==0);
-    const bool gpuMethod = !strcasecmp(cnf->method,"cce") || !strcasecmp(cnf->method,"pcce") ||
-                           (!strcasecmp(cnf->method,"gcce") && eigen);   // gCCE itself: pgCCE runs on the CPU
+    const bool gpuMethod = computeBackendMethodSupported(cnf);   // gCCE itself: pgCCE runs on the CPU
 #ifdef CCEX_USE_CUDA
     const bool gpuLarge = gpuMethod && (cuda || !strcasecmp(cnf->backend,"auto"));
 #else
@@ -581,11 +581,11 @@ void Config_validateEvolutionUpdate(Config* cnf){
     if (found[0] == '\0' && gpuLarge)
         snprintf(found,sizeof(found),"backend=%s, whose clusters on the GPU are computed exact",cnf->backend);
     if (found[0] == '\0') return;
-    fprintf(stderr,"Error : evolution_update=recursive is implemented on the CPU and in the packed kernel for cCCE "
+    ccexRefusalPrint(stderr,"Error : evolution_update=recursive is implemented on the CPU and in the packed kernel for cCCE "
                    "(single state and ensemble) and on the CPU for gCCE with propagator=eigen (evolution=vector or "
                    "matrix); this run has %s. Use evolution_update=exact, or leave the key out (then each path takes "
                    "recursive where it has it).\n",found);
-    exit(EXIT_FAILURE);
+    ccexRefuse();
 }
 
 /**
@@ -598,9 +598,9 @@ void Config_validatePropagator(const Config* cnf, int nqubit){
 
     const bool isGCCE = !strcmp(methodKernel(cnf->method),"gcce");   // gCCE, pgCCE
     if (!isGCCE && strcasecmp(cnf->propagator,"expm")==0){
-        fprintf(stderr,"Error : propagator=expm is implemented for method=gCCE only (this run has method=%s); "
+        ccexRefusalPrint(stderr,"Error : propagator=expm is implemented for method=gCCE only (this run has method=%s); "
                        "cCCE takes eigen or sparse.\n",inputMethodName(cnf->method));
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     if (strcasecmp(cnf->propagator,"sparse")!=0){ return; }
     char found[128] = "";
@@ -619,10 +619,10 @@ void Config_validatePropagator(const Config* cnf, int nqubit){
     else if (!isGCCE && strcasecmp(cnf->quantity,"coherence")!=0)
         snprintf(found,sizeof(found),"quantity=%s",cnf->quantity);
     if (found[0] == '\0'){ return; }
-    fprintf(stderr,"Error : propagator=sparse is implemented on backend=cpu with evolution_update=exact for one sampled "
+    ccexRefusalPrint(stderr,"Error : propagator=sparse is implemented on backend=cpu with evolution_update=exact for one sampled "
                    "state (nstate > 0) of the cCCE and of gCCE with evolution=vector, one qubit, without knight and "
                    "hfmedi; this run has %s. Use propagator=eigen.\n",found);
-    exit(EXIT_FAILURE);
+    ccexRefuse();
 }
 
 /**
@@ -674,8 +674,8 @@ void Config_resolveWarpMaxDim(Config* cnf){
 void Config_setOrder(Config* cnf, int order){
 
     if (order < 0) {
-        fprintf(stderr, "Error: current order (%d < 0) is not available\n",order);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current order (%d < 0) is not available\n",order);
+        ccexRefuse();
     }
 
     cnf->order = order;
@@ -692,8 +692,8 @@ void Config_setBfield_z(Config* cnf, float bz){
 void Config_setRbath(Config* cnf, float rbath){
 
     if (rbath < 0.0) {
-        fprintf(stderr, "Error: current rbath (%f < 0) is not available\n",rbath);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current rbath (%f < 0) is not available\n",rbath);
+        ccexRefuse();
     }
     cnf->rbath = rbath;
 }
@@ -701,8 +701,8 @@ void Config_setRbath(Config* cnf, float rbath){
 void Config_setRdip(Config* cnf, float rdip){
 
     if (rdip < 0.0) {
-        fprintf(stderr, "Error: current rdip (%f < 0) is not available\n",rdip);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current rdip (%f < 0) is not available\n",rdip);
+        ccexRefuse();
     }
     cnf->rdip = rdip;
 }
@@ -710,8 +710,8 @@ void Config_setRdip(Config* cnf, float rdip){
 void Config_setDeltat(Config* cnf, double deltat){
 
     if (deltat < 0.0) {
-        fprintf(stderr, "Error: current deltat (%f < 0) is not available\n",deltat);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current deltat (%f < 0) is not available\n",deltat);
+        ccexRefuse();
     }
     cnf->deltat = deltat;
 }
@@ -720,8 +720,8 @@ void Config_setNstep(Config* cnf, int nstep){
 
     // at least one time point: with 0 the result arrays are empty and the output reads result[0] (review 7eed38 R1)
     if (nstep < 1) {
-        fprintf(stderr, "Error: current nstep (%d < 1) is not available: at least one time point\n",nstep);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current nstep (%d < 1) is not available: at least one time point\n",nstep);
+        ccexRefuse();
     }
     cnf->nstep = nstep;
 }
@@ -729,8 +729,8 @@ void Config_setNstep(Config* cnf, int nstep){
 void Config_setRbathcut(Config* cnf, float rbathcut){
 
     if (rbathcut < 0.0) {
-        fprintf(stderr, "Error: the inner radius rbath[0] (%f < 0) is not available\n",rbathcut);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the inner radius rbath[0] (%f < 0) is not available\n",rbathcut);
+        ccexRefuse();
     }
     cnf->rbathcut = rbathcut;
 }
@@ -738,8 +738,8 @@ void Config_setRbathcut(Config* cnf, float rbathcut){
 void Config_setRdipcut(Config* cnf, float rdipcut){
 
     if (rdipcut < 0.0) {
-        fprintf(stderr, "Error: the inner radius rdip[0] (%f < 0) is not available\n",rdipcut);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the inner radius rdip[0] (%f < 0) is not available\n",rdipcut);
+        ccexRefuse();
     }
     cnf->rdipcut = rdipcut;
 }
@@ -747,8 +747,8 @@ void Config_setRdipcut(Config* cnf, float rdipcut){
 void Config_setNstate(Config* cnf, int nstate){
 
     if (nstate < 0) {
-        fprintf(stderr, "Error: current nstate (%d < 0) is not available\n",nstate);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current nstate (%d < 0) is not available\n",nstate);
+        ccexRefuse();
     }
     cnf->nstate = nstate;
 }
@@ -756,8 +756,8 @@ void Config_setNstate(Config* cnf, int nstate){
 void Config_setSeed(Config* cnf, int seed){
 
     if (seed < 0) {
-        fprintf(stderr, "Error: current seed(%d) ( < 0) is not available\n",seed);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current seed(%d) ( < 0) is not available\n",seed);
+        ccexRefuse();
     }
     cnf->seed = seed;
 }
@@ -765,8 +765,8 @@ void Config_setSeed(Config* cnf, int seed){
 void Config_setQubitfile(Config* cnf, char* qubitfile){
 
     if (cnf->qubitfile == NULL){
-        fprintf(stderr, "Error: the memory for qubitfile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for qubitfile should be allocated\n");
+        ccexRefuse();
     }
 
     copyBounded(cnf->qubitfile,qubitfile,MAX_FILEPATH,"qubitfile");
@@ -775,8 +775,8 @@ void Config_setQubitfile(Config* cnf, char* qubitfile){
 void Config_setGyrofile(Config* cnf, char* gyrofile){
 
     if (cnf->gyrofile == NULL){
-        fprintf(stderr, "Error: the memory for gyrofile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for gyrofile should be allocated\n");
+        ccexRefuse();
     }
     copyBounded(cnf->gyrofile,gyrofile,MAX_FILEPATH,"gyrofile");
 }
@@ -784,8 +784,8 @@ void Config_setGyrofile(Config* cnf, char* gyrofile){
 void Config_setNbathfiles(Config* cnf, int nbathfiles){
 
     if (nbathfiles <= 0) {
-        fprintf(stderr, "Error: current nbathfiles(%d) (<= 0) is not available\n",nbathfiles);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current nbathfiles(%d) (<= 0) is not available\n",nbathfiles);
+        ccexRefuse();
     }
     cnf->nbathfiles = nbathfiles;
 }
@@ -793,8 +793,8 @@ void Config_setNbathfiles(Config* cnf, int nbathfiles){
 void Config_setBathfiles_i(Config* cnf, char* bathfiles, int i){
 
     if (cnf->bathfiles == NULL){
-        fprintf(stderr, "Error: the memory for bathfiles should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for bathfiles should be allocated\n");
+        ccexRefuse();
     }
     copyBounded(cnf->bathfiles[i],bathfiles,MAX_FILEPATH,"bathfile");
 }
@@ -802,8 +802,8 @@ void Config_setBathfiles_i(Config* cnf, char* bathfiles, int i){
 void Config_setBathadjust_i(Config* cnf, double* bathadjust, int i){
 
     if (cnf->bathadjust == NULL){
-        fprintf(stderr, "Error: the memory for bathadjust should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for bathadjust should be allocated\n");
+        ccexRefuse();
     }
     copyDouble1d(cnf->bathadjust[i],bathadjust,3);
 }
@@ -811,8 +811,8 @@ void Config_setBathadjust_i(Config* cnf, double* bathadjust, int i){
 void Config_setAvaaxfile(Config* cnf, char* avaaxfile){
 
     if (cnf->avaaxfile == NULL){
-        fprintf(stderr, "Error: the memory for avaaxfile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for avaaxfile should be allocated\n");
+        ccexRefuse();
     }
 
     copyBounded(cnf->avaaxfile,avaaxfile,MAX_FILEPATH,"avaaxfile");
@@ -821,8 +821,8 @@ void Config_setAvaaxfile(Config* cnf, char* avaaxfile){
 void Config_setStatefile(Config* cnf, char* statefile){
 
     if (cnf->statefile == NULL){
-        fprintf(stderr, "Error: the memory for statefile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for statefile should be allocated\n");
+        ccexRefuse();
     }
 
     copyBounded(cnf->statefile,statefile,MAX_FILEPATH,"statefile");
@@ -831,8 +831,8 @@ void Config_setStatefile(Config* cnf, char* statefile){
 void Config_setExstatefile(Config* cnf, char* exstatefile){
 
     if (cnf->exstatefile == NULL){
-        fprintf(stderr, "Error: the memory for exstatefile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for exstatefile should be allocated\n");
+        ccexRefuse();
     }
 
     copyBounded(cnf->exstatefile,exstatefile,MAX_FILEPATH,"exstatefile");
@@ -864,9 +864,9 @@ void Config_setRot_qubit_axis(Config* cnf, double* rot_qubit_axis){
 void Config_setRot_reference_qubit(Config* cnf, char* rot_reference_qubit){
 
     if (strlen(rot_reference_qubit) >= MAX_CHARARRAY_LENGTH){
-        fprintf(stderr,"Error: reference_qubit \"%s\" is longer than a qubit name can be (%d characters)\n",
+        ccexRefusalPrint(stderr,"Error: reference_qubit \"%s\" is longer than a qubit name can be (%d characters)\n",
                 rot_reference_qubit,MAX_CHARARRAY_LENGTH-1);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     strcpy(cnf->rot_reference_qubit,rot_reference_qubit);
 }
@@ -876,10 +876,10 @@ void Config_setRot_reference_qubit(Config* cnf, char* rot_reference_qubit){
 static void Config_setTensorFrame(char* dest, char* frame, const char* key){
 
     if (strcasecmp(frame,"bath")!=0 && strcasecmp(frame,"qubit")!=0){
-        fprintf(stderr,"Error: %s must be \"bath\" or \"qubit\" (got \"%s\")\n",key,frame);
-        fprintf(stderr,"  \"bath\"  : tensor components are in the original bath Cartesian basis\n");
-        fprintf(stderr,"  \"qubit\" : tensor components are already in the qubit-aligned basis\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s must be \"bath\" or \"qubit\" (got \"%s\")\n",key,frame);
+        ccexRefusalPrint(stderr,"  \"bath\"  : tensor components are in the original bath Cartesian basis\n");
+        ccexRefusalPrint(stderr,"  \"qubit\" : tensor components are already in the qubit-aligned basis\n");
+        ccexRefuse();
     }
     strcpy(dest,frame);
 }
@@ -899,14 +899,14 @@ void Config_setRot_qd_tensor_frame(Config* cnf, char* frame){
 void Config_setRot_qubit_position_frame(Config* cnf, char* frame){
 
     if (strcasecmp(frame,"bath") != 0){
-        fprintf(stderr,"Error: coordinate_frame_rotation.qubit_position_frame must be \"bath\" (got \"%s\")\n",frame);
+        ccexRefusalPrint(stderr,"Error: coordinate_frame_rotation.qubit_position_frame must be \"bath\" (got \"%s\")\n",frame);
         if (strcasecmp(frame,"qubit") == 0){
-            fprintf(stderr,"\"qubit\" is not supported in this version: the bath files are read in the\n");
-            fprintf(stderr,"source frame, so qubit positions already in the computational frame would be\n");
-            fprintf(stderr,"compared against them before anything is rotated.\n");
+            ccexRefusalPrint(stderr,"\"qubit\" is not supported in this version: the bath files are read in the\n");
+            ccexRefusalPrint(stderr,"source frame, so qubit positions already in the computational frame would be\n");
+            ccexRefusalPrint(stderr,"compared against them before anything is rotated.\n");
         }
-        fprintf(stderr,"Write every Qubit.xyz in the same Cartesian basis and origin as the bath files.\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Write every Qubit.xyz in the same Cartesian basis and origin as the bath files.\n");
+        ccexRefuse();
     }
     strcpy(cnf->rot_qubit_position_frame,frame);
 }
@@ -944,22 +944,22 @@ void Config_validateBfieldAlignment(Config* cnf){
     double tol = 1.0e-12 * ((bnorm > 1.0) ? bnorm : 1.0);
 
     if (bperp > tol){
-        fprintf(stderr,"Error: coordinate_frame_rotation requires bfield to be aligned\n");
-        fprintf(stderr,"with the computational z axis, which represents qubit_axis.\n");
-        fprintf(stderr,"Current bfield: [%g, %g, %g]\n",bx,by,bz);
-        fprintf(stderr,"  transverse component |B_perp| = %g  (tolerance %g)\n",bperp,tol);
-        fprintf(stderr,"Write the field as [0, 0, Bz]; Bz may be negative for the opposite\n");
-        fprintf(stderr,"direction along qubit_axis. A tilted field is not supported with the\n");
-        fprintf(stderr,"coordinate frame rotation.\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: coordinate_frame_rotation requires bfield to be aligned\n");
+        ccexRefusalPrint(stderr,"with the computational z axis, which represents qubit_axis.\n");
+        ccexRefusalPrint(stderr,"Current bfield: [%g, %g, %g]\n",bx,by,bz);
+        ccexRefusalPrint(stderr,"  transverse component |B_perp| = %g  (tolerance %g)\n",bperp,tol);
+        ccexRefusalPrint(stderr,"Write the field as [0, 0, Bz]; Bz may be negative for the opposite\n");
+        ccexRefusalPrint(stderr,"direction along qubit_axis. A tilted field is not supported with the\n");
+        ccexRefusalPrint(stderr,"coordinate frame rotation.\n");
+        ccexRefuse();
     }
 }
 
 void Config_setHf_tensorfile(Config* cnf, char* hf_tensorfile){
 
     if (cnf->hf_tensorfile == NULL){
-        fprintf(stderr, "Error: the memory for hf_tensorfile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for hf_tensorfile should be allocated\n");
+        ccexRefuse();
     }
     copyBounded(cnf->hf_tensorfile,hf_tensorfile,MAX_FILEPATH,"hf_tensorfile");
 }
@@ -967,8 +967,8 @@ void Config_setHf_tensorfile(Config* cnf, char* hf_tensorfile){
 void Config_setHf_ignore_oor(Config* cnf, int hf_ignore_oor){
 
     if (hf_ignore_oor != 0 && hf_ignore_oor != 1) {
-        fprintf(stderr, "Error: possible hf_ignore_oor (current : %d) is 0 or 1\n",hf_ignore_oor);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: possible hf_ignore_oor (current : %d) is 0 or 1\n",hf_ignore_oor);
+        ccexRefuse();
     }
     cnf->hf_ignore_oor = hf_ignore_oor;
 }
@@ -981,8 +981,8 @@ void Config_setHf_readmode(Config* cnf, int hf_readmode){
     // BathArray_setBathHypfs nor the tensor file ever ran. Every bath spin kept an unset
     // hyperfine tensor and the run finished, quietly, with no hyperfine coupling at all.
     if (hf_readmode < 0 || hf_readmode > 3) {
-        fprintf(stderr, "Error: current hf_readmode (%d < 0 or > 3) is not available\n",hf_readmode);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: current hf_readmode (%d < 0 or > 3) is not available\n",hf_readmode);
+        ccexRefuse();
     }
 
     cnf->hf_readmode = hf_readmode;
@@ -991,8 +991,8 @@ void Config_setHf_readmode(Config* cnf, int hf_readmode){
 void Config_setQd_tensorfile(Config* cnf, char* qd_tensorfile){
 
     if (cnf->qd_tensorfile == NULL){
-        fprintf(stderr, "Error: the memory for qd_tensorfile should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for qd_tensorfile should be allocated\n");
+        ccexRefuse();
     }
     copyBounded(cnf->qd_tensorfile,qd_tensorfile,MAX_FILEPATH,"qd_tensorfile");
 }
@@ -1000,8 +1000,8 @@ void Config_setQd_tensorfile(Config* cnf, char* qd_tensorfile){
 void Config_setQd_tensorfile_woqubit(Config* cnf, char* qd_tensorfile_woqubit){
 
     if (cnf->qd_tensorfile_woqubit == NULL){
-        fprintf(stderr, "Error: the memory for qd_tensorfile_woqubit should be allocated\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: the memory for qd_tensorfile_woqubit should be allocated\n");
+        ccexRefuse();
     }
     copyBounded(cnf->qd_tensorfile_woqubit,qd_tensorfile_woqubit,MAX_FILEPATH,"qd_tensorfile_woqubit");
 }
@@ -1021,11 +1021,11 @@ void Config_setQd_readmode(Config* cnf, int qd_readmode){
         qd_readmode != 2 &&
         qd_readmode != 3 &&
         qd_readmode != 4) {
-        fprintf(stderr,
+        ccexRefusalPrint(stderr,
                 "Error: current qd_readmode (%d) is not available; "
                 "supported values are 0, 2, 3 and 4\n",
                 qd_readmode);
-        exit(EXIT_FAILURE);
+        ccexRefuse();
     }
     cnf->qd_readmode = qd_readmode;
 }

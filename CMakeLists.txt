@@ -8,8 +8,9 @@
 #     CCEX_CUDA=AUTO|ON|OFF   the CUDA backend binary; AUTO builds it when a CUDA compiler is found
 #     CCEX_NATIVE=ON|OFF      -march=native on the CPU objects (ON)
 #     CCEX_SANITIZE=ON|OFF    AddressSanitizer and UBSan on the CPU, adaptive and SQLite objects (OFF)
-#     CCEX_BLAS=AUTO|MKL|OFF  large cCCE/gCCE clusters by Intel MKL (zgemm from bath dimension 21, zheevd from
-#                             63; include/common/blas_option.h), as do_compile.sh's CCEX_BLAS. AUTO (default): on when
+#     CCEX_BLAS=AUTO|MKL|OFF  large cCCE/gCCE clusters by Intel MKL (zgemm in the cCCE ensemble Hahn echo's
+#                             recursive path from bath dimension 21, zheevd from 63: the bath dimension for cCCE, qubit
+#                             x bath for gCCE; include/common/blas_option.h), as do_compile.sh's CCEX_BLAS. AUTO (default): on when
 #                             oneAPI's MKLConfig.cmake is found (MKLROOT from setvars.sh or the intel module); MKL:
 #                             stop without it; OFF: never. lp64, sequential
 #     CCEX_BIN_DIR=<dir>      where the executables go (default <build>/bin); -DCCEX_BIN_DIR=$PWD/bin
@@ -125,6 +126,8 @@ endforeach()
 file(GLOB CCEX_ADAPTIVE_SRCS CONFIGURE_DEPENDS ${CMAKE_SOURCE_DIR}/src/clustering/algo_adaptive/*.cpp)
 # A30: the batched small-cluster kernel writes out every fused multiply-add it needs; the compiler adds none
 set_source_files_properties(${CMAKE_SOURCE_DIR}/src/calculation/cce_batch_kernel.cpp PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
+# A42: the small eigensolver's lanes must compute what one matrix alone computes: nothing fused
+set_source_files_properties(${CMAKE_SOURCE_DIR}/src/calculation/small_eigensolver.cpp PROPERTIES COMPILE_OPTIONS -ffp-contract=off)
 
 set(CCEX_INCLUDE ${CMAKE_SOURCE_DIR}/include ${CMAKE_SOURCE_DIR}/external/eigen ${CMAKE_SOURCE_DIR}/external/uthash/include)
 # the warnings the code trips on every compiler; -fpermissive is for the C idioms in src/
@@ -354,6 +357,13 @@ set_target_properties(test_cce_batch PROPERTIES OUTPUT_NAME test_cce_batch.out)
 target_include_directories(test_cce_batch PRIVATE ${CCEX_INCLUDE})
 target_compile_options(test_cce_batch PRIVATE ${CCEX_CPU_OPT} ${CCEX_CXX_WARN} -UNDEBUG)
 target_link_libraries(test_cce_batch PRIVATE MPI::MPI_CXX Threads::Threads ${CMAKE_DL_LIBS})
+# A42: the small cCCE eigensolver (fixed-sweep Jacobi) against Eigen and lane against lane
+add_executable(test_small_eigensolver EXCLUDE_FROM_ALL
+  ${CMAKE_SOURCE_DIR}/test/code_verification/check_numerics/test_small_eigensolver.cpp $<TARGET_OBJECTS:ccex_core>)
+set_target_properties(test_small_eigensolver PROPERTIES OUTPUT_NAME test_small_eigensolver.out)
+target_include_directories(test_small_eigensolver PRIVATE ${CCEX_INCLUDE})
+target_compile_options(test_small_eigensolver PRIVATE ${CCEX_CPU_OPT} ${CCEX_CXX_WARN} -UNDEBUG)
+target_link_libraries(test_small_eigensolver PRIVATE MPI::MPI_CXX Threads::Threads ${CMAKE_DL_LIBS})
 file(GLOB _small_cluster_dumps ${CMAKE_SOURCE_DIR}/test/gpu_verification/check_gpu/data/small_cluster/*.bin)
 add_custom_target(cpu-test
   COMMAND $<TARGET_FILE:test_cluster_log>
@@ -368,4 +378,5 @@ add_custom_target(cpu-test
   COMMAND $<TARGET_FILE:test_partition_cache_format> ${CMAKE_BINARY_DIR}/test_partition_cache.bin
   COMMAND $<TARGET_FILE:test_fixed_size>
   COMMAND $<TARGET_FILE:test_cce_batch> ${_small_cluster_dumps}
-  DEPENDS ${_cpu_tests} ${_bundle_tests} test_partition_cache_format test_fixed_size test_cce_batch)
+  COMMAND $<TARGET_FILE:test_small_eigensolver> ${_small_cluster_dumps}
+  DEPENDS ${_cpu_tests} ${_bundle_tests} test_partition_cache_format test_fixed_size test_cce_batch test_small_eigensolver)

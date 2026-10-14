@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <stdexcept>
 #include <string>
+#include <type_traits>
 
 using smallcluster::C;
 using smallcluster::cmake;
@@ -156,16 +157,24 @@ template<class S> struct WarpsFor { static constexpr int value = sizeof(S) > 240
 
 // ---------------------------------------------------------------- gCCE
 template<int D> struct GcceShared { C A[D*D]; C V[D*D]; double E[D]; Rotations R; };
+// X11 (review 20261013b-gpu-perf O1): Hahn (one pulse) keeps F = V^dagger (Uq (x) I) V, the pulse in the eigenbasis
+template<int D> struct GcceHahnShared : GcceShared<D> { C F[D*D]; };
+template<int D, bool HAHN> using GcceSharedFor = typename std::conditional<HAHN, GcceHahnShared<D>, GcceShared<D>>::type;
 
-template<int QD, int BD, int NF>
-__global__ void __launch_bounds__(32*WarpsFor<GcceShared<QD*BD>>::value) gcceKernel(const C* __restrict__ in, const WarpEntry* __restrict__ list,
+// HAHN (warpClusterLaunch: dimension 12, two intervals): each time point applies the pulse as F, 2 D^2 products instead
+// of 3 D^2 + QD (the last digits differ from the general chain, within the GPU tolerance)
+// The HAHN kernel is allowed 255 registers (minimum one block per SM): with the default 168 nvcc spilled it on sm_120 and
+// P1 gCCE2 warp runs took 1.19 times as long as before X11 (job 17444); with 255, 0.85-0.87 (job 17447). 0 for the
+// others leaves their code as it was (SASS identical on sm_120).
+template<int QD, int BD, int NF, bool HAHN>
+__global__ void __launch_bounds__(32*WarpsFor<GcceSharedFor<QD*BD,HAHN>>::value, HAHN ? 1 : 0) gcceKernel(const C* __restrict__ in, const WarpEntry* __restrict__ list,
                                                                                long n, C* __restrict__ out, unsigned char* __restrict__ status){
-    constexpr int D = QD*BD, W = WarpsFor<GcceShared<D>>::value;
-    __shared__ GcceShared<D> all[W];
+    constexpr int D = QD*BD, W = WarpsFor<GcceSharedFor<D,HAHN>>::value;
+    __shared__ GcceSharedFor<D,HAHN> all[W];
     const int lane = threadIdx.x & 31, wid = threadIdx.x >> 5;
     const long c = (long)blockIdx.x*W + wid;
     if (c >= n) return;                           // whole warps leave together
-    GcceShared<D>& w = all[wid];
+    GcceSharedFor<D,HAHN>& w = all[wid];
     const WarpEntry e = list[c];
     const C* h = in + e.in;
     const int nstep = P.time.nstep, per = P.dm ? QD*QD : 1;
@@ -174,6 +183,22 @@ __global__ void __launch_bounds__(32*WarpsFor<GcceShared<QD*BD>>::value) gcceKer
         for (int t=lane; t<nstep*per; t+=32) o[t] = cmake(0,0);
         if (lane == 0) status[e.out] = smallcluster::statusNotConverged;
         return;
+    }
+    if constexpr (HAHN){                          // F = V^dagger T, T = (Uq (x) I) V (T over A, no longer needed)
+        for (int t=lane; t<D*D; t+=32){
+            const int k = t/D, j = t%D, a = k/BD, b = k%BD;
+            C s = cmake(0,0);
+            for (int q=0; q<QD; ++q) s = cadd(s, cmul(P.pulse[0][a+q*QD], w.V[(q*BD+b)*D+j]));
+            w.A[t] = s;
+        }
+        __syncwarp();
+        for (int t=lane; t<D*D; t+=32){
+            const int i = t/D, j = t%D;
+            C s = cmake(0,0);
+            for (int k=0; k<D; ++k) s = cadd(s, cjmul(w.V[k*D+i], w.A[k*D+j]));
+            w.F[t] = s;
+        }
+        __syncwarp();
     }
     // the starts in the eigenbasis, S[m*D+j] (over A, no longer needed): V^dagger psi0, or V^dagger (qpsi0 (x) e_m)
     const int nstart = P.ensemble ? BD : 1;
@@ -215,11 +240,20 @@ __global__ void __launch_bounds__(32*WarpsFor<GcceShared<QD*BD>>::value) gcceKer
             select<NF,D>(ph, P.time.same[0], u);
             #pragma unroll
             for (int j=0; j<D; ++j) x[j] = cmul(u[j], S[m*D+j]);
+            if constexpr (HAHN){                  // y = V u1 F u0 S
+                #pragma unroll
+                for (int j=0; j<D; ++j){ C a = cmake(0,0);
+                    #pragma unroll
+                    for (int k=0; k<D; ++k) a = cadd(a, cmul(w.F[j*D+k], x[k])); y[j] = a; }
+                select<NF,D>(ph, P.time.same[1], u);
+                #pragma unroll
+                for (int j=0; j<D; ++j) x[j] = cmul(u[j], y[j]);
+            }
             #pragma unroll
             for (int k=0; k<D; ++k){ C a = cmake(0,0);
                 #pragma unroll
                 for (int j=0; j<D; ++j) a = cadd(a, cmul(w.V[k*D+j], x[j])); y[k] = a; }
-            for (int p=1; p<intervals; ++p){
+            if constexpr (!HAHN) for (int p=1; p<intervals; ++p){
                 const C* U = P.pulse[p-1];
                 #pragma unroll
                 for (int a=0; a<QD; ++a)
@@ -372,13 +406,13 @@ template<class K> void launch(K kernel, int warps, long n, cudaStream_t stream, 
     kernel<<<(unsigned)((n+warps-1)/warps), 32*warps, 0, stream>>>(in, list, n, out, status);
     check(cudaGetLastError(), "launch");
 }
-template<int QD, int BD, int NF> void gcceOne(long n, cudaStream_t s, const C* in, const WarpEntry* list, C* out, unsigned char* st){
-    launch(gcceKernel<QD,BD,NF>, WarpsFor<GcceShared<QD*BD>>::value, n, s, in, list, out, st);
+template<int QD, int BD, int NF, bool HAHN> void gcceOne(long n, cudaStream_t s, const C* in, const WarpEntry* list, C* out, unsigned char* st){
+    launch(gcceKernel<QD,BD,NF,HAHN>, WarpsFor<GcceSharedFor<QD*BD,HAHN>>::value, n, s, in, list, out, st);
 }
-template<int QD, int BD> void gcceSlots(int nf, long n, cudaStream_t s, const C* in, const WarpEntry* list, C* out, unsigned char* st){
-    if (nf == 1) gcceOne<QD,BD,1>(n,s,in,list,out,st);
-    else if (nf == 2) gcceOne<QD,BD,2>(n,s,in,list,out,st);
-    else gcceOne<QD,BD,4>(n,s,in,list,out,st);
+template<int QD, int BD, bool HAHN> void gcceSlots(int nf, long n, cudaStream_t s, const C* in, const WarpEntry* list, C* out, unsigned char* st){
+    if (nf == 1) gcceOne<QD,BD,1,HAHN>(n,s,in,list,out,st);
+    else if (nf == 2) gcceOne<QD,BD,2,HAHN>(n,s,in,list,out,st);
+    else gcceOne<QD,BD,4,HAHN>(n,s,in,list,out,st);
 }
 template<int D> void cceSlots(int nf, long n, cudaStream_t s, const C* in, const WarpEntry* list, C* out, unsigned char* st){
     if (nf == 1) launch(cceKernel<D,1>, WarpsFor<CceShared<D>>::value, n, s, in, list, out, st);
@@ -403,12 +437,15 @@ void warpClusterLaunch(const Plan& plan, int dim, const C* in, const WarpEntry* 
         return;
     }
     switch (dim/3){                               // qubit dimension 3 (warpcluster::compiled)
-        case 2: gcceSlots<3,2>(nf,n,stream,in,list,out,status); break;
-        case 3: gcceSlots<3,3>(nf,n,stream,in,list,out,status); break;
-        case 4: gcceSlots<3,4>(nf,n,stream,in,list,out,status); break;
-        case 6: gcceSlots<3,6>(nf,n,stream,in,list,out,status); break;
-        case 7: gcceSlots<3,7>(nf,n,stream,in,list,out,status); break;
-        case 8: gcceSlots<3,8>(nf,n,stream,in,list,out,status); break;
-        default: gcceSlots<3,9>(nf,n,stream,in,list,out,status); break;
+        case 2: gcceSlots<3,2,false>(nf,n,stream,in,list,out,status); break;
+        case 3: gcceSlots<3,3,false>(nf,n,stream,in,list,out,status); break;
+        case 4:                                   // X11: the pulse in the eigenbasis for Hahn, at this dimension only so far
+            if (plan.time.intervals == 2) gcceSlots<3,4,true>(nf,n,stream,in,list,out,status);
+            else gcceSlots<3,4,false>(nf,n,stream,in,list,out,status);
+            break;
+        case 6: gcceSlots<3,6,false>(nf,n,stream,in,list,out,status); break;
+        case 7: gcceSlots<3,7,false>(nf,n,stream,in,list,out,status); break;
+        case 8: gcceSlots<3,8,false>(nf,n,stream,in,list,out,status); break;
+        default: gcceSlots<3,9,false>(nf,n,stream,in,list,out,status); break;
     }
 }

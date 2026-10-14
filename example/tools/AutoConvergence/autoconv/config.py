@@ -74,6 +74,40 @@ def read_json(path):
     return json.loads(strip_comments(Path(path).read_text()))
 
 
+# CCEX reads input keys without regard to case (docs/user/InputFile.md) and the runner looks them up by their written
+# names, so a CCEX input's keys are put in those names when it is read (review 20261013-180049 R4): lower case, but for
+# the few names written with capitals. Values (paths, names, strings) stay as written.
+MIXED_CASE_KEYS = {"ccce": "cCCE", "gcce": "gCCE", "mecce": "meCCE", "delta_a": "delta_A", "d": "D", "e": "E"}
+TOP_MIXED_CASE_KEYS = {"qubit": "Qubit", "defect": "Defect"}      # Qubit.qubit stays lower case
+
+
+class KeyCaseError(ValueError):
+    """Two keys of one block that differ only in case."""
+
+
+def _single_keys(pairs):
+    seen = {}
+    for k, _ in pairs:
+        if k.lower() in seen:
+            raise KeyCaseError(f'input keys "{seen[k.lower()]}" and "{k}" are one key to CCEX (case is not read); keep one')
+        seen[k.lower()] = k
+    return dict(pairs)
+
+
+def canonical_keys(value, top=True):
+    if isinstance(value, list):
+        return [canonical_keys(v, False) for v in value]
+    if not isinstance(value, dict):
+        return value
+    return {(TOP_MIXED_CASE_KEYS.get(k.lower()) if top else None) or MIXED_CASE_KEYS.get(k.lower(), k.lower()):
+            canonical_keys(v, False) for k, v in value.items()}
+
+
+def read_input(path):
+    """A CCEX input (read_json) with its keys in the names the tools look up; keys that differ only in case are refused."""
+    return canonical_keys(json.loads(strip_comments(Path(path).read_text()), object_pairs_hook=_single_keys))
+
+
 def _positive(name, value):
     if not isinstance(value, (int, float)) or isinstance(value, bool) or not math.isfinite(value) or value <= 0:
         raise ConfigError(f"{name} must be a finite positive number, got {value!r}")

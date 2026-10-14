@@ -1,7 +1,7 @@
 #!/usr/bin/env python
-import sys
-sys.path.append("//home//huijin//scrp//pyFunction//12.1.AQtensor_reader")
-from extract_spinHamils_vasp import extSpinHamilTensors
+import os, sys
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), "../../../tools/SpinTensorReader"))
+from spHamilReader.vasp.extract_spinHamils_vasp import extSpinHamilTensors
 
 if len(sys.argv) != 3:
 	print("[1] OUTCARfilename")

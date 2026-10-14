@@ -6,13 +6,6 @@ Created on Tue Jul 18 00:41:14 2023
 """
 
 import sys
-#Sys.path.append('C:\\Users\\user\\Dropbox\\data_backup\\Reasearch_data\\2_Data\\library\\plot\\')
-#Sys.path.append('C:\\Users\\user\\Dropbox\\data_backup\\Reasearch_data\\2_Data\\library\\bases\\')
-#Sys.path.append('C:\\Users\\user\\Dropbox\\data_backup\\Reasearch_data\\2_Data\\library\\16.SingleFit\\')
-
-# sys.path.append('/Users/huijin/Dropbox/data_backup/Reasearch data/2_Data/library/plot/')
-# sys.path.append('/Users/huijin/Dropbox/data_backup/Reasearch data/2_Data/library/bases/')
-# sys.path.append('/Users/huijin/Dropbox/data_backup/Reasearch data/2_Data/library/16.SingleFit/')
 import numpy as np
 import copy
 from scipy.optimize import curve_fit, OptimizeWarning

@@ -68,6 +68,7 @@ struct Context {
     cublasHandle_t blas=nullptr;
     cusolverDnHandle_t solver=nullptr;
     size_t cacheLimit=size_t(ccex::gpuCacheMiB)*1024*1024;
+    bool recovering=false;              // gpuOutOfMemoryRecovery: released buffers are freed, not cached
     GpuMemoryStats memory{};
     std::unordered_map<void*,size_t> sizes;
     std::vector<void*> cached;
@@ -119,7 +120,7 @@ void releaseDevice(void* p) noexcept {
     // All users of these buffers run on this context's single stream. Reusing
     // an address is safe without synchronizing: subsequent accesses are ordered
     // after the previous owner's kernels on that same stream.
-    if(bytes<=c.cacheLimit && c.memory.cachedBytes<=c.cacheLimit-bytes){
+    if(!c.recovering && bytes<=c.cacheLimit && c.memory.cachedBytes<=c.cacheLimit-bytes){
         try {
             c.cached.push_back(p); c.memory.cachedBytes+=bytes;
             c.memory.peakCachedBytes=std::max(c.memory.peakCachedBytes,c.memory.cachedBytes);
@@ -517,6 +518,11 @@ void gpuSetCacheLimit(size_t bytes){
     if (!context) return;
     context->cacheLimit=bytes;
     if(context->memory.cachedBytes>bytes) context->trim();
+}
+void gpuOutOfMemoryRecovery(bool on){
+    if (!context) return;
+    context->recovering=on;
+    if (on) context->trim();
 }
 GpuMemoryStats gpuMemoryStats(){return context ? context->memory : GpuMemoryStats{};}
 

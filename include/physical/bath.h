@@ -56,7 +56,7 @@ typedef struct {
     /**
      * @brief Spin position (Unit : Angstrom)
      * @details Read from the bath file(s) given by "bathfile" (no default value)
-     * @note The x,y,z position can be shifted per bath file by "bathadjust"
+     * @note The x,y,z position can be shifted per bath file by "bath_shift"
     */
     double xyz[3]; 
 
@@ -65,7 +65,7 @@ typedef struct {
 
     /**
      * @brief Spin sub-level m in the z-basis, a single number (used when "nstate" != 0, the sampled-state approach)
-     * @details Read from "statefile" when given, otherwise drawn at random ("nstate" states, "seed" fixes them)
+     * @details Read from "bath_state_file" when given, otherwise drawn at random ("nstate" states, "seed" fixes them)
     */
     float state; 
 
@@ -88,7 +88,7 @@ typedef struct {
 
     /**
      * @brief The transverse (x, y) part of the same static mean field, J[:,z] m_j summed over the other bath spins
-     *        (Unit : radkHz); set only with vector_mean_field, zero otherwise (2026-10-03)
+     *        (Unit : radkHz); set only with hamiltonian.common.bath_bath_mean_field "xyz", zero otherwise (2026-10-03)
     */
     double disorder_xy[2];
     bool disorder_vector;   /**< disorder_xy was set (vector_mean_field): a cluster also removes its members' x, y field */
@@ -96,13 +96,15 @@ typedef struct {
     /**
      * @brief The hyperfine interaction between qubits and a bath spin (Unit : radkHz)
      * @details hypf[i] : the hyperfine tensor with the i-th qubit. Point dipole by default
-     *          ("hf_readmode" 0); "hf_readmode" 1-3 read "hf_tensorfile" (MHz), and a Defect's "hypf" sets its spins
+     *          (hamiltonian.common.hyperfine "dipole": "point" without "contact"); the others read
+     *          hamiltonian.common.hyperfine.file (MHz), and a Defect species' "hyperfine" sets its spins
     */
     MatrixXcd* hypf; // 2024.01.26 change naming due to &Defect.defect.hypf : hypf to intqb 보류
 
     /**
      * @brief The quadrupole interaction a bath spin (Unit : radkHz)
-     * @details Zero by default ("qd_readmode" 0); "qd_readmode" 2-4 read "qd_tensorfile" (EFG), and for an
+     * @details Zero by default (hamiltonian.common.quadrupole "off"); a "structure" reads
+     *          hamiltonian.common.quadrupole.file (EFG), and for an
      *          electron main spin of a Defect the Defect "zfs" (MHz) is stored here
     */
     MatrixXcd quad; // 2024.01.26 change naming due to &Defect.defect.quad : quad to intself 보류

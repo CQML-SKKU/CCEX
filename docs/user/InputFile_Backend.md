@@ -99,9 +99,39 @@ packed evaluation and 21 per warp one, so such runs gain little or lose (the rea
 (internal notes)). The log says so (`[gpu-packed] off: N cluster evaluations
 (clusters x states) for the packed kernel, fewer than the threshold ...`), and every cluster is computed on the CPU path,
 byte-identical to the run with both set to 0. The card's early start (opened beside the bath reading, before the count is
-known) is closed again at that point; it is not avoided. A given value of either key starts the card whatever the count. The warp kernel's part of the
+known) is closed again at that point; it is not avoided, except where the input alone rules the kernels out (review
+20261013-221715 X7: the packed kernel's plan, the A48 ensemble rule below, the warp kernel's run conditions such as
+`gcce_refinement`, `propagator`, `pulseiter`, savemode `cluster_density_matrix`), and for cCCE whenever the packed
+kernel is off by the input (`packed_max_dim` 0, its plan, the A48 ensemble rule): the warp kernel's clusters (bath
+dimension 8 and 16) are rare there, so the card starts only when some rank has one (A53; the log says
+`[gpu-warp] no early start: ...`). A given value of either key starts the card whatever the count. The warp kernel's part of the
 node shared memory is allocated only when some rank has a cluster of a warp dimension (a cCCE run with clusters of bath
 dimension 2 and 4 only keeps the packed kernel's memory: P1 CR0 cCCE2 was 4.7 % slower with it, job 708). <br>
+<b>The packed kernel and the CPU batch (A48, user decision 2026-10-13).</b> The CPU binary computes the cCCE clusters of
+bath dimension 2 and 4 several at a time in SIMD lanes (A30, the same bits as one at a time; the "CPU batch"). In
+`bin/main_gpu.out` the CPU batch now also takes every such cluster the GPU does not: the ones met while the card starts,
+those of a run whose packed kernel is off, and the ones the card gives back. With `packed_max_dim` not given and a run the
+CPU batch takes (cCCE, one qubit, coherence, one state with at most 16 intervals or the ensemble Hahn echo; not `backend`
+`cuda`), the packed kernel is used only where it beats the CPU batch: **one state** - when the clusters of bath dimension
+2 and 4 are at least 40000 per rank per state (each state evaluates them all; summed over the ranks and divided by their
+number), else off; **the ensemble** - off. Measured on idm4-gpu with 32 ranks and MPS (jobs 17403/17404/17407,
+(internal notes)): per state and rank the card loses about 0.105 s and saves 2.65 µs per
+evaluation (break-even about 39.6 k; 36 k: +0.06 s, 54 k: -0.81 s); the ensemble gained nothing at 25-178 k. A run the
+CPU batch does not take keeps the threshold of the paragraph above; the warp kernel is unchanged, and a given
+`packed_max_dim` is kept as given. The log says which: `[gpu-packed] on: one state, at least 40000 evaluations ...`,
+`[gpu-packed] off: one state, N evaluations ... fewer than 40000 - the CPU batch (A30, ...) computes them (A48)`,
+`[gpu-packed] off: the ensemble - the CPU batch ...`, or `[gpu-packed] the CPU batch (A30) does not take this run (why)`.
+Where the packed kernel is off this way, `main_gpu.out` writes the bytes `main.out` writes. For one state in a standard
+cCCE run (not `cluster_mode` adaptive, no `rdip_ladder`), the card is not opened before the bath is read: once the bath
+is in, the bath spins and the pairs closer than `rdip` of bath dimension 2 and 4 (the clusters this threshold counts) are
+counted, and the card starts then only if they reach it (A55; P1 CR0 30 states had paid about 0.2 s for a card it did not
+use). Below it the log says `[gpu-packed] no early start: one state, N clusters ... (A55)`. <br>
+<b>The CPU batch checks itself (A51).</b> At the first run that could use it, each process computes a few made-up clusters
+(bath dimension 2 and 4, one state and ensemble, exact and recursive, Ramsey, Hahn echo and CPMG) through the CPU batch and
+one at a time; if any bit differs - a build with flags the batch cannot see, such as `CXXFLAGS_EXTRA=-ffp-contract=off`,
+or another CPU's tuning - the batch is off in that run (every rank alike) and rank 0 prints `[cpu-batch] off: ... does not
+reproduce the scalar path in this build (...)`. About 1 ms. Results are then those of the one-at-a-time path, as
+everywhere. `CCEX_CPU_BATCH=0` turns the batch off by hand (A/B). <br>
 
 <b>The warp kernel (`warp_max_dim`; A40, user 2026-10-13).</b> Clusters too large for the packed kernel's
 one-thread-per-cluster registers but far below `min_dim`: one cluster per warp of 32 GPU threads, its matrices in shared

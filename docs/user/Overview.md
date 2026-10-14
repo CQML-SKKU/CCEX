@@ -42,7 +42,8 @@ bash do_compile.sh <preset>                     # the group's machines: wsl-gnu,
 and, for the GPU binary, the CUDA toolkit. Eigen, uthash and SQLite are
 bundled in `external/`. Intel MKL is linked when the build finds it (`$MKLROOT` from setvars.sh or the intel
 module; the build prints `[build] MKL on/off`, the run log's header too): it takes the large cCCE/gCCE clusters
-(zgemm from bath dimension 21, zheevd from 63), which helps runs whose time is in such clusters (h-BN: 0.72–0.88 of
+(zgemm in the recursive path of the cCCE ensemble Hahn echo from bath dimension 21; zheevd from dimension 63, the bath
+dimension for cCCE and the whole qubit × bath dimension for gCCE), which helps runs whose time is in such clusters (h-BN: 0.72–0.88 of
 the time on idm; P1 unchanged); the curves then differ in the last digits (up to 9e-8 at late times of h-BN gCCE).
 `CCEX_BLAS=off bash do_compile.sh <preset>` (CMake `-DCCEX_BLAS=OFF`) builds without it. `CMakeLists.txt` takes
 `-DCCEX_CUDA=OFF`, `-DCMAKE_CUDA_ARCHITECTURES=<cc>` and

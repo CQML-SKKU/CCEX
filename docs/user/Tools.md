@@ -47,7 +47,8 @@ S (VASP divides by the total spin), so the numbers are the OUTCAR's and S comes 
 (a `--spin` given must agree). Quantum ESPRESSO's GIPAW `hyperfine.out` is the S = 1/2 coupling, so `--spin S` is
 required and the file holds it x 1/(2S). `--version v1` (the OUTCAR x 2, which CCEX read right only untagged and
 for S = 1) is refused and `--fidentify` is gone. The quadrupole file (`Qfile`) does not depend on the spin and is
-unchanged.
+unchanged; the spin is read (and `--spin` checked) only when an `Afile` is made, so `--Q` alone takes an OUTCAR with
+magnetization 0 or none (an EFG run need not be spin polarized; refused until review 20261013-180049 T1).
 
 `spHamilReader/` is the package (`base/`, `vasp/`, `qe/`), `main.py` the
 command line (`-h`). `examples/01..05` are five worked cases with their inputs

@@ -17,6 +17,7 @@
 #include "../include/calculation/simulator_gcce_bath.h"
 #include "../include/calculation/superoperator.h"
 #include "../include/calculation/gpu/compute_backend.h"
+#include "../include/calculation/gpu/small_cluster_batch.h"
 #include "../include/clustering/bundle/bundle_cluster.h"
 #include "../include/clustering/bundle/bundle_work.h"
 #include "../include/clustering/bundle/bundle_connection_check.h"
@@ -39,6 +40,7 @@
 #endif
 #include <vector>
 #include <cmath>
+#include <cctype>
 #include <cstdlib>
 
 // Read files
@@ -156,14 +158,14 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
                                    "but pulse %d of %s is %c %g. Use method %s for other rotations.\n",
                             inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i],
                             !strcmp(kernel,"mecce") ? "megCCE" : "gCCE");   // meCCE, pmeCCE: the ME method that rotates
-        MPI_Abort(MPI_COMM_WORLD,1);
+        ccexRefuse();
     }
     // The CUDA ensemble path takes CPMG intervals the way the CPU one did.
     if(cnf->nstate==0 && !strcasecmp(pls->pulsename,"Manual") && strcasecmp(cnf->backend,"cpu")) {
         if(!strcasecmp(cnf->backend,"cuda")) {
             if(rank==0) fprintf(stderr,"Error: an ensemble (nstate 0) Manual sequence is calculated on the CPU only; "
                                        "set backend to cpu\n");
-            MPI_Abort(MPI_COMM_WORLD,1);
+            ccexRefuse();
         }
         if(rank==0) fprintf(stdout,"[backend] auto: an ensemble Manual sequence uses CPU\n");
         strcpy(cnf->backend,"cpu");
@@ -286,17 +288,17 @@ void validateHamiltonianForMethod(Config* cnf, QubitArray* qa, DefectArray* dfa)
     if(cnf->jump_operators && strcasecmp(cnf->jump_operators_section,kernel)) {
         if(rank==0) fprintf(stderr,"Error: hamiltonian.%s (jump_operators) belongs to method %s; this run is %s\n",
                             cnf->jump_operators_section,cnf->jump_operators_section,inputMethodName(cnf->method));
-        MPI_Abort(MPI_COMM_WORLD,1);
+        ccexRefuse();
     }
     if((!strcmp(kernel,"gcce") || !strcmp(kernel,"megcce")) && cnf->hamiltonian_ccce_given) {
         if(rank==0) fprintf(stderr,"Error: hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE; this run is %s\n",
                             inputMethodName(cnf->method));
-        MPI_Abort(MPI_COMM_WORLD,1);
+        ccexRefuse();
     }
     if(!cnf->delta_A && (DefectArray_getNdefect(dfa) > 0 || QubitArray_getOverhaus(qa))) {
         if(rank==0) fprintf(stderr,"Error: hamiltonian.cCCE.delta_A false is for a bath of nuclear spins: not with Defect species "
                                    "or hamiltonian.common.qubit_bath_mean_field true\n");
-        MPI_Abort(MPI_COMM_WORLD,1);
+        ccexRefuse();
     }
     setClusterHyperfineMean(!cnf->delta_A);
 }
@@ -324,8 +326,8 @@ std::vector<std::string> adaptiveArgsFromInput(char* fccein, const char* self) {
     freeChar1d(&text);
     cJSON* block = root ? cJSON_GetObjectItem(root.get(),"adaptive") : nullptr;
     const auto fail = [](const std::string& message) {
-        if(rank==0) fprintf(stderr,"Error: %s\n",message.c_str());
-        MPI_Finalize(); exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr,"Error: %s\n",message.c_str());
+        ccexRefuse();
     };
     // The block was called "Refine" until 2026-09-23. The old name is refused, not read:
     // a run that silently did no refinement would look like a finished one.
@@ -358,7 +360,7 @@ std::vector<std::string> adaptiveArgsFromInput(char* fccein, const char* self) {
     for(cJSON* item=block->child; item; item=item->next) {
         const std::string key = item->string;
         std::string name = key;
-        for(char& ch : name) if(ch=='_') ch='-';
+        for(char& ch : name) ch = ch=='_' ? '-' : char(std::tolower((unsigned char)ch));   // keys are read without regard to case
         const adaptive::options::Option* option = nullptr;
         for(const adaptive::options::Option& one : adaptive::options::kOptions)
             if(name == one.name) option = &one;
@@ -411,7 +413,7 @@ void applyStepConfig(const std::string& stepInput, const std::string& firstInput
     std::unique_ptr<cJSON,decltype(&cJSON_Delete)> a(cJSON_Parse(firstText),cJSON_Delete);
     std::unique_ptr<cJSON,decltype(&cJSON_Delete)> b(cJSON_Parse(stepText),cJSON_Delete);
     freeChar1d(&firstText); freeChar1d(&stepText);
-    if(!a || !b) { fprintf(stderr,"Error: refinement step input is not JSON\n"); exit(EXIT_FAILURE); }
+    if(!a || !b) { ccexRefusalPrint(stderr,"Error: refinement step input is not JSON\n"); ccexRefuse(); }
     for(cJSON* item=b->child; item; item=item->next) {
         bool allowed=false;
         for(const char* k : mutable_keys) if(!strcmp(item->string,k)) allowed=true;
@@ -421,9 +423,9 @@ void applyStepConfig(const std::string& stepInput, const std::string& firstInput
         const bool same = y && !strcmp(x,y);
         free(x); if(y) free(y);
         if(!same) {
-            fprintf(stderr,"Error: refinement step changed '%s', which the kept bath depends on\n",
+            ccexRefusalPrint(stderr,"Error: refinement step changed '%s', which the kept bath depends on\n",
                     item->string);
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
     }
     cJSON* v;
@@ -449,8 +451,8 @@ static int commandLineInt(const char* text, const char* option){
     errno = 0; char* end = nullptr;
     const long value = std::strtol(text, &end, 10);
     if (end == text || *end != '\0' || errno == ERANGE || value < INT_MIN || value > INT_MAX){
-        fprintf(stderr, "Error: %s must be an integer, not \"%s\"\n", option, text);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s must be an integer, not \"%s\"\n", option, text);
+        ccexRefuse();
     }
     return (int)value;
 }
@@ -458,8 +460,8 @@ static double commandLineNumber(const char* text, const char* option){
     errno = 0; char* end = nullptr;
     const double value = std::strtod(text, &end);
     if (end == text || *end != '\0' || errno == ERANGE || !std::isfinite(value)){
-        fprintf(stderr, "Error: %s must be a finite number, not \"%s\"\n", option, text);
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: %s must be a finite number, not \"%s\"\n", option, text);
+        ccexRefuse();
     }
     return value;
 }
@@ -601,6 +603,9 @@ static int autoConvEntry(int argc, char* argv[], const char* mode = "run"){
         }
     }
     setenv("PYTHONDONTWRITEBYTECODE", "1", 1);   // no bytecode written into the tool folder (shared or not)
+    // python -m puts the working directory first on sys.path, ahead of the folder checked above: an autoconv/ or a
+    // module of the standard library's name there would run instead (review 20261014 F3; Python 3.11 and later)
+    setenv("PYTHONSAFEPATH", "1", 1);
     const char* old = getenv("PYTHONPATH");
     setenv("PYTHONPATH", (old && *old ? tool + ":" + old : tool).c_str(), 1);
     const char* python = getenv("CCEX_PYTHON") ? getenv("CCEX_PYTHON") : "python3";
@@ -721,31 +726,45 @@ int main(int argc, char* argv[]){
             argc = int(kept.size()); argv = kept.data(); optind = 1;
         }
     }
+    // --help is -h (review 20261013-doxygen D21); getopt reads short options only
+    for (int i = 1; i < argc; ++i) if (!strcmp(argv[i], "--help")) argv[i] = const_cast<char*>("-h");
+    static const char kShortOptions[] = "hPvf:m:q:I:s:N:S:a:B:o:";
+
+    // The input file and the method are found by getopt itself, so "-f in.json", "-fin.json" and "-vfin.json" name
+    // the same file (review 20261013-180049 I01: a search for an argument equal to "-f" missed the attached forms, and
+    // the adaptive block went unread). The file is the last -f, the one the readers below leave in place; the method
+    // is the last -m, which the readers judge together with the input's cluster_mode (I02).
+    const char* inputPath = NULL;
+    const char* methodOption = NULL;
+    optind = 1; opterr = 0;
+    while ((c = getopt(argc, argv, kShortOptions)) != -1) {
+        if (c == 'f') inputPath = optarg;
+        if (c == 'm') methodOption = optarg;
+    }
+    cJSON_setMethodOverride(methodOption);
+
     // The same request, written in the input file instead (adaptiveArgsFromInput).
     // argv is left alone: -f is there already, and getopt reads it as it always has.
-    for (int i = 1; i+1 < argc; ++i) {
-        if (strcmp(argv[i], "-f")) continue;
+    if (inputPath) {
         char self[4096] = {};
         if (readlink("/proc/self/exe", self, sizeof self-1) <= 0)
             snprintf(self, sizeof self, "%s", argv[0]);
-        const std::vector<std::string> fromInput = adaptiveArgsFromInput(argv[i+1], self);
-        if (fromInput.empty()) break;
-        if (!adaptiveArgs.empty()) {
-            if (rank == 0) fprintf(stderr,"Error: the input has an adaptive block and the command line has --adaptive; use one\n");
-            MPI_Finalize(); exit(EXIT_FAILURE);
+        const std::vector<std::string> fromInput = adaptiveArgsFromInput(const_cast<char*>(inputPath), self);
+        if (!fromInput.empty()) {
+            if (!adaptiveArgs.empty()) {
+                ccexRefusalPrint(stderr,"Error: the input has an adaptive block and the command line has --adaptive; use one\n");
+                ccexRefuse();
+            }
+            adaptiveArgs = fromInput;
         }
-        adaptiveArgs = fromInput;
-        break;
     }
 
     // Two passes over the options: the input file (-f) first, then every other option over it, so that the
     // command line wins whatever the order (review b9eb09 R1: "-N 2 -f in.json" used to take nstate from the file,
     // "-f in.json -N 2" from the command line). The first pass reads -f only and stays quiet about the rest.
-    // --help is -h (review 20261013-doxygen D21); getopt reads short options only
-    for (int i = 1; i < argc; ++i) if (!strcmp(argv[i], "--help")) argv[i] = const_cast<char*>("-h");
     for (int pass = 0; pass < 2; ++pass) {
     optind = 1; opterr = pass;
-    while ((c = getopt(argc, argv, "hPvf:m:q:I:s:N:S:a:B:o:")) != -1) {
+    while ((c = getopt(argc, argv, kShortOptions)) != -1) {
         if ((c == 'f') != (pass == 0)) continue;
         switch (c) {
             case 'f':
@@ -761,8 +780,8 @@ int main(int argc, char* argv[]){
 
                 // check if the file exists
                 if (access(fccein, F_OK) == -1){
-                    fprintf(stderr, "Error: Option file does NOT exist\n\n");
-                    exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: Option file does NOT exist\n\n");
+                    ccexRefuse();
                 }
 
                 // read the input file
@@ -782,7 +801,9 @@ int main(int argc, char* argv[]){
                 break;
 
             case 'm':
-                cJSON_applyMethodOption(cnf,cls,optarg);   // cCCE, gCCE, meCCE or megCCE; the input's cluster_mode stays (A47)
+                // cCCE, gCCE, meCCE or megCCE; the input's cluster_mode stays (A47). With an input file the readers have
+                // already judged the last -m with the cluster_mode (cJSON_setMethodOverride above, I02).
+                if (!fccein) cJSON_applyMethodOption(cnf,cls,optarg);
                 break;
 
             case 'q':
@@ -855,11 +876,14 @@ int main(int argc, char* argv[]){
                 printf("Options (short only; given with -f they override the input file, whatever their order):\n");
                 printf("  -h, --help\t\t\t\tPrint this message\n");
                 printf("  -f FILE\t\t\t\tInput file (cce.in)\n");
-                printf("  -I FILE\t\t\t\tInput file name (it can be more than one)\n");
+                printf("  -I FILE\t\t\t\tBath file: the first -I replaces the input's bathfile list, each further -I adds one\n");
                 printf("  -N N\t\t\t\t\tNumber of bath states\n");
                 printf("  -m METHOD\t\t\t\tMethod (cCCE | gCCE | meCCE | megCCE; noise reserved, not implemented yet); the cluster shape is the input's cluster_mode\n");
                 printf("  -q QUANTITY\t\t\t\tQuantity (coherence | dm)\n");
                 printf("  -B BZ\t\t\t\t\tMagnetic field\n");
+                printf("  -s FILE\t\t\t\tBath state file (bath_state_file)\n");
+                printf("  -S FILE\t\t\t\tDefect state file (Defect.state_file)\n");
+                printf("  -a FILE\t\t\t\tDefect axis file (Defect.axis_file)\n");
                 printf("  -v\t\t\t\t\tLong or short print\n");
                 printf("  -P\t\t\t\t\tSave <outfile>.clusters.json and stop before dynamics\n");
                 printf("  -o FILE\t\t\t\tOutput file name\n");
@@ -876,18 +900,21 @@ int main(int argc, char* argv[]){
                 printf("  cluster_mode: standard (default), pcce (cCCE, gCCE, meCCE, megCCE), bundle (cCCE, gCCE), dsj, itb, dsjitb (cCCE); the pcce and bundle blocks hold their settings\n");
                 printf("  input keys renamed 2026-10-13: example/tools/InputKeys/convert_input_keys.py rewrites an old input\n");
                 printf("See docs/user/InputFile_Backend.md, docs/methods/gpu.md and docs/methods/adaptive-cluster-mode.md for defaults and limits.\n");
+                // Open MPI's mpirun reports a process that leaves without MPI_Finalize as failed (exit 1 for -h on CI)
+                fflush(stdout);
+                MPI_Finalize();
                 exit(EXIT_SUCCESS);
                 break;
             default:
-                fprintf(stderr, "Error: unknown option\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: unknown option\n");
+                ccexRefuse();
         }   
     }
     }
     
     if (fccein == NULL){
-        fprintf(stderr, "Error: input file is required\n");
-        exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: input file is required\n");
+        ccexRefuse();
     }
 
     // Every option source has been applied by here -- the input file (read from case 'f'
@@ -910,9 +937,14 @@ int main(int argc, char* argv[]){
          !strcasecmp(cnf->bundle_connections,"checked") || adaptiveWork(cnf).mode=="probe" ||
          adaptiveWork(cnf).mode=="factors" || adaptiveWork(cnf).mode=="except")) {
         if(rank==0)fprintf(stderr,"Error: -P supports cCCE, gCCE and cluster_mode pcce plans with explicit connections; rdip-omitted checked connections and probe, factors and except work require dynamics\n");
-        MPI_Abort(MPI_COMM_WORLD,1);
+        ccexRefuse();
     }
-    computeBackendInit(cnf);
+    // the plan is written next to the output name; without one the inventory writer was handed a null name (A55)
+    if (clusterPlanOnly && (!Output_getOutfile(op) || !Output_getOutfile(op)[0])) {
+        ccexRefusalPrint(stderr,"Error: -P needs an output name: give outfile in the input or -o\n");
+        ccexRefuse();
+    }
+    computeBackendInit(cnf,qa,pls,Output_getSavemode(op));
 
     // Same reason: -B lands after the file is parsed, so the field can only be checked
     // against the rotation once both have been applied.
@@ -1077,6 +1109,7 @@ int main(int argc, char* argv[]){
     MPI_Barrier(MPI_COMM_WORLD);
     validateBathPulseTargets(ba,dfa,pls);   // DEER: the driven spins exist and fit pulse.bath (bath and detunings set)
     validateJumpOperatorNames(ba,dfa,qa,cnf);   // meCCE / megCCE: every jump's bath_name is the qubit or a bath spin
+    smallClusterWarmUpAfterBath(cnf,ba,dfa);   // A55: the packed kernel's card, when the bath says the run reaches its threshold
 
     if (rank==0){
         printf("    ----------------------------------------------------------------------\n");

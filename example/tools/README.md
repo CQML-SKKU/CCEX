@@ -67,3 +67,5 @@ call `QosChange -j job -q <qos> -n <nodes> -b` and then `SbatchPath --array=... 
 and `domkjobs RunL` calls `SbatchPath largejob`: the wrappers idm uses now (SbatchPath
 records the job path). Until 2026-10-02 they called `shortcut/QosChanger` and `sbatch`
 directly. `shortcut/` still holds the old `QosChanger` and `CdMkDir`.
+`alphaFix`/`betaFix` are the qubit's `alphams`/`betams` (in `Qubit`, or in the qubit of `Qubit.qubit`); until
+2026-10-14 `srcfin_Qubit` wrote them at the top of the input, where nothing reads them, and its qubit was always -1/0.

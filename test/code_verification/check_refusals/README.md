@@ -2,7 +2,7 @@
 
     bash test/code_verification/check_refusals/run.sh     # needs bin/main.out
 
-242 inputs that must be refused (4 of them outputs that cannot be written), three that must run, and `--help` (the same as `-h`), each run once to see
+246 inputs that must be refused (4 of them outputs that cannot be written), eight that must run, and `--help` (the same as `-h`), each run once to see
 that CCEX stops with the expected message, most of them before it reads any tensor
 file. They are edits of the legacy inputs `../check_input_forms/legacy.sh`
 writes (so it is run first), on the real systems: the h-BN bath with DFT
@@ -22,7 +22,7 @@ defect bath (S3).
 | an unknown `unit` | the conversion would be silent |
 | `coordinate_frame_rotation` and `bath_coordinate_rotation` both present | the same option under two names |
 
-Without a row of their own (`run.sh` has a comment on each): `-N`/`-B` that are not numbers, and the command line
+Without a row of their own (`run.sh` has a comment on each): `-N`/`-B` that are not numbers, `-P` with no output name, and the command line
 winning over the file in either order; a missing `Qubit.file`; `nstep` 0; a Manual sequence that does not sum to 1 or
 is malformed (a number fraction and an angle of 90.5 must run); a number outside the float it is stored in;
 `alpha_state`/`beta_state` `{"index"}` naming other states than the written `alphams`/`betams` (D43; one that agrees must run);

@@ -13,6 +13,15 @@
 // collective. MPI_Abort when MPI is running (the unit tests call some of this without it), exit otherwise.
 [[noreturn]] void ccexFatal(int code = EXIT_FAILURE);
 
+// An input refusal that every rank reaches alike (A55): the ranks read the same input and the same files and decide
+// alike, so rank 0 alone writes the message (ccexRefusalPrint, ccexRefusalPerror) and the ranks meet, finalize and exit 1
+// together (ccexRefuse). A plain exit on each rank let mpirun kill the slower one: exit 1 or 255 and one or two messages.
+// Only where every rank surely decides the same: elsewhere a rank would wait at the barrier for good (ccexFatal there).
+// Without MPI (before MPI_Init, the unit tests) it writes and exits.
+int ccexRefusalPrint(FILE* stream, const char* format, ...) __attribute__((format(printf,2,3)));
+void ccexRefusalPerror(const char* what);
+[[noreturn]] void ccexRefuse();
+
 #define _USE_MATH_DEFINES
 
 /* MPI Global variable ------------------------------------------*/

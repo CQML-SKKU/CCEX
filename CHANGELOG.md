@@ -89,6 +89,19 @@
   icpx 2026.1 AVX2, icpx 2023.2 AVX-512; any other build keeps the one-by-one path). One state with any pulse plan and the
   ensemble Hahn echo, `exact` and `recursive`. Production P1 cCCE2 on idm (64 ranks): 0.60–0.64 of the time with
   `recursive`, 0.74–0.77 with `exact`. See (internal notes).
+  Since A51 (2026-10-13) each process first checks the batch against the one-by-one path on a few made-up clusters
+  (about 1 ms) and turns it off, with one `[cpu-batch] off` line, where a bit differs (e.g. a build with
+  `CXXFLAGS_EXTRA=-ffp-contract=off`, review 20261013-cpu R1, or another CPU's `-march=native` tuning, CI); results are
+  the one-by-one path's everywhere. Its window storage is made only when a window is used, and a time grid whose
+  coherences for one group of lanes pass 4 MiB runs one by one (review 20261013-221715 X5).
+- **`bin/main_gpu.out` uses the CPU batch too, and chooses between it and the packed kernel** (A48, 2026-10-13): the
+  clusters of bath dimension 2 and 4 the GPU does not take (while the card starts, `packed_max_dim` 0, given back) go to
+  the CPU batch; with `packed_max_dim` not given and a run the CPU batch takes, the packed kernel is on for one state only
+  from 40000 such clusters per rank per state and off for the ensemble (break-even measured at about 39.6 k on idm4-gpu,
+  32 ranks; (internal notes)). Runs it turns off write the bytes of `bin/main.out`. Other runs
+  keep the threshold below; a given `packed_max_dim` is kept. The early CUDA and shared-memory start is skipped where the
+  input alone rules the kernels out (X7), and for cCCE with the packed kernel off by the input the warp kernel's card
+  start waits for a cluster of a warp dimension (A53).
 - **Repository layout**: `src/` and `include/` in five parts (input, physical, clustering, calculation, common);
   `example/{tutorial,analysis,tools}`; `external/`; `test/{code_verification,cluster_verification,gpu_verification}`.
   The tutorials were rewritten as numbered folders (twelve; 11 and 12 added on 2026-10-12) with `run.sh`.
@@ -160,10 +173,36 @@
 The coherence differs from v1.2.2 only where a fix in this release changes it (deltat read as a float in v1.2.2,
 the sampled states and `seed`, the ensemble half interval in double, the density-matrix `nan`, the pCCE partition).
 
+### Compared with v1.2.2 on the GPU node (idm4-gpu Xeon 6731P + one RTX PRO 6000, 32 ranks, one run each)
+
+v1.2.2 (CPU only) against 2.0.0 `main.out` (CPU) and `main_gpu.out` (GPU, `backend auto`), both built with icpx 2023.2 and
+OpenMPI 4.1.5, on the inputs of the October 2026 checks and the v1.2.2 examples (job 17453; one run per build, so small
+differences in time are within the noise). The last column is the
+largest difference of the coherence (`wiDiv`); an empty cell is not compared here.
+
+| Case | v1.2.2 | 2.0.0 CPU | 2.0.0 GPU | Largest coherence difference to v1.2.2 |
+|---|---|---|---|---|
+| P1 production cCCE2, CR0 | 90.4 s | 6.4 s (14.1x) | 6.4 s (14.2x) | 3e-7 |
+| P1 production cCCE2, CR60 | 526.4 s | 31.3 s (16.8x) | 27.4 s (19.2x) | 9e-6 |
+| P1 production ensemble cCCE2, CR0 | 12.7 s | 1.2 s (10.7x) | 1.2 s (10.4x) | 6e-8 |
+| P1 production ensemble cCCE2, CR60 | 80.5 s | 3.0 s (27.0x) | 3.0 s (26.5x) | 2e-8 |
+| P1 production gCCE2, CR0 | 117.0 s | 40.7 s (2.9x) | 22.3 s (5.3x) | |
+| P1 production gCCE2, CR60 | 681.7 s | 219.5 s (3.1x) | 108.2 s (6.3x) | |
+| P1 example cCCE2 e2n, 50 states | 480.8 s | 23.5 s (20.4x) | 23.7 s (20.3x) | |
+| P1 example pCCE2, sK 3 | 312.7 s | 8.8 s (35.7x) | 8.7 s (35.8x) | |
+| h-BN ensemble cCCE2 | 67.7 s | 10.8 s (6.3x) | 10.8 s (6.3x) | 4e-6 |
+| h-BN ensemble Ramsey | 31.9 s | 4.4 s (7.2x) | 4.7 s (6.8x) | |
+| h-BN gCCE3 | 78.3 s | 10.6 s (7.4x) | 11.0 s (7.1x) | |
+| 13C ensemble cCCE2 | 3.9 s | 2.0 s (1.9x) | 2.0 s (1.9x) | 8e-6 |
+
+Geometric mean of the speed-up over the 57 inputs (most of the v1.2.2 examples run in about a second, where start-up
+dominates): cCCE (18) 3.2x CPU / 3.1x GPU, gCCE (18) 1.9x / 1.7x, pCCE (3) 14.8x / 14.4x, ensemble (18) 2.8x / 2.5x,
+all 2.8x / 2.6x.
+
 ### Performance (measured during the October 2026 work)
 
 Each row compares the code before and after that change, on the same inputs and server (idm, 64 ranks unless noted);
-the results are byte-identical, or within the stated bound for `recursive`. For v1.2.2 see the table above.
+the results are byte-identical, or within the stated bound for `recursive`. For v1.2.2 see the tables above.
 
 | What | Case | Before -> after | Speed-up | Baseline |
 |---|---|---|---|---|
@@ -180,7 +219,31 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
 | | CR0 | 31.0 s -> 29.9 s (assembly per rank 3.1 s -> 1.8 s) | 1.04x | code of 2026-10-12 |
 | `evolution_update: recursive` (default where it exists) | 16 inputs (NV-13C, h-BN, P1) | | 1.0-1.6x | `exact` |
 
+The work of 2026-10-13 (code of 2026-10-12, ccc16e507, against f9b0ba8f3), both built on the GPU server (idm4-gpu,
+Xeon 6731P + RTX PRO 6000, 32 ranks, MPS; `do_compile.sh gpu`, so the after build has MKL) in one job, median of 3
+(AB BA AB). CPU = `bin/main.out`, GPU = `bin/main_gpu.out` with `backend: auto`. Curves: the CPU build byte-identical
+(P1 gCCE2) or in the last printed digit (cCCE, 1e-10 to 8e-10), h-BN gCCE dm within 1.5e-8 relative; the GPU P1 gCCE2
+difference is the warp kernel against the CPU path (relative 1.3e-6, 1.6e-5 on the diverging CR60 curve).
+Data: (internal notes) (idm job 17452).
+
+| Case | CPU before -> after | CPU speed-up | GPU before -> after | GPU speed-up |
+|---|---|---|---|---|
+| P1 production cCCE2, 30 states, CR0 | 11.24 s -> 6.24 s | 1.8x | 8.22 s -> 6.46 s | 1.3x |
+| P1 production cCCE2, ensemble, CR0 | 1.63 s -> 1.20 s | 1.4x | 1.49 s -> 1.24 s | 1.2x |
+| P1 production cCCE2, 30 states, CR60 sigma 4 | 59.11 s -> 30.73 s | 1.9x | 27.11 s -> 27.45 s | 0.99x |
+| P1 production cCCE2, ensemble, CR60 sigma 4 | 5.72 s -> 2.93 s | 2.0x | 3.23 s -> 3.07 s | 1.05x |
+| P1 production gCCE2, 30 states, CR0 | 39.79 s -> 39.93 s | 1.0x | 39.69 s -> 22.34 s | 1.8x |
+| P1 production gCCE2, 30 states, CR60 sigma 4 | 219.59 s -> 220.29 s | 1.0x | 218.51 s -> 105.57 s | 2.1x |
+| h-BN cCCE2 ensemble Hahn | 14.28 s -> 10.70 s | 1.3x | 14.65 s -> 10.74 s | 1.4x |
+| h-BN gCCE2 dm, 10 states | 10.61 s -> 7.30 s | 1.5x | 10.71 s -> 7.62 s | 1.4x |
+| h-BN gCCE3 dm, 1 state | 17.97 s -> 10.56 s | 1.7x | 17.97 s -> 10.98 s | 1.6x |
+| NV-13C cCCE2 Hahn (rbath 70 A, rdip 15 A) | 1.49 s -> 1.43 s | 1.04x | 1.76 s -> 1.50 s | 1.2x |
+| h-BN cCCE2 ensemble Ramsey | 14.87 s -> 4.42 s | 3.4x | 15.15 s -> 4.60 s | 3.3x |
+| Geometric mean of the 11 | | 1.53x | | 1.47x |
+
 ### Fixed
+- `example/tools/InputKeys/convert_input_keys.py` also rewrites the savemode names before 2026-10-13 (`normal`, `info`, `all`,
+  `allfull`) and a top-level `save_nodiv` (into `"savemode": {"mode", "nodiv"}`); converted inputs with them were refused.
 - Ensemble cCCE: the conjugation of the coherence and the half interval computed in double precision.
 - Density-matrix output: a component that divides noise by zero is set to 0 and reported, instead of `nan`.
 - `seed` had no effect on sampled states when `nstate` > 0.
@@ -214,6 +277,28 @@ the results are byte-identical, or within the stated bound for `recursive`. For 
 - SpinTensorReader's QE writer used names it never defined (`sys`, `defectposition`, `fout_Afile`/`fout_Qfile` in its
   summary), so its error paths crashed instead of stopping with their message; and its tag was misspelt
   `QUANTUMESSPRESSO`.
+- The input file given as `-fFILE` (or `-vfFILE`) skipped the `adaptive` block: a bundle input with one ran as a plain
+  bundle run without a word (its curve off by up to 2.84 on a six-spin case), and `adaptive` with cluster_mode `standard`
+  was not refused. The file is found by getopt as the rest of the options are (review 20261013-180049 I01).
+- `-m` is checked with the input's `cluster_mode` in place of the input's method: an input with `gCCE` and `pcce` (or
+  `dsj`, `itb`, `dsjitb`) runs under `-m cCCE`; it was refused before `-m` was applied (I02).
+- The keys of the `savemode` and `propagator` blocks and of the `adaptive` block are read without regard to case, as
+  every other key (`"Mode"`, `"Method"`, `"Policy"` were refused) (I03).
+- The input-key converter wrote a key twice when the input had an old key and its new name (`"count": 1, "count": 2`;
+  CCEX reads the first, Python the last). The same value is kept once, different values (or keys that differ only in
+  case) stop the file before it is written; the converter has tests in `example/tools/InputKeys/tests` (C1).
+- The automatic convergence read `auto_convergence`, `method` and the other keys with their case, unlike CCEX: an
+  `"Auto_Convergence"` block was refused as missing and `"Method": "gCCE"` ran as cCCE. Keys are read without regard to
+  case and two keys that differ only in case are refused (R4).
+- SpinTensorReader (VASP) read the defect spin for a Q file alone too, and stopped on an OUTCAR with magnetization 0 or
+  none; the spin is read, and `--spin` checked, for the A file only (T1).
+- A refused input under several MPI ranks gave exit code 1 or 255 and zero, one or two messages at random (each rank wrote
+  the message and exited without MPI_Finalize). The refusals of the input reading (option, Config, file readers, command
+  line) now write the message once on rank 0 and stop all ranks together with exit code 1 (A55).
+- The Runner template `srcfin_Qubit` wrote `alphams`/`betams` at the top of the input, where nothing reads them; they are
+  the qubit's now (A55).
+- `-P` with neither `outfile` nor `-o` stopped with "basic_string: construction from null"; it is refused with
+  "-P needs an output name" (A55).
 
 ### Refused now (inputs that used to be accepted)
 - **The input keys before A47** (2026-10-13): an old name, value (`method` `CCE`, `pCCE`, `dsj`, ...; `cluster_mode`

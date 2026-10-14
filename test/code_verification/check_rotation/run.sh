@@ -466,7 +466,6 @@ common = {}
 if int(hf) != 0:
     common["hyperfine"] = {"dipole": "dft" if int(hf) >= 2 else "point", "contact": int(hf) in (1, 3),
                            "file": hexdir + "/Afile_vertex", "missing_row": "stop"}
-    cfg["hf_cutoff"] = 0
 if int(qd) != 0:
     common["quadrupole"] = {"structure": {2: "plain", 3: "strained", 4: "bubble"}[int(qd)],
                             "file": hexdir + "/Qfile_vertex"}

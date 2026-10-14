@@ -51,11 +51,23 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls,
  *  is the time evolution from these into result[0..nstep). The batched small-cluster path (cce_batch.h) shares cceSetup. */
 void cceSetup(CceWorkspace& ws, const MatrixXcd* psi);
 void cceEvolve(Config* cnf, Pulse* pls, MatrixXcd* result, CceWorkspace& ws);
+/** A42 (cce_setup_small.cpp): cceSetup with the eigensystems of ws.Halpha (s 0) and ws.Hbeta (s 1) given - the small-cluster
+ *  Jacobi's values w[s][0..d) and vectors V[s] (column major), set into ws.up/ws.down; a null w[s] has that one solved by
+ *  Eigen. The A30 window solves its clusters' matrices in groups (small_eigensolver.h) and calls this. */
+void cceSetupSmall(CceWorkspace& ws, const MatrixXcd* psi, const double* const* w, const doublec* const* V);
+/** A42: for bath dimension 2 and 4 (and CCEX_SMALL_EIG not 0) solves the two Hamiltonians one at a time with the Jacobi
+ *  and calls cceSetupSmall - the bits a cluster gets in a group of the window - and returns true; otherwise false (the
+ *  caller then runs cceSetup, Eigen). */
+bool cceSetupSmallAlone(CceWorkspace& ws, const MatrixXcd* psi);
 /** The ensemble (nstate 0) time evolution of calCoherenceCceInto with evolution_update = recursive (A18,
  *  simulator_cce_recursive.cpp): M = M_up^dagger M_down, the eigenvalues of the two conditional Hamiltonians. */
 void evolveEnsembleRecursiveCce(const MatrixXcd& M, const MatrixXcd& M_up, const MatrixXcd& M_down,
                                 const Eigen::VectorXcd& valUp, const Eigen::VectorXcd& valDown, Pulse* pls,
                                 bool manualIntervals, int nstep, double deltat, MatrixXcd* result);
+/** X8: the ensemble Ramsey (npulse 0, not Manual) of calCoherenceCceInto with evolution_update = exact, by
+ *  Tr[M Dd M^dagger Du^*] = Du^dagger |M|^2 Dd (simulator_cce_recursive.cpp; the recursive branch uses the same trace). */
+void evolveEnsembleRamseyCce(const MatrixXcd& M, const Eigen::VectorXcd& valUp, const Eigen::VectorXcd& valDown,
+                             int nstep, double deltat, MatrixXcd* result);
 #ifdef CCEX_USE_CUDA
 std::vector<MatrixXcd*> calCoherenceCceCudaBatch(QubitArray* qa,
     const std::vector<BathArray*>& baths, Config* cnf, Pulse* pulse);

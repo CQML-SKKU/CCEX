@@ -123,7 +123,17 @@ def main():
     print('PASS gcce-threshold-states log: 3 states, 3 times the evaluations of the ensemble',flush=True)
     # P3-01: a card that cannot be opened - auto leaves every cluster on the CPU (the packed kernel off), cuda refuses, and
     # an explicit packed_max_dim with backend cpu (its only GPU work) refuses too
-    for value in ('-1','99'):
+    # '-1' (and an empty value) never reach the driver: CCEX answers "no GPU" itself, here and on WSL alike. '99' (no such
+    # card) can only be told by the driver, and WSL's (577.00) crashes inside cuInit then, with or without CCEX (a three-line
+    # cuInit program does the same; A55, docs record wsl_cuinit/): run it where the driver is the ordinary Linux one.
+    try:
+        wsl = 'microsoft' in open('/proc/version').read().lower()
+    except OSError:
+        wsl = False
+    values = ('-1',) if wsl else ('-1','99')
+    if wsl:
+        print("SKIP cce-hidden-*-99 on WSL: its CUDA driver crashes inside cuInit for CUDA_VISIBLE_DEVICES=99 (not CCEX)",flush=True)
+    for value in values:
         tag=value.replace('-','m')
         run('cce-hidden-auto-'+tag,args.cuda,{'backend':'auto','method':'cCCE','gpu_options':{'packed_max_dim':4}},hidden=value,reference='cce-cpu')
         assert '[gpu-packed] off: the GPU could not be opened' in (args.output/('cce-hidden-auto-'+tag)/'run.log').read_text(), tag
@@ -149,6 +159,22 @@ def main():
     assert '[gpu-packed] on' in output and re.search(r'\[gpu-warp\] on .* of inputs per window',output) and \
         '[gpu-warp] of these in the warp kernel' in output, 'cce3-auto-packed-warp'
     print('PASS cce3-auto-packed-warp log: packed and warp kernels on, the warp region added',flush=True)
+    # X13 (review 20261013b-gpu-perf I2): the case above may finish on the CPU while the card starts; this one cannot. Three
+    # states run the cluster loop three times, so states 2 and 3 come after the card is up (the CPU-while-starting windows
+    # are the first state's), and nstep 3000 makes a window 131 clusters, so an order fills several windows and the two
+    # slots are reused. Both kernels must have computed clusters (packed: GPU count minus warp count) and more windows than
+    # the two slots must have gone through the feeder; the curve is the CPU's within the GPU tolerance.
+    ready=dict(third,nstate=3,nstep=3000)
+    run('cce3-ready-cpu',args.cpu,dict(ready,backend='cpu'),reference=None)
+    run('cce3-ready-packed-warp',args.cuda,dict(ready,backend='auto',gpu_options={'packed_max_dim':4,'warp_max_dim':8}),
+        reference='cce3-ready-cpu',actual_backend=None)
+    output=(args.output/'cce3-ready-packed-warp'/'run.log').read_text()
+    gpu=re.search(r'\[gpu-packed\] clusters on the GPU (\d+), on the CPU while the GPU started \d+, back to the CPU (\d+);.* (\d+) batches of (\d+) windows',output)
+    warped=re.search(r'\[gpu-warp\] of these in the warp kernel (\d+)',output)
+    assert gpu and warped, 'cce3-ready-packed-warp counts'
+    on_gpu,back,_,windows=map(int,gpu.groups()); in_warp=int(warped.group(1))
+    assert on_gpu-in_warp>0 and in_warp>0 and back==0 and windows>2, ('cce3-ready-packed-warp',on_gpu,in_warp,back,windows)
+    print(f'PASS cce3-ready-packed-warp log: packed {on_gpu-in_warp}, warp {in_warp} clusters on the GPU, {windows} windows',flush=True)
     # out of GPU memory (user 2026-10-13, A37 job 699): CCEX_TEST_GPU_OOM_BYTES=512 fails every device allocation of
     # 512 bytes or more, as a full card would. auto: those clusters on the CPU (CPU tolerance against the CPU build), the
     # run goes on; cuda: refused. cCCE and gCCE, in cluster batches (evolution_batch_size 8, the default) and one by one.
@@ -165,6 +191,19 @@ def main():
         name=f'gcce-oom-auto-batch{size}'
         run(name,args.cuda,{'backend':'auto','gpu_options':{'min_dim':6,'warp_max_dim':0,'evolution_batch_size':size}},env_extra=oom)
         fell_back(name)
+    # X12 (review 20261013b-gpu-perf I1): 8192 bytes lets the first small allocations of a cluster through and fails a later
+    # one, so the failing work has buffers to release; afterwards nothing may stay in the reuse cache (no later GPU cluster
+    # here: every cluster the GPU would take has the failed dimension). gpu-test's test_review_memory checks the buffers
+    # released after the failure was caught (a batch's other works).
+    late={'CCEX_TEST_GPU_OOM_BYTES':'8192'}
+    for size in (8,1):
+        for name,binary_input,reference in ((f'cce3-oom-late-batch{size}',dict(third,backend='auto',gpu_options={'min_dim':8,'packed_max_dim':0,'warp_max_dim':0,'evolution_batch_size':size}),'cce3-cpu'),
+                                            (f'gcce-oom-late-batch{size}',{'backend':'auto','gpu_options':{'min_dim':6,'warp_max_dim':0,'evolution_batch_size':size}},'baseline')):
+            run(name,args.cuda,binary_input,reference=reference,env_extra=late)
+            fell_back(name)
+            memory=re.search(r'\[gpu-memory\] rank=0 allocations=(\d+) reuses=\d+ cached_bytes=(\d+)',(args.output/name/'run.log').read_text())
+            assert memory and int(memory.group(1))>0 and int(memory.group(2))==0, (name,memory and memory.groups())
+            print(f'PASS {name} log: {memory.group(1)} allocations before the failure, nothing left in the cache',flush=True)
     run('cce3-oom-cuda',args.cuda,dict(third,backend='cuda',gpu_options={'packed_max_dim':0,'warp_max_dim':0}),'out of memory',env_extra=oom)
     run('gcce-oom-cuda',args.cuda,{'backend':'cuda','gpu_options':{'warp_max_dim':0}},'out of memory',env_extra=oom)
 

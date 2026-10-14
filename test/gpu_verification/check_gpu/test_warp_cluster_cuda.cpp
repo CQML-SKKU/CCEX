@@ -15,6 +15,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <stdio.h>
 #include <algorithm>
 #include <map>
 #include <vector>
@@ -24,27 +25,98 @@ using warpcluster::Plan;
 
 struct Record { Plan plan; int dim; std::vector<C> in, cpu; };
 
-static bool readRecord(FILE* f, Record& r){
+// One record of a dump. readEnd only at a clean end of the file, before the first byte of a header; a header or body cut
+// short, a read error or a header that makes no sense is readBroken (review 20261013-180049 G2, as test_small_cluster_cuda:
+// a cut file used to pass with the records before the cut).
+enum ReadResult { readOk, readEnd, readBroken };
+static bool readBytes(FILE* f, void* p, size_t bytes){ return fread(p,1,bytes,f) == bytes; }
+static ReadResult readRecord(FILE* f, Record& r){
     int head[8];
-    if (fread(head,sizeof(int),8,f) != 8) return false;
-    r.plan = Plan{};
+    const size_t got = fread(head,1,sizeof head,f);
+    if (got == 0 && feof(f) && !ferror(f)) return readEnd;
+    if (got != sizeof head) return readBroken;
+    r = Record{};
     Plan& p = r.plan;
     p.mode = head[0]; r.dim = head[1]; p.qdim = head[2]; p.ensemble = head[3]; p.dm = head[4];
     p.time.intervals = head[5]; p.time.distinct = head[6]; p.time.nstep = head[7];
     if ((p.mode != warpcluster::modeCce && p.mode != warpcluster::modeGcce) || r.dim < 2 || r.dim > warpcluster::maxDim ||
         p.qdim < 1 || p.qdim > warpcluster::maxQubitDim || p.time.intervals < 1 || p.time.intervals > warpcluster::maxIntervals ||
-        p.time.distinct < 1 || p.time.distinct > 4 || p.time.nstep < 1) return false;
-    if (fread(&p.time.deltat,sizeof(double),1,f) != 1) return false;
-    if (fread(p.time.fraction,sizeof(double),p.time.distinct,f) != (size_t)p.time.distinct) return false;
-    if (fread(p.time.same,sizeof(int),p.time.intervals,f) != (size_t)p.time.intervals) return false;
+        p.time.distinct < 1 || p.time.distinct > 4 || p.time.nstep < 1) return readBroken;
+    if (!readBytes(f,&p.time.deltat,sizeof(double)) || !readBytes(f,p.time.fraction,sizeof(double)*p.time.distinct) ||
+        !readBytes(f,p.time.same,sizeof(int)*p.time.intervals)) return readBroken;
     if (p.mode == warpcluster::modeGcce){
         const size_t q = size_t(p.qdim);
-        for (int k=0; k<p.time.intervals-1; ++k) if (fread(p.pulse[k],sizeof(C),q*q,f) != q*q) return false;
-        if (fread(p.psia,sizeof(C),q,f) != q || fread(p.psib,sizeof(C),q,f) != q || fread(p.qpsi0,sizeof(C),q,f) != q) return false;
+        for (int k=0; k<p.time.intervals-1; ++k) if (!readBytes(f,p.pulse[k],sizeof(C)*q*q)) return readBroken;
+        if (!readBytes(f,p.psia,sizeof(C)*q) || !readBytes(f,p.psib,sizeof(C)*q) || !readBytes(f,p.qpsi0,sizeof(C)*q)) return readBroken;
     }
     r.in.resize(warpcluster::inputSize(p,r.dim));
     r.cpu.resize(size_t(p.time.nstep)*warpcluster::outputPer(p));
-    return fread(r.in.data(),sizeof(C),r.in.size(),f) == r.in.size() && fread(r.cpu.data(),sizeof(C),r.cpu.size(),f) == r.cpu.size();
+    if (!readBytes(f,r.in.data(),sizeof(C)*r.in.size()) || !readBytes(f,r.cpu.data(),sizeof(C)*r.cpu.size())) return readBroken;
+    return readOk;
+}
+// every record of the file; false if it is broken anywhere
+static bool readAll(FILE* f, std::vector<Record>& recs){
+    recs.clear();
+    Record r;
+    while (true){
+        const ReadResult res = readRecord(f,r);
+        if (res == readEnd) return !ferror(f);
+        if (res == readBroken) return false;
+        recs.push_back(r);
+    }
+}
+static size_t recordBytes(const Record& r){
+    const Plan& p = r.plan;
+    size_t b = 8*sizeof(int) + sizeof(double)*(1+p.time.distinct) + sizeof(int)*p.time.intervals;
+    if (p.mode == warpcluster::modeGcce) b += sizeof(C)*(size_t(p.qdim)*p.qdim*(p.time.intervals-1) + 3*size_t(p.qdim));
+    return b + sizeof(C)*(r.in.size()+r.cpu.size());
+}
+// The reader on cut copies of a dump (in memory, no GPU): the whole file and the file cut right after its first record
+// must read; cut inside the second header, inside its plan, inside its body or one byte short must not.
+static bool readerChecks(const char* path){
+    FILE* f = fopen(path,"rb");
+    if (!f) return false;
+    std::vector<char> bytes;
+    char buffer[65536]; size_t n;
+    while ((n = fread(buffer,1,sizeof buffer,f)) > 0) bytes.insert(bytes.end(),buffer,buffer+n);
+    fclose(f);
+    std::vector<Record> recs;
+    auto readPrefix = [&](size_t size, std::vector<Record>& out){
+        FILE* m = fmemopen(bytes.data(),size,"rb");
+        if (!m) return false;
+        const bool ok = readAll(m,out);
+        fclose(m);
+        return ok;
+    };
+    if (!readPrefix(bytes.size(),recs) || recs.empty()){ printf("FAIL warp-cluster reader %s: the whole file does not read\n",path); return false; }
+    bool ok = true;
+    if (recs.size() >= 2){
+        const size_t first = recordBytes(recs[0]);
+        struct Cut { size_t size; bool reads; const char* what; } cuts[] = {
+            {first, true, "after the first record"}, {first+3, false, "3 bytes into the second header"},
+            {first+20, false, "20 bytes into the second header"}, {first+32+4, false, "inside the second record's plan"},
+            {first+recordBytes(recs[1])/2, false, "inside the second body"}, {bytes.size()-1, false, "one byte short"}};
+        for (const Cut& c : cuts){
+            std::vector<Record> got;
+            const bool reads = readPrefix(c.size,got);
+            const bool right = reads == c.reads && (!reads || got.size() == 1);
+            if (!right) printf("FAIL warp-cluster reader %s cut %s (%zu bytes): %s\n",path,c.what,c.size,reads ? "read" : "refused");
+            ok &= right;
+        }
+    } else {
+        std::vector<Record> got;
+        if (readPrefix(bytes.size()-1,got)){ printf("FAIL warp-cluster reader %s: one byte short was read\n",path); ok = false; }
+    }
+    std::vector<char> bad(bytes);
+    const int three = 3;
+    std::memcpy(bad.data(),&three,sizeof three);           // mode 3 in the first header
+    FILE* m = fmemopen(bad.data(),bad.size(),"rb");
+    std::vector<Record> got;
+    const bool reads = m && readAll(m,got);
+    if (m) fclose(m);
+    if (reads){ printf("FAIL warp-cluster reader %s: a header of mode 3 was read\n",path); ok = false; }
+    printf("%s warp-cluster reader %s: whole file, clean cut and broken cuts\n",ok ? "PASS" : "FAIL",path);
+    return ok;
 }
 
 static bool samePlan(const Plan& a, const Plan& b){
@@ -82,11 +154,11 @@ int main(int argc, char** argv){
     for (int a=1; a<argc; ++a){
         FILE* f = fopen(argv[a],"rb");
         if (!f){ printf("FAIL warp-cluster %s: cannot open\n",argv[a]); failed = true; continue; }
-        std::vector<Record> recs; Record r;
-        while (readRecord(f,r)) recs.push_back(r);
-        const bool atEnd = feof(f) || fgetc(f) == EOF;
+        std::vector<Record> recs;
+        const bool whole = readAll(f,recs);
         fclose(f);
-        if (recs.empty() || !atEnd){ printf("FAIL warp-cluster %s: unreadable (%zu records)\n",argv[a],recs.size()); failed = true; continue; }
+        if (recs.empty() || !whole){ printf("FAIL warp-cluster %s: unreadable or cut short (%zu records before it)\n",argv[a],recs.size()); failed = true; continue; }
+        if (!readerChecks(argv[a])){ failed = true; continue; }
         const Plan& plan = recs[0].plan;
         bool fine = true;
         for (const Record& x : recs) fine = fine && samePlan(x.plan,plan) && warpcluster::compiled(plan.mode,plan.qdim,x.dim);

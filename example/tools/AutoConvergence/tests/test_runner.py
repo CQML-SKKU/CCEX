@@ -24,6 +24,13 @@ sys.path.insert(0, str(HERE.parent))
 PY = sys.executable
 
 
+def safe(env):
+    """python -m autoconv as main.cpp starts it: the tool on PYTHONPATH and PYTHONSAFEPATH=1, so the current folder is not put
+    first on sys.path (review 20261014 tools 5; Python 3.11+, and an older Python ignores the variable, where -P would stop it)."""
+    old = env.get("PYTHONPATH")
+    return dict(env, PYTHONSAFEPATH="1", PYTHONPATH=str(HERE.parent) + (os.pathsep + old if old else ""))
+
+
 def nest(flat):
     """The nested auto_convergence block (time_window / rdip / rbath / configurations) from the runner's flat names; names
     the runner does not know stay at the top (the refusal cases)."""
@@ -67,7 +74,7 @@ def call(inp, fake, env=None):
     e = dict(os.environ, **(env or {}))
     for v in ("PMI_RANK", "PMI_SIZE", "OMPI_COMM_WORLD_RANK", "MPI_LOCALRANKID"):
         if not (env and v in env): e.pop(v, None)
-    p = subprocess.run([PY, "-m", "autoconv", "run", str(inp), "--binary", str(fake)], cwd=HERE.parent, env=e,
+    p = subprocess.run([PY, "-m", "autoconv", "run", str(inp), "--binary", str(fake)], cwd=HERE.parent, env=safe(e),
                        capture_output=True, text=True)
     return p.returncode, p.stdout + p.stderr
 
@@ -253,7 +260,8 @@ class TestRunner(unittest.TestCase):
     def test_progress_interruption_status_and_fresh(self):   # plan "끊김 대비·진행 보기" R1-R4 (2026-10-08)
         inp, fake = make_case(self.tmp)
         cnt = Path(self.tmp) / "count"
-        status = lambda: subprocess.run([PY, "-m", "autoconv", "status", str(inp)], cwd=HERE.parent, capture_output=True, text=True).stdout
+        status = lambda: subprocess.run([PY, "-m", "autoconv", "status", str(inp)], cwd=HERE.parent, env=safe(os.environ),
+                                        capture_output=True, text=True).stdout
         self.assertIn("not started", status())
         code, out = call(inp, fake, dict(FAKE_COUNT=str(cnt)))
         self.assertEqual(code, 0, out)
@@ -462,6 +470,46 @@ class TestRunner(unittest.TestCase):
             code, out = call(inp, fake)
             self.assertEqual(code, 2, out)
             self.assertIn(want, out)
+
+    def test_keys_are_read_without_regard_to_case(self):     # review 20261013-180049 R4: as CCEX reads them
+        from autoconv.runner import Runner, _method
+
+        def upper(x, top=True):
+            if isinstance(x, list):
+                return [upper(v, False) for v in x]
+            if not isinstance(x, dict):
+                return x
+            return {(k.upper() if top else k.title()): upper(v, False) for k, v in x.items()}
+
+        runners = []
+        for name in ("lower", "upper"):
+            d = Path(self.tmp) / name; d.mkdir()
+            inp, fake = make_case(d)
+            j = json.loads(inp.read_text())
+            j["method"] = "gCCE"
+            j["hamiltonian"] = {"cCCE": {"delta_A": True}}
+            if name == "upper":
+                j = upper(j)
+                self.assertIn("AUTO_CONVERGENCE", j)
+                self.assertIn("Workdir", j["AUTO_CONVERGENCE"])
+                self.assertIn("Ccce", j["HAMILTONIAN"])
+            inp.write_text(json.dumps(j))
+            runners.append(Runner(inp, fake))
+        lower, up = runners
+        self.assertEqual(_method(up.base), "gcce")
+        self.assertEqual(json.dumps(up.base, sort_keys=True), json.dumps(lower.base, sort_keys=True).replace("/lower/", "/upper/"))
+        self.assertEqual(json.dumps(up.block, sort_keys=True), json.dumps(lower.block, sort_keys=True).replace("/lower/", "/upper/"))
+        self.assertIn("Qubit", up.base)                           # the names written with capitals keep them
+        self.assertIn("delta_A", up.base["hamiltonian"]["cCCE"])
+
+    def test_keys_that_differ_only_in_case_are_refused(self):
+        inp, fake = make_case(self.tmp)
+        base = json.loads(inp.read_text())
+        for edit in (dict(Method="gCCE"), dict(auto_convergence=dict(base["auto_convergence"], WorkDir="other"))):
+            inp.write_text(json.dumps(dict(base, **edit)))
+            code, out = call(inp, fake)
+            self.assertEqual(code, 2, out)
+            self.assertIn("are one key to CCEX (case is not read)", out)
 
     def test_coherence_above_one_is_reported(self):
         inp, fake = make_case(self.tmp)

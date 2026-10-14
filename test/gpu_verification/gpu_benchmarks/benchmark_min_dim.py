@@ -57,6 +57,17 @@ def prepare(method, nstate, sites, npulse, nstep, directory):
     return config
 
 
+# The profile backends a run asked for with `backend` may report: backend=cpu also computes small cCCE clusters in the
+# CPU batch (A30, profile backend=cpu-batch); any other backend only itself (review 20261013-180049 G3).
+ACCEPTED = {'cpu': {'cpu', 'cpu-batch'}}
+
+
+def check_backends(directory, backend, seen):
+    other = set(seen) - ACCEPTED.get(backend, {backend})
+    if other:
+        raise SystemExit(f'{directory}: asked for {backend}, profiled on {", ".join(sorted(other))}')
+
+
 def run(binary, config, directory, backend, ranks, mpirun, timeout):
     directory.mkdir(parents=True, exist_ok=False)
     config = dict(config, backend=backend, outfile=str(directory/'coherence'))
@@ -75,9 +86,7 @@ def run(binary, config, directory, backend, ranks, mpirun, timeout):
     # a run that profiled nothing, or ran on another backend than asked, is no measurement (review 7eed38 R3)
     if not by_dim:
         raise SystemExit(f'{directory}: no [profile] records in run.log')
-    other = {b for v in by_dim.values() for b in v['backends']} - {backend}
-    if other:
-        raise SystemExit(f'{directory}: asked for {backend}, profiled on {", ".join(sorted(other))}')
+    check_backends(directory, backend, {b for v in by_dim.values() for b in v['backends']})
     return wall, {dim: dict(v, backends=sorted(v['backends'])) for dim, v in sorted(by_dim.items())}
 
 

@@ -1,0 +1,71 @@
+{
+    # Config - Method 
+    "method"        : "gCCE", 
+    "quantity"      : "coherence",
+    
+    # Config - File
+    "seed" : 9407,
+    "Qubit"         : {
+        "file"          :  "../../04_Diamond_NV_P1Bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect",
+        # Qubit
+        "alphams"      : -1,
+        "betams"       : 0
+    },
+    "gyrofile"      :  "../../04_Diamond_NV_P1Bath/bath/DiaP1_gyro",
+    "bathfile"      : ["../../04_Diamond_NV_P1Bath/bath/14N_1ppm/bath_DiaP1_1ppm_"],
+  #"avaaxfile"     :  "Random",
+  #"statefile"     :  "Random",
+  #"exstatefile"   :  "Random",
+
+    # Config - General
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 850,
+    "rdip"          : 620,
+    "deltat"        : 0.002,
+    "nstep"         : 300,
+
+    # Cluster
+    "add_subclusters" : false, # true / false
+    "max_clusters_per_order" : [0,0,0], # default : [0] (all) or [0,0,30,40,50]
+    "pulse"         : {
+        # Pulse
+        "count"       : 4,
+        "name"        : "Manual",
+        "sequence"    : [["1/6", "X",  90.0], 
+                         ["1/6", "Y", 270.0],
+                         ["2/6", "Y",  90.0],
+                         ["1/6", "X", 270.0],
+                         ["1/6", "I",   0.0]]
+    },
+
+    # Config - Spin tensor 
+#  "hf_tensorfile" : "0",
+#  "qd_readmode"   : 0,
+
+    # Output
+    "savemode"    : "coherence",
+
+  "Defect"         : {
+        "species"       : [
+    		{   
+                "name": "P1",
+                "n_nuclear_spins" : 0,
+                "n_configurations" : 12, 
+                "detuning" : [ [1,  "e",   84.946496],
+                               [2,  "e",   84.946496],
+                               [3,  "e",   84.946496],
+                               [4,  "e",     0.00000],
+                               [5,  "e",     0.00000],
+                               [6,  "e",     0.00000],
+                               [7,  "e",  -84.946496],
+                               [8,  "e",  -84.946496],
+                               [9,  "e",  -84.946496],
+                               [10, "e",  114.026400],
+                               [11, "e",     0.00000],
+                               [12, "e", -114.026400]]
+            }   
+
+                           ]
+    }
+}

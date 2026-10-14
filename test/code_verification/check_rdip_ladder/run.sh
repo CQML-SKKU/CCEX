@@ -16,6 +16,7 @@
 # Usage:  bash test/code_verification/check_rdip_ladder/run.sh      (bin/main.out; CCEX_BIN, CCEX_MPI as elsewhere)
 #         CCEX_QUICK=1 (CI): at most 30 time points and 20 pCCE partition trials per case - the same cases, rungs and refusals.
 #         CCEX_JOBS=n: n runs at a time (default 1); CI uses 2 on its 4-core runner.
+#         CCEX_LADDER_PART=k/n (CI): only part k of n of the cases (the four long h-BN cases one to a part).
 # ---------------------------------------------------------------------------
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; REPO="$(cd "$HERE/../../.." && pwd)"
@@ -53,6 +54,15 @@ plan = {'p1_cce2_single': ('p1_cce2_single', {}, P1), 'natab_cce2_hahn': ('natab
         'p1_gcce2_matrix': ('p1_gcce2_zfs', dict(evolution='matrix'), P1ZFS),
         'p1_pcce2_centers': ('p1_pcce2_sk2', dict(pcce={'connections': 'centers'}), P1),
         'p1_pcce2_spins': ('p1_pcce2_sk2', dict(pcce={'connections': 'spins'}), P1)}
+# CCEX_LADDER_PART=k/n (CI): this run takes part k of n - the four h-BN gCCE2 ensemble/matrix and pCCE2 cases (96 % of the
+# time) one to a part, the others in turn - so n jobs share the cases; without it every case runs
+part = os.environ.get('CCEX_LADDER_PART')
+if part:
+    k, n = (int(x) for x in part.split('/'))
+    heavy = ['hbn_gcce2_ensemble', 'hbn_gcce2_matrix', 'hbn_pcce2_centers', 'hbn_pcce2_spins']
+    light = [m for m in plan if m not in heavy]
+    plan = {m: v for m, v in plan.items()
+            if (heavy.index(m) if m in heavy else light.index(m)) % n == k - 1}
 runs = []
 for name, (case, change, rungs) in plan.items():
     c = json.load(open(f'{cases}/{case}/ccein.json'))
@@ -68,6 +78,8 @@ for name, (case, change, rungs) in plan.items():
         else: c[k] = v
     if os.environ.get('CCEX_QUICK'):     # CI: what is checked (a rung = the separate run) holds at any size; the same cases, smaller
         c['nstep'] = min(int(c.get('nstep', 30)), 30)
+        if name.startswith('hbn_gcce2'):   # h-BN gCCE clusters reach dimension 147: rbath 9 keeps pairs at every rung (3, 5,
+            c['rbath'] = 9                 # 6.5) and below rdip 8 with far fewer of them (user 2026-10-13, A52)
         if str(c.get('cluster_mode', '')).lower() == 'pcce':
             c['pcce'] = dict(c['pcce'], trials=min(int(c['pcce'].get('trials', 20)), 20))
     d = f'{work}/{name}'; os.makedirs(d)
@@ -93,23 +105,46 @@ fail=0
 # CCEX_JOBS runs (each on 2 ranks) at a time; the runs are independent, so this changes the time only. With Open MPI and
 # more than one at a time, set OMPI_MCA_hwloc_base_binding_policy=none, or every mpirun binds its ranks to cores 0 and 1.
 run_one() {
-    (cd "$1" && timeout 600 "$MPIRUN" -n 2 "$BIN" -f "$2.json" > "$2.log" 2>&1 < /dev/null) || { echo "  FAIL  $1/$2 run: see $1/$2.log"; return 1; }
+    local rc=0
+    (cd "$1" && timeout 600 "$MPIRUN" -n 2 "$BIN" -f "$2.json" > "$2.log" 2>&1 < /dev/null) || rc=$?
+    [ $rc -eq 0 ] && return 0
+    echo "  FAIL  $1/$2 run (exit $rc$([ $rc -eq 124 ] && echo ', timed out')): see $1/$2.log; its last lines:"
+    tail -n 5 "$1/$2.log" | sed 's/^/        /'
+    return 1
 }
 export -f run_one; export MPIRUN BIN
 xargs -P "${CCEX_JOBS:-1}" -L 1 bash -c 'run_one "$0" "$1"' < "$WORK/runs" || fail=1
 for f in "$WORK"/*/bad_*.json; do
-    d="$(dirname "$f")"; b="$(basename "$f" .json)"
-    if (cd "$d" && timeout 300 "$MPIRUN" -n 2 "$BIN" -f "$b.json" > "$b.log" 2>&1 < /dev/null); then
-        echo "  FAIL  $(basename "$d") $b was accepted"; fail=1
-    elif ! grep -q "Error: rdip_ladder" "$d/$b.log"; then
-        echo "  FAIL  $(basename "$d") $b failed without an rdip_ladder message: see $d/$b.log"; fail=1
-    else echo "  PASS  $(basename "$d") $b refused"; fi
+    [ -e "$f" ] || continue   # a part without refusal inputs (CCEX_LADDER_PART)
+    d="$(dirname "$f")"; b="$(basename "$f" .json)"; rc=0
+    # a refusal is a nonzero exit and the rdip_ladder message, both (A54: the exit code alone once read 0 for a refused run)
+    (cd "$d" && timeout 300 "$MPIRUN" -n 2 "$BIN" -f "$b.json" > "$b.log" 2>&1 < /dev/null) || rc=$?
+    grep -q "Error: rdip_ladder" "$d/$b.log" && msg=1 || msg=0
+    if [ $rc -ne 0 ] && [ $msg -eq 1 ]; then echo "  PASS  $(basename "$d") $b refused (exit $rc)"
+    elif [ $msg -eq 1 ]; then echo "  FAIL  $(basename "$d") $b: rdip_ladder message but exit 0: see $d/$b.log"; fail=1
+    elif [ $rc -ne 0 ]; then echo "  FAIL  $(basename "$d") $b: exit $rc without an rdip_ladder message: see $d/$b.log"; fail=1
+    else echo "  FAIL  $(basename "$d") $b was accepted (exit 0, no message): see $d/$b.log"; fail=1; fi
 done
 python3 - "$WORK" <<'PY' || fail=1
-import glob, os, sys
+import cmath, glob, math, os, sys
 work = sys.argv[1]; bad = 0
 def curve(f):
     return [complex(l.split(None, 1)[1].replace(' ', '')) for l in open(f) if l.strip()]
+# max() skips NaN (review 20261014 tools 3, as D42 in check_input_forms/lib.sh): a point that is not finite on one side only,
+# or a different non-finite value (nan against inf, +inf against -inf, in the real or the imaginary part), is counted as a
+# mismatch; the same non-finite value on both sides at the same point is the separate run reproduced, so it is not one
+# (at such a point a finite real or imaginary part beside it has to be equal exactly).
+# Points finite on both sides are judged by |difference|; none such is a failure.
+def compare(a, b):
+    if len(a) != len(b):
+        return float('inf'), 0, 0
+    diff, odd, finite = 0.0, 0, 0
+    for x, y in zip(a, b):
+        if cmath.isfinite(x) and cmath.isfinite(y):
+            diff = max(diff, abs(x - y)); finite += 1
+        elif not all(p == q or (math.isnan(p) and math.isnan(q)) for p, q in ((x.real, y.real), (x.imag, y.imag))):
+            odd += 1
+    return diff, odd, finite
 for d in sorted(glob.glob(f'{work}/*/')):
     case = os.path.basename(d.rstrip('/'))
     pairs = []
@@ -124,14 +159,15 @@ for d in sorted(glob.glob(f'{work}/*/')):
     for ref, got, what in pairs:
         if not os.path.exists(got):
             print(f'  FAIL  {case}: {os.path.basename(got)} missing'); bad = 1; continue
-        a, b = curve(ref), curve(got)
-        diff = max(abs(x - y) for x, y in zip(a, b)) if len(a) == len(b) else float('inf')
-        worst[what] = max(worst.get(what, 0), diff)
-    for what, diff in worst.items():
-        ok = diff <= 1e-9
+        diff, odd, finite = compare(curve(ref), curve(got))
+        w = worst.get(what, (0.0, 0, 0))
+        worst[what] = (max(w[0], diff), w[1] + odd, w[2] + finite)
+    for what, (diff, odd, finite) in worst.items():
+        ok = diff <= 1e-9 and odd == 0 and finite > 0
         bad |= not ok
-        print(f'  {"PASS" if ok else "FAIL"}  {case} {what}: max |difference| {diff:.2e} over wiDiv and noDiv, all states')
+        print(f'  {"PASS" if ok else "FAIL"}  {case} {what}: max |difference| {diff:.2e} over {finite} finite points of wiDiv and '
+              f'noDiv, all states; {odd} points non-finite on one side or differently')
 sys.exit(bad)
 PY
-[ $fail -eq 0 ] && echo "  rdip_ladder: all checks passed" || echo "  rdip_ladder: FAILED"
+[ $fail -eq 0 ] && echo "  rdip_ladder: all checks passed" || echo "  rdip_ladder: FAILED (the inputs and logs are kept in $WORK until the next run)"
 exit $fail

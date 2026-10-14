@@ -1,0 +1,50 @@
+{
+    # Config (General)
+    "method"        : "gCCE", 
+    "quantity"      : "coherence",
+    "gyrofile"      : "../bath/hBN_natab_gyro",
+    "bathfile"      : ["../bath/flat/bath_hBN_VB_flat_1"],
+    "order"         : 2,
+    "bfield"        : 0,
+    "rbath"         : 14,
+    "rdip"          : 8,
+    "deltat"        : 0.00000001,
+    "nstep"         : 50,
+    "nstate"        : 1,
+    "seed"          : 8805,
+
+    "Qubit"         : {
+                        "qubit"  : [{"name" : "VB", "spin" : 1.0, "gyro" : -17608.597050, "xyz" : [33.94003,45.72817,7.50000] }],
+                        "intmap" : [{"between" : ["VB","VB"], "tensor" : [[-1080,0,0],[0,-1180,0],[0,0,2320]]}],
+                        "alpha_state"   : {
+                            "vector" : [1, 0, 1]
+                        },
+                        "beta_state"    : {
+                            "vector" : [0, 1, 0]
+                        }
+                      },
+
+    # Pulse
+    "pulse"         : {"count": 1},
+    "hamiltonian"   : {
+        "common"        : {
+            "qubit_bath_mean_field" : true,
+            # Bath HF
+            "hyperfine"     : {
+                "dipole"        : "dft",
+                "contact"       : true,
+                "file"          : "../bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3",
+                "missing_row"   : "stop"
+            },
+            # Bath QD
+            "quadrupole"  : {
+                "structure"     : "plain",
+                "file"          : "../bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"
+            } #0 (X), exp, dft(2 widefect) dft(wi+wo defect), dft(wi+wo defect)
+        }
+    },
+
+    # Output
+    "outfile"     : "./results/gCCE2_hBN_VB_natab_1"
+
+}

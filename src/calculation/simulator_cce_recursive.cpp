@@ -41,6 +41,35 @@ struct Carried {
 };
 }
 
+// X8: the ensemble Ramsey reads only Tr[M Dd M^dagger Du^*] = sum_ij |M_ij|^2 Dd_j conj(Du_i) = Du^dagger W Dd, W = |M|^2
+// (once per cluster): D^2 per step instead of a D^3 product
+namespace {
+void ramseyWeights(const MatrixXcd& M, MatrixXcd& W){ W = M.cwiseAbs2().cast<doublec>(); }
+doublec ramseyTrace(const Eigen::VectorXcd& up, const MatrixXcd& W, const Eigen::VectorXcd& down){
+    return (up.adjoint() * W * down)(0,0);
+}
+}
+
+// X8: the exact ensemble Ramsey of calCoherenceCceInto (phases by cos and sin at every step), with the trace above; as
+// there, the mean over the bath, conjugated (an even number of pulses, 2026-09-19)
+void evolveEnsembleRamseyCce(const MatrixXcd& M, const Eigen::VectorXcd& valUp, const Eigen::VectorXcd& valDown,
+                             int nstep, double deltat, MatrixXcd* result){
+    const int bdim = int(M.rows());
+    MatrixXcd W;
+    ramseyWeights(M,W);
+    Eigen::VectorXcd U_up, U_down;
+    double tfree = 0.0;
+    for (int i = 0; i < nstep; i++){
+        complexPhases(valUp*tfree,U_up);
+        complexPhases(valDown*tfree,U_down);
+        doublec overlap = ramseyTrace(U_up,W,U_down);
+        overlap /= doublec(bdim*1.0,0.0);
+        result[i] = MatrixXcd::Zero(1,1);
+        result[i](0,0) = std::conj(overlap);
+        tfree += deltat;
+    }
+}
+
 void evolveEnsembleRecursiveCce(const MatrixXcd& M, const MatrixXcd& M_up, const MatrixXcd& M_down,
                                 const Eigen::VectorXcd& valUp, const Eigen::VectorXcd& valDown, Pulse* pulse,
                                 bool manualIntervals, int nstep, double deltat, MatrixXcd* result){
@@ -56,6 +85,8 @@ void evolveEnsembleRecursiveCce(const MatrixXcd& M, const MatrixXcd& M_up, const
         MatrixXcd X(bdim,bdim), L_mat, sum_L_a, sum_L_b;
         MatrixXcd L_a_even, L_b_even, L_a_odd, L_b_odd, L_a2_even, L_b2_even, L_a2_odd, L_b2_odd;
         Eigen::MatrixXd X2(bdim,bdim);
+        MatrixXcd ramseyW;                   // X8: W = |M|^2 for Ramsey (ramseyTrace)
+        if (npulse == 0) ramseyWeights(M,ramseyW);
         doublec overlap;
         for (int i = 0; i < nstep; i++){
             if (npulse == 1){
@@ -69,11 +100,9 @@ void evolveEnsembleRecursiveCce(const MatrixXcd& M, const MatrixXcd& M_up, const
                 X2 = X.cwiseAbs2();
                 overlap = (one.up.adjoint() * X2.cast<doublec>() * one.up)(0,0);
             } else if (npulse == 0){
-                // Ramsey: M U_down M^dagger U_up^dagger
+                // Ramsey: Tr[M U_down M^dagger U_up^dagger] = U_up^dagger W U_down
                 one.advance(i, tfree, deltat, true, valUp, valDown);
-                L_mat = (M.array().rowwise() * one.down.transpose().array()).matrix()
-                      * (M.adjoint().array().rowwise() * one.up.adjoint().array()).matrix();
-                overlap = L_mat.trace();
+                overlap = ramseyTrace(one.up,ramseyW,one.down);
             } else {
                 // CPMG: tau at both ends, 2 tau in between
                 const double tau = tfree/(2*npulse), dtau = deltat/(2*npulse);

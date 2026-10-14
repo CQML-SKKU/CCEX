@@ -34,7 +34,7 @@ from . import autostart
 from . import report as report_mod
 from . import t2 as t2mod
 from . import truncation, window
-from .config import read_json
+from .config import KeyCaseError, read_input
 from .curves import read_curve
 
 VERSION = 1
@@ -369,7 +369,10 @@ class Runner:
         self.input_path = Path(input_path).resolve()
         self.binary = Path(binary).resolve()
         autostart.ISOTOPES = autostart.find_isotope_table(self.binary) or autostart.ISOTOPES
-        raw = read_json(self.input_path)
+        try:
+            raw = read_input(self.input_path)       # keys in the names looked up below, case not read as in CCEX (R4)
+        except KeyCaseError as e:
+            raise Refused(str(e))
         if "auto_convergence" not in raw:
             raise Refused("the input has no auto_convergence block")
         self.block = raw.pop("auto_convergence")
@@ -2173,7 +2176,7 @@ def status_main(argv):
     ap.add_argument("input")
     a = ap.parse_args(argv)
     try:
-        raw = read_json(Path(a.input))
+        raw = read_input(Path(a.input))
         work = (Path(a.input).resolve().parent / raw["auto_convergence"]["workdir"]).resolve()
     except (OSError, ValueError, KeyError, TypeError) as e:
         print(f"autoconv status: cannot read the workdir from {a.input}: {e}", file=sys.stderr)
@@ -2224,7 +2227,7 @@ def main(argv):
         r = Runner(a.input, a.binary)
     except Refused as e:
         try:                                     # an earlier result in the workdir is not left as the present one
-            raw = read_json(Path(a.input))
+            raw = read_input(Path(a.input))
             out = Path(a.input).parent / raw["auto_convergence"]["workdir"] / "result"
             if out.is_dir():                     # written only while holding the workdir's lock (82c666-b #8)
                 with open(out.parent / "lock", "a") as f:

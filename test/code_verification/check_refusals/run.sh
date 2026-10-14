@@ -63,7 +63,7 @@ R111='{"enabled": True, "bath_axis": [0.0,0.0,1.0], "qubit_axis": [1.0,1.0,1.0]}
 reject_cli(){
     local sys="$1" name="$2" want="$3"; shift 3
     local w="$WORK/$sys"
-    ( cd "$w" && run_ccex "$BIN_DEV" legacy.json "proc_$name" "$@" )
+    ( cd "$w" && run_ccex "$BIN_DEV" "${CLI_INPUT:-legacy.json}" "proc_$name" "$@" )
     local rc=$?
     if [ $rc -eq 0 ]; then echo "  FAIL  $name : accepted (exit 0), expected refusal"; FAIL=$((FAIL+1)); return; fi
     if ! grep -qF -- "$want" "$w/proc_$name"; then
@@ -76,6 +76,14 @@ reject_cli S1a rj_cli_nstate_word "-N must be an integer" -N nope
 reject_cli S1a rj_cli_nstate_fraction "-N must be an integer" -N 1.5
 reject_cli S1a rj_cli_bfield_word "-B must be a finite number" -B nope
 reject_cli S1a rj_cli_bfield_trailing "-B must be a finite number" -B 500G
+# -P writes its plan under the output name: with neither outfile nor -o the inventory writer was handed a null name and
+# stopped with "basic_string: construction from null" (A55)
+python3 - "$WORK/S1a" <<'PY'
+import json, sys
+d = json.load(open(f"{sys.argv[1]}/legacy.json")); d.pop("outfile", None)
+json.dump(d, open(f"{sys.argv[1]}/no_outfile.json", "w"), indent=4)
+PY
+CLI_INPUT=no_outfile.json reject_cli S1a rj_cli_plan_no_outfile "-P needs an output name" -P
 # The command line wins over the input file whatever the order (review b9eb09 R1): -N before -f took nstate from the file.
 order_check(){
     local w="$WORK/S1a" a b
@@ -765,6 +773,90 @@ reject_case p1_cce2_single rj_me_pulse_rotation "is X 90. Use method megCCE for 
   "d['method']='meCCE'; d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',90],['1/2','I',0]]}"
 reject_case p1_cce2_single rj_ccce_pulse_rotation "is X 90. Use method gCCE for other rotations." \
   "d['pulse']={'count':1,'name':'Manual','sequence':[['1/2','X',90],['1/2','I',0]]}"
+
+echo
+echo "=== -f and -m as getopt reads them, keys without regard to case (review 20261013-180049 I01-I03)"
+# I01: the input file was found by a search for an argument equal to "-f", so "-fFILE" (and "-vfFILE") skipped the adaptive
+# block: a bundle input with one ran as a plain bundle run (curve off by up to 2.84), and adaptive with cluster_mode
+# standard was not refused. The file is found by getopt now; the refusal in both attached forms, then the merge-grow
+# regression input with an adaptive block run spaced and attached: both refine, to the same final curve.
+reject_attached(){    # reject_attached <option word before the file name> <name>: rj_adaptive_standard's input, the file attached
+    local w="$WORK/evolution_update_refusals" rc
+    ( cd "$REPO/test/code_verification/check_numerics/cases/natab_cce2_hahn" &&
+      "$MPIRUN" -n 1 "$BIN_DEV" "$1$w/rj_adaptive_standard.json" -o "$w/$2" > "$w/proc_$2" 2>&1 < /dev/null )
+    rc=$?
+    if [ $rc -ne 0 ] && grep -qF "the adaptive block belongs to cluster_mode pcce or bundle (this input has cluster_mode standard)" "$w/proc_$2"
+    then echo "  PASS  $2 (exit=$rc)"; PASS=$((PASS+1))
+    else echo "  FAIL  $2 : exit=$rc, see $w/proc_$2"; FAIL=$((FAIL+1)); fi
+}
+reject_attached -f rj_adaptive_standard_attached
+reject_attached -vf rj_adaptive_standard_combined
+adaptive_attached(){
+    local w="$WORK/adaptive_attached" f ok=1; rm -rf "${w:?}"; mkdir -p "$w"
+    python3 - "$REPO/test/cluster_verification/check_adaptive/regression/inputs/merge-grow-0.json" "$w" <<'PY'
+import json, sys
+src, w = sys.argv[1:3]
+d = json.load(open(src))
+for form in ("spaced", "attached", "upper"):
+    # upper: the adaptive keys in another case (I03), read as the lower-case ones
+    keys = ("Policy", "Output", "ATOL", "Rtol") if form == "upper" else ("policy", "output", "atol", "rtol")
+    d["adaptive"] = dict(zip(keys, ("merge", f"{w}/{form}_adaptive", 1e-8, 2e-6)))
+    d["outfile"] = f"{w}/{form}"
+    json.dump(d, open(f"{w}/{form}.json", "w"), indent=1)
+PY
+    # relative paths in the input are the repository's
+    ( cd "$REPO" && "$MPIRUN" -n 1 "$BIN_DEV" -f "$w/spaced.json" > "$w/proc_spaced" 2>&1 < /dev/null ) || ok=0
+    ( cd "$REPO" && "$MPIRUN" -n 1 "$BIN_DEV" "-f$w/attached.json" > "$w/proc_attached" 2>&1 < /dev/null ) || ok=0
+    ( cd "$REPO" && "$MPIRUN" -n 1 "$BIN_DEV" -f "$w/upper.json" > "$w/proc_upper" 2>&1 < /dev/null ) || ok=0
+    for f in spaced attached upper; do
+        grep -q '"status": "validated_full_bath_model"' "$w/${f}_adaptive/summary.json" 2>/dev/null || ok=0
+    done
+    for f in attached upper; do
+        cmp -s "$w/spaced_adaptive/final-bundles.json" "$w/${f}_adaptive/final-bundles.json" || ok=0
+        cmp -s "$w/spaced_adaptive/0009-run/coherence_wiDiv" "$w/${f}_adaptive/0009-run/coherence_wiDiv" || ok=0
+    done
+    if [ $ok -eq 1 ]; then echo "  PASS  adaptive_attached (-f FILE, -fFILE and Policy/Output/ATOL/Rtol refine alike)"; PASS=$((PASS+1))
+    else echo "  FAIL  adaptive_attached : see $w"; FAIL=$((FAIL+1)); fi
+}
+adaptive_attached
+# accept_same <case> <name> <python edit> <python edit of the reference> [command-line options]: the edited input runs,
+# and its raw result is the reference's, byte for byte
+accept_same(){
+    local case="$1" name="$2" edit="$3" ref="$4"; shift 4
+    local w="$WORK/accepted_forms" c="$REPO/test/code_verification/check_numerics/cases/$case" f ok=1; mkdir -p "$w"
+    python3 - "$c/ccein.json" "$w/$name" <<PY
+import json, sys
+d = json.load(open(sys.argv[1])); $edit
+json.dump(d, open(sys.argv[2] + ".json", "w"), indent=1)
+d = json.load(open(sys.argv[1])); $ref
+json.dump(d, open(sys.argv[2] + "_ref.json", "w"), indent=1)
+PY
+    rm -f "$w/$name"_*Div "$w/$name"_state* "$w/$name"_ref_*
+    ( cd "$c" && "$MPIRUN" -n 1 "$BIN_DEV" -f "$w/${name}_ref.json" -o "$w/${name}_ref" > "$w/proc_${name}_ref" 2>&1 < /dev/null ) || ok=0
+    # options before a word -f go before the file, the rest after it
+    local pre=() post=("$@") i
+    for ((i=0; i<$#; i++)); do [ "${post[i]}" = -f ] && { pre=("${post[@]:0:i}"); post=("${post[@]:i+1}"); break; }; done
+    ( cd "$c" && "$MPIRUN" -n 1 "$BIN_DEV" "${pre[@]}" -f "$w/$name.json" -o "$w/$name" "${post[@]}" > "$w/proc_$name" 2>&1 < /dev/null ) || ok=0
+    local n=0
+    for f in "$w/${name}_ref"_*; do
+        n=$((n+1)); cmp -s "$f" "$w/$name${f#$w/${name}_ref}" || ok=0
+    done
+    [ $n -gt 0 ] || ok=0
+    if [ $ok -eq 1 ]; then echo "  PASS  $name"; PASS=$((PASS+1))
+    else echo "  FAIL  $name : see $w/proc_$name"; FAIL=$((FAIL+1)); fi
+}
+# I02: -m replaces the file's method before the combination with cluster_mode is judged: a file with gCCE + pcce runs
+# under -m cCCE as the cCCE + pcce file does (before or after -f); the other way round runs as gCCE + pcce (pgCCE, the
+# master-equation port's cluster_mode pcce for gCCE)
+accept_same p1_pcce2_sk2 ac_gcce_pcce_cli_ccce "d['method'] = 'gCCE'" "" -m cCCE
+accept_same p1_pcce2_sk2 ac_gcce_pcce_cli_ccce_first "d['method'] = 'gCCE'" "" -m cCCE -f
+# the file's method is still read as a method name under -m: a reserved one stays refused (noise; meCCE runs since the
+# master-equation port)
+reject_case p1_pcce2_sk2 rj_file_method_under_cli "method \"noise\" is not implemented yet" "d['method'] = 'noise'" -m cCCE
+# I03: the keys of the savemode and propagator blocks in another case
+accept_same natab_cce2_hahn ac_savemode_keys_case "d['savemode'] = {'Mode': 'coherence', 'NoDiv': True}" \
+  "d['savemode'] = {'mode': 'coherence', 'nodiv': True}"
+accept_same natab_cce2_hahn ac_propagator_keys_case "d['propagator'] = {'Method': 'eigen'}" "d['propagator'] = {'method': 'eigen'}"
 
 echo
 echo "==========================================="

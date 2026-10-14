@@ -6,7 +6,9 @@ itself, then run the production. Every calculation it makes is an ordinary CCEX 
 folder under `workdir`. Supported: cCCE with `cluster_mode` standard or pcce (order ≥ 2), gCCE (order ≥ 1), fixed bundles
 (`cluster_mode` bundle without an `adaptive` block), CPU or GPU backends. How each step decides,
 the outputs and the exit codes are in `example/tools/AutoConvergence/README.md`; tutorial 11
-([Examples_11.md](Examples_11.md)) is a worked input.
+([Examples_11.md](Examples_11.md)) is a worked input. The runner reads the keys (of the block and of the rest of the
+input) without regard to case, as CCEX does, and refuses two keys of one block that differ only in case (since review
+20261013-180049 R4; `"Auto_Convergence"` was refused as missing and `"Method": "gCCE"` ran as cCCE).
 
 ```
 mpirun -n 8 main.out -f input.json   # every CCEX run with mpirun -n 8 (rank 0 alone runs the runner)

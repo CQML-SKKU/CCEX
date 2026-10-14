@@ -14,7 +14,8 @@ full density-matrix file per cluster named after it, no two alike; cCCE and gCCE
 `../check_numerics` references, which were recorded with `exact`, within that suite's 1e-9 — skipped on a CI runner, since the references are one machine's digits; `recursive` runs on single-state cCCE2 and gCCE2 vector, P1 10 ppm, on the ensemble cCCE2 (Hahn, CPMG-8,
 Manual) and gCCE2 `evolution` = `matrix` (ensemble Hahn, one-state CPMG-8), and stays within 1e-8 of `exact` in the raw
 `_noDiv`; without the key (A29) single-state and ensemble cCCE2 and gCCE2 vector and matrix give the bytes of an explicit
-`recursive`, and gCCE `propagator` = `expm` those of an explicit `exact`, not a refusal; `backend` = `auto`, all on the CPU in
+`recursive` and the log says `recursive`, chosen by default - the path is judged by the log, the value the time evolutions
+dispatch on; that `exact` writes other bytes is only noted since A56, as on another machine it need not -, and gCCE `propagator` = `expm` those of an explicit `exact`, not a refusal; `backend` = `auto`, all on the CPU in
 this binary, gives the bytes of `backend` = `cpu`, with or without a given `recursive`, A36), `gpu_options` (no
 block, an empty one, every default written out and every key changed give the same bytes on a CPU run of single-state
 cCCE2 and gCCE2, and the log shows the values read; A26, 2026-10-12), `propagator` (A2: `"eigen"` and `{"method": "eigen"}` give the default run's bytes, `"sparse"` and `{"method": "sparse",
@@ -24,8 +25,10 @@ within 1e-8 of eigen `exact` in the raw `_noDiv` and in `_wiDiv` at |L| <= 1 (P1
 splitting); malformed values are refused), `tensor_format` (2026-10-13: on the five h-BN cases of `../check_numerics`, the hyperfine
 file of format v3 - tag line and provenance line, read x 1 - gives the bytes of the old untagged v1 file read x 0.5; the
 VASP-tagged v1 file of the tutorial until then is read as before, x 1, and gives the bytes of `head-20261012-aa883d0d4`, recorded
-with it; old files warn in the log; values of 10 characters or more, written by SpinTensorReader's VASP and QE writers in
-their format and in the tab-glued one before 2026-10-13, are read as written: `example/tools/SpinTensorReader/tests/check_wide_fields.py`), `autoconv` (`auto_convergence.enabled`: `false` gives
+with it - skipped on a CI runner, since that reference is one machine's digits (A56); old files warn in the log; values of 10 characters or more, written by SpinTensorReader's VASP and QE writers in
+their format and in the tab-glued one before 2026-10-13, are read as written: `example/tools/SpinTensorReader/tests/check_wide_fields.py`;
+and a VASP Q file alone from an OUTCAR with magnetization 0 or none is written, while an A file from it is refused:
+`example/tools/SpinTensorReader/tests/check_qfile_spin.py`), `autoconv` (`auto_convergence.enabled`: `false` gives
 the bytes of the input without the block, an enabled block makes `main.out -f` start the runner, once under `mpirun -n 2`,
 a value that is not a boolean and another option beside it are refused, `--auto_status` reads the workdir, and a tool
 file or folder writable by others is refused). The refused key combinations are `../check_refusals/`, the
