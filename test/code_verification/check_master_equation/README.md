@@ -71,6 +71,12 @@ Measured on WSL (g++ `wsl-gnu`, `CCEX_BLAS=mkl`), 2026-10-13 (the CPMG, pure-sta
 - `gCCE == conj(PyCCE)` is the first comparison of the existing gCCE with an outside code. Without the conjugation the
   difference is 1.66 (max |Im| of the gCCE curve 0.83); for megCCE 0.38. PyCCE measures ⟨Rα|ρ|Rβ⟩ and CCEX ⟨α|ρ|β⟩,
   complex conjugates after an odd number of π pulses (`reference/pycce/README.md`).
+  What is left with it, 1.886e-08, is the input and not the compiler or data type (numpy model of this row, 2026-10-14):
+  `inputs/bath_espin` keeps PyCCE's `random_bath(seed=2)` coordinates to 5 decimals (2.2e-8 from the bath PyCCE used),
+  and `H_BAR` is 1.054571729 (`include/common/utilities.h:72`) against PyCCE's `HBAR_MU0_O4PI` 1.05457172 (1.5e-8);
+  both: 1.85e-8.
+  One ulp of the electron gyromagnetic ratio moves the curve by 3.2e-9 (Zeeman phase about 1e7 rad at 300 G, t = 2 ms):
+  the floor between two double-precision codes on this system.
 - `megCCE bath jumps`: the same run without jumps (= gCCE) is 0.69 from conj(PyCCE).
 - `megCCE bath + qubit z jumps`: the qubit jump in the clusters with bath spins, C_q ⊗ 1_B, which order 0 (bath
   dimension 1) cannot tell from 1_B ⊗ C_q; put the other way round for the test, this check failed with 5.213e-01 while
