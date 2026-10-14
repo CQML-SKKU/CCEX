@@ -14,7 +14,7 @@ std::vector<MergedRow> mergePulseSequences(const std::vector<SequenceRow>& qubit
 
 // bnpulse > 0: replaces npulse, sequence, pulse_axes, pulse_angles, sequence_indices with the merged sequence,
 // fills tot_bpulse_axes/angles, and sets pulsename to "Manual". bnpulse == 0: does nothing.
-// Refused (rank 0 says why, MPI_Abort): a last bath row that is not identity, and two pulses of one channel that the
+// Refused (rank 0 says why, ccexRefuse: every rank ends with exit 1, A55): a last bath row that is not identity, and two pulses of one channel that the
 // merge would put on one edge (one of them would be lost). Call once, after every option source is applied.
 void Pulse_resolveBathSequence(Pulse* pls);
 bool Pulse_hasBathPulses(const Pulse* pls);   // bnpulse > 0

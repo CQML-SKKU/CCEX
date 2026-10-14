@@ -894,15 +894,15 @@ static void readDefectIndexedTensorWithUnit(cJSON* defect, DefectArray* dfa, int
 static void readJumpOperators(Config* cnf, cJSON* section, const char* name){
     for (cJSON* key = section->child; key; key = key->next)
         if (strcmp(key->string,"jump_operators")){
-            fprintf(stderr,"Error: hamiltonian.%s has no key \"%s\" (jump_operators)\n",name,key->string);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr,"Error: hamiltonian.%s has no key \"%s\" (jump_operators)\n",name,key->string);
+            ccexRefuse();
         }
     cJSON* arr = cJSON_GetObjectItem(section, "jump_operators");
     if (!arr) return;
     if (cnf->jump_operators) {
-        fprintf(stderr, "Error: jump operators are given in both hamiltonian.meCCE and hamiltonian.megCCE\n"); exit(EXIT_FAILURE);
+        ccexRefusalPrint(stderr, "Error: jump operators are given in both hamiltonian.meCCE and hamiltonian.megCCE\n"); ccexRefuse();
     }
-    if (!cJSON_IsArray(arr)) { fprintf(stderr, "Error: hamiltonian.%s.jump_operators must be an array\n", name); exit(EXIT_FAILURE); }
+    if (!cJSON_IsArray(arr)) { ccexRefusalPrint(stderr, "Error: hamiltonian.%s.jump_operators must be an array\n", name); ccexRefuse(); }
     const int n = cJSON_GetArraySize(arr);
     JumpOperatorArray* joa = JumpOperatorArray_init();
     if (n > 0) JumpOperatorArray_alloc(joa, n);   // none: njump 0, ops NULL (no zero-length allocation)
@@ -912,19 +912,19 @@ static void readJumpOperators(Config* cnf, cJSON* section, const char* name){
         cJSON* op = cJSON_GetObjectItem(it, "operator");
         cJSON* rt = cJSON_GetObjectItem(it, "rate");
         if (!cJSON_IsString(nm) || !nm->valuestring[0] || !cJSON_IsString(op) || !rt) {
-            fprintf(stderr, "Error: hamiltonian.%s.jump_operators[%d] needs bath_name, operator and rate\n", name, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: hamiltonian.%s.jump_operators[%d] needs bath_name, operator and rate\n", name, i);
+            ccexRefuse();
         }
         if (!isJumpOperatorType(op->valuestring)) {   // before setOp, which keeps 3 characters of op_type
             const bool old = !strcmp(op->valuestring, "+-") || !strcmp(op->valuestring, "-+");
-            fprintf(stderr, "Error: hamiltonian.%s.jump_operators[%d].operator must be one of - + z x y%s\n", name, i,
+            ccexRefusalPrint(stderr, "Error: hamiltonian.%s.jump_operators[%d].operator must be one of - + z x y%s\n", name, i,
                     old ? " (the old names +- and -+ are now - and +)" : "");
-            exit(EXIT_FAILURE);
+            ccexRefuse();
         }
         const double rate = cJSON_IsNumber(rt) ? rt->valuedouble : -1.0;
         if (!(std::isfinite(rate) && rate >= 0.0)) {
-            fprintf(stderr, "Error: hamiltonian.%s.jump_operators[%d].rate must be a finite number >= 0 [MHz]\n", name, i);
-            exit(EXIT_FAILURE);
+            ccexRefusalPrint(stderr, "Error: hamiltonian.%s.jump_operators[%d].rate must be a finite number >= 0 [MHz]\n", name, i);
+            ccexRefuse();
         }
         JumpOperatorArray_setOp(joa, i, nm->valuestring, op->valuestring, MHZ_TO_RADKHZ(rate));
     }
@@ -2329,9 +2329,9 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
             if (strcmp(key->string,"count") && strcmp(key->string,"sequence") && strcmp(key->string,"defect") &&
                 strcmp(key->string,"energy_shift") && strcmp(key->string,"spin") && strcmp(key->string,"alphams") &&
                 strcmp(key->string,"betams")){
-                fprintf(stderr,"Error: pulse.bath has no key \"%s\" (count, sequence, defect, energy_shift, spin, alphams, betams)\n",
+                ccexRefusalPrint(stderr,"Error: pulse.bath has no key \"%s\" (count, sequence, defect, energy_shift, spin, alphams, betams)\n",
                         key->string);
-                exit(EXIT_FAILURE);
+                ccexRefuse();
             }
         cJSON* jseq = cJSON_GetObjectItem(bath, "sequence");     // every key looked up, so the input check knows them
         cJSON* jdef = cJSON_GetObjectItem(bath, "defect");
@@ -2340,13 +2340,13 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
         cJSON* jba  = cJSON_GetObjectItem(bath, "alphams");
         cJSON* jbb  = cJSON_GetObjectItem(bath, "betams");
         pulse->bnpulse = cJSON_ReadInt(bath, (char*)"count", true, 0);    // type and integer checks as pulse.count
-        if (pulse->bnpulse < 0) { fprintf(stderr, "Error: pulse.bath.count must be >= 0\n"); exit(EXIT_FAILURE); }
+        if (pulse->bnpulse < 0) { ccexRefusalPrint(stderr, "Error: pulse.bath.count must be >= 0\n"); ccexRefuse(); }
         if (jbs) pulse->bspin    = readFiniteNumber(jbs, "pulse.bath.spin");
         if (jba) pulse->balphams = readFiniteNumber(jba, "pulse.bath.alphams");
         if (jbb) pulse->bbetams  = readFiniteNumber(jbb, "pulse.bath.betams");
         if (pulse->bnpulse > 0) {
             if (!(jdef && cJSON_IsString(jdef) && jdef->valuestring && jdef->valuestring[0])) {
-                fprintf(stderr, "Error: pulse.bath.defect is required when pulse.bath.count > 0\n"); exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: pulse.bath.defect is required when pulse.bath.count > 0\n"); ccexRefuse();
             }
             copyBounded(pulse->bpulse_defect, jdef->valuestring, sizeof(pulse->bpulse_defect), "pulse.bath.defect");
             std::vector<double> tones;
@@ -2355,14 +2355,14 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
                 for (int k = 0; k < cJSON_GetArraySize(jsh); ++k)
                     tones.push_back(readFiniteNumber(cJSON_GetArrayItem(jsh, k), "pulse.bath.energy_shift"));
             if (tones.empty()) {
-                fprintf(stderr, "Error: pulse.bath.energy_shift needs at least one finite number [MHz]\n"); exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: pulse.bath.energy_shift needs at least one finite number [MHz]\n"); ccexRefuse();
             }
             pulse->n_bpulse_shift = (int)tones.size();
             pulse->bpulse_energy_shifts = (double*)calloc(tones.size(), sizeof(double));
             for (size_t k = 0; k < tones.size(); ++k) pulse->bpulse_energy_shifts[k] = MHZ_TO_RADKHZ(tones[k]);
             if (!(jseq && cJSON_IsArray(jseq)) || cJSON_GetArraySize(jseq) != pulse->bnpulse + 1) {
-                fprintf(stderr, "Error: pulse.bath.sequence must have pulse.bath.count+1 rows of [fraction, axis, angle]\n");
-                exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: pulse.bath.sequence must have pulse.bath.count+1 rows of [fraction, axis, angle]\n");
+                ccexRefuse();
             }
             const int nrow = pulse->bnpulse + 1;
             pulse->bsequence_fracs = (double*)calloc(nrow, sizeof(double));
@@ -2372,7 +2372,7 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
             for (int i = 0; i < nrow; ++i) {
                 cJSON* row = cJSON_GetArrayItem(jseq, i);
                 if (!cJSON_IsArray(row) || cJSON_GetArraySize(row) != 3) {
-                    fprintf(stderr, "Error: pulse.bath.sequence[%d] must be [fraction, axis, angle]\n", i); exit(EXIT_FAILURE);
+                    ccexRefusalPrint(stderr, "Error: pulse.bath.sequence[%d] must be [fraction, axis, angle]\n", i); ccexRefuse();
                 }
                 pulse->bsequence_fracs[i] = readSequenceFraction(cJSON_GetArrayItem(row, 0), i);   // its messages say sequence[i]
                 pulse->bpulse_axes[i]     = parse_axis(cJSON_GetArrayItem(row, 1), i);
@@ -2381,7 +2381,7 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
                 total += pulse->bsequence_fracs[i];
             }
             if (std::fabs(total - 1.0) > 1e-9) {
-                fprintf(stderr, "Error: the fractions of pulse.bath.sequence sum to %.12g, not 1\n", total); exit(EXIT_FAILURE);
+                ccexRefusalPrint(stderr, "Error: the fractions of pulse.bath.sequence sum to %.12g, not 1\n", total); ccexRefuse();
             }
         }   // what the merge needs of the two sequences is checked where it runs (Pulse_resolveBathSequence)
     }

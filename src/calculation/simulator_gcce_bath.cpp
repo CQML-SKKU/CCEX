@@ -62,7 +62,7 @@ void applyBathPulsesGcce(GcceWork* w, MatrixXcd* Upulses, BathArray* ba, const P
 
 void validateBathPulseTargets(BathArray* ba, DefectArray* dfa, const Pulse* pls) {
     if (!Pulse_hasBathPulses(pls)) return;
-    auto refuse = [](const char* msg) { if (rank == 0) fprintf(stderr, "Error: %s\n", msg); MPI_Abort(MPI_COMM_WORLD, 1); };
+    auto refuse = [](const char* msg) { if (rank == 0) fprintf(stderr, "Error: %s\n", msg); ccexRefuse(); };
     // every spin a cluster can hold: the bath file's, and the Defect sub-spins createBathArray adds to them
     std::vector<const BathSpin*> spins;
     const int nspin = BathArray_getNspin(ba);

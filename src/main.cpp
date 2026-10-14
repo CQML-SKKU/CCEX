@@ -178,7 +178,7 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
 // it (inputMethodName); cluster_mode is "standard" inside for pcce too and "adaptive" for bundle.
 void validateBathPulses(Config* cnf, Pulse* pls) {
     if (!Pulse_hasBathPulses(pls)) return;
-    auto refuse = [](const char* msg) { if (rank==0) fprintf(stderr, "Error: %s\n", msg); MPI_Abort(MPI_COMM_WORLD,1); };
+    auto refuse = [](const char* msg) { if (rank==0) fprintf(stderr, "Error: %s\n", msg); ccexRefuse(); };
     char msg[256];
     const char* kernel = methodKernel(cnf->method);
     if (strcmp(kernel,"gcce") && strcmp(kernel,"megcce")) {
@@ -211,7 +211,7 @@ bool isMasterEquationMethod(const char* m) {   // meCCE, megCCE and their pcce f
 // (Config_resolveEvolution), propagator expm (Config_validatePropagator), evolution_update recursive
 // (Config_validateEvolutionUpdate) and -P are refused by the whitelists that already exist.
 void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
-    auto refuse = [](const char* msg, const char* m) { if (rank==0) { fprintf(stderr, "Error: "); fprintf(stderr, msg, m); fprintf(stderr, "\n"); } MPI_Abort(MPI_COMM_WORLD,1); };
+    auto refuse = [](const char* msg, const char* m) { if (rank==0) { fprintf(stderr, "Error: "); fprintf(stderr, msg, m); fprintf(stderr, "\n"); } ccexRefuse(); };
     if (!isMasterEquationMethod(cnf->method)) return;   // a jump section in another method's run: validateHamiltonianForMethod
     const bool projected = !strcmp(methodKernel(cnf->method),"mecce");   // meCCE, pmeCCE
     const char* method = inputMethodName(cnf->method);                    // pmeCCE, pmegCCE: meCCE, megCCE
@@ -264,7 +264,7 @@ void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, 
                                         "bath spins of this run (the comparison ignores case for bath spins); the jump would "
                                         "act on the qubit only. Rename the qubit or the bath species\n",
                                  cnf->jump_operators_section, i, name);
-            MPI_Abort(MPI_COMM_WORLD,1);
+            ccexRefuse();
         }
         if (isQubit || found) continue;
         std::string list;
@@ -272,7 +272,7 @@ void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, 
         if (rank==0) fprintf(stderr,"Error: hamiltonian.%s.jump_operators[%d].bath_name \"%s\" names no bath spin of this run "
                                     "(bath spins: %s; the comparison ignores case) and is not the qubit (\"qubit\" or its "
                                     "name)\n", cnf->jump_operators_section, i, name, list.empty() ? "none" : list.c_str());
-        MPI_Abort(MPI_COMM_WORLD,1);
+        ccexRefuse();
     }
 }
 

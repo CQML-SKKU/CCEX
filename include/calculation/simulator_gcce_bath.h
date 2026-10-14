@@ -12,7 +12,7 @@ MatrixXcd bathPulseOperator(BathArray* ba, const Pulse* pls, int row);
 // After prepareGccePulses: rows with a bath pulse get UpulsesExpanded[row] = kron(Upulses[row], U_b); if any row
 // changed, pulseBdim = 0 so applyPulseGcce takes the dense product (its block path assumes kron(U, 1)).
 void applyBathPulsesGcce(GcceWork* w, MatrixXcd* Upulses, BathArray* ba, const Pulse* pls);
-// Once the bath and the Defect detunings are set (main.cpp), before any cluster: refused (rank 0 says why, MPI_Abort)
+// Once the bath and the Defect detunings are set (main.cpp), before any cluster: refused (rank 0 says why, ccexRefuse: every rank ends with exit 1, A55)
 // when no bath spin (bath file or Defect sub-spin) has the name pulse.bath.defect, when such a spin's S is not
 // pulse.bath.spin, or when pulse.bath.alphams/betams are not two different levels of that S. When none of those spins
 // is within the window of a tone, rank 0 warns once and the run goes on (an off-resonant pump is a control).

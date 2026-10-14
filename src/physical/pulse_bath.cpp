@@ -47,7 +47,7 @@ bool Pulse_hasBathPulses(const Pulse* pls) { return pls->bnpulse > 0; }
 namespace {
 void refuseSequence(const char* msg) {
     if (rank == 0) fprintf(stderr, "Error: %s\n", msg);
-    MPI_Abort(MPI_COMM_WORLD, 1);
+    ccexRefuse();
 }
 // the pulses the merge places: every row's but the last's, identity ones dropped
 int placedPulses(const std::vector<SequenceRow>& rows) {
