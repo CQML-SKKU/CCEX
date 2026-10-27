@@ -208,6 +208,15 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //          "levels"       : [0.5, -0.5]
                                         // the two levels m of the driven spins (their spin S is their own) the bath
                                         // pulse rotates between, default [0.5, -0.5]
+//      },
+//      "bath_drive"      : {           // continuous drive of electron-like spin-1/2 bath spins in their rotating frames
+                                        // (cCCE, ensemble, docs/methods/bath-drive.md); not with "bath"
+//          "tones"            : [{"lines": [59.91], "rabi": 7.0, "offset": 0.0, "phase": 0.0}],
+                                        // MHz, MHz, MHz, degrees: a field of Rabi frequency rabi on the spins of the
+                                        // listed Defect lines, at line + offset; [] = every spin in its own line's frame
+//          "shifts"           : false, // Bloch-Siegert, AC Stark, Van Vleck, drive-assisted cross-line flip-flop
+//          "qubit_transverse" : true,  // the qubit coupling A_zx, A_zy kept exactly (false: A_zz only)
+//          "line_tolerance"   : 0.001  // MHz: a spin is on a line closer than this
 //      }
     }                                   // the last active key: a key uncommented below needs a ',' after this '}'
 

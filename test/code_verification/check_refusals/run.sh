@@ -1215,6 +1215,15 @@ PY
     else echo "  FAIL  checked_merged : see $w/proc"; FAIL=$((FAIL+1)); fi
 }
 checked_merged
+# pulse.bath_drive (continuous bath drive, docs/methods/bath-drive.md): what it does not run is refused, not ignored.
+# S1a is an NV in a natural 13C bath (cCCE-2, the ensemble); the run-level checks come after the bath is read ("read").
+DRIVE="d['pulse']['bath_drive'] = {'tones': [{'lines': [0.0], 'rabi': 1.0}]}"
+reject S1a rj_drive_gcce "pulse.bath_drive runs with method cCCE" "$DRIVE; d['method'] = 'gCCE'" read
+reject S1a rj_drive_states "pulse.bath_drive with configuration.s_range" "$DRIVE; d['configuration']['s_range'] = [1, 1]" read
+reject S1a rj_drive_nuclear "drives electron-like spin-1/2 bath spins only" "$DRIVE" read
+reject S1a rj_drive_key 'pulse.bath_drive has no key "rabi"' "$DRIVE; d['pulse']['bath_drive']['rabi'] = 1.0"
+reject S1a rj_drive_rabi "pulse.bath_drive.tones[0].rabi must be >= 0" "d['pulse']['bath_drive'] = {'tones': [{'lines': [0.0], 'rabi': -1.0}]}"
+
 accept_same p1_cce2_single ac_defect_frame_not_needed \
   "d['nstep'] = 40; d['coordinate_frame_rotation'] = {'enabled': True, 'qubit_axis': [0.0, 0.0, 1.0]}" "d['nstep'] = 40"
 

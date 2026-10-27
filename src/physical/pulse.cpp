@@ -4,6 +4,7 @@
  */
 #include "../../include/physical/pulse.h"
 #include "../../include/common/memory.h"
+#include "../../include/calculation/bath_drive.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -37,6 +38,7 @@ Pulse* Pulse_init(){
     pulse->bpulse_angles        = NULL;
     pulse->tot_bpulse_axes      = NULL;
     pulse->tot_bpulse_angles    = NULL;
+    pulse->bdrive               = NULL;   // pulse.bath_drive: none until the block asks for it
     return pulse;
 }
 
@@ -226,6 +228,7 @@ void Pulse_freeAll(Pulse* pulse){
     freeArray1d((void**)&pulse->bpulse_angles);
     freeArray1d((void**)&pulse->tot_bpulse_axes);
     freeArray1d((void**)&pulse->tot_bpulse_angles);
+    delete pulse->bdrive;                 // pulse.bath_drive (new'd by its reader)
     freeArray1d((void**)&pulse);
 }
 

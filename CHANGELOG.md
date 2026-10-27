@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased (feature/bath-drive)
+
+### Added
+
+- **Continuous bath drive, `pulse.bath_drive`** (cCCE, the ensemble): electron-like spin-1/2 bath spins on the lines of a
+  Defect table driven by one or more tones, each spin in the rotating frame of its tone or of its own line, with the
+  rotating-wave approximation (García Oliván et al., arXiv 2512.06948). The qubit coupling A_zx, A_zy is kept exactly by
+  tilted branch frames (`qubit_transverse`, default true), `shifts` adds the Bloch-Siegert, AC Stark, Van Vleck and
+  drive-assisted cross-line flip-flop terms. A port of pyCCEX `drive.py` (b3ce43e), with the same outputs to the printed
+  digits on a 20 ppm P1 bath (Fig. 3's four protocols, Ramsey, Hahn, CPMG-2 and -3, order 1 and 2). New kernel
+  `src/calculation/simulator_cce_drive.cpp`, page `docs/methods/bath-drive.md`. Sampled states with the mean field are
+  refused for now.
+
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 
 ### Fixed

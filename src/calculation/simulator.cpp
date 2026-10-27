@@ -69,6 +69,13 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     // cluster space as gCCE does
     const bool isMECCE = !strcmp(kernel,"mecce");
     const bool isMEGCCE = !strcmp(kernel,"megcce");
+    // pulse.bath_drive: every cluster by its own kernel (calCoherenceCceDriven), never a batch or GPU path
+    const bool isDrive = pls->bdrive != NULL;
+    if (isDrive){
+        BathDrive_check(qa, ba, cnf, pls);
+        cnf->gpu_packed_max_dim = 0;
+        cnf->gpu_warp_max_dim = 0;
+    }
     if (isMEGCCE && iter_0th==0){
         fprintf(stderr,"Error : calculate, method %s requires the 0th cluster\n",method);
         exit(1);
@@ -115,7 +122,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     SmallClusterBatch smallGpu(qa,ba,dfa,cnf,pls,isGCCE,localclusters,order,savemode);   // A26: small cCCE clusters on the GPU; A40: the warp kernel (off: nothing)
     // A30: small cCCE clusters batched on the CPU (A48: also beside the GPU batch); the cCCE kernel only: never a gCCE or
     // master-equation cluster
-    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE);
+    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE || isDrive);
     // A68: the log of a state. Rank 0 reports its own clusters at every tenth of them (-v: the per-cluster lines of
     // before, every 5000/nprocess clusters of an order), and a state ends with one line: its index, the number of
     // clusters of every rank and its time. The bath states, mean fields, qubit states and the steps of a state are
@@ -512,7 +519,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     const int qubitFactor=isGCCE ? QubitArray_dim(qa) : 1;
                     // P1-05: a dimension the packed batch does not take keeps this batching (its look-ahead takes only clusters
                     // of the same dimension, so none of them is the packed batch's)
-                    if(!small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
+                    if(!isDrive && !small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
                        (!isGCCE || strcasecmp(savemode,"cluster_density_matrix")) &&
                        cnf->gpu_batch_clusters>1 && computeUseCuda(cnf,qubitFactor*BathArray_dim(ba_cluster))){
                         const int d=qubitFactor*BathArray_dim(ba_cluster);
@@ -559,6 +566,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         ownedResult = false;
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
+                    }else if (isDrive){        // pulse.bath_drive: a new array (the kernel's own), deleted below
+                        result_nth = calCoherenceCceDriven(qa, ba_cluster, cnf, pls);
+                        ownedResult = true;
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
                         result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
                         ownedResult = true;

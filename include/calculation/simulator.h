@@ -29,6 +29,8 @@ struct GcceBatch;
 MatrixXcd* calCoherenceGcce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, Output* op, GcceBatch* batch=nullptr);
 MatrixXcd* calCoherenceCce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);
 MatrixXcd* calCoherenceMecce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);   // bath jumps only; no 0th cluster (L_0 = 1, as CCE)
+MatrixXcd* calCoherenceCceDriven(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);   // pulse.bath_drive (simulator_cce_drive.cpp)
+void BathDrive_check(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);           // once, on the whole bath: refusals, warnings, log
 MatrixXcd* calCoherenceMegcce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, Output* op);   // ba == NULL: 0th cluster
 /**
  * Storage calCoherenceCceInto reuses from one cluster to the next: the eigensolvers, the products and the
