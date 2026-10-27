@@ -18,6 +18,15 @@ The `pulse` block (older inputs had its keys at the top level under other names,
         - [energy_shift](#tag_pulse_bath_energy_shift)
         - [bandwidth](#tag_pulse_bath_bandwidth)
         - [levels](#tag_pulse_bath_levels)
+    - [bath_drive](#tag_pulse_bath_drive) (continuous drive of bath spins)
+        - [tones](#tag_pulse_bath_drive_tones)
+        - [shifts](#tag_pulse_bath_drive_shifts)
+        - [qubit_transverse](#tag_pulse_bath_drive_qubit_transverse)
+        - [line_tolerance](#tag_pulse_bath_drive_line_tolerance)
+        - [mean_field](#tag_pulse_bath_drive_mean_field)
+        - [mean_field_shell](#tag_pulse_bath_drive_mean_field_shell)
+        - [mean_field_species](#tag_pulse_bath_drive_mean_field_species)
+        - [mean_field_shell_state_file](#tag_pulse_bath_drive_mean_field_shell_state_file)
 
 <a id="tag_pulse"></a>
 ## pulse
@@ -241,3 +250,121 @@ were the two levels and `spin` repeated S (refused when it differed); the three 
 <b>Default:</b> `[0.5, -0.5]`
 
 <b>Example:</b> ``` "levels" : [0.5, -0.5] ```
+
+<a id="tag_pulse_bath_drive"></a>
+## pulse.bath_drive
+<b>Description:</b><br>
+Continuous driving of bath spins during the qubit's sequence, in the rotating frame of each drive tone with the
+rotating-wave approximation ([bath-drive.md](../methods/bath-drive.md)): the setting of García Oliván et al.,
+arXiv 2512.06948. The qubit gets the instantaneous π pulses of [count](#tag_pulse_count) (Ramsey, Hahn echo, CPMG);
+electron-like spin-1/2 bath spins (γ < 0) on the lines of a [Defect](InputFile_Defect.md) table are driven by
+[tones](#tag_pulse_bath_drive_tones). Every bath spin is put in a frame: the tone's when it drives the spin's line,
+the spin's own line otherwise; only what is static there is kept (pairs in different frames keep T<sub>zz</sub> J<sub>z</sub>J<sub>z</sub>
+only). Runs with `method` cCCE, `cluster.mode` standard or pcce, one qubit, `quantity` coherence, `bfield` along +z and
+either the ensemble (no `configuration.s_range`) or sampled states with the mean field in the driven frames
+([mean_field](#tag_pulse_bath_drive_mean_field)). Not with
+[pulse.bath](#tag_pulse_bath), a `Manual` sequence, `duration` or `detuning_factor` other than 1. Every cluster goes
+through the drive kernel (no CPU batch, no GPU path). A carrier within 3 W of a line it does not target, or two
+frames within 3 W of each other, is reported once (the per-line rotating-wave approximation drops a near-resonant
+process there). `tones` `[]` puts every spin in the frame of its own line without a field: the undriven reference of
+the same model. <br>
+<b>Data Type:</b> Object
+
+<b>Default:</b> no block: no drive.
+
+<b>Example:</b> ``` "pulse" : {"count": 1, "bath_drive": {"tones": [{"lines": [59.91], "rabi": 7.0}, {"lines": [-59.91], "rabi": 7.0}], "qubit_transverse": true}} ```
+
+<a id="tag_pulse_bath_drive_tones"></a>
+## pulse.bath_drive.tones
+<b>Description:</b><br>
+The drive tones, each `{"lines": [...], "rabi": W, "offset": o, "phase": p}`: a field of Rabi frequency W (H = W J<sub>x</sub>
+gives Rabi oscillation at W) on the bath spins whose detuning is within [line_tolerance](#tag_pulse_bath_drive_line_tolerance)
+of one of `lines`, at the frequency line + `offset`, with the phase `p` (degrees) in the frame. `lines`, `rabi` and
+`offset` are MHz, as [Defect.species[].detuning](InputFile_Defect.md#tag_df_detuning); every key has the default 0
+(a tone with `rabi` 0 drives nothing). `rabi` < 0 is refused (a sign goes into `phase`), a spin on the lines of two tones
+is refused, and two tones may not share a carrier (combine them into one tone). <br>
+<b>Data Type:</b> List of objects
+
+<b>Default:</b> - (required in the block; `[]` allowed)
+
+<b>Example:</b> ``` "tones" : [{"lines": [-59.91], "rabi": 7.0, "offset": 4.95}, {"lines": [59.91], "rabi": 7.0}] ```
+
+<a id="tag_pulse_bath_drive_shifts"></a>
+## pulse.bath_drive.shifts
+<b>Description:</b><br>
+Add the leading lab-frame corrections: the Bloch-Siegert and AC Stark shifts of the driven spins from every tone
+(an AC Stark term only outside 3 W of the tone), the Van Vleck shift m<sub>s</sub><sup>2</sup>|A<sub>⊥</sub>|<sup>2</sup>/2ω of the
+qubit's transverse coupling (with `qubit_transverse` false; with true it is exact already) and the drive-assisted
+cross-line flip-flop −(T<sub>zz</sub>/2)(W/D) J<sub>⊥</sub>J<sub>z</sub>. <br>
+<b>Data Type:</b> Boolean
+
+<b>Default:</b> `false` (the paper's model)
+
+<a id="tag_pulse_bath_drive_qubit_transverse"></a>
+## pulse.bath_drive.qubit_transverse
+<b>Description:</b><br>
+Keep the qubit coupling A<sub>zx</sub>, A<sub>zy</sub> of every bath spin exactly: in branch m<sub>s</sub> spin k precesses about
+ω<sub>k</sub>ẑ + m<sub>s</sub>A<sub>k</sub>, so each branch has its own tilted axes, the rotating-wave approximation is taken about them and the
+frame changes between the branches are applied at every π pulse and at the end. `false` keeps A<sub>zz</sub> only (García Oliván
+Eq. S.17). <br>
+<b>Data Type:</b> Boolean
+
+<b>Default:</b> `true`
+
+<a id="tag_pulse_bath_drive_line_tolerance"></a>
+## pulse.bath_drive.line_tolerance
+<b>Description:</b><br>
+A bath spin is on a line of a tone when its detuning is closer than this. Two frames are the same only when they come
+from the same line and offset. <br>
+<b>Data Type:</b> Double
+
+<b>Unit:</b> MHz
+
+<b>Default:</b> 0.001
+
+<a id="tag_pulse_bath_drive_mean_field"></a>
+## pulse.bath_drive.mean_field
+<b>Description:</b><br>
+With [configuration.s_range](InputFile_General.md#tag_s_range): the samples s = first ... last give every bath spin
+m = ±1/2 (from `configuration.bath_state_file` or the seed, as the run would set its states), read along the axis P of the
+spin's own driven-frame Hamiltonian ((W cos p, W sin p, d − f) normalized; z for an undriven spin). Each cluster starts
+in the product of these states and feels the static field of every bath spin outside it and of the
+[shell](#tag_pulse_bath_drive_mean_field_shell); its coherence is the average over the samples (one pass: the output
+has the ensemble's names, no `_state<s>`). The field is the Hartree field of the pair Hamiltonian the cluster uses:<br>
+`pfull` T<sub>zz</sub> m<sub>j</sub>[P<sub>jz</sub>J<sup>z</sup><sub>i</sub> − ½(P<sub>jx</sub>J<sup>x</sup><sub>i</sub> + P<sub>jy</sub>J<sup>y</sup><sub>i</sub>)] in the same frame, T<sub>zz</sub>m<sub>j</sub>P<sub>jz</sub>J<sup>z</sup><sub>i</sub> in different frames;<br>
+`projected` the same projected on P<sub>i</sub> (García Oliván Eq. S.61, S.62);<br>
+`z` everything along z, as without a drive;<br>
+`none` the sampled states without a field. <br>
+<b>Data Type:</b> String
+
+<b>Default:</b> `pfull`
+
+<a id="tag_pulse_bath_drive_mean_field_shell"></a>
+## pulse.bath_drive.mean_field_shell
+<b>Description:</b><br>
+A file of spins that give the mean field only (the shell between the bath radius and a larger one): lines
+`x y z axis [name]` (Å, the axis state of the Defect table of `name`, which has to be a species of the bath; its spin and
+gyro are taken from there). A line of one number (a count) and lines starting with `#` are skipped. Without `s_range` it is
+not used. <br>
+<b>Data Type:</b> String (a file path)
+
+<b>Default:</b> none
+
+<a id="tag_pulse_bath_drive_mean_field_species"></a>
+## pulse.bath_drive.mean_field_species
+<b>Description:</b><br>
+The species of a [shell](#tag_pulse_bath_drive_mean_field_shell) line without a name. <br>
+<b>Data Type:</b> String
+
+<b>Default:</b> `P1`
+
+<a id="tag_pulse_bath_drive_mean_field_shell_state_file"></a>
+## pulse.bath_drive.mean_field_shell_state_file
+<b>Description:</b><br>
+The shell's m (±1/2) per sample: the file name with `{s}` replaced by s (or s appended), a first line that is not read,
+then one m per shell line in its order. Without it the shell's states are drawn from `seed` + 7919, the same on every
+rank. <br>
+<b>Data Type:</b> String (a file path)
+
+<b>Default:</b> drawn from the seed
+

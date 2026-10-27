@@ -2,6 +2,7 @@
  * @file simulator.cpp
  * @brief calculate(): the loop over the clusters of a rank and the product of their coherences.
  */
+#include "../../include/calculation/bath_drive.h"
 #include "../../include/calculation/gpu/gpu_batch_memory.h"
 #include "../../include/calculation/simulator.h"
 #include "../../include/calculation/hamiltonian.h"
@@ -69,6 +70,16 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     // cluster space as gCCE does
     const bool isMECCE = !strcmp(kernel,"mecce");
     const bool isMEGCCE = !strcmp(kernel,"megcce");
+    // pulse.bath_drive: every cluster by its own kernel (calCoherenceCceDriven), never a batch or GPU path
+    const bool isDrive = pls->bdrive != NULL;
+    // with s_range: one pass, every cluster averaged over the samples inside the kernel (the ensemble's output names)
+    const bool driveMF = isDrive && Config_getNstate(cnf) > 0;
+    if (isDrive){
+        BathDrive_check(qa, ba, cnf, pls);
+        if (driveMF) BathDrive_prepareMeanField(ba, dfa, cnf, pls);
+        cnf->gpu_packed_max_dim = 0;
+        cnf->gpu_warp_max_dim = 0;
+    }
     if (isMEGCCE && iter_0th==0){
         fprintf(stderr,"Error : calculate, method %s requires the 0th cluster\n",method);
         exit(1);
@@ -115,7 +126,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     SmallClusterBatch smallGpu(qa,ba,dfa,cnf,pls,isGCCE,localclusters,order,savemode);   // A26: small cCCE clusters on the GPU; A40: the warp kernel (off: nothing)
     // A30: small cCCE clusters batched on the CPU (A48: also beside the GPU batch); the cCCE kernel only: never a gCCE or
     // master-equation cluster
-    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE);
+    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE || isDrive);
     // A68: the log of a state. Rank 0 reports its own clusters at every tenth of them (-v: the per-cluster lines of
     // before, every 5000/nprocess clusters of an order), and a state ends with one line: its index, the number of
     // clusters of every rank and its time. The bath states, mean fields, qubit states and the steps of a state are
@@ -126,6 +137,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     MPI_Allreduce(&localClusters,&allClusters,1,MPI_LONG_LONG,MPI_SUM,MPI_COMM_WORLD);
     static bool qubitStatesShown=false;   // once per process: the next configurations of k_range set the same qubit
     for (int istate=0; istate<=nstate; istate++){
+        if (driveMF && istate>0) break;          // pulse.bath_drive with s_range: the samples are averaged in the kernel
 
         // A94: configuration.s_range [first, last]: the states below first are drawn, not calculated, so that every state
         // is the one a run of [1, last] calculates
@@ -140,6 +152,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
 
         if (rank==0 && nstate!=0 && istate!=0){
             sprintf(message,"%s calculation (%s) : Iteration # %d",method,"Single-sample approach",istate); 
+            printTitle(message);
+        }else if (rank==0 && driveMF){
+            sprintf(message,"%s calculation (%s)",method,"Driven bath, mean field, averaged over the samples");
             printTitle(message);
         }else if (rank==0 && nstate==0 && istate==0){
             sprintf(message,"%s calculation (%s)",method,"Ensemble approach"); 
@@ -230,7 +245,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
         }
 
 
-        if (!(nstate !=0 && istate==0)){
+        if (driveMF || !(nstate !=0 && istate==0)){
             // Calculating condition : 
             //  nstate !=0 and istate!=0 : single sample approach
             //  nstate !=0 and istate==0 : X
@@ -321,6 +336,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 logAlignEnd();
                 printf("\n");
             }
+            if (isDrive) BathDrive_checkQubitCrossing(qa, ba, cnf);
 
             /////////////////////////////////////////////////////////
             //  Calculate the coherence
@@ -512,7 +528,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     const int qubitFactor=isGCCE ? QubitArray_dim(qa) : 1;
                     // P1-05: a dimension the packed batch does not take keeps this batching (its look-ahead takes only clusters
                     // of the same dimension, so none of them is the packed batch's)
-                    if(!small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
+                    if(!isDrive && !small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
                        (!isGCCE || strcasecmp(savemode,"cluster_density_matrix")) &&
                        cnf->gpu_batch_clusters>1 && computeUseCuda(cnf,qubitFactor*BathArray_dim(ba_cluster))){
                         const int d=qubitFactor*BathArray_dim(ba_cluster);
@@ -559,6 +575,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         ownedResult = false;
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
+                    }else if (isDrive){        // pulse.bath_drive: a new array (the kernel's own), deleted below
+                        result_nth = calCoherenceCceDriven(qa, ba_cluster, cnf, pls, cluster);
+                        ownedResult = true;
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
                         result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
                         ownedResult = true;
@@ -851,7 +870,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     printf("\n");
                 }
                 // A68: one line per state (the clusters of every rank, the 0th not counted)
-                if (nstate==0) printf("      State done : ensemble, %lld clusters, %.2f s\n\n\n", allClusters, steptime_end - time_start_step);
+                if (driveMF) printf("      State done : mean field, %d samples, %lld clusters, %.2f s\n\n\n", pls->bdrive->ns, allClusters, steptime_end - time_start_step);
+                else if (nstate==0) printf("      State done : ensemble, %lld clusters, %.2f s\n\n\n", allClusters, steptime_end - time_start_step);
                 else printf("      State done : %d of %d, %lld clusters, %.2f s\n\n\n", istate, nstate, allClusters, steptime_end - time_start_step);
             }
 

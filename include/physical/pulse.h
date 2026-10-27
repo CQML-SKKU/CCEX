@@ -192,6 +192,8 @@ typedef struct {
     // After Pulse_resolveBathSequence: aligned with the merged sequence (npulse+1 rows)
     char*   tot_bpulse_axes;
     double* tot_bpulse_angles;   // [deg]
+    // Continuous drive of bath spins (pulse.bath_drive, calculation/bath_drive.h); NULL: none
+    struct BathDrive* bdrive;
 } Pulse;
 
 Pulse* Pulse_init();

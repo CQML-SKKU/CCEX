@@ -29,6 +29,10 @@ struct GcceBatch;
 MatrixXcd* calCoherenceGcce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, Output* op, GcceBatch* batch=nullptr);
 MatrixXcd* calCoherenceCce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);
 MatrixXcd* calCoherenceMecce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);   // bath jumps only; no 0th cluster (L_0 = 1, as CCE)
+MatrixXcd* calCoherenceCceDriven(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, const int* idx);   // pulse.bath_drive (simulator_cce_drive.cpp); idx: the cluster spins in ba of calculate()
+void BathDrive_check(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls);           // once, on the whole bath: refusals, warnings, log
+void BathDrive_prepareMeanField(BathArray* ba, DefectArray* dfa, Config* cnf, Pulse* pls);   // s_range: the samples and their fields
+void BathDrive_checkQubitCrossing(QubitArray* qa, BathArray* ba, Config* cnf);   // once psia, psib are set: the qubit's transverse terms near resonant
 MatrixXcd* calCoherenceMegcce(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, Output* op);   // ba == NULL: 0th cluster
 /**
  * Storage calCoherenceCceInto reuses from one cluster to the next: the eigensolvers, the products and the

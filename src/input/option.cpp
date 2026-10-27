@@ -9,6 +9,7 @@
 #include "../../include/common/memory.h"
 #include "../../include/calculation/superoperator.h"
 #include "../../include/auto_convergence/rdip_ladder.h"
+#include "../../include/calculation/bath_drive.h"
 
 #include <cmath>
 #include <limits>
@@ -2967,6 +2968,89 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
                 ccexRefusalPrint(stderr, "Error: the fractions of pulse.bath.sequence sum to %.12g, not 1\n", total); ccexRefuse();
             }
         }   // what the merge needs of the two sequences is checked where it runs (Pulse_resolveBathSequence)
+    }
+
+    // Continuous bath drive, the block pulse.bath_drive (port of pyCCEX bdrive; calculation/bath_drive.h): tones of
+    // lines [MHz], rabi [MHz], offset [MHz], phase [deg]; shifts, qubit_transverse, line_tolerance [MHz]. What it needs of
+    // the rest of the run (method, bath, sequence) is checked where it runs (BathDrive_check)
+    if (cJSON* drv = readBlock(block,"bath_drive")) {
+        for (cJSON* key = drv->child; key; key = key->next)
+            if (strcmp(key->string,"tones") && strcmp(key->string,"shifts") && strcmp(key->string,"qubit_transverse") &&
+                strcmp(key->string,"line_tolerance") && strcmp(key->string,"mean_field") &&
+                strcmp(key->string,"mean_field_shell") && strcmp(key->string,"mean_field_species") &&
+                strcmp(key->string,"mean_field_shell_state_file")){
+                ccexRefusalPrint(stderr,"Error: pulse.bath_drive has no key \"%s\" (tones, shifts, qubit_transverse, "
+                                 "line_tolerance, mean_field, mean_field_shell, mean_field_species, "
+                                 "mean_field_shell_state_file)\n", key->string);
+                ccexRefuse();
+            }
+        BathDrive* dr = new BathDrive();
+        cJSON* jt = cJSON_GetObjectItem(drv, "tones");
+        if (!cJSON_IsArray(jt)){     // [] is allowed: every spin in the frame of its own line, no field (the undriven reference)
+            ccexRefusalPrint(stderr,"Error: pulse.bath_drive.tones must be a list of {\"lines\", \"rabi\", "
+                             "\"offset\", \"phase\"}\n");
+            ccexRefuse();
+        }
+        for (int it = 0; it < cJSON_GetArraySize(jt); ++it){
+            cJSON* t = cJSON_GetArrayItem(jt, it);
+            if (!cJSON_IsObject(t)){
+                ccexRefusalPrint(stderr,"Error: pulse.bath_drive.tones[%d] must be an object\n", it); ccexRefuse();
+            }
+            for (cJSON* key = t->child; key; key = key->next)
+                if (strcmp(key->string,"lines") && strcmp(key->string,"rabi") && strcmp(key->string,"offset") &&
+                    strcmp(key->string,"phase")){
+                    ccexRefusalPrint(stderr,"Error: pulse.bath_drive.tones[%d] has no key \"%s\" (lines, rabi, offset, "
+                                     "phase)\n", it, key->string);
+                    ccexRefuse();
+                }
+            BathDriveTone tone;
+            char what[96];
+            cJSON* jl = cJSON_GetObjectItem(t, "lines");
+            if (jl){
+                snprintf(what, sizeof what, "pulse.bath_drive.tones[%d].lines", it);
+                if (cJSON_IsNumber(jl)) tone.lines.push_back(MHZ_TO_RADKHZ(readFiniteNumber(jl, what)));
+                else if (cJSON_IsArray(jl)){
+                    for (int k = 0; k < cJSON_GetArraySize(jl); ++k)
+                        tone.lines.push_back(MHZ_TO_RADKHZ(readFiniteNumber(cJSON_GetArrayItem(jl, k), what)));
+                }else{
+                    ccexRefusalPrint(stderr,"Error: %s must be a number or a list of numbers [MHz]\n", what); ccexRefuse();
+                }
+            }
+            if (cJSON* v = cJSON_GetObjectItem(t, "rabi")){
+                snprintf(what, sizeof what, "pulse.bath_drive.tones[%d].rabi", it);
+                tone.rabi = MHZ_TO_RADKHZ(readFiniteNumber(v, what));
+                if (tone.rabi < 0.0){
+                    ccexRefusalPrint(stderr,"Error: %s must be >= 0 (a sign goes into phase)\n", what); ccexRefuse();
+                }
+            }
+            if (cJSON* v = cJSON_GetObjectItem(t, "offset")){
+                snprintf(what, sizeof what, "pulse.bath_drive.tones[%d].offset", it);
+                tone.offset = MHZ_TO_RADKHZ(readFiniteNumber(v, what));
+            }
+            if (cJSON* v = cJSON_GetObjectItem(t, "phase")){
+                snprintf(what, sizeof what, "pulse.bath_drive.tones[%d].phase", it);
+                tone.phase = readFiniteNumber(v, what) * M_PI / 180.0;
+            }
+            dr->tones.push_back(tone);
+        }
+        dr->shifts = readStrictBool(drv, "pulse.bath_drive", "shifts", false);
+        dr->qubit_transverse = readStrictBool(drv, "pulse.bath_drive", "qubit_transverse", true);
+        dr->line_tolerance = MHZ_TO_RADKHZ(1e-3);
+        if (cJSON* v = cJSON_GetObjectItem(drv, "line_tolerance"))
+            dr->line_tolerance = MHZ_TO_RADKHZ(readFiniteNumber(v, "pulse.bath_drive.line_tolerance"));
+        // the mean field with configuration.s_range (BathDrive_prepareMeanField)
+        const char* skeys[4] = {"mean_field", "mean_field_shell", "mean_field_species", "mean_field_shell_state_file"};
+        std::string* sval[4] = {&dr->mean_field, &dr->shell_file, &dr->shell_species, &dr->shell_state_file};
+        for (int k = 0; k < 4; ++k)
+            if (cJSON* v = cJSON_GetObjectItem(drv, skeys[k])){
+                if (!cJSON_IsString(v) || !v->valuestring){
+                    ccexRefusalPrint(stderr,"Error: pulse.bath_drive.%s must be a string\n", skeys[k]); ccexRefuse();
+                }
+                *sval[k] = v->valuestring;
+            }
+        for (char& c : dr->mean_field) c = (char)tolower(c);
+        delete pulse->bdrive;
+        pulse->bdrive = dr;
     }
 
     //////////////////////////

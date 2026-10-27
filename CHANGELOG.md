@@ -1,5 +1,26 @@
 # Changelog
 
+## Unreleased (feature/bath-drive)
+
+### Added
+
+- **Continuous bath drive, `pulse.bath_drive`** (cCCE, the ensemble): electron-like spin-1/2 bath spins on the lines of a
+  Defect table driven by one or more tones, each spin in the rotating frame of its tone or of its own line, with the
+  rotating-wave approximation (García Oliván et al., arXiv 2512.06948). The qubit coupling A_zx, A_zy is kept exactly by
+  tilted branch frames (`qubit_transverse`, default true), `shifts` adds the Bloch-Siegert, AC Stark, Van Vleck and
+  drive-assisted cross-line flip-flop terms. A port of pyCCEX `drive.py` (b3ce43e), with the same outputs to the printed
+  digits on a 20 ppm P1 bath (Fig. 3's four protocols, Ramsey, Hahn, CPMG-2 and -3, order 1 and 2). New kernel
+  `src/calculation/simulator_cce_drive.cpp`, page `docs/methods/bath-drive.md`.
+- **The mean field of the driven bath** (`pulse.bath_drive` with `configuration.s_range`): every spin's sampled m along
+  the axis of its driven-frame Hamiltonian, the Hartree field of the cluster's pair Hamiltonian from the spins outside the
+  cluster and from a shell file (`mean_field` pfull, projected, z, none; `mean_field_shell`, `mean_field_species`,
+  `mean_field_shell_state_file`), the coherence averaged over the samples inside every cluster (one pass, the ensemble's
+  output names). The same outputs as pyCCEX `drive.py` given the same samples.
+- **The qubit's transverse terms near resonance** (`pulse.bath_drive`): the run prints the qubit's admixture of flipped
+  states, sum_k |A_perp,k|^2 (1/gap_k^2 + 1/w_q^2), and warns above 0.01, where the cCCE that drops these terms is not
+  reliable (an NV and P1 about 512 G, the NV level anticrossing about 1024 G). The accuracy of the rotating-wave model
+  away from them is in `docs/methods/bath-drive.md` (Limits).
+
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 
 ### Fixed
