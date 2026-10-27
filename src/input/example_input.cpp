@@ -216,7 +216,9 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
                                         // listed Defect lines, at line + offset; [] = every spin in its own line's frame
 //          "shifts"           : false, // Bloch-Siegert, AC Stark, Van Vleck, drive-assisted cross-line flip-flop
 //          "qubit_transverse" : true,  // the qubit coupling A_zx, A_zy kept exactly (false: A_zz only)
-//          "line_tolerance"   : 0.001  // MHz: a spin is on a line closer than this
+//          "line_tolerance"   : 0.001, // MHz: a spin is on a line closer than this
+//          "mean_field"       : "pfull"// with configuration.s_range: pfull, projected, z or none; also mean_field_shell
+                                        // (x y z axis [name] file), mean_field_species, mean_field_shell_state_file
 //      }
     }                                   // the last active key: a key uncommented below needs a ',' after this '}'
 

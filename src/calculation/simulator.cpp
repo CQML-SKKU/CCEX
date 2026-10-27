@@ -2,6 +2,7 @@
  * @file simulator.cpp
  * @brief calculate(): the loop over the clusters of a rank and the product of their coherences.
  */
+#include "../../include/calculation/bath_drive.h"
 #include "../../include/calculation/gpu/gpu_batch_memory.h"
 #include "../../include/calculation/simulator.h"
 #include "../../include/calculation/hamiltonian.h"
@@ -71,8 +72,11 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     const bool isMEGCCE = !strcmp(kernel,"megcce");
     // pulse.bath_drive: every cluster by its own kernel (calCoherenceCceDriven), never a batch or GPU path
     const bool isDrive = pls->bdrive != NULL;
+    // with s_range: one pass, every cluster averaged over the samples inside the kernel (the ensemble's output names)
+    const bool driveMF = isDrive && Config_getNstate(cnf) > 0;
     if (isDrive){
         BathDrive_check(qa, ba, cnf, pls);
+        if (driveMF) BathDrive_prepareMeanField(ba, dfa, cnf, pls);
         cnf->gpu_packed_max_dim = 0;
         cnf->gpu_warp_max_dim = 0;
     }
@@ -133,6 +137,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     MPI_Allreduce(&localClusters,&allClusters,1,MPI_LONG_LONG,MPI_SUM,MPI_COMM_WORLD);
     static bool qubitStatesShown=false;   // once per process: the next configurations of k_range set the same qubit
     for (int istate=0; istate<=nstate; istate++){
+        if (driveMF && istate>0) break;          // pulse.bath_drive with s_range: the samples are averaged in the kernel
 
         // A94: configuration.s_range [first, last]: the states below first are drawn, not calculated, so that every state
         // is the one a run of [1, last] calculates
@@ -147,6 +152,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
 
         if (rank==0 && nstate!=0 && istate!=0){
             sprintf(message,"%s calculation (%s) : Iteration # %d",method,"Single-sample approach",istate); 
+            printTitle(message);
+        }else if (rank==0 && driveMF){
+            sprintf(message,"%s calculation (%s)",method,"Driven bath, mean field, averaged over the samples");
             printTitle(message);
         }else if (rank==0 && nstate==0 && istate==0){
             sprintf(message,"%s calculation (%s)",method,"Ensemble approach"); 
@@ -237,7 +245,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
         }
 
 
-        if (!(nstate !=0 && istate==0)){
+        if (driveMF || !(nstate !=0 && istate==0)){
             // Calculating condition : 
             //  nstate !=0 and istate!=0 : single sample approach
             //  nstate !=0 and istate==0 : X
@@ -567,7 +575,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
                     }else if (isDrive){        // pulse.bath_drive: a new array (the kernel's own), deleted below
-                        result_nth = calCoherenceCceDriven(qa, ba_cluster, cnf, pls);
+                        result_nth = calCoherenceCceDriven(qa, ba_cluster, cnf, pls, cluster);
                         ownedResult = true;
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
                         result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
@@ -861,7 +869,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     printf("\n");
                 }
                 // A68: one line per state (the clusters of every rank, the 0th not counted)
-                if (nstate==0) printf("      State done : ensemble, %lld clusters, %.2f s\n\n\n", allClusters, steptime_end - time_start_step);
+                if (driveMF) printf("      State done : mean field, %d samples, %lld clusters, %.2f s\n\n\n", pls->bdrive->ns, allClusters, steptime_end - time_start_step);
+                else if (nstate==0) printf("      State done : ensemble, %lld clusters, %.2f s\n\n\n", allClusters, steptime_end - time_start_step);
                 else printf("      State done : %d of %d, %lld clusters, %.2f s\n\n\n", istate, nstate, allClusters, steptime_end - time_start_step);
             }
 

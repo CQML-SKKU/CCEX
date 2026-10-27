@@ -2976,9 +2976,12 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
     if (cJSON* drv = readBlock(block,"bath_drive")) {
         for (cJSON* key = drv->child; key; key = key->next)
             if (strcmp(key->string,"tones") && strcmp(key->string,"shifts") && strcmp(key->string,"qubit_transverse") &&
-                strcmp(key->string,"line_tolerance")){
+                strcmp(key->string,"line_tolerance") && strcmp(key->string,"mean_field") &&
+                strcmp(key->string,"mean_field_shell") && strcmp(key->string,"mean_field_species") &&
+                strcmp(key->string,"mean_field_shell_state_file")){
                 ccexRefusalPrint(stderr,"Error: pulse.bath_drive has no key \"%s\" (tones, shifts, qubit_transverse, "
-                                 "line_tolerance)\n", key->string);
+                                 "line_tolerance, mean_field, mean_field_shell, mean_field_species, "
+                                 "mean_field_shell_state_file)\n", key->string);
                 ccexRefuse();
             }
         BathDrive* dr = new BathDrive();
@@ -3035,6 +3038,17 @@ void cJSON_readOptionPulse(Pulse* pulse, char* fccein) {
         dr->line_tolerance = MHZ_TO_RADKHZ(1e-3);
         if (cJSON* v = cJSON_GetObjectItem(drv, "line_tolerance"))
             dr->line_tolerance = MHZ_TO_RADKHZ(readFiniteNumber(v, "pulse.bath_drive.line_tolerance"));
+        // the mean field with configuration.s_range (BathDrive_prepareMeanField)
+        const char* skeys[4] = {"mean_field", "mean_field_shell", "mean_field_species", "mean_field_shell_state_file"};
+        std::string* sval[4] = {&dr->mean_field, &dr->shell_file, &dr->shell_species, &dr->shell_state_file};
+        for (int k = 0; k < 4; ++k)
+            if (cJSON* v = cJSON_GetObjectItem(drv, skeys[k])){
+                if (!cJSON_IsString(v) || !v->valuestring){
+                    ccexRefusalPrint(stderr,"Error: pulse.bath_drive.%s must be a string\n", skeys[k]); ccexRefuse();
+                }
+                *sval[k] = v->valuestring;
+            }
+        for (char& c : dr->mean_field) c = (char)tolower(c);
         delete pulse->bdrive;
         pulse->bdrive = dr;
     }

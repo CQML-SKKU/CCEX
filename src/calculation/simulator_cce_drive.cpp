@@ -17,6 +17,10 @@
 #include "../../include/calculation/hamiltonian.h"
 #include "../../include/calculation/simulator.h"
 #include "../../include/calculation/bath_drive.h"
+#include "../../include/input/reader.h"
+#include <fstream>
+#include <random>
+#include <sstream>
 #include <algorithm>
 #include <array>
 #include <cctype>
@@ -60,20 +64,30 @@ std::vector<Component> components(const BathDrive& dr){
     return out;
 }
 
+struct SpinData { double gyro, d, spin; std::string name; };     // what the frames need of a spin
+
+std::vector<SpinData> spinData(BathArray* ba){
+    std::vector<SpinData> out(BathArray_getNspin(ba));
+    for (size_t k = 0; k < out.size(); ++k){
+        BathSpin* bs = ba->bath[k];
+        out[k] = {BathSpin_getGyro(bs), BathSpin_getDetuning(bs), (double)BathSpin_getSpin(bs), BathSpin_getName(bs)};
+    }
+    return out;
+}
+
 // Per spin: (frame f, static Jz coefficient, Wx, Wy). check: the refusals and warnings on the whole bath
-std::vector<Frame> frameAssignment(BathArray* ba, Config* cnf, const BathDrive& dr, const std::vector<Component>& comps,
-                                   bool check){
+std::vector<Frame> frameAssignment(const std::vector<SpinData>& sp, Config* cnf, const BathDrive& dr,
+                                   const std::vector<Component>& comps, bool check){
     const double bz = fieldZ(cnf);
     const double tol = dr.line_tolerance;
-    const int n = BathArray_getNspin(ba);
+    const int n = (int)sp.size();
     std::vector<Frame> out(n);
     for (int k = 0; k < n; ++k){
-        BathSpin* bs = ba->bath[k];
-        const double gyro = BathSpin_getGyro(bs), d = BathSpin_getDetuning(bs);
+        const double gyro = sp[k].gyro, d = sp[k].d;
         if (check){
-            if (std::fabs(BathSpin_getSpin(bs) - 0.5) > 1e-9 || gyro >= 0.0){
+            if (std::fabs(sp[k].spin - 0.5) > 1e-9 || gyro >= 0.0){
                 ccexRefusalPrint(stderr, "Error: pulse.bath_drive drives electron-like spin-1/2 bath spins only (gyro < 0); "
-                                 "bath spin %d (%s) has spin %g, gyro %g\n", k, BathSpin_getName(bs), BathSpin_getSpin(bs), gyro);
+                                 "spin %d (%s) has spin %g, gyro %g\n", k, sp[k].name.c_str(), sp[k].spin, gyro);
                 ccexRefuse();
             }
             if (!std::isfinite(d) || !std::isfinite(gyro)){
@@ -126,6 +140,11 @@ std::vector<Frame> frameAssignment(BathArray* ba, Config* cnf, const BathDrive& 
     return out;
 }
 
+std::vector<Frame> frameAssignment(BathArray* ba, Config* cnf, const BathDrive& dr, const std::vector<Component>& comps,
+                                   bool check){
+    return frameAssignment(spinData(ba), cnf, dr, comps, check);
+}
+
 // ---- operators on the 2^n space of a cluster: spin 0 is the first Kronecker factor (the highest bit) ----------------
 
 inline int bitOf(int b, int k, int n){ return (b >> (n - 1 - k)) & 1; }
@@ -164,15 +183,16 @@ Eigen::Matrix4cd kron2(const Eigen::Matrix2cd& a, const Eigen::Matrix2cd& b){
 }
 
 // U <- (kron_k m[k]) U, spin 0 the first factor: one 2x2 per spin on the rows, O(n d^2) instead of a d x d product
-void applyLocal(const std::vector<Eigen::Matrix2cd>& m, MatrixXcd& U){
+void applyLocal(const std::vector<Eigen::Matrix2cd>& m, MatrixXcd& U, int c0 = 0, int c1 = -1){
     const int n = (int)m.size(), d = (int)U.rows();
+    if (c1 < 0) c1 = (int)U.cols();
     for (int k = 0; k < n; ++k){
         const int mask = 1 << (n - 1 - k);
         const Eigen::Matrix2cd& a = m[k];
         for (int b = 0; b < d; ++b){
             if (b & mask) continue;
             const int b1 = b | mask;
-            for (int c = 0; c < U.cols(); ++c){
+            for (int c = c0; c < c1; ++c){
                 const doublec u0 = U(b, c), u1 = U(b1, c);
                 U(b, c) = a(0, 0) * u0 + a(0, 1) * u1;
                 U(b1, c) = a(1, 0) * u0 + a(1, 1) * u1;
@@ -334,6 +354,75 @@ void multiply(const MatrixXcd& A, const MatrixXcd& B, MatrixXcd& C){
     C.noalias() = A * B;
 }
 
+// ---- eigensystems -------------------------------------------------------------------------------------------------
+
+#ifdef CCEX_BLAS_DIRECT
+extern "C" void dsyevd_(const char*, const char*, const int*, double*, const int*, double*, double*, const int*, int*,
+                        const int*, int*);
+#endif
+
+// Hermitian H; a real symmetric one (|Im| < 1e-12, as pyCCEX tests it) by the real solver, about 3x faster: the m_s = 0
+// branch and the untilted model usually are
+void hermitianEigen(const MatrixXcd& H, CcexEigensolver& es, Eigen::VectorXd& w, MatrixXcd& V){
+    if (H.imag().cwiseAbs().maxCoeff() >= 1e-12){
+        es.compute(H); w = es.eigenvalues(); V = es.eigenvectors(); return;
+    }
+    Eigen::MatrixXd A = H.real();
+    const int n = (int)A.rows();
+#ifdef CCEX_BLAS_DIRECT
+    if (n >= ccexBlas::eigMin){
+        w.resize(n);
+        int info = 0, lw = -1, liw = -1, iq = 0; double wq = 0;
+        dsyevd_("V", "L", &n, A.data(), &n, w.data(), &wq, &lw, &iq, &liw, &info);
+        std::vector<double> work(std::max(1, (int)wq)); std::vector<int> iwork(std::max(1, iq));
+        lw = (int)work.size(); liw = (int)iwork.size();
+        dsyevd_("V", "L", &n, A.data(), &n, w.data(), work.data(), &lw, iwork.data(), &liw, &info);
+        if (info != 0){ es.compute(H); w = es.eigenvalues(); V = es.eigenvectors(); return; }
+        V = A.cast<doublec>();
+        return;
+    }
+#endif
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> rs(A);
+    w = rs.eigenvalues(); V = rs.eigenvectors().cast<doublec>();
+}
+
+// ---- the mean field (configuration.s_range) ----------------------------------------------------------------------
+
+double tzz(const double* x1, double g1, const double* x2, double g2){
+    double a[3] = {x1[0], x1[1], x1[2]}, b[3] = {x2[0], x2[1], x2[2]};
+    return calPointDipoleTensor(a, b, g1, g2)(2, 2).real();
+}
+
+// The field coefficients a source j (axis Pj, m along Pj) puts on spin i: the Hartree field of the pair Hamiltonian the
+// cluster uses, T_zz m_j [Pjz Jz_i - (Pjx Jx_i + Pjy Jy_i)/2] in the same frame, T_zz m_j Pjz Jz_i in different frames;
+// "z": T_zz m_j Jz_i
+std::array<double, 3> mfCoupling(double T, bool same, const double* Pj, bool zmode){
+    if (zmode) return {0.0, 0.0, T};
+    const double s = same ? 1.0 : 0.0;
+    return {-0.5 * T * s * Pj[0], -0.5 * T * s * Pj[1], T * Pj[2]};
+}
+
+// unit axis of a spin's own driven-frame Hamiltonian (wx, wy, dz); z when it has none
+void frameAxis(const Frame& f, double* P){
+    const double v[3] = {f.wx, f.wy, f.dz};
+    const double nrm = std::sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]);
+    if (nrm > 0){ P[0] = v[0] / nrm; P[1] = v[1] / nrm; P[2] = v[2] / nrm; }
+    else { P[0] = 0.0; P[1] = 0.0; P[2] = 1.0; }
+}
+
+// spin-1/2 eigenstate of n.J with eigenvalue m, basis [up, down]
+Eigen::Vector2cd spinState(const double* nv, double m){
+    const double th = std::acos(std::max(-1.0, std::min(1.0, nv[2]))), ph = std::atan2(nv[1], nv[0]);
+    if (m > 0) return Eigen::Vector2cd(std::cos(th / 2), std::exp(doublec(0, ph)) * std::sin(th / 2));
+    return Eigen::Vector2cd(-std::exp(doublec(0, -ph)) * std::sin(th / 2), std::cos(th / 2));
+}
+
+std::string sampleName(const std::string& name, int s){
+    const size_t at = name.find("{s}");
+    if (at == std::string::npos) return name + std::to_string(s);
+    return name.substr(0, at) + std::to_string(s) + name.substr(at + 3);
+}
+
 }   // namespace
 
 // ---------------------------------------------------------------------------------------------------------------------
@@ -350,9 +439,9 @@ void BathDrive_check(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls){
     if (strcasecmp(Config_getQuantity(cnf), "coherence")){
         ccexRefusalPrint(stderr, "Error: pulse.bath_drive gives the coherence only (quantity coherence)\n"); ccexRefuse();
     }
-    if (Config_getNstate(cnf) != 0){
-        ccexRefusalPrint(stderr, "Error: pulse.bath_drive with configuration.s_range (sampled states, mean field) is not "
-                         "implemented yet: leave s_range out (the ensemble)\n");
+    if (dr->mean_field != "pfull" && dr->mean_field != "projected" && dr->mean_field != "z" && dr->mean_field != "none"){
+        ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field must be pfull, projected, z or none, not \"%s\"\n",
+                         dr->mean_field.c_str());
         ccexRefuse();
     }
     if (QubitArray_getNqubit(qa) != 1){
@@ -401,6 +490,11 @@ void BathDrive_check(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls){
         printf("\n    >> Continuous bath drive (pulse.bath_drive)\n");
         printf("      shifts           : %s\n", dr->shifts ? "true" : "false");
         printf("      qubit_transverse : %s\n", dr->qubit_transverse ? "true" : "false");
+        if (Config_getNstate(cnf) > 0)
+            printf("      mean_field       : %s (sampled states: one pass, every cluster averaged over them)\n",
+                   dr->mean_field.c_str());
+        else if (!dr->shell_file.empty() || !dr->shell_state_file.empty())
+            printf("      Note: mean_field_shell and mean_field_shell_state_file are not used without configuration.s_range\n");
         for (size_t it = 0; it < dr->tones.size(); ++it){
             const BathDriveTone& t = dr->tones[it];
             int driven = 0;
@@ -415,7 +509,146 @@ void BathDrive_check(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls){
     }
 }
 
-MatrixXcd* calCoherenceCceDriven(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls){
+
+void BathDrive_prepareMeanField(BathArray* ba, DefectArray* dfa, Config* cnf, Pulse* pls){
+    BathDrive& dr = *pls->bdrive;
+    const int last = Config_getNstate(cnf), first = std::max(1, cnf->state_first);
+    const int N = BathArray_getNspin(ba), ns = last - first + 1;
+    const bool zmode = dr.mean_field == "z";
+    dr.ns = ns; dr.nbath = N;
+    // the samples: the bath states of s = first .. last as the run would set them (bath_state_file or the seed); the
+    // states below first are drawn, as the state loop draws them. m is read along each spin's axis P
+    dr.m.assign((size_t)ns * N, 0.0);
+    for (int s = 1; s <= last; ++s){
+        if (s < first){ drawSkippedState(ba, dfa, cnf); continue; }
+        setBathStates(ba, cnf, s);
+        for (int i = 0; i < N; ++i){
+            const double m = BathArray_getBath_i_state(ba, i);
+            if (std::fabs(std::fabs(m) - 0.5) > 1e-12){
+                ccexRefusalPrint(stderr, "Error: pulse.bath_drive: the state of bath spin %d in sample %d is %g, not +-1/2\n", i, s, m);
+                ccexRefuse();
+            }
+            dr.m[(size_t)(s - first) * N + i] = m;
+        }
+    }
+    const std::vector<Component> comps = components(dr);
+    const std::vector<Frame> fr = frameAssignment(ba, cnf, dr, comps, false);
+    dr.P.assign((size_t)3 * N, 0.0);
+    for (int i = 0; i < N; ++i){
+        if (zmode) dr.P[3 * i + 2] = 1.0;
+        else frameAxis(fr[i], &dr.P[3 * i]);
+    }
+
+    // the shell: spins that only give a field, "x y z axis [name]" (A), a lone number (a count) or # skipped
+    std::vector<std::array<double, 3>> xyzS;
+    std::vector<SpinData> spS;
+    if (!dr.shell_file.empty()){
+        std::ifstream in(dr.shell_file);
+        if (!in){
+            ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field_shell: cannot read %s\n", dr.shell_file.c_str());
+            ccexRefuse();
+        }
+        std::string line;
+        int ln = 0;
+        while (std::getline(in, line)){
+            ++ln;
+            std::istringstream is(line);
+            std::vector<std::string> tok;
+            for (std::string w; is >> w;) tok.push_back(w);
+            if (tok.empty() || tok[0][0] == '#' || tok.size() == 1) continue;
+            if (tok.size() != 4 && tok.size() != 5){
+                ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field_shell line %d: expected \"x y z axis [name]\"\n", ln);
+                ccexRefuse();
+            }
+            const std::string name = tok.size() == 5 ? tok[4] : dr.shell_species;
+            const int ax = (int)std::stod(tok[3]);
+            int ib = -1;
+            for (int i = 0; i < N && ib < 0; ++i) if (!strcasecmp(BathArray_getBath_i_name(ba, i), name.c_str())) ib = i;
+            if (ib < 0){
+                ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field_shell line %d: species %s is not in the bath (its spin "
+                                 "and gyro are taken from there)\n", ln, name.c_str());
+                ccexRefuse();
+            }
+            const int idf = DefectArray_findDefectIndex(dfa, (char*)name.c_str());
+            double det = 0.0;
+            if (idf < 0){
+                if (ax != 0){
+                    ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field_shell line %d: axis %d but no Defect table for %s\n",
+                                     ln, ax, name.c_str());
+                    ccexRefuse();
+                }
+            }else{
+                if (ax < 1 || ax > DefectArray_getDefect_idf_navaax(dfa, idf)){
+                    ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field_shell line %d: axis %d is not in the %s table\n",
+                                     ln, ax, name.c_str());
+                    ccexRefuse();
+                }
+                det = MHZ_TO_RADKHZ(DefectArray_getDefect_idf_iax_detuning(dfa, idf, ax));
+            }
+            xyzS.push_back({std::stod(tok[0]), std::stod(tok[1]), std::stod(tok[2])});
+            spS.push_back({BathArray_getBath_i_gyro(ba, ib), det, (double)BathArray_getBath_i_spin(ba, ib), name});
+        }
+    }
+    const int NS = (int)xyzS.size();
+    const std::vector<Frame> frS = frameAssignment(spS, cnf, dr, comps, true);   // refuses a spin that is not spin-1/2 electron-like
+    std::vector<double> PS((size_t)3 * NS, 0.0);
+    for (int j = 0; j < NS; ++j){
+        if (zmode) PS[3 * j + 2] = 1.0;
+        else frameAxis(frS[j], &PS[3 * j]);
+    }
+    // the shell's samples: mean_field_shell_state_file per sample, else drawn from seed + 7919 (every rank the same)
+    std::vector<double> mS((size_t)ns * NS, 0.0);
+    if (NS){
+        std::mt19937_64 rng((unsigned long long)Config_getSeed(cnf) + 7919ULL);
+        for (int s = 1; s <= last; ++s){
+            std::vector<double> row(NS);
+            if (!dr.shell_state_file.empty()){
+                if (s < first) continue;
+                const std::string fn = sampleName(dr.shell_state_file, s);
+                std::ifstream in(fn);
+                std::string skip;
+                if (!in || !std::getline(in, skip)){
+                    ccexRefusalPrint(stderr, "Error: pulse.bath_drive.mean_field_shell_state_file: cannot read %s\n", fn.c_str());
+                    ccexRefuse();
+                }
+                for (int j = 0; j < NS; ++j)
+                    if (!(in >> row[j]) || std::fabs(std::fabs(row[j]) - 0.5) > 1e-12){
+                        ccexRefusalPrint(stderr, "Error: %s: line %d of the shell must hold +-1/2\n", fn.c_str(), j + 2);
+                        ccexRefuse();
+                    }
+            }else for (int j = 0; j < NS; ++j) row[j] = (rng() & 1ULL) ? 0.5 : -0.5;
+            if (s >= first) std::copy(row.begin(), row.end(), mS.begin() + (size_t)(s - first) * NS);
+        }
+    }
+
+    // h = the field of every other bath spin and of the shell, per sample
+    dr.h.assign((size_t)ns * N * 3, 0.0);
+    for (int i = 0; i < N; ++i){
+        double* xi = BathArray_getBath_i_xyz(ba, i);
+        const double gi = BathArray_getBath_i_gyro(ba, i);
+        auto add = [&](const std::array<double, 3>& g, const double* mj, int stride){
+            for (int s = 0; s < ns; ++s){
+                const double m = mj[(size_t)s * stride];
+                double* hs = &dr.h[((size_t)s * N + i) * 3];
+                hs[0] += g[0] * m; hs[1] += g[1] * m; hs[2] += g[2] * m;
+            }
+        };
+        for (int j = 0; j < N; ++j){
+            if (j == i) continue;
+            const double T = tzz(xi, gi, BathArray_getBath_i_xyz(ba, j), BathArray_getBath_i_gyro(ba, j));
+            add(mfCoupling(T, std::fabs(fr[i].f - fr[j].f) < kFrameEps, &dr.P[3 * j], zmode), &dr.m[j], N);
+        }
+        for (int j = 0; j < NS; ++j){
+            const double T = tzz(xi, gi, xyzS[j].data(), spS[j].gyro);
+            add(mfCoupling(T, std::fabs(fr[i].f - frS[j].f) < kFrameEps, &PS[3 * j], zmode), &mS[j], NS);
+        }
+    }
+    if (rank == 0)
+        printf("      mean field       : %d samples (s = %d .. %d), %d bath spins, %d shell spins%s\n\n", ns, first, last, N, NS,
+               dr.shell_state_file.empty() && NS ? " (shell states from seed + 7919)" : "");
+}
+
+MatrixXcd* calCoherenceCceDriven(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, const int* idx){
     const BathDrive& dr = *pls->bdrive;
     const std::vector<Component> comps = components(dr);
     const std::vector<Frame> fr = frameAssignment(ba, cnf, dr, comps, false);
@@ -435,14 +668,110 @@ MatrixXcd* calCoherenceCceDriven(QubitArray* qa, BathArray* ba, Config* cnf, Pul
         for (int k = 0; k < n; ++k) omega[k] = -BathSpin_getGyro(ba->bath[k]) * fieldZ(cnf) + fr[k].f;
     }else untiltedHamiltonians(ba, cnf, fr, dr.shifts, msa, msb, Ha, Hb);
 
+    const int nstep = Config_getNstep(cnf);
+    const double deltat = Config_getDeltat(cnf);
+    const int N = Pulse_getNpulse(pls);
+
+    if (dr.ns > 0){
+        // Sampled states: per sample the cluster starts in the product state along the axes P (m = +-1/2), the field of
+        // every spin outside the cluster is static (the mean field less the cluster's own spins), and the coherence is
+        // the average over the samples (internal averaging)
+        const int ns = dr.ns, NB = dr.nbath;
+        const bool zmode = dr.mean_field == "z", projected = dr.mean_field == "projected", none = dr.mean_field == "none";
+        std::vector<std::array<double, 3>> g((size_t)n * n, {0.0, 0.0, 0.0});
+        for (int k = 0; k < n; ++k) for (int l = 0; l < n; ++l) if (k != l){
+            const double T = pairTensor(ba->bath[k], ba->bath[l])(2, 2);
+            g[(size_t)k * n + l] = mfCoupling(T, std::fabs(fr[k].f - fr[l].f) < kFrameEps, &dr.P[3 * idx[l]], zmode);
+        }
+        std::vector<std::array<Eigen::Matrix2cd, 3>> opsA(n), opsB(n);   // the field's axes: the branch's tilted axes, or x y z
+        for (int k = 0; k < n; ++k){
+            if (tilted){
+                opsA[k] = {along(axa.e1[k]), along(axa.e2[k]), along(axa.n[k])};
+                opsB[k] = {along(axb.e1[k]), along(axb.e2[k]), along(axb.n[k])};
+            }else opsA[k] = opsB[k] = {Jx(), Jy(), Jz()};
+        }
+        Eigen::VectorXd t(nstep);
+        for (int i = 0; i < nstep; ++i) t(i) = i * deltat;
+        Eigen::VectorXcd L = Eigen::VectorXcd::Zero(nstep);
+        MatrixXcd Hsa, Hsb, VaH, VbH, va, vb, tmp, Va, Vb;
+        Eigen::VectorXd ea, eb;
+        CcexEigensolver sa, sb;
+        for (int s = 0; s < ns; ++s){
+            Hsa = Ha; Hsb = Hb;
+            for (int k = 0; k < n; ++k){
+                double h[3];
+                for (int c = 0; c < 3; ++c){
+                    h[c] = dr.h[((size_t)s * NB + idx[k]) * 3 + c];
+                    for (int l = 0; l < n; ++l) if (l != k) h[c] -= g[(size_t)k * n + l][c] * dr.m[(size_t)s * NB + idx[l]];
+                }
+                const double* Pk = &dr.P[3 * idx[k]];
+                if (projected){
+                    const double dot = h[0] * Pk[0] + h[1] * Pk[1] + h[2] * Pk[2];
+                    for (int c = 0; c < 3; ++c) h[c] = dot * Pk[c];
+                }else if (none) h[0] = h[1] = h[2] = 0.0;
+                addOne(Hsa, h[0] * opsA[k][0] + h[1] * opsA[k][1] + h[2] * opsA[k][2], k, n);
+                addOne(Hsb, h[0] * opsB[k][0] + h[1] * opsB[k][1] + h[2] * opsB[k][2], k, n);
+            }
+            hermitianEigen(Hsa, sa, ea, Va);
+            hermitianEigen(Hsb, sb, eb, Vb);
+            VaH = Va.adjoint(); VbH = Vb.adjoint();
+            // the initial product state, the same in every time column
+            Eigen::VectorXcd psi = Eigen::VectorXcd::Ones(1);
+            for (int k = 0; k < n; ++k){
+                const Eigen::Vector2cd st = spinState(&dr.P[3 * idx[k]], dr.m[(size_t)s * NB + idx[k]]);
+                Eigen::VectorXcd next(psi.size() * 2);
+                for (int r = 0; r < psi.size(); ++r){ next(2 * r) = psi(r) * st(0); next(2 * r + 1) = psi(r) * st(1); }
+                psi.swap(next);
+            }
+            va = psi.replicate(1, nstep); vb = va;
+            // v <- V exp(-i e tau) V^dagger v, column i with its own tau_i
+            auto apply = [&](bool branchA, const Eigen::VectorXd& tau, MatrixXcd& v){
+                const Eigen::VectorXd& e = branchA ? ea : eb;
+                multiply(branchA ? VaH : VbH, v, tmp);
+                for (int i = 0; i < nstep; ++i) tmp.col(i).array() *= (e * doublec(0.0, -tau(i))).array().exp();
+                multiply(branchA ? Va : Vb, tmp, v);
+            };
+            if (N == 0){ apply(true, t, va); apply(false, t, vb); }
+            else{
+                const Eigen::VectorXd h1 = t / (2.0 * N);
+                apply(true, h1, va); apply(false, h1, vb);
+                for (int k = 1; k <= N; ++k){
+                    const bool odd = k % 2 == 1;
+                    const Eigen::VectorXd tau = (k == N) ? h1 : Eigen::VectorXd(2.0 * h1);
+                    if (tilted){
+                        const Axes& oldA = odd ? axa : axb;
+                        const Axes& newA = odd ? axb : axa;
+                        for (int i = 0; i < nstep; ++i){
+                            const double sk = t(i) / (2 * N) + (k - 1) * t(i) / N;
+                            applyLocal(frameChange(omega, oldA, newA, sk), va, i, i + 1);
+                            applyLocal(frameChange(omega, newA, oldA, sk), vb, i, i + 1);
+                        }
+                    }
+                    apply(!odd, tau, va);                         // path a: beta after an odd number of pi pulses
+                    apply(odd, tau, vb);
+                }
+            }
+            if (tilted){
+                const Axes& endA = (N % 2 == 0) ? axa : axb;
+                const Axes& endB = (N % 2 == 0) ? axb : axa;
+                for (int i = 0; i < nstep; ++i) applyLocal(frameChange(omega, endA, endB, t(i)), va, i, i + 1);
+            }
+            L += (vb.conjugate().array() * va.array()).colwise().sum().transpose().matrix();
+        }
+        L /= doublec(ns, 0.0);
+        MatrixXcd* result = new MatrixXcd[nstep];
+        for (int i = 0; i < nstep; ++i){
+            const doublec v = (N >= 2 && N % 2 == 0) ? std::conj(L(i)) : L(i);
+            result[i] = MatrixXcd::Constant(1, 1, v);
+        }
+        return result;
+    }
+
     CcexEigensolver sa, sb;                                      // zheevd from ccexBlas::eigMin on
     sa.compute(Ha); sb.compute(Hb);
     const Eigen::VectorXd& ea = sa.eigenvalues(); const MatrixXcd& Va = sa.eigenvectors();
     const Eigen::VectorXd& eb = sb.eigenvalues(); const MatrixXcd& Vb = sb.eigenvectors();
 
-    const int nstep = Config_getNstep(cnf);
-    const double deltat = Config_getDeltat(cnf);
-    const int N = Pulse_getNpulse(pls);
     MatrixXcd* result = new MatrixXcd[nstep];
     MatrixXcd Ua, Ub, halfA, halfB, fullA, fullB, scratch, next;
     for (int i = 0; i < nstep; ++i){

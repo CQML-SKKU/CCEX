@@ -10,8 +10,12 @@
   tilted branch frames (`qubit_transverse`, default true), `shifts` adds the Bloch-Siegert, AC Stark, Van Vleck and
   drive-assisted cross-line flip-flop terms. A port of pyCCEX `drive.py` (b3ce43e), with the same outputs to the printed
   digits on a 20 ppm P1 bath (Fig. 3's four protocols, Ramsey, Hahn, CPMG-2 and -3, order 1 and 2). New kernel
-  `src/calculation/simulator_cce_drive.cpp`, page `docs/methods/bath-drive.md`. Sampled states with the mean field are
-  refused for now.
+  `src/calculation/simulator_cce_drive.cpp`, page `docs/methods/bath-drive.md`.
+- **The mean field of the driven bath** (`pulse.bath_drive` with `configuration.s_range`): every spin's sampled m along
+  the axis of its driven-frame Hamiltonian, the Hartree field of the cluster's pair Hamiltonian from the spins outside the
+  cluster and from a shell file (`mean_field` pfull, projected, z, none; `mean_field_shell`, `mean_field_species`,
+  `mean_field_shell_state_file`), the coherence averaged over the samples inside every cluster (one pass, the ensemble's
+  output names). The same outputs as pyCCEX `drive.py` given the same samples.
 
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 

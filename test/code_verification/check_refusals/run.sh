@@ -1219,7 +1219,7 @@ checked_merged
 # S1a is an NV in a natural 13C bath (cCCE-2, the ensemble); the run-level checks come after the bath is read ("read").
 DRIVE="d['pulse']['bath_drive'] = {'tones': [{'lines': [0.0], 'rabi': 1.0}]}"
 reject S1a rj_drive_gcce "pulse.bath_drive runs with method cCCE" "$DRIVE; d['method'] = 'gCCE'" read
-reject S1a rj_drive_states "pulse.bath_drive with configuration.s_range" "$DRIVE; d['configuration']['s_range'] = [1, 1]" read
+reject S1a rj_drive_mean_field "pulse.bath_drive.mean_field must be pfull, projected, z or none" "$DRIVE; d['pulse']['bath_drive']['mean_field'] = 'hartree'" read
 reject S1a rj_drive_nuclear "drives electron-like spin-1/2 bath spins only" "$DRIVE" read
 reject S1a rj_drive_key 'pulse.bath_drive has no key "rabi"' "$DRIVE; d['pulse']['bath_drive']['rabi'] = 1.0"
 reject S1a rj_drive_rabi "pulse.bath_drive.tones[0].rabi must be >= 0" "d['pulse']['bath_drive'] = {'tones': [{'lines': [0.0], 'rabi': -1.0}]}"

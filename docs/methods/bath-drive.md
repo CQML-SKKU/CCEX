@@ -50,13 +50,31 @@ CPMG-$N$ with intervals $t/2N, t/N, \dots, t/N, t/2N$ ($N=0$: Ramsey), branch $a
 $2\langle\beta\vert\rho\vert\alpha\rangle$ for every $N\ge1$ (Ramsey $2\langle\alpha\vert\rho\vert\beta\rangle$). Every cluster goes through
 this kernel (no CPU batch, no GPU path); the products, the error correction outputs (`_noDiv`) and MPI are the cCCE's.
 
+## Sampled states: the mean field in the driven frames
+
+With `configuration.s_range` the samples $s$ give every bath spin $m_j=\pm\tfrac12$ along the axis $P_j$ of its own
+driven-frame Hamiltonian ($(W\cos p, W\sin p, d_j-f_j)$ normalized, $\hat z$ for an undriven spin), which the drive leaves
+stationary. A cluster starts in $\bigotimes_k\vert m_k;P_k\rangle$ and feels the static field of every bath spin outside it
+and of the shell (`mean_field_shell`), the Hartree field of the pair Hamiltonian the cluster uses
+(`mean_field` `pfull`):
+
+$$h_i=\sum_{j\notin C}T_{zz,ij}\,m_j\big[P_{jz}J^z_i-\tfrac12(P_{jx}J^x_i+P_{jy}J^y_i)\big]\ \ (f_i=f_j),\qquad
+h_i=\sum_{j\notin C}T_{zz,ij}\,m_jP_{jz}J^z_i\ \ (f_i\ne f_j);$$
+
+`projected` keeps the part along $P_i$ (García Oliván Eq. S.61, S.62), `z` puts everything along $z$, `none` drops the field.
+With `qubit_transverse` the field's $x, y, z$ components act along the branch's $e_1, e_2, n$. The cluster's coherence is
+the average over the samples (internal averaging, García Oliván Eq. S.64): one pass over the clusters, every cluster
+diagonalized per sample, the state vectors of all time points propagated together. The output has the ensemble's names.
+The samples are the bath states the run would set for $s$ = first ... last (`bath_state_file` or the seed); the shell's from
+`mean_field_shell_state_file` or from seed + 7919.
+
 ## Limits
 
 - A carrier within $3W$ of a line it does not target, or two frames within $3W$ (Hartmann-Hahn), break the per-line
   rotating-wave approximation: reported once, not treated.
 - When $W$ is close to the NV-P1 coupling a single cluster's coherence can pass through zero (Rabi-synchronous zeros),
   and the CCE-2 division then needs the error correction.
-- Not implemented: sampled states with a mean field (`configuration.s_range`), gCCE, a driven qubit, bath spins other
+- Not implemented: gCCE, a driven qubit, bath spins other
   than electron-like spin-1/2, the qubit's own transverse terms $A^2/(D\pm\omega_0)$.
 
 ## Checks
@@ -65,4 +83,7 @@ Against pyCCEX `drive.py` (b3ce43e) on a 20 ppm P1 bath at 4000 G (`garciaolivan
 the four protocols of García Oliván Fig. 3 (none, two resonant tones, hybrid, four tones) × `qubit_transverse` ×
 `shifts` with a Hahn echo, and Ramsey, CPMG-2 and CPMG-3, cCCE order 1 and 2 on 54 and 180 spins: the outputs are the same to
 the printed digits (pyCCEX gives NaN where a Ramsey coherence underflows in the CCE-2 division; the stable product here
-does not).
+does not). The mean field (`xval_mf.py`, the samples of pyCCEX's generator written as `bath_state_file` and
+`mean_field_shell_state_file`): `pfull`, `projected`, `z`, `none` × two protocols × `qubit_transverse` × with and without
+the 7000-spin shell with a Hahn echo, and CPMG-2: the same to the printed digits; Ramsey differs only where the CCE-2 division
+has diverged (10<sup>9</sup> and more, relative 3e-11), `_noDiv` is the same. 1 and 4 MPI ranks give the same bits.
