@@ -16,6 +16,10 @@
   cluster and from a shell file (`mean_field` pfull, projected, z, none; `mean_field_shell`, `mean_field_species`,
   `mean_field_shell_state_file`), the coherence averaged over the samples inside every cluster (one pass, the ensemble's
   output names). The same outputs as pyCCEX `drive.py` given the same samples.
+- **The qubit's transverse terms near resonance** (`pulse.bath_drive`): the run prints the qubit's admixture of flipped
+  states, sum_k |A_perp,k|^2 (1/gap_k^2 + 1/w_q^2), and warns above 0.01, where the cCCE that drops these terms is not
+  reliable (an NV and P1 about 512 G, the NV level anticrossing about 1024 G). The accuracy of the rotating-wave model
+  away from them is in `docs/methods/bath-drive.md` (Limits).
 
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 

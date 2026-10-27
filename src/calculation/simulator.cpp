@@ -336,6 +336,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 logAlignEnd();
                 printf("\n");
             }
+            if (isDrive) BathDrive_checkQubitCrossing(qa, ba, cnf);
 
             /////////////////////////////////////////////////////////
             //  Calculate the coherence

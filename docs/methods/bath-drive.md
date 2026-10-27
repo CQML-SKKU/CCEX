@@ -74,8 +74,21 @@ The samples are the bath states the run would set for $s$ = first ... last (`bat
   rotating-wave approximation: reported once, not treated.
 - When $W$ is close to the NV-P1 coupling a single cluster's coherence can pass through zero (Rabi-synchronous zeros),
   and the CCE-2 division then needs the error correction.
-- Not implemented: gCCE, a driven qubit, bath spins other
-  than electron-like spin-1/2, the qubit's own transverse terms $A^2/(D\pm\omega_0)$.
+- The qubit's own transverse terms ($S_\pm$ with the bath) are dropped, as in every cCCE. Close to a crossing of the
+  qubit transition $\omega_q$ with the line of a bath spin ($S_\pm J_\mp$; an NV and P1 about 512 G, a window of about a
+  gauss on a 20 ppm bath) or close to $\omega_q=0$ ($S_\pm J_z$; the NV level anticrossing about 1024 G) they are
+  resonant, and no rotating frame here makes them static. The run prints the qubit's admixture of flipped states
+  $\sum_k\vert A_{\perp,k}\vert^2(1/\Delta_k^2+1/\omega_q^2)$ ($\Delta_k$ the gap between $\omega_q$ and the line of spin $k$)
+  and warns above 0.01. Without a drive the lab-frame gCCE is exact there.
+- Away from those, the rotating-wave model itself sets the accuracy. Against the lab-frame time-dependent propagation of
+  an NV with two or three P1 at 18 to 37 Å (lines ±60 and ±80 MHz, $W$ = 7 MHz, the worst of three geometries) the largest
+  error of the driven coherence (`qubit_transverse` true) is, Ramsey and Hahn: 0.4 to 1.4 and 0.05 to 0.8 at 300 to
+  1000 G, 0.06 and 0.025 at 2000 G, 0.015 and 0.009 at 4000 G, 0.004 and 0.005 at 8000 G. Many pulses accumulate it
+  (CPMG-16 0.05, CPMG-64 0.19 at 4000 G). Without a drive, Ramsey misses the shift $\vert A_\perp\vert^2/(D\pm\omega_0)$ of
+  such close spins (0.5 to 1.2 below 2000 G), which the echoes cancel. Close spins are the worst case: on a 20 ppm bath
+  at 4000 G the same model (pyCCEX) follows the lab propagation to 8e-6 for a same-line pair; the flip-flop between
+  different lines it drops (García Oliván S.11) was 0.3 to 0.5 for one three-spin configuration.
+- Not implemented: gCCE, a driven qubit, bath spins other than electron-like spin-1/2.
 
 ## Checks
 

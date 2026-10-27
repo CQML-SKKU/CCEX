@@ -648,6 +648,44 @@ void BathDrive_prepareMeanField(BathArray* ba, DefectArray* dfa, Config* cnf, Pu
                dr.shell_state_file.empty() && NS ? " (shell states from seed + 7919)" : "");
 }
 
+// The qubit's own transverse terms (S+- with the bath), which the cCCE drops: near resonant when the qubit transition comes
+// close to the line of a bath spin (S+- J-+, NV-P1 cross relaxation about 512 G) or close to zero (S+- Jz, the NV level
+// anticrossing about 1024 G). Once, on the whole bath, after psia and psib are set: warn when the qubit's admixture of
+// flipped states, sum_k |A_perp,k|^2 (1/gap_k^2 + 1/w_q^2), passes 0.01. Not treated.
+void BathDrive_checkQubitCrossing(QubitArray* qa, BathArray* ba, Config* cnf){
+    static bool done = false;
+    if (done || rank != 0) return;
+    done = true;
+    MatrixXcd** sigmas = QubitArray_PauliOperators(qa);
+    const MatrixXcd Hq = QubitArray_TotalHamil(qa, sigmas, Config_getBfield(cnf));
+    for (int i = 0; i < QubitArray_getNqubit(qa); ++i) delete[] sigmas[i];
+    delete[] sigmas;
+    const double ea = (qa->psia.adjoint() * Hq * qa->psia)(0, 0).real() / qa->psia.squaredNorm();
+    const double eb = (qa->psib.adjoint() * Hq * qa->psib)(0, 0).real() / qa->psib.squaredNorm();
+    const double wq = std::fabs(eb - ea), bz = fieldZ(cnf);
+    double sum = 0.0, worst = -1.0, wgap = 0.0, waperp = 0.0;
+    int iworst = -1;
+    for (int k = 0; k < BathArray_getNspin(ba); ++k){
+        BathSpin* bs = ba->bath[k];
+        const double aperp = bs->hypf[0].topRows(2).norm();          // A_xj, A_yj: the qubit's transverse rows
+        const double gap = std::fabs(wq - std::fabs(-BathSpin_getGyro(bs) * bz + BathSpin_getDetuning(bs)));
+        const double r2 = (gap > 0.0 && wq > 0.0) ? aperp * aperp * (1.0 / (gap * gap) + 1.0 / (wq * wq))
+                                                  : (aperp > 0.0 ? HUGE_VAL : 0.0);
+        sum += r2;
+        if (r2 > worst){ worst = r2; iworst = k; wgap = gap; waperp = aperp; }
+    }
+    printf("    >> Qubit transverse terms (pulse.bath_drive): qubit transition %.6f MHz, admixture of flipped states %.3g "
+           "(warned above 0.01)\n\n", wq / MHZ_TO_RADKHZ(1.0), sum);
+    if (!(sum > 0.01)) return;
+    char msg[640];
+    snprintf(msg, sizeof msg, "the qubit's admixture of flipped states is %.3g > 0.01 (qubit transition %.3f MHz; largest: "
+             "spin %d (%s), gap to its line %.3f MHz, |A_perp| %.3f MHz). The qubit's transverse terms are near resonant "
+             "(NV-P1 cross relaxation about 512 G, or the NV level anticrossing about 1024 G) and the cCCE drops them; the "
+             "coherence is not reliable here", sum, wq / MHZ_TO_RADKHZ(1.0), iworst, BathSpin_getName(ba->bath[iworst]),
+             wgap / MHZ_TO_RADKHZ(1.0), waperp / MHZ_TO_RADKHZ(1.0));
+    warnOnce("qubit crossing", msg);
+}
+
 MatrixXcd* calCoherenceCceDriven(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, const int* idx){
     const BathDrive& dr = *pls->bdrive;
     const std::vector<Component> comps = components(dr);
