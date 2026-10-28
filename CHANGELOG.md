@@ -18,6 +18,16 @@
   `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `check_noise` compares it with closed forms, quadrature and semi-cce
   (P1 and 13C baths, FID, Hahn and CPMG).
   `noise` was a reserved name refused as not implemented (A49).
+### Builds
+
+- **CUDA 13.2 is required only for compute capability 12.0 and above.** 2.0.1 refused every nvcc older than 13.2
+  because 12.8 miscompiles `applyPulse` for the RTX PRO 6000 (compute capability 12.0, A97 below). That also refused
+  the toolkit of a driver for CUDA 12.x on other cards: on a GH200 (compute capability 9.0) with driver 570, CUDA 13.2
+  ran only through the forward-compatibility library, and MPS clients did not connect there, so the GPU runs were
+  limited to 16 ranks per GPU. `do_compile.sh` now takes an older nvcc when `CUDA_ARCH` is below 120, and CMake when
+  `CMAKE_CUDA_ARCHITECTURES` names only capabilities below 120 (`native`, `all` or none named still need 13.2, since
+  the architecture is not known at configure time). Whether 12.x compiles `applyPulse` right for such a card is not
+  known: `make gpu-test` (`test_gcce_cuda`'s q = 9 case) on that card checks it.
 
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 

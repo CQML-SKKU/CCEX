@@ -8,7 +8,7 @@
 #   generic  any machine with an MPI C++ wrapper on PATH. Taken from the environment:
 #            CXX (default mpicxx), CC (default cc), CXXFLAGS (default below),
 #            CXXFLAGS_EXTRA, LIBRARY_EXTRA, and for the GPU binary CUDA_HOME
-#            (or nvcc on PATH; CUDA 13.2 or newer), CUDA_ARCH (compute capability without the dot,
+#            (or nvcc on PATH; CUDA 13.2 or newer for CUDA_ARCH 120 and above), CUDA_ARCH (compute capability without the dot,
 #            e.g. 86) and NVCC. Examples:
 #                bash do_compile.sh generic
 #                CXX=mpic++ bash do_compile.sh generic
@@ -309,17 +309,20 @@ if [ "${CCEX_SANITIZE:-0}" = "1" ]; then
 fi
 if [ "$GPU" = "1" ]; then
     NVCC="${NVCC:-$CUDA_HOME/bin/nvcc}"
-    # A97: CUDA 12.8 miscompiles the pulse kernel applyPulse for compute capability 12.0 (CHANGELOG.md), so the
-    # GPU binary takes CUDA 13.2 or newer, as CMake does. An older nvcc that generic only found on PATH is left out
-    # with a warning (bin/main.out is still built); one named by the preset, CUDA_HOME or NVCC stops the build.
+    # A97: CUDA 12.8 miscompiles the pulse kernel applyPulse for compute capability 12.0 (CHANGELOG.md), so for
+    # CUDA_ARCH 120 and above the GPU binary takes CUDA 13.2 or newer, as CMake does; below 120 an older nvcc is taken
+    # (GH200, sm_90, under a driver of CUDA 12.x runs 13.2 only in compat mode, where MPS did not start), and make
+    # gpu-test (test_gcce_cuda's q = 9 case) is what shows it compiles applyPulse right. An older nvcc that generic only
+    # found on PATH is left out with a warning (bin/main.out is still built); one named by the preset, CUDA_HOME or NVCC
+    # stops the build.
     NVCC_VERSION="$("$NVCC" --version 2>/dev/null | sed -n 's/.*release \([0-9][0-9]*\.[0-9][0-9]*\).*/\1/p')"
-    if ! awk -v v="$NVCC_VERSION" 'BEGIN { n = split(v, a, "."); exit !(n == 2 && (a[1] > 13 || (a[1] == 13 && a[2] >= 2))) }'; then
+    if ! awk -v v="$NVCC_VERSION" -v arch="$CUDA_ARCH" 'BEGIN { n = split(v, a, "."); exit !(n == 2 && (arch + 0 < 120 || a[1] > 13 || (a[1] == 13 && a[2] >= 2))) }'; then
         if [ "$CUDA_FROM_PATH" = 1 ]; then
-            echo "[build] $NVCC is CUDA ${NVCC_VERSION:-unknown}; the GPU binary needs 13.2 or newer: bin/main.out only" >&2
+            echo "[build] $NVCC is CUDA ${NVCC_VERSION:-unknown}; the GPU binary for CUDA_ARCH $CUDA_ARCH needs 13.2 or newer: bin/main.out only" >&2
             GPU=0
         else
-            echo "[build] $NVCC is CUDA ${NVCC_VERSION:-unknown}; the GPU binary needs CUDA 13.2 or newer (12.8 miscompiles" >&2
-            echo "        applyPulse, see CHANGELOG.md): set CUDA_HOME to a newer toolkit" >&2
+            echo "[build] $NVCC is CUDA ${NVCC_VERSION:-unknown}; the GPU binary for CUDA_ARCH $CUDA_ARCH needs CUDA 13.2 or newer" >&2
+            echo "        (12.8 miscompiles applyPulse for 12.0, see CHANGELOG.md): set CUDA_HOME to a newer toolkit" >&2
             exit 1
         fi
     fi
