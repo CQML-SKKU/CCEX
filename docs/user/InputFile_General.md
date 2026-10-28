@@ -984,6 +984,10 @@ non-Gaussian part; strongly coupled spins need cCCE or gCCE).
   (kHz²/kHz, two-sided) on [f_min, f_max] (kHz, both take a unit), χ = 4π² ∫ S(f) |Y(2πf)|² df by Gauss–Legendre;
   the work grows as f_max T.
 
+With `"bath"` a cluster hands the product −χ_C, not a coherence (the product forms exp(−χ_C) itself, so that a large
+χ_C does not underflow): `output.savemode` `cluster_coherence`, `rdip_ladder` and `output.cluster_contributions` are
+refused with method `noise`.
+
 A model run reads no bath: `configuration`, the Defect block and the clusters are not used, but `order`, `bfield`,
 `rbath`, `rdip` and `Qubit` are still required by the readers (any value).
 

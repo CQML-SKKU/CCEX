@@ -9,7 +9,8 @@
  *    p = (|m_alpha| + |m_beta|) / 2 (semi-cce's projection; user decision 2026-10-28), infinite temperature:
  *    chi_C = (1 / 2D) sum_ab |<a|dw|b>|^2 |Y(E_a - E_b)|^2. For a Hahn echo this is semi-cce's mode_sum.
  * chi adds over the CCE terms; the cCCE product of the clusters' exp(-chi_C) is exp(-(that sum)), so the clusters, their
- * distribution and the product are the cCCE ones (simulator.cpp).
+ * distribution and the product are the cCCE ones (simulator.cpp). A cluster hands over -chi_C, and the product takes
+ * exp(-chi_C) in its scaled form: a FID chi_C passes 745 within microseconds, where exp underflows to 0 and 0^-1 is inf.
  */
 #include "../../include/calculation/noise.h"
 #include "../../include/calculation/hamiltonian.h"
@@ -125,6 +126,6 @@ void calCoherenceNoiseInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pl
         double chi = 0.5*M2.diagonal().sum()*std::norm(phaseIntegral(0,T,frac));   // the static part (FID only)
         for (int a=0; a<bdim; ++a)
             for (int b=a+1; b<bdim; ++b) chi += M2(a,b)*std::norm(phaseIntegral(E(a)-E(b),T,frac));
-        result[istep] = MatrixXcd::Constant(1,1,std::exp(-chi/bdim));
+        result[istep] = MatrixXcd::Constant(1,1,-chi/bdim);   // -chi_C, not exp(-chi_C): see noiseFactor (simulator.cpp)
     }
 }

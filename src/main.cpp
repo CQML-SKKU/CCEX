@@ -284,8 +284,13 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
 // ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation). A name that is both the qubit's and a
 // bath spin's is refused too: the megCCE kernel takes it as a qubit jump and drops the bath spins without a word.
 // method noise (noise.cpp): the cCCE clusters with a kernel of its own, on the CPU; what that kernel leaves out is refused
-void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa) {
+void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
     if (!cnf->noise) return;
+    // a cluster's value is -chi_C there (noise.cpp), not a coherence: what reads the clusters' values is refused
+    if (!strcasecmp(op->savemode,"cluster_coherence"))
+        refuseRun("method noise does not write output.savemode cluster_coherence");
+    if (cnf->nrdip_ladder > 0)      refuseRun("method noise does not take rdip_ladder");
+    if (cnf->cluster_contributions) refuseRun("method noise does not take output.cluster_contributions");
     if (QubitArray_getNqubit(qa) != 1)        refuseRun("method noise supports one qubit");
     if (strcasecmp(cnf->quantity,"coherence")) refuseRun("method noise computes quantity coherence only");
     if (Pulse_getPulseiter(pls))              refuseRun("method noise needs pulse.per_qubit = false");
@@ -959,7 +964,7 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
     Config_validateEvolutionUpdate(cnf);       // after the packed kernel's value (A36)
     validatePulsesForMethod(cnf,pls);
     validateHamiltonianForMethod(cnf,qa);
-    validateNoise(cnf,pls,qa);                 // before computeBackendInit: it settles the backend
+    validateNoise(cnf,pls,qa,op);              // before computeBackendInit: it settles the backend
     validateAdaptiveConfig(cnf,cls);
     Config_validatePcceCache(cnf);
     if (clusterPlanOnly && ((strcasecmp(cnf->method,"cce") &&

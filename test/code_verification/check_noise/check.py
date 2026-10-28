@@ -2,10 +2,14 @@
 
 model  OU and power-law spectra: chi from the OU closed forms (FID, Hahn; semi-cce classical-bath-noise atten_*) and
        from scipy quadrature of 4 pi^2 int S(f) |Y(2 pi f)|^2 df (CPMG, power law), Y written here anew.
-semi   a P1 bath against semi-cce's quantum-bath-noise mode_sum (Hahn echo, order 2), the same bath, state and axis
-       files: with the bath mean field, without it, a rotated frame and a second state. semi-cce's hbar*mu0/4pi
-       (1.05457172) is set to CCEX's H_BAR (1.054571729) for the comparison; the self-test keeps semi-cce's own
-       value and has to fail (the two constants alone differ by up to 6e-8 in W).
+semi   against semi-cce's quantum-bath-noise (order 2): a P1 bath by mode_sum (Hahn echo) with the bath mean field,
+       without it, a rotated frame and a second state, and by cumulant (exp(-kappa2/2)) for a FID; semi-cce's 13C
+       example (DFT hyperfine near the NV) by mode_sum and by cumulant for a FID and CPMG-2, -4. semi-cce's
+       hbar*mu0/4pi (1.05457172) is set to CCEX's H_BAR (1.054571729); the self-test keeps semi-cce's own value and has
+       to fail (the two constants alone differ by up to 6e-8 in W). Two things of semi-cce are replaced in the run
+       (its files are not touched): cumulant's filter integral _compute_h by its definition, int_0^T f(t) e^{iwt} dt -
+       semi-cce's CPMG form is wrong for N >= 2 (|h|^2 off by up to 0.4 against the definition and against Cywinski's
+       filter function, which its psd route uses) - and npulse 0, which semi-cce sends to CPMG with N = 0, goes to FID.
 
 Usage: python3 check.py model|semi WORKDIR BIN MPIRUN [SEMI_CCE]; exit 0 pass, 1 fail.
 CCEX writes W with 10 decimals, so W is compared to TOL = 2e-10.
@@ -98,20 +102,38 @@ def semi(SEMI):
     for s in (1, 2):
         np.savetxt(f"{work}/state{s}.dat", np.r_[n, rng.choice([-0.5, 0.5], size=n)], fmt="%g")
     driver = f"{work}/semi_driver.py"   # semi-cce's CLI, with hbar*mu0/4pi set (or not) before it runs
-    open(driver, "w").write(f"""import sys, importlib
-sys.path.insert(0, {SEMI + '/quantum-bath-noise/src'!r})
+    open(driver, "w").write("""import sys, importlib
+sys.path.insert(0, SEMI_SRC)
 hbar = float(sys.argv.pop(1))
 if hbar:
-    for m in ['constants', 'hamiltonian', 'bath.p1', 'methods.mode_sum']:
+    for m in ['constants', 'hamiltonian', 'bath.p1', 'bath.nuclear', 'methods.mode_sum']:
         mod = importlib.import_module('quantum_bath_noise.' + m)
         if hasattr(mod, 'HBAR_MU0_O4PI'): mod.HBAR_MU0_O4PI = hbar
+import numpy as np
+import quantum_bath_noise.methods.cumulant as cumulant
+def h_definition(omega, tau, seq="SE", Npulse=1):   # int_0^tau f(t) e^{i omega t} dt; CPMG-N pulses at (2k-1) tau / 2N
+    N = 0 if seq == "FID" else 1 if seq == "SE" else Npulse
+    edges = [0.0] + [tau * (2 * k - 1) / (2 * N) for k in range(1, N + 1)] + [tau]
+    h = np.zeros(omega.shape, dtype=np.complex128)
+    mask = np.abs(omega) > 1e-10
+    w = omega[mask]
+    h[mask] = sum((-1) ** j * (np.exp(1j * w * edges[j + 1]) - np.exp(1j * w * edges[j])) for j in range(N + 1)) / (1j * w)
+    h[~mask] = sum((-1) ** j * (edges[j + 1] - edges[j]) for j in range(N + 1))
+    return h
+cumulant._compute_h = h_definition
+import quantum_bath_noise.runner as runner
+src = open(runner.__file__).read().replace('seq = "SE" if npulse == 1 else "CPMG"',
+                                           'seq = "FID" if npulse == 0 else "SE" if npulse == 1 else "CPMG"')
+exec(compile(src, runner.__file__, "exec"), runner.__dict__)
 from quantum_bath_noise.cli import main
 main()
-""")
+""".replace("SEMI_SRC", repr(SEMI + "/quantum-bath-noise/src")))
     template = open(f"{SEMI}/quantum-bath-noise/examples/config_p1_mode_sum.txt").read().replace("examples/data", data)
 
-    def semi_run(name, s, mf=True, rot=False, hbar=1.054571729):
-        c = re.sub(r"^approach\s*=.*$", "approach = single_sample", template, flags=re.M)
+    def semi_run(name, s, mf=True, rot=False, hbar=1.054571729, base=None, result="Coh_mode_sum.dat", **keys):
+        c = re.sub(r"^approach\s*=.*$", "approach = single_sample", base or template, flags=re.M)
+        for k, v in keys.items():
+            c = re.sub(rf"^{k}\s*=.*$", f"{k} = {v}", c, flags=re.M)
         c = re.sub(r"^avaax_file\s*=.*$", f"avaax_file = {work}/avaax.dat", c, flags=re.M)
         c = re.sub(r"^state_file\s*=.*$", f"state_file = {work}/state{s}.dat", c, flags=re.M)
         c = re.sub(r"^use_mean_field\s*=.*$", f"use_mean_field = {'true' if mf else 'false'}", c, flags=re.M)
@@ -122,7 +144,7 @@ main()
                            capture_output=True, text=True)
         if r.returncode:
             raise SystemExit(f"  FAIL  semi-cce {name}: {r.stderr[-400:]}")
-        return np.loadtxt(f"{work}/{name}/Coh_mode_sum.dat")
+        return np.loadtxt(f"{work}/{name}/{result}")
 
     det = [84.946496] * 3 + [0.0] * 3 + [-84.946496] * 3 + [114.0264, 0.0, -114.0264]
     base = {"method": "noise",
@@ -146,6 +168,34 @@ main()
             _, W = coherence(f"{work}/out/{name}_state{s}_wiDiv")
             ref = semi_run(f"semi_{name}_s{s}", s, mf, rot)
             ok &= report(f"P1 mode_sum, {name}, state {s}", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
+    # a FID: every single cluster's chi passes 745 within the first microseconds (exp(-chi) underflows there)
+    d = json.loads(json.dumps(base))
+    d["configuration"]["defect_axis_file"] = [f"{work}/avaax.dat"]
+    d["configuration"]["s_range"] = [1, 1]
+    d.update(pulse={"count": 0}, deltat=0.0001, nstep=31)
+    ccex("p1_fid", d, 4)
+    _, W = coherence(f"{work}/out/p1_fid_state1_wiDiv")
+    ref = semi_run("semi_p1_fid", 1, result="Coh_gauss.dat", method="cumulant", npulse=0, tau_max=0.003, tau_nstep=30)
+    ok &= report("P1 cumulant, FID, state 1", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
+
+    # semi-cce's 13C example, its DFT hyperfine file (no provenance line: x 0.5/S, as semi-cce reads it)
+    open(f"{work}/gyro_13C", "w").write("13C 0.5 6.728284\n")   # semi-cce's isotope file value
+    nuclear = open(f"{SEMI}/quantum-bath-noise/examples/config_nuclear.txt").read().replace("examples/data", data)
+    c13 = {"method": "noise",
+           "Qubit": {"qubit": [{"file": f"{data}/nuclear_defect.dat"}], "alpha_state": {"ms": [-1]}},
+           "configuration": {"gyrofile": f"{work}/gyro_13C", "bathfile": [f"{data}/nuclear_bath.dat"]},
+           "hamiltonian": {"common": {"hyperfine": {"dipole": "dft", "contact": True, "missing_row": "point_dipole",
+                                                    "file": f"{data}/nuclear_Atensor.dat"}}},
+           "order": 2, "bfield": 500, "rbath": 50, "rdip": 10}
+    for N, tmax, method, result in ((1, 3.0, "mode_sum", "Coh_mode_sum.dat"), (0, 0.05, "cumulant", "Coh_gauss.dat"),
+                                    (2, 3.0, "cumulant", "Coh_gauss.dat"), (4, 3.0, "cumulant", "Coh_gauss.dat")):
+        name = f"c13_n{N}"
+        ccex(name, dict(c13, pulse={"count": N}, deltat=tmax / 100, nstep=101), 4)
+        _, W = coherence(f"{work}/out/{name}_wiDiv")
+        ref = semi_run(f"semi_{name}", 1, mf=False, base=nuclear, result=result, method=method, npulse=N, tau_max=tmax,
+                       tau_nstep=100)
+        ok &= report(f"13C {method}, {N} pulses", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
+
     _, W = coherence(f"{work}/out/p1_state1_wiDiv")
     ref = semi_run("semi_p1_own_hbar", 1, hbar=0)
     dW = np.abs(W - ref[:, 1]).max()

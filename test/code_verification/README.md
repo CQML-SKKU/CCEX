@@ -14,7 +14,7 @@ they read; `run.sh` runs all nine in order and then exits with the status of the
 | `check_input_forms/` | do the new input forms say the same physics as the legacy forms? 32 comparisons under one binary, the analyzer reading the outputs, then the gyro, comments, nodiv, evolution_update, gpu_options, tensor_format and autoconv stages | `bash check_input_forms/run.sh` |
 | `check_mean_field/` | does `bath_bath_mean_field` "xyz" (`vector_mean_field` until 2026-10-13) give the default z mean field's curve byte for byte where the answer is known (one P1 with its 14N and no other bath spin)? | `bash check_mean_field/run.sh` |
 | `check_rdip_ladder/` | does each `rdip_ladder` rung equal a separate run at that rdip (≤ 1e-9), and are the inputs it does not cover refused? about 7 min | `bash check_rdip_ladder/run.sh` |
-| `check_noise/` | does method `noise` give the OU closed forms, the quadrature of a 1/f spectrum and semi-cce's `mode_sum` for a P1 bath (≤ 2e-10, the printed digits)? about 2 min; numpy, scipy, and semi-cce for the P1 half | `bash check_noise/run.sh` |
+| `check_noise/` | does method `noise` give the OU closed forms, the quadrature of a 1/f spectrum and semi-cce's `mode_sum` and `cumulant` for P1 and ¹³C baths (FID, Hahn, CPMG; ≤ 2e-10, the printed digits)? about 4 min; numpy, scipy, and semi-cce for the P1 half | `bash check_noise/run.sh` |
 | `bath_data/` | not a check: the frozen baths, tensors and state files the checks read | — |
 
 Every check needs `bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`;

@@ -751,6 +751,9 @@ reject_case natab_cce2_hahn rj_hamiltonian_noise_in_ccce "hamiltonian.noise belo
   "d['hamiltonian'] = {'noise': {'spectrum': 'bath'}}"
 reject_case natab_cce2_hahn rj_noise_model "hamiltonian.noise.spectrum.model must be \"OU\" or \"power\"" \
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'spectrum': {'model': 'white'}}}"
+# method noise hands the product -chi_C per cluster, not a coherence: what reads the clusters' values is refused
+reject_case natab_cce2_hahn rj_noise_cluster_coherence "method noise does not write output.savemode cluster_coherence" \
+  "d['method'] = 'noise'; d['savemode'] = 'cluster_coherence'"
 # the adaptive block belongs to cluster_mode pcce or bundle; the pcce block to pcce
 reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" \
   "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"

@@ -8,7 +8,9 @@
   semi-cce). `hamiltonian.noise.spectrum` `"bath"` (the default) sums each cCCE cluster's eigenmodes (for a Hahn echo
   semi-cce's `mode_sum`; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
   only); a model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath. cluster.mode
-  standard, CPU, one qubit, ideal π pulses. `check_noise` compares it with closed forms, quadrature and semi-cce.
+  standard, CPU, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence`, `rdip_ladder` and
+  `cluster_contributions` are refused with it. `check_noise` compares it with closed forms, quadrature and semi-cce
+  (P1 and 13C baths, FID, Hahn and CPMG).
   `noise` was a reserved name refused as not implemented (A49).
 
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)

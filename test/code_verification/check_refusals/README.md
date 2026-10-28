@@ -2,7 +2,7 @@
 
     bash test/code_verification/check_refusals/run.sh     # needs bin/main.out
 
-261 inputs that must be refused (4 of them outputs that cannot be written; 18 removed or wrong command-line uses since A63, 11 command-line cases gone with the options), five that must run, and `--help` (the same as `-h`), each run once to see
+262 inputs that must be refused (4 of them outputs that cannot be written; 18 removed or wrong command-line uses since A63, 11 command-line cases gone with the options), five that must run, and `--help` (the same as `-h`), each run once to see
 that CCEX stops with the expected message, most of them before it reads any tensor
 file. They are edits of the legacy inputs `../check_input_forms/legacy.sh`
 writes (so it is run first), on the real systems: the h-BN bath with DFT

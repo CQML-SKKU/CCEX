@@ -23,6 +23,15 @@ static void reduceScaledProduct(void* input,void* output,int* count,MPI_Datatype
     for(int i=0;i<*count;++i)b[i]=a[i]*b[i];
 }
 
+// method noise: exp(-chi_C)^power as 2^e m, formed from chi_C itself, so that no factor underflows (noise.cpp)
+static ScaledComplex noiseFactor(double minusChi, int power){
+    const long double x = power*(long double)minusChi/std::log(2.0L);
+    ScaledComplex factor;
+    factor.exponent = (long long)std::floor(x);
+    factor.real = std::exp2(x - factor.exponent);
+    return factor;
+}
+
 void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pulse* pls, Cluster* cls, Output* op, int*** localclusters){
 
     char message[500];
@@ -438,7 +447,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             // gathered[istep*gatherMax + k]), and multiplied in with assembleRun - each product sees the same factors in the
             // same order as before. Off where the per-cluster factors are used elsewhere (savemode cluster_coherence, except, the rdip
             // ladder, cluster contributions).
-            const bool gather=stableProduct && !saveAll && !exceptMode && !ladder.on && !cnf->cluster_contributions;
+            const bool gather=stableProduct && !saveAll && !exceptMode && !ladder.on && !cnf->cluster_contributions && !cnf->noise;
             // A30: the batched small clusters only where nothing but the product uses a cluster's factors
             const bool cpuBatchUse=!saveAll && !exceptMode && !ladder.on && !cnf->cluster_contributions;
             const int gatherMax=32;
@@ -597,6 +606,12 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     const std::complex<double>* direct=(small && smallPer==1 && gather) ? small : nullptr;   // X6
                     for (int istep=0; istep<nstep; istep++){
                         if((cnf->cluster_contributions || ladder.on) && power==0)continue;
+                        if(cnf->noise){   // the cluster gave -chi_C (noise.cpp)
+                            const ScaledComplex factor=noiseFactor(result_nth[istep](0,0).real(),power);
+                            stableWith[istep].multiplyLazy(factor);
+                            if(power>0)stableWithout[istep].multiplyLazy(factor);
+                            continue;
+                        }
                         if(stableProduct){
                             const auto raw=direct ? direct[istep] : result_nth[istep](0,0),zero=result_0th[istep](0,0);
                             const bool invalid=!std::isfinite(raw.real()) || !std::isfinite(raw.imag()) ||
