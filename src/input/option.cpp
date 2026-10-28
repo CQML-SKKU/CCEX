@@ -759,9 +759,14 @@ static void readNoiseSpectrum(Config* cnf, cJSON* section){
         ccexRefusalPrint(stderr,"Error: hamiltonian.noise belongs to method noise, this run is not\n");
         ccexRefuse();
     }
+    // pseudo_secular: the noise of a bath spin is its secular hyperfine term A_zz I_z (false, semi-cce's), or with the
+    // pseudo-secular A_zx I_x + A_zy I_y too (true)
+    const bool pseudoSecularGiven = cJSON_GetObjectItem(section,"pseudo_secular") != NULL;
+    cnf->noise_pseudo_secular = cJSON_ReadBool(section,(char*)"pseudo_secular",true,false);
     cJSON* spectrum = cJSON_GetObjectItem(section,"spectrum");
     if (!spectrum) return;
     if (cJSON_IsString(spectrum) && spectrum->valuestring && !strcasecmp(spectrum->valuestring,"bath")) return;
+    if (pseudoSecularGiven) warnNotUsed("hamiltonian.noise.pseudo_secular","a model spectrum has no bath");
     if (!cJSON_IsObject(spectrum)){
         ccexRefusalPrint(stderr,"Error: hamiltonian.noise.spectrum must be \"bath\" or {\"model\": \"OU\" or \"power\", ...}\n");
         ccexRefuse();
@@ -2119,7 +2124,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printf("          quadrupole (\"off\" or { structure, file, file_without_defect, cell }) ]\n");
         printf("        hamiltonian.cCCE : [ knight, hfmedi, delta_A ]\n");
         printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n");
-        printf("        hamiltonian.noise : [ spectrum (\"bath\" or { model OU: sigma, tau_c; model power: amplitude, beta, f_min, f_max }) ]\n\n");
+        printf("        hamiltonian.noise : [ spectrum (\"bath\" or { model OU: sigma, tau_c; model power: amplitude, beta, f_min, f_max }), pseudo_secular ]\n\n");
     }
     cJSON* hamiltonian = readBlock(root,"hamiltonian");
     // A94 (G1) named the sections by role, corrections and dissipation; reverted 2026-10-17, the sections stay by method

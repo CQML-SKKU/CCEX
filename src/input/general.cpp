@@ -45,6 +45,7 @@ Config* Config_init(){
     cnf->delta_A=false;
     cnf->noise=false;
     strcpy(cnf->noise_model,"bath");
+    cnf->noise_pseudo_secular=false;
     cnf->noise_sigma=cnf->noise_tau_c=0;
     cnf->noise_amplitude=cnf->noise_beta=cnf->noise_f_min=cnf->noise_f_max=0;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
@@ -1002,6 +1003,8 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
     const bool bundle = !strcasecmp(cnf->cluster_mode,"adaptive");   // cluster.mode bundle
     printStructElementChar("method",cnf->noise ? (char*)"noise" : Config_getMethod(cnf));   // noise: CCE inside
     if (cnf->noise) printStructElementChar("hamiltonian.noise.spectrum",cnf->noise_model);
+    if (cnf->noise && !strcmp(cnf->noise_model,"bath"))
+        printStructElementChar("hamiltonian.noise.pseudo_secular",(char*)(cnf->noise_pseudo_secular ? "true" : "false"));
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

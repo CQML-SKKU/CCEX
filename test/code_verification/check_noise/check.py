@@ -6,7 +6,8 @@ semi   against semi-cce's quantum-bath-noise (order 2): a P1 bath by mode_sum (H
        without it, a rotated frame and a second state, and by cumulant (exp(-kappa2/2)) for a FID; semi-cce's 13C
        example (DFT hyperfine near the NV) by mode_sum and by cumulant for a FID and CPMG-2, -4. semi-cce's
        hbar*mu0/4pi (1.05457172) is set to CCEX's H_BAR (1.054571729); the self-test keeps semi-cce's own value and has
-       to fail (the two constants alone differ by up to 6e-8 in W). Two things of semi-cce are replaced in the run
+       to fail (the two constants alone differ by up to 6e-8 in W). hamiltonian.noise.pseudo_secular against mode_sum
+       with its noise operator A_zz I_z made A_z . I in the run. Two things of semi-cce are replaced in the run
        (its files are not touched): cumulant's filter integral _compute_h by its definition, int_0^T f(t) e^{iwt} dt -
        semi-cce's CPMG form is wrong for N >= 2 (|h|^2 off by up to 0.4 against the definition and against Cywinski's
        filter function, which its psd route uses) - and npulse 0, which semi-cce sends to CPMG with N = 0, goes to FID.
@@ -121,6 +122,14 @@ def h_definition(omega, tau, seq="SE", Npulse=1):   # int_0^tau f(t) e^{i omega 
     h[~mask] = sum((-1) ** j * (edges[j + 1] - edges[j]) for j in range(N + 1))
     return h
 cumulant._compute_h = h_definition
+import os
+if os.environ.get("NOISE_PSEUDO_SECULAR"):   # CCEX's hamiltonian.noise.pseudo_secular: the noise is A_z . I, not A_zz I_z
+    import quantum_bath_noise.methods.mode_sum as mode_sum
+    src = open(mode_sum.__file__).read()
+    assert src.count("d_bz += bath_spin.A[2, 2] * vectors[local][2]") == 2
+    src = src.replace("d_bz += bath_spin.A[2, 2] * vectors[local][2]",
+                      "d_bz += sum(bath_spin.A[2, c] * vectors[local][c] for c in range(3))")
+    exec(compile(src, mode_sum.__file__, "exec"), mode_sum.__dict__)
 import quantum_bath_noise.runner as runner
 src = open(runner.__file__).read().replace('seq = "SE" if npulse == 1 else "CPMG"',
                                            'seq = "FID" if npulse == 0 else "SE" if npulse == 1 else "CPMG"')
@@ -130,7 +139,8 @@ main()
 """.replace("SEMI_SRC", repr(SEMI + "/quantum-bath-noise/src")))
     template = open(f"{SEMI}/quantum-bath-noise/examples/config_p1_mode_sum.txt").read().replace("examples/data", data)
 
-    def semi_run(name, s, mf=True, rot=False, hbar=1.054571729, base=None, result="Coh_mode_sum.dat", **keys):
+    def semi_run(name, s, mf=True, rot=False, hbar=1.054571729, base=None, result="Coh_mode_sum.dat", pseudo_secular=False,
+                 **keys):
         c = re.sub(r"^approach\s*=.*$", "approach = single_sample", base or template, flags=re.M)
         for k, v in keys.items():
             c = re.sub(rf"^{k}\s*=.*$", f"{k} = {v}", c, flags=re.M)
@@ -141,7 +151,7 @@ main()
             c += "\nrotation = true\nrotation_bath_axis = 0, 0, 1\nrotation_qubit_axis = -1, -1, 1\n"
         open(f"{work}/{name}.txt", "w").write(c)
         r = subprocess.run([sys.executable, driver, str(hbar), "--input", f"{name}.txt", "--outdir", name], cwd=work,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, env=dict(os.environ, NOISE_PSEUDO_SECULAR="1" if pseudo_secular else ""))
         if r.returncode:
             raise SystemExit(f"  FAIL  semi-cce {name}: {r.stderr[-400:]}")
         return np.loadtxt(f"{work}/{name}/{result}")
@@ -195,6 +205,16 @@ main()
         ref = semi_run(f"semi_{name}", 1, mf=False, base=nuclear, result=result, method=method, npulse=N, tau_max=tmax,
                        tau_nstep=100)
         ok &= report(f"13C {method}, {N} pulses", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
+    # hamiltonian.noise.pseudo_secular (A_zx I_x + A_zy I_y + A_zz I_z): the Hahn echo, semi-cce's mode_sum given the same noise
+    d = dict(c13, pulse={"count": 1}, deltat=0.03, nstep=101)
+    d["hamiltonian"] = dict(c13["hamiltonian"], noise={"pseudo_secular": True})
+    ccex("c13_az", d, 4)
+    _, W = coherence(f"{work}/out/c13_az_wiDiv")
+    ref = semi_run("semi_c13_az", 1, mf=False, base=nuclear, pseudo_secular=True, method="mode_sum", npulse=1, tau_max=3.0,
+                   tau_nstep=100)
+    _, Wzz = coherence(f"{work}/out/c13_n1_wiDiv")
+    ok &= report("13C mode_sum, pseudo_secular", np.abs(W - ref[:, 1]).max(),
+                 f" (it changes W by up to {np.abs(W - Wzz).max():.2g})")
 
     _, W = coherence(f"{work}/out/p1_state1_wiDiv")
     ref = semi_run("semi_p1_own_hbar", 1, hbar=0)

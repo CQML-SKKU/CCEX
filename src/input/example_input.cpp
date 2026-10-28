@@ -270,10 +270,12 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //      },
 //      "gCCE"   : {},                  // no settings yet
 //      "noise"  : {                    // method noise: where the phase noise comes from
-//          "spectrum" : "bath"         // "bath" (default: the clusters), or a model,
+//          "spectrum"       : "bath",  // "bath" (default: the clusters), or a model,
 //                                      // {"model": "OU", "sigma": kHz, "tau_c": ms} or
 //                                      // {"model": "power", "amplitude": kHz^2/kHz,
 //                                      // "beta", "f_min": kHz, "f_max": kHz}
+//          "pseudo_secular" : false    // the noise: A_zz I_z (secular, default), true adds
+//                                      // A_zx I_x + A_zy I_y (pseudo-secular)
 //      },
 //      "meCCE"  : {                    // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
 //          "jump_operators" : [

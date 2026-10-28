@@ -751,6 +751,8 @@ reject_case natab_cce2_hahn rj_hamiltonian_noise_in_ccce "hamiltonian.noise belo
   "d['hamiltonian'] = {'noise': {'spectrum': 'bath'}}"
 reject_case natab_cce2_hahn rj_noise_model "hamiltonian.noise.spectrum.model must be \"OU\" or \"power\"" \
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'spectrum': {'model': 'white'}}}"
+reject_case natab_cce2_hahn rj_noise_pseudo_secular "hamiltonian.noise.pseudo_secular must be" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'pseudo_secular': 'yes'}}"
 # method noise hands the product -chi_C per cluster, not a coherence: what reads the clusters' values is refused
 reject_case natab_cce2_hahn rj_noise_cluster_coherence "method noise does not write output.savemode cluster_coherence" \
   "d['method'] = 'noise'; d['savemode'] = 'cluster_coherence'"

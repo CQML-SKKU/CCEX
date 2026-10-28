@@ -28,7 +28,7 @@ Tags in this section are about the simulation parameters: the method, the number
     - cCCE: [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A) (meCCE reads them too)
     - meCCE, megCCE: [jump_operators](#tag_jump_operators)
     - gCCE: no settings yet
-    - noise: [spectrum](#tag_noise_spectrum)
+    - noise: [spectrum](#tag_noise_spectrum), [pseudo_secular](#tag_noise_pseudo_secular)
 - [keys read and not used](#tag_not_used), [turning a part off](#tag_turn_off)
 
 The qubit's position file (`Qubit.qubit[].file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubit_file); the files of the defect bath
@@ -977,7 +977,8 @@ non-Gaussian part; strongly coupled spins need cCCE or gCCE).
   H_bath + p Σ_i A_z,i·I_i with p = (|m_α| + |m_β|)/2, at infinite temperature, with δω = (m_α − m_β) Σ_i A_zz,i I_z,i;
   the χ_C add over the CCE terms (the cCCE product of the exp(−χ_C)). With `s_range` a bath state enters only through
   the mean field of the other bath spins ([bath_bath_mean_field](#tag_bath_bath_mean_field)). For a Hahn echo this is
-  `semi-cce`'s `mode_sum`; p and the A_zz-only δω are its conventions.
+  `semi-cce`'s `mode_sum`; p and the A_zz-only δω are its conventions ([pseudo_secular](#tag_noise_pseudo_secular)
+  adds A_zx I_x + A_zy I_y to δω).
 - `{"model": "OU", "sigma": σ, "tau_c": τ_c}`: Ornstein–Uhlenbeck noise of the frequency, ⟨δν(t)δν(0)⟩ = σ² e^{−|t|/τ_c}
   (σ in kHz, τ_c in ms; both take a unit). χ is exact for any ideal π sequence.
 - `{"model": "power", "amplitude": A, "beta": β, "f_min": f_min, "f_max": f_max}`: S(f) = A (f / 1 kHz)^{−β}
@@ -996,6 +997,23 @@ A model run reads no bath: `configuration`, the Defect block and the clusters ar
 <b>Default:</b> `"bath"`
 
 <b>Example:</b> ``` "method" : "noise", "hamiltonian" : {"noise": {"spectrum": {"model": "OU", "sigma": 10, "tau_c": {"value": 50, "unit": "us"}}}} ```
+
+<a id="tag_noise_pseudo_secular"></a>
+## pseudo_secular
+<b>Description:</b><br>
+`hamiltonian.noise`, with [spectrum](#tag_noise_spectrum) `"bath"`. Which terms of the hyperfine coupling between the
+qubit and a bath spin, m_s (A_zx I_x + A_zy I_y + A_zz I_z), count as the qubit's frequency noise:
+`false`, the secular term alone, δω = (m_α − m_β) Σ_i A_zz,i I_z,i (`semi-cce`'s); `true`, also the pseudo-secular
+terms, δω = (m_α − m_β) Σ_i (A_zx,i I_x,i + A_zy,i I_y,i + A_zz,i I_z,i), the coupling cCCE puts into its two
+Hamiltonians. The bath Hamiltonian is the same either way. In `semi-cce`'s 13C example (500 G, Hahn echo) the two
+differ by up to 0.04 in W, in its P1 example by 1e-3; which of them is the better approximation has not been settled
+(both are far from cCCE there). With a model spectrum the key is not used (the run says so). <br>
+
+<b>Data Type:</b> Boolean
+
+<b>Default:</b> `false`
+
+<b>Example:</b> ``` "hamiltonian" : {"noise": {"spectrum": "bath", "pseudo_secular": true}} ```
 
 <a id="tag_not_used"></a>
 ## Keys read and not used

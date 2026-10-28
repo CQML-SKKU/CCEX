@@ -76,6 +76,7 @@ typedef struct {
     bool noise;                           /**< method noise: the Gaussian coherence exp(-chi) of the phase noise (noise.cpp); inside, method is CCE */
     char noise_model[8];                  /**< hamiltonian.noise.spectrum: "bath" (default, the cluster mode sum), "OU" or "power" (a model, no bath) */
     double noise_sigma, noise_tau_c;      /**< OU: rms of the qubit frequency noise (kHz) and its correlation time (ms) */
+    bool noise_pseudo_secular;            /**< hamiltonian.noise.pseudo_secular: the noise is Delta m_s sum (A_zx I_x + A_zy I_y + A_zz I_z); false (default, semi-cce's): A_zz I_z only */
     double noise_amplitude, noise_beta, noise_f_min, noise_f_max;   /**< power: S(f) = amplitude (f / 1 kHz)^-beta (kHz^2/kHz, two-sided) on [f_min, f_max] (kHz) */
     int pcce_detail_limit;                /**< rank-zero trial details, 0 disables */
     int gpu_cache_mb;                      /**< reusable device-buffer cache per rank; 0 disables */
