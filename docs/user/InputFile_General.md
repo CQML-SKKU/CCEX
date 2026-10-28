@@ -989,14 +989,19 @@ With `"bath"` a cluster hands the product −χ_C, not a coherence (the product 
 χ_C does not underflow): `output.savemode` `cluster_coherence`, `rdip_ladder` and `output.cluster_contributions` are
 refused with method `noise`.
 
-A model run reads no bath: `configuration`, the Defect block and the clusters are not used, but `order`, `bfield`,
-`rbath`, `rdip` and `Qubit` are still required by the readers (any value).
+A model run reads no bath: `configuration`, the Defect block and the clusters are not used, and `order`, `bfield`,
+`rbath`, `rdip` and `Qubit` may be left out (the run takes order 1, bfield 0, rbath 0, rdip 0 and one qubit at the
+origin, which it does not use; given, they are not used either).
 
 <b>Data Type:</b> String `"bath"` or Object
 
 <b>Default:</b> `"bath"`
 
-<b>Example:</b> ``` "method" : "noise", "hamiltonian" : {"noise": {"spectrum": {"model": "OU", "sigma": 10, "tau_c": {"value": 50, "unit": "us"}}}} ```
+<b>Example:</b> a whole input of a model run
+    ```
+    {"method": "noise", "hamiltonian": {"noise": {"spectrum": {"model": "OU", "sigma": 10, "tau_c": {"value": 50, "unit": "us"}}}},
+     "deltat": 0.002, "nstep": 200, "pulse": {"count": 1}}
+    ```
 
 <a id="tag_noise_pseudo_secular"></a>
 ## pseudo_secular

@@ -62,8 +62,7 @@ def chi_quad(S, T, N, fmin, fmax):
 
 
 def model():
-    base = dict(order=1, bfield=0, rbath=1, rdip=1, Qubit={"qubit": [{"xyz": [0, 0, 0]}]}, method="noise",
-                deltat=0.002, nstep=101)
+    base = dict(method="noise", deltat=0.002, nstep=101)   # no order, bfield, rbath, rdip, Qubit: a model reads no bath
     ok = True
     sig, tc = 10.0, 0.05
     b = 2 * np.pi * sig

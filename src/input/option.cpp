@@ -52,8 +52,20 @@ static std::string shownKey(const cJSON* object, const char* key){
     return where == shownPaths().end() ? std::string(key ? key : "") : joinKey(where->second, key ? key : "");
 }
 static void applyInputUnits(cJSON* root);
+static cJSON* untrackedItem(const cJSON* object, const char* key);
+// method noise with a model spectrum reads no bath: the keys of the bath and the clusters every reader asks for are
+// added where the input leaves them out (order 1, bfield 0, rbath 0, rdip 0, one qubit at the origin); unused
+static void addNoiseModelDefaults(cJSON* root){
+    cJSON* method = untrackedItem(root,"method");
+    cJSON* spectrum = untrackedItem(untrackedItem(untrackedItem(root,"hamiltonian"),"noise"),"spectrum");
+    if (!cJSON_IsString(method) || strcasecmp(method->valuestring,"noise") || !cJSON_IsObject(spectrum)) return;
+    for (const char* key : {"order", "bfield", "rbath", "rdip"})
+        if (!untrackedItem(root,key)) cJSON_AddNumberToObject(root,key,!strcmp(key,"order") ? 1 : 0);
+    if (!untrackedItem(root,"Qubit")) cJSON_AddItemToObject(root,"Qubit",cJSON_Parse("{\"qubit\": [{\"xyz\": [0, 0, 0]}]}"));
+}
 static cJSON* trackedParse(const char* text){
     cJSON* root = cJSON_Parse(text);
+    if (root) addNoiseModelDefaults(root);
     if (root) applyInputUnits(root);    // A67: {"value", "unit"} to the plain number in the key's own unit, before any reader
     if (root) recordPaths(root, "", "");
     return root;
