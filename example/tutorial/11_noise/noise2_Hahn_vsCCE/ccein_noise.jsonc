@@ -1,0 +1,27 @@
+{
+    // The Hahn echo of an NV in a 1 ppm P1 bath by method noise: the Gaussian coherence exp(-chi) of the qubit's
+    // phase noise, each cCCE cluster giving its share of chi from its eigenmodes. Ten sampled bath states of one
+    // configuration; a state sets the static field of the other spins (the mean field), the cluster is averaged at
+    // infinite temperature. ccein_cce.jsonc is the same bath by cCCE2.
+    "method"        : "noise",
+    "hamiltonian"   : {"noise": {"spectrum": "bath"}},    // the default; "pseudo_secular": true adds A_zx I_x + A_zy I_y
+    "Qubit"         : {"qubit": [{"file": "../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [-1]}},
+    "configuration" : {"gyrofile": "../../03_P1/bath/DiaP1_gyro",
+                       "bathfile": ["../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
+                       "s_range" : [1, 10],
+                       "seed"    : 1},
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 850,
+    "rdip"          : 620,
+    "deltat"        : 0.01,
+    "nstep"         : 300,
+    "pulse"         : {"count": 1},
+    "Defect"        : {"species": [{
+        "name"          : "P1",
+        "n_axis_states" : 12,
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+}

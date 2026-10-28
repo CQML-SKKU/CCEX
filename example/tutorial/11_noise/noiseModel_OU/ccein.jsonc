@@ -1,0 +1,11 @@
+{
+    // A model of the qubit's frequency noise instead of a bath: Ornstein-Uhlenbeck noise,
+    // <dnu(t) dnu(0)> = sigma^2 exp(-|t| / tau_c), and the coherence exp(-chi) under the pulse sequence (exact for
+    // ideal pi pulses). No bath is read, so order, bfield, rbath, rdip and Qubit are left out. run.sh also writes
+    // this input with pulse.count 0 (Ramsey) and 4 (CPMG-4).
+    "method"      : "noise",
+    "hamiltonian" : {"noise": {"spectrum": {"model": "OU", "sigma": 10, "tau_c": {"value": 50, "unit": "us"}}}},   // sigma: kHz
+    "deltat"      : 0.001,
+    "nstep"       : 300,
+    "pulse"       : {"count": 1}
+}

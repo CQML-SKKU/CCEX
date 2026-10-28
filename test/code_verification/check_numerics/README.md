@@ -1,6 +1,6 @@
 # check_numerics/ — does this build still give the numbers an earlier one gave
 
-Twenty-five calculations, cut from the tutorials so that each runs in seconds
+Twenty-seven calculations, cut from the tutorials so that each runs in seconds
 (`cases/<name>/ccein.json`, the bath, gyro, tensor, state and axis files they
 read in `inputs/`), run with `bin/main.out` and compared against the outputs
 recorded from earlier builds on the same machine (`reference/<version>/`).
@@ -45,6 +45,7 @@ keep 1e-9 and the tagged references their own tolerance. `compare.py` reads the 
 | hbn_cce2_hf3_qd2 / _hf3_qd0, hbn_hfmedi | V_B⁻ + h-BN, DFT hyperfine and quadrupole tensors | CCE2 | ensemble | Hahn | coherence |
 | hbn_gcce2_dm, hbn_gcce2_oh | same | gCCE2 | single | Hahn | dm / coherence (OH term) |
 | arbitrary_gcce1_dm | the hand-written three-file system of tutorial 01 | gCCE1 | single | Hahn | dm |
+| p1_noise2_single, natab_noise2_cpmg8 | p1_cce2_single and natab_cce2_cpmg8 with `method` `noise` (the second with `hamiltonian.noise.pseudo_secular` true); written by hand from those two, not by `make_cases.py`; no tagged version has the method, so only the `head-*` references from 2026-10-28 on hold them | noise | single / ensemble | Hahn / CPMG-8 | coherence |
 
 Everything a case draws at random in a tutorial is a file here: the bath states
 (`state_1`, `state_2`), the P1 Jahn-Teller axes (`avaax_nav12`, `avaax_nav4`),

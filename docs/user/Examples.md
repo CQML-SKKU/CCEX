@@ -1,6 +1,6 @@
 # Examples
 
-Eleven worked examples live in `example/tutorial/`, in the order to learn them; each has a page here with its text,
+Twelve worked examples live in `example/tutorial/`, in the order to learn them; each has a page here with its text,
 its input files and its expected figures. Each topic folder holds one folder per calculation, named
 `<method><order>_<pulse>_<approach>` (`cCCE2_Hahn_ensemble`: cCCE to order 2, Hahn echo, the bath ensemble; the
 approach is `ensemble`, `states` or what the calculation compares). A calculation folder has its inputs
@@ -21,6 +21,7 @@ how to run it (time, ranks, memory), the expected result and what to change next
 | [08_GPU](../../example/tutorial/08_GPU/README.md) | the CUDA backend against the CPU |
 | [09_auto_convergence](../../example/tutorial/09_auto_convergence/README.md) | the automatic convergence of the time window, rdip, rbath and the configurations |
 | [10_coordinate_rotation](../../example/tutorial/10_coordinate_rotation/README.md) | a bath written in another frame (`frame.rotation`) |
+| [11_noise](../../example/tutorial/11_noise/README.md) | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum |
 
 <a id="RunningOne"></a>
 ## Running one

@@ -121,7 +121,7 @@ Every option, environment variable and the MKL details: [Getting started](docs/u
 | Folder | What | Read |
 |---|---|---|
 | `src/`, `include/` | the code: input, physical objects, clustering, calculation, common; `src/main.cpp` is the entry point | `src/README.md` |
-| `example/` | `tutorial/` (eleven worked examples, `00_quickstart` … `10_coordinate_rotation`, each with `run.sh` and `expected.png`), `analysis/` (the coherence analyzer), `tools/` (automatic convergence, bath generator, input-key converter, ...) | `example/README.md` |
+| `example/` | `tutorial/` (twelve worked examples, `00_quickstart` … `11_noise`, each with `run.sh` and `expected.png`), `analysis/` (the coherence analyzer), `tools/` (automatic convergence, bath generator, input-key converter, ...) | `example/README.md` |
 | `test/` | `code_verification/`, `cluster_verification/`, `gpu_verification/` | `test/README.md` |
 | `docs/` | `user/` (the manual), `methods/` (the added methods in detail), `doxygen/` (the API site: `cd docs/doxygen && doxygen Doxyfile`) | `docs/README.md` |
 | `external/` | Eigen, uthash and SQLite, so every machine builds without packages | `external/README.md` |

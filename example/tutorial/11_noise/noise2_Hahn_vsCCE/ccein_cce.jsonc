@@ -1,0 +1,24 @@
+{
+    // The same bath, states and times as ccein_noise.jsonc, by cCCE2: each sampled state is a pure initial state of the
+    // bath, which evolves under the two Hamiltonians of the qubit's branches.
+    "method"        : "cCCE",
+    "Qubit"         : {"qubit": [{"file": "../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [-1]}},
+    "configuration" : {"gyrofile": "../../03_P1/bath/DiaP1_gyro",
+                       "bathfile": ["../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
+                       "s_range" : [1, 10],
+                       "seed"    : 1},
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 850,
+    "rdip"          : 620,
+    "deltat"        : 0.01,
+    "nstep"         : 300,
+    "pulse"         : {"count": 1},
+    "Defect"        : {"species": [{
+        "name"          : "P1",
+        "n_axis_states" : 12,
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+}

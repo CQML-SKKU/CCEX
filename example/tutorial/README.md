@@ -1,6 +1,6 @@
 # example/tutorial/
 
-Eleven worked examples in the order to learn them. Each numbered folder is one topic and holds one folder per
+Twelve worked examples in the order to learn them. Each numbered folder is one topic and holds one folder per
 calculation, named `<method><order>_<pulse>_<approach>` (`cCCE2_Hahn_ensemble`: cCCE to order 2, Hahn echo, the bath
 ensemble; the approach is `ensemble`, `states` or what the calculation compares). A calculation folder has its inputs
 (`ccein*.jsonc`, JSON with `//` comments, only the keys that matter; `main.out -e` writes every key), a `run.sh` and the
@@ -20,6 +20,7 @@ that matter, how to run it (time, ranks, memory), the expected result and what t
 | `08_GPU/` | the CUDA backend against the CPU | `cCCE5_Hahn_backends`, `gCCE4_Hahn_backends`, `pCCE2_Hahn_backends` |
 | `09_auto_convergence/` | the automatic convergence of the time window, rdip, rbath and the configurations | `cCCE2_Hahn_ensemble`, `cCCE2_Hahn_ensemble_noCandidates` |
 | `10_coordinate_rotation/` | a bath written in another frame (`frame.rotation`) | `cCCE2_Hahn_rotation` |
+| `11_noise/` | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum | `noise2_Hahn_vsCCE`, `noiseModel_OU` |
 
 ## Running one
 
