@@ -5,7 +5,7 @@
 #
 # Usage:  bash test/code_verification/check_noise/run.sh      (CCEX_BIN, CCEX_MPI as for the others)
 # Needs:  numpy and scipy on python3; the P1 half also semi-cce (SEMI_CCE, default ~/bin/code_develop/semi-cce),
-#         without it that half is skipped and said so
+#         (2851449 or later); without it that half is skipped and said so
 # ---------------------------------------------------------------------------
 set -uo pipefail
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

@@ -7,10 +7,8 @@ semi   against semi-cce's quantum-bath-noise (order 2): a P1 bath by mode_sum (H
        example (DFT hyperfine near the NV) by mode_sum and by cumulant for a FID and CPMG-2, -4. semi-cce's
        hbar*mu0/4pi (1.05457172) is set to CCEX's H_BAR (1.054571729); the self-test keeps semi-cce's own value and has
        to fail (the two constants alone differ by up to 6e-8 in W). hamiltonian.noise.pseudo_secular against mode_sum
-       with its noise operator A_zz I_z made A_z . I in the run. Two things of semi-cce are replaced in the run
-       (its files are not touched): cumulant's filter integral _compute_h by its definition, int_0^T f(t) e^{iwt} dt -
-       semi-cce's CPMG form is wrong for N >= 2 (|h|^2 off by up to 0.4 against the definition and against Cywinski's
-       filter function, which its psd route uses) - and npulse 0, which semi-cce sends to CPMG with N = 0, goes to FID.
+       with its noise operator A_zz I_z made A_z . I in the run. Needs semi-cce 2851449 or later: before it, cumulant's
+       CPMG with N >= 2 was wrong (|h|^2 off by up to 0.4) and npulse 0 was not a FID.
 
 Usage: python3 check.py model|semi WORKDIR BIN MPIRUN [SEMI_CCE]; exit 0 pass, 1 fail.
 CCEX writes W with 10 decimals, so W is compared to TOL = 2e-10.
@@ -95,6 +93,9 @@ def model():
 
 
 def semi(SEMI):
+    if 'seq = "FID" if npulse == 0' not in open(f"{SEMI}/quantum-bath-noise/src/quantum_bath_noise/runner.py").read():
+        print(f"  FAIL  semi-cce at {SEMI} is older than 2851449 (wrong CPMG filter, no FID): update it")
+        return False
     data = f"{SEMI}/quantum-bath-noise/examples/data"
     n = 18325   # the bath file's spins
     rng = np.random.default_rng(42)
@@ -109,18 +110,6 @@ if hbar:
     for m in ['constants', 'hamiltonian', 'bath.p1', 'bath.nuclear', 'methods.mode_sum']:
         mod = importlib.import_module('quantum_bath_noise.' + m)
         if hasattr(mod, 'HBAR_MU0_O4PI'): mod.HBAR_MU0_O4PI = hbar
-import numpy as np
-import quantum_bath_noise.methods.cumulant as cumulant
-def h_definition(omega, tau, seq="SE", Npulse=1):   # int_0^tau f(t) e^{i omega t} dt; CPMG-N pulses at (2k-1) tau / 2N
-    N = 0 if seq == "FID" else 1 if seq == "SE" else Npulse
-    edges = [0.0] + [tau * (2 * k - 1) / (2 * N) for k in range(1, N + 1)] + [tau]
-    h = np.zeros(omega.shape, dtype=np.complex128)
-    mask = np.abs(omega) > 1e-10
-    w = omega[mask]
-    h[mask] = sum((-1) ** j * (np.exp(1j * w * edges[j + 1]) - np.exp(1j * w * edges[j])) for j in range(N + 1)) / (1j * w)
-    h[~mask] = sum((-1) ** j * (edges[j + 1] - edges[j]) for j in range(N + 1))
-    return h
-cumulant._compute_h = h_definition
 import os
 if os.environ.get("NOISE_PSEUDO_SECULAR"):   # CCEX's hamiltonian.noise.pseudo_secular: the noise is A_z . I, not A_zz I_z
     import quantum_bath_noise.methods.mode_sum as mode_sum
@@ -129,11 +118,7 @@ if os.environ.get("NOISE_PSEUDO_SECULAR"):   # CCEX's hamiltonian.noise.pseudo_s
     src = src.replace("d_bz += bath_spin.A[2, 2] * vectors[local][2]",
                       "d_bz += sum(bath_spin.A[2, c] * vectors[local][c] for c in range(3))")
     exec(compile(src, mode_sum.__file__, "exec"), mode_sum.__dict__)
-import quantum_bath_noise.runner as runner
-src = open(runner.__file__).read().replace('seq = "SE" if npulse == 1 else "CPMG"',
-                                           'seq = "FID" if npulse == 0 else "SE" if npulse == 1 else "CPMG"')
-exec(compile(src, runner.__file__, "exec"), runner.__dict__)
-from quantum_bath_noise.cli import main
+from quantum_bath_noise.cli import main   # imports the runner, which then takes the mode_sum above
 main()
 """.replace("SEMI_SRC", repr(SEMI + "/quantum-bath-noise/src")))
     template = open(f"{SEMI}/quantum-bath-noise/examples/config_p1_mode_sum.txt").read().replace("examples/data", data)
