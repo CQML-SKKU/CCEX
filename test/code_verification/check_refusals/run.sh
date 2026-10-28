@@ -753,6 +753,14 @@ reject_case natab_cce2_hahn rj_noise_model "hamiltonian.noise.spectrum.model mus
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'spectrum': {'model': 'white'}}}"
 reject_case natab_cce2_hahn rj_noise_pseudo_secular "hamiltonian.noise.pseudo_secular must be" \
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'pseudo_secular': 'yes'}}"
+reject_case natab_cce2_hahn rj_noise_compute "hamiltonian.noise.compute must be \"coherence\", \"spectrum\" or \"correlation\"" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'psd'}}"
+reject_case natab_cce2_hahn rj_noise_spectrum_no_fft "hamiltonian.noise.compute \"spectrum\" needs hamiltonian.noise.fft" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum'}}"
+reject_case natab_cce2_hahn rj_noise_fft_window "hamiltonian.noise.fft.window must be" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum', 'fft': {'time_max': 1, 'nstep': 10, 'window': 'blackman'}}}"
+reject_case natab_cce2_hahn rj_noise_model_correlation "hamiltonian.noise.compute \"correlation\" needs hamiltonian.noise.spectrum \"bath\"" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'correlation', 'spectrum': {'model': 'OU', 'sigma': 1, 'tau_c': 1}}}"
 # method noise hands the product -chi_C per cluster, not a coherence: what reads the clusters' values is refused
 reject_case natab_cce2_hahn rj_noise_cluster_coherence "method noise does not write output.savemode cluster_coherence" \
   "d['method'] = 'noise'; d['savemode'] = 'cluster_coherence'"

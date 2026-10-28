@@ -4,7 +4,6 @@
  */
 #include "../../include/calculation/simulator.h"
 #include "../../include/calculation/hamiltonian.h"
-#include "../../include/calculation/noise.h"
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -244,11 +243,6 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* puls
     if (nqubit > 1){
         fprintf(stderr,"Error : calCoherenceCce : nqubit > 1, current nqubit = %d\n",nqubit);
         exit(1);
-    }
-
-    if (cnf->noise){   // method noise: the cluster's exp(-chi_C) instead of its echo (noise.cpp)
-        calCoherenceNoiseInto(qa,ba,cnf,pulse,result);
-        return;
     }
 
     // A2: propagator = sparse from sparse_min_dim on (one state; main.cpp refuses the rest) - no dense Hamiltonian

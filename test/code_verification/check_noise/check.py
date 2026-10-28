@@ -10,7 +10,12 @@ semi   against semi-cce's quantum-bath-noise (order 2): a P1 bath by mode_sum (H
        with its noise operator A_zz I_z made A_z . I in the run. Needs semi-cce 2851449 or later: before it, cumulant's
        CPMG with N >= 2 was wrong (|h|^2 off by up to 0.4) and npulse 0 was not a FID.
 
-Usage: python3 check.py model|semi WORKDIR BIN MPIRUN [SEMI_CCE]; exit 0 pass, 1 fail.
+compute the three values of hamiltonian.noise.compute on one 13C bath agree (C(t) of correlation and spectrum; the
+       coherence of spectrum, by FFT, and of coherence).
+pycce  compute correlation against PyCCE's noise (CCENoise): the ensemble and a sampled state.
+semi   also compute spectrum against semi-cce's psd (C(t), S(f), the coherence; two sets of its options).
+
+Usage: python3 check.py model|compute|pycce|semi WORKDIR BIN MPIRUN [SEMI_CCE]; exit 0 pass, 1 fail.
 CCEX writes W with 10 decimals, so W is compared to TOL = 2e-10.
 """
 import json, os, re, subprocess, sys
@@ -200,6 +205,27 @@ main()
     ok &= report("13C mode_sum, pseudo_secular", np.abs(W - ref[:, 1]).max(),
                  f" (it changes W by up to {np.abs(W - Wzz).max():.2g})")
 
+    # hamiltonian.noise.compute "spectrum" against semi-cce's psd (C(t), S(f) and the coherence), two sets of its options
+    for name, fft in (("plain", {}), ("options", {"window": "tukey", "pad_factor": 2, "subtract_mean": True,
+                                                  "clamp_negative": True})):
+        d = dict(c13, pulse={"count": 1}, deltat=0.01, nstep=301)
+        d["hamiltonian"] = dict(c13["hamiltonian"], noise={"compute": "spectrum",
+                                                           "fft": dict({"time_max": 3.0, "nstep": 5000}, **fft)})
+        ccex(f"c13_psd_{name}", d, 4)
+        keys = {k: (str(v).lower() if isinstance(v, bool) else v) for k, v in fft.items()}
+        semi_run(f"semi_c13_psd_{name}", 1, mf=False, base=nuclear, result="Coh_psd.dat", method="psd", npulse=1,
+                 tau_max=3.0, tau_nstep=300, noise_max=3.0, noise_nstep=5000, **keys)
+        sc = np.loadtxt(f"{work}/semi_c13_psd_{name}/Ct.dat"); cc = np.loadtxt(f"{work}/out/c13_psd_{name}_noise_correlation")
+        sp = np.loadtxt(f"{work}/semi_c13_psd_{name}/PSD.dat"); cp = np.loadtxt(f"{work}/out/c13_psd_{name}_noise_spectrum")
+        sw = np.loadtxt(f"{work}/semi_c13_psd_{name}/Coh_psd.dat")[:, 1]
+        _, W = coherence(f"{work}/out/c13_psd_{name}_wiDiv")
+        rc = np.abs(sc[:, 1] - cc[:, 1]).max() / np.abs(sc[:, 1]).max()
+        rs = np.abs(sp[:, 1] - cp[:, 1]).max() / np.abs(sp[:, 1]).max() if len(sp) == len(cp) else np.inf
+        good = rc <= 1e-10 and rs <= 1e-10   # FFT rounding: S(f) with subtract_mean is small against C(t)
+        print(f"  {'PASS' if good else 'FAIL'}  13C spectrum vs psd ({name}): C(t) {rc:.1e}, S(f) {rs:.1e} relative")
+        ok &= good
+        ok &= report(f"13C spectrum vs psd ({name}), coherence", np.abs(sw - np.clip(W, 0, 1)).max())
+
     _, W = coherence(f"{work}/out/p1_state1_wiDiv")
     ref = semi_run("semi_p1_own_hbar", 1, hbar=0)
     dW = np.abs(W - ref[:, 1]).max()
@@ -211,6 +237,88 @@ main()
     return ok
 
 
+NATAB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "check_numerics", "inputs", "natab")
+
+
+def natab(gyro=f"{NATAB}/gyro_13C"):
+    return {"method": "noise", "Qubit": {"qubit": [{"file": f"{NATAB}/bath_Diamond_NV_natab_defect"}],
+                                         "alpha_state": {"ms": [-1]}},
+            "configuration": {"gyrofile": gyro, "bathfile": [f"{NATAB}/bath_Diamond_NV_natab_1"]},
+            "order": 2, "bfield": 500, "rbath": 30, "rdip": 10, "pulse": {"count": 1}}
+
+
+def compute():
+    """the three values of hamiltonian.noise.compute on one 13C bath (ensemble): correlation and spectrum give the same
+    C(t), and spectrum (by FFT) the coherence of coherence. The FFT grid has to be fine: 0.1 us over 3 ms gives 2e-10
+    (the printed digits), 0.2 us 3e-10, 0.4 us 1.3e-5 (the 13C Larmor period is 1.9 us)"""
+    fine = {"time_max": 3.0, "nstep": 30000}
+    ccex("cmp_coherence", dict(natab(), deltat=0.002, nstep=501), 4)
+    ccex("cmp_spectrum", dict(natab(), deltat=0.002, nstep=501, hamiltonian={"noise": {"compute": "spectrum", "fft": fine}}), 4)
+    ccex("cmp_correlation", dict(natab(), deltat=0.0001, nstep=30001, hamiltonian={"noise": {"compute": "correlation"}}), 4)
+    a = np.loadtxt(f"{work}/out/cmp_correlation_noise_correlation"); b = np.loadtxt(f"{work}/out/cmp_spectrum_noise_correlation")
+    rc = np.abs(a[:, 1] - b[:, 1]).max() / np.abs(a[:, 1]).max()
+    ok = rc <= 1e-12
+    print(f"  {'PASS' if ok else 'FAIL'}  compute correlation and spectrum: the same C(t) ({rc:.1e} relative)")
+    _, wc = coherence(f"{work}/out/cmp_coherence_wiDiv")
+    _, ws = coherence(f"{work}/out/cmp_spectrum_wiDiv")
+    dW = np.abs(ws - wc).max()   # held to the FFT's accuracy on this grid, 1e-9, not to the printed digits
+    print(f"  {'PASS' if dW <= 1e-9 else 'FAIL'}  compute spectrum (FFT) and coherence: the coherence, max|dW| = {dW:.2e} "
+          f"(<= 1e-9; W down to {wc.min():.2g})")
+    return dW <= 1e-9 and ok
+
+
+def pycce():
+    """compute correlation against PyCCE's noise (CCENoise), the ensemble and a sampled pure state, order 2, PyCCE's
+    hbar*mu0/4pi and 13C gyromagnetic ratio as CCEX's / CCEX given PyCCE's"""
+    driver = f"{work}/pycce_driver.py"
+    open(driver, "w").write("""import os, sys, numpy as np
+import pycce as pc, pycce.constants, pycce.bath.array, pycce.h.functions
+for m in (pycce.constants, pycce.bath.array, pycce.h.functions): m.HBAR_MU0_O4PI = 1.054571729
+natab, out, statefile = sys.argv[1], sys.argv[2], sys.argv[3]
+rows = [l.split() for l in open(natab + '/bath_Diamond_NV_natab_1').readlines()[1:] if l.strip()]
+pos = np.array([[float(x) for x in r[:3]] for r in rows]); center = np.loadtxt(natab + '/bath_Diamond_NV_natab_defect', max_rows=1)
+keep = np.linalg.norm(pos - center, axis=1) <= 30
+b = pc.BathArray(ca=pos[keep] - center, sn=['13C'] * int(keep.sum()))
+open(out + '_gyro', 'w').write('13C 0.5 %r\\n' % float(b.gyro[0]))
+ts = np.arange(1501) * 0.002
+for tag in ('ens', 'pure'):
+    # the qubit as Sz vectors (an integer alpha is an eigenstate's index in PyCCE): ms -1 and 0
+    calc = pc.Simulator(spin=1, position=[0, 0, 0], alpha=[0, 0, 1], beta=[0, 1, 0], bath=b.copy(), r_bath=30, r_dipole=10,
+                        order=2, magnetic_field=[0, 0, 500])
+    if tag == 'pure':   # density matrices |m><m|: PyCCE 1.1.1's CCENoise stops on state vectors
+        st = np.loadtxt(statefile)[1:][keep]
+        lookup = {tuple(np.round(p, 6)): s for p, s in zip(pos[keep] - center, st)}
+        m = [lookup[tuple(np.round(p, 6))] for p in calc.bath.xyz]
+        calc.bath.state = np.array([np.diag([1.0, 0.0]) if x > 0 else np.diag([0.0, 1.0]) for x in m])
+    C = calc.compute(ts, quantity='noise', method='cce')
+    np.savetxt(out + '_' + tag, np.c_[ts, C.real])   # PyCCE's couplings are in kHz: kHz^2, as CCEX's
+sys.stdout.flush()
+os._exit(0)   # PyCCE 1.1.1 crashes at interpreter exit on this machine (double free)
+""")
+    r = subprocess.run([sys.executable, driver, NATAB, f"{work}/pycce", f"{NATAB}/state_1"], capture_output=True, text=True)
+    if r.returncode or not os.path.exists(f"{work}/pycce_pure"):
+        print(f"  FAIL  PyCCE run: {r.stderr[-400:]}")
+        return False
+    ok = True
+    for tag, extra in (("ens", {}), ("pure", {"s_range": [1, 1], "bath_state_file": [f"{NATAB}/state_{{s}}"]})):
+        d = natab(gyro=f"{work}/pycce_gyro")
+        d["configuration"].update(extra)
+        d.update(deltat=0.002, nstep=1501, hamiltonian={"noise": {"compute": "correlation"}})
+        ccex(f"pycce_{tag}", d, 4)
+        c = np.loadtxt(f"{work}/out/pycce_{tag}{'_state1' if tag == 'pure' else ''}_noise_correlation")
+        p = np.loadtxt(f"{work}/pycce_{tag}")
+        rel = np.abs(c[:, 1] - p[:, 1]).max() / np.abs(p[:, 1]).max()
+        good = rel <= 1e-9
+        print(f"  {'PASS' if good else 'FAIL'}  compute correlation vs PyCCE noise ({'ensemble' if tag == 'ens' else 'sampled state'}): "
+              f"{rel:.1e} relative")
+        ok &= good
+    return ok
+
+
 if mode == "model":
     sys.exit(0 if model() else 1)
+if mode == "compute":
+    sys.exit(0 if compute() else 1)
+if mode == "pycce":
+    sys.exit(0 if pycce() else 1)
 sys.exit(0 if semi(sys.argv[5]) else 1)

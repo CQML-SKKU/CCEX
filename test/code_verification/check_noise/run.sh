@@ -4,7 +4,7 @@
 # for the model spectra, and semi-cce's mode_sum for a P1 bath (check.py has the cases and the tolerance).
 #
 # Usage:  bash test/code_verification/check_noise/run.sh      (CCEX_BIN, CCEX_MPI as for the others)
-# Needs:  numpy and scipy on python3; the P1 half also semi-cce (SEMI_CCE, default ~/bin/code_develop/semi-cce),
+# Needs:  numpy and scipy on python3; PyCCE for that comparison (skipped without it); the semi-cce half (SEMI_CCE, default ~/bin/code_develop/semi-cce),
 #         (2851449 or later); without it that half is skipped and said so
 # ---------------------------------------------------------------------------
 set -uo pipefail
@@ -14,6 +14,12 @@ W="$HERE/_work"; rm -rf "${W:?}"; mkdir -p "$W"
 SEMI="${SEMI_CCE:-$HOME/bin/code_develop/semi-cce}"
 status=0
 python3 "$HERE/check.py" model "$W/model" "$BIN_DEV" "$MPIRUN" || status=1
+python3 "$HERE/check.py" compute "$W/compute" "$BIN_DEV" "$MPIRUN" || status=1
+if python3 -c "import os, pycce; os._exit(0)" > /dev/null 2>&1; then
+    python3 "$HERE/check.py" pycce "$W/pycce" "$BIN_DEV" "$MPIRUN" || status=1
+else
+    echo "  SKIP  correlation against PyCCE: no pycce on python3"
+fi
 if [ -f "$SEMI/quantum-bath-noise/run_quantum.py" ]; then
     python3 "$HERE/check.py" semi "$W/semi" "$BIN_DEV" "$MPIRUN" "$SEMI" || status=1
 else

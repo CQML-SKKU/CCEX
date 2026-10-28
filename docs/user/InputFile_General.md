@@ -28,7 +28,8 @@ Tags in this section are about the simulation parameters: the method, the number
     - cCCE: [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A) (meCCE reads them too)
     - meCCE, megCCE: [jump_operators](#tag_jump_operators)
     - gCCE: no settings yet
-    - noise: [spectrum](#tag_noise_spectrum), [pseudo_secular](#tag_noise_pseudo_secular)
+    - noise: [spectrum](#tag_noise_spectrum), [pseudo_secular](#tag_noise_pseudo_secular), [compute](#tag_noise_compute),
+      [fft](#tag_noise_fft)
 - [keys read and not used](#tag_not_used), [turning a part off](#tag_turn_off)
 
 The qubit's position file (`Qubit.qubit[].file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubit_file); the files of the defect bath
@@ -985,9 +986,9 @@ non-Gaussian part; strongly coupled spins need cCCE or gCCE).
   (kHz²/kHz, two-sided) on [f_min, f_max] (kHz, both take a unit), χ = 4π² ∫ S(f) |Y(2πf)|² df by Gauss–Legendre;
   the work grows as f_max T.
 
-With `"bath"` a cluster hands the product −χ_C, not a coherence (the product forms exp(−χ_C) itself, so that a large
-χ_C does not underflow): `output.savemode` `cluster_coherence`, `rdip_ladder` and `output.cluster_contributions` are
-refused with method `noise`.
+With `"bath"` the clusters' values (−χ_C, or their correlations with [compute](#tag_noise_compute)) are summed over the
+CCE terms, not multiplied as cCCE's coherences (no exp(−χ_C) of one cluster can underflow): `output.savemode`
+`cluster_coherence`, `rdip_ladder` and `output.cluster_contributions` are refused with method `noise`.
 
 A model run reads no bath: `configuration`, the Defect block and the clusters are not used, and `order`, `bfield`,
 `rbath`, `rdip` and `Qubit` may be left out (the run takes order 1, bfield 0, rbath 0, rdip 0 and one qubit at the
@@ -1019,6 +1020,56 @@ differ by up to 0.04 in W, in its P1 example by 1e-3; which of them is the bette
 <b>Default:</b> `false`
 
 <b>Example:</b> ``` "hamiltonian" : {"noise": {"spectrum": "bath", "pseudo_secular": true}} ```
+
+<a id="tag_noise_compute"></a>
+## compute
+<b>Description:</b><br>
+`hamiltonian.noise`, with [spectrum](#tag_noise_spectrum) `"bath"`. What the run computes from the bath's noise
+B = Σ_i A_zz,i I_z,i (A_z,i·I_i with [pseudo_secular](#tag_noise_pseudo_secular)), and which files it writes:
+
+| Value | Computes | Writes |
+|---|---|---|
+| `"coherence"` (default) | χ_C of each cluster from its eigenmodes, the coherence exp(−χ) at the run's times; no time grid of the noise, exact for ideal π pulses | `_wiDiv` (and `_noDiv`) |
+| `"spectrum"` | `semi-cce`'s `psd`: the correlation C(t) on the grid of [fft](#tag_noise_fft), its spectrum S(f) by FFT, and χ = (m_α − m_β)² 2 ∫ S(f) F(2πfT)/f² df by the trapezoid rule | `_noise_correlation`, `_noise_spectrum`, `_wiDiv` |
+| `"correlation"` | PyCCE's noise (`CCENoise`): C(t) at the run's times (`deltat`, `nstep`) | `_noise_correlation` |
+
+C(t) = Re Tr[ρ {B(t), B}]/2 in kHz², summed over the CCE terms (`<outfile>[_state<s>]_noise_correlation`: t in ms, C);
+S(f) is two-sided, kHz²/kHz (`_noise_spectrum`: f in kHz, S). ρ is 1/D (infinite temperature) for `"coherence"` and
+`"spectrum"`, where a sampled state (`s_range`) enters through the mean field alone, as in `semi-cce`; for
+`"correlation"` it is the cluster's pure state with `s_range`, with the mean field of the other spins, as in PyCCE
+(1/D without `s_range`). So without `s_range` the three agree: `"correlation"` and `"spectrum"` give the same C(t), and
+`"spectrum"` gives the coherence of `"coherence"` to the accuracy of its grid (a step below the period of the fastest
+bath frequency, a window longer than the times asked for); with `s_range` `"correlation"` is another quantity.
+A model spectrum computes the coherence alone (another value is refused). <br>
+
+<b>Data Type:</b> String, `"coherence"`, `"spectrum"` or `"correlation"` (case is not significant)
+
+<b>Default:</b> `"coherence"`
+
+<b>Example:</b> ``` "hamiltonian" : {"noise": {"compute": "correlation"}} ```
+
+<a id="tag_noise_fft"></a>
+## fft
+<b>Description:</b><br>
+`hamiltonian.noise`, with [compute](#tag_noise_compute) `"spectrum"` (required there, not used otherwise): the time grid
+of C(t) and the FFT, `semi-cce`'s `psd` keys.
+
+| Key | Meaning | Default |
+|---|---|---|
+| `time_max` | the end of the grid (ms, takes a unit): C(t) at t = 0, Δt, ..., `time_max` | required |
+| `nstep` | its intervals (`nstep` + 1 points, Δt = `time_max`/`nstep`) | required |
+| `window` | `"none"`, `"hann"`, `"tukey"` (the last half tapered) or `"exp"` (exp(−3t/`time_max`)) on C(t) | `"none"` |
+| `pad_factor` | the FFT length is `pad_factor` × (2 `nstep` + 1), made odd; the padding holds the mean of the last fifth of C(t) | 1 |
+| `subtract_mean` | subtract that mean from C(t) first (and pad with 0) | `false` |
+| `clamp_negative` | set S(f) < 0 to 0 before the coherence | `false` |
+
+S(f) = Δt Re FFT of C(t) made even, at f = k/(M Δt), k = 0 .. M/2 for an FFT of length M. The highest frequency is
+1/(2Δt) and the resolution 1/(M Δt): Δt has to resolve the fastest bath frequency (the ¹³C Larmor period is 1.9 µs at
+500 G) and `time_max` to cover the times of the coherence. <br>
+
+<b>Data Type:</b> Object
+
+<b>Example:</b> ``` "hamiltonian" : {"noise": {"compute": "spectrum", "fft": {"time_max": 3.0, "nstep": 15000, "window": "hann"}}} ```
 
 <a id="tag_not_used"></a>
 ## Keys read and not used

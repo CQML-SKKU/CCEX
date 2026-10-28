@@ -267,6 +267,8 @@ static void applyInputUnits(cJSON* root){
         applyUnit(spectrum, "f_min", "hamiltonian.noise.spectrum.f_min", kFreqKHz);
         applyUnit(spectrum, "f_max", "hamiltonian.noise.spectrum.f_max", kFreqKHz);
     }
+    cJSON* noiseFft = untrackedItem(untrackedItem(untrackedItem(root, "hamiltonian"), "noise"), "fft");
+    if (cJSON_IsObject(noiseFft)) applyUnit(noiseFft, "time_max", "hamiltonian.noise.fft.time_max", kTimeMs);
     cJSON* quadrupole = untrackedItem(untrackedItem(untrackedItem(root, "hamiltonian"), "common"), "quadrupole");
     if (cJSON_IsObject(quadrupole)) applyUnit(quadrupole, "cell", "hamiltonian.common.quadrupole.cell", kLengthA);
     cJSON* hamiltonian = untrackedItem(root, "hamiltonian");
@@ -775,10 +777,47 @@ static void readNoiseSpectrum(Config* cnf, cJSON* section){
     // pseudo-secular A_zx I_x + A_zy I_y too (true)
     const bool pseudoSecularGiven = cJSON_GetObjectItem(section,"pseudo_secular") != NULL;
     cnf->noise_pseudo_secular = cJSON_ReadBool(section,(char*)"pseudo_secular",true,false);
+    // compute: what the run gives (noise.cpp); fft: the grid and the FFT of compute spectrum (semi-cce's psd keys)
+    const bool computeGiven = cJSON_GetObjectItem(section,"compute") != NULL;
+    const char* compute = cJSON_ReadString(section,(char*)"compute",true,(char*)"coherence");
+    if (strcasecmp(compute,"coherence") && strcasecmp(compute,"spectrum") && strcasecmp(compute,"correlation")){
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise.compute must be \"coherence\", \"spectrum\" or \"correlation\", not \"%s\"\n",compute);
+        ccexRefuse();
+    }
+    for (const char* c : {"coherence", "spectrum", "correlation"}) if (!strcasecmp(compute,c)) strcpy(cnf->noise_compute,c);
+    cJSON* fft = readBlock(section,"fft");
+    if (fft && strcmp(cnf->noise_compute,"spectrum"))
+        warnNotUsed("hamiltonian.noise.fft","it is read with hamiltonian.noise.compute \"spectrum\" only");
+    else if (!strcmp(cnf->noise_compute,"spectrum")){
+        if (!fft){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.compute \"spectrum\" needs hamiltonian.noise.fft {\"time_max\", \"nstep\"}\n");
+            ccexRefuse();
+        }
+        cnf->noise_fft_time_max = cJSON_ReadDouble(fft,(char*)"time_max",false,0);
+        cnf->noise_fft_nstep = cJSON_ReadInt(fft,(char*)"nstep",false,0);
+        cnf->noise_fft_pad_factor = cJSON_ReadInt(fft,(char*)"pad_factor",true,1);
+        if (!(cnf->noise_fft_time_max > 0) || cnf->noise_fft_nstep < 2 || cnf->noise_fft_pad_factor < 1){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.fft needs time_max > 0, nstep >= 2 and pad_factor >= 1\n");
+            ccexRefuse();
+        }
+        const char* window = cJSON_ReadString(fft,(char*)"window",true,(char*)"none");
+        if (strcasecmp(window,"none") && strcasecmp(window,"hann") && strcasecmp(window,"tukey") && strcasecmp(window,"exp")){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.fft.window must be \"none\", \"hann\", \"tukey\" or \"exp\", not \"%s\"\n",window);
+            ccexRefuse();
+        }
+        for (const char* w : {"none", "hann", "tukey", "exp"}) if (!strcasecmp(window,w)) strcpy(cnf->noise_fft_window,w);
+        cnf->noise_fft_subtract_mean = cJSON_ReadBool(fft,(char*)"subtract_mean",true,false);
+        cnf->noise_fft_clamp_negative = cJSON_ReadBool(fft,(char*)"clamp_negative",true,false);
+    }
     cJSON* spectrum = cJSON_GetObjectItem(section,"spectrum");
     if (!spectrum) return;
     if (cJSON_IsString(spectrum) && spectrum->valuestring && !strcasecmp(spectrum->valuestring,"bath")) return;
     if (pseudoSecularGiven) warnNotUsed("hamiltonian.noise.pseudo_secular","a model spectrum has no bath");
+    if (computeGiven && strcmp(cnf->noise_compute,"coherence")){
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise.compute \"%s\" needs hamiltonian.noise.spectrum \"bath\" (a model spectrum "
+                         "computes the coherence alone)\n",cnf->noise_compute);
+        ccexRefuse();
+    }
     if (!cJSON_IsObject(spectrum)){
         ccexRefusalPrint(stderr,"Error: hamiltonian.noise.spectrum must be \"bath\" or {\"model\": \"OU\" or \"power\", ...}\n");
         ccexRefuse();
@@ -2136,7 +2175,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printf("          quadrupole (\"off\" or { structure, file, file_without_defect, cell }) ]\n");
         printf("        hamiltonian.cCCE : [ knight, hfmedi, delta_A ]\n");
         printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n");
-        printf("        hamiltonian.noise : [ spectrum (\"bath\" or { model OU: sigma, tau_c; model power: amplitude, beta, f_min, f_max }), pseudo_secular ]\n\n");
+        printf("        hamiltonian.noise : [ spectrum (\"bath\" or { model OU: sigma, tau_c; model power: amplitude, beta, f_min, f_max }), pseudo_secular, compute (coherence, spectrum, correlation),\n"
+               "          fft { time_max, nstep, window, pad_factor, subtract_mean, clamp_negative } ]\n\n");
     }
     cJSON* hamiltonian = readBlock(root,"hamiltonian");
     // A94 (G1) named the sections by role, corrections and dissipation; reverted 2026-10-17, the sections stay by method

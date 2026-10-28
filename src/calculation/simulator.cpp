@@ -9,6 +9,7 @@
 #include "../../include/input/reader.h"
 #include "../../include/calculation/gpu/compute_backend.h"
 #include "../../include/calculation/scaled_product.h"
+#include "../../include/calculation/noise.h"
 #include "../../include/auto_convergence/rdip_ladder.h"
 #include "../../include/clustering/bundle/bundle_work.h"
 #include "../../include/clustering/bundle/bundle_connection_check.h"
@@ -21,15 +22,6 @@ static void reduceScaledProduct(void* input,void* output,int* count,MPI_Datatype
     auto* a=static_cast<ScaledComplex*>(input);
     auto* b=static_cast<ScaledComplex*>(output);
     for(int i=0;i<*count;++i)b[i]=a[i]*b[i];
-}
-
-// method noise: exp(-chi_C)^power as 2^e m, formed from chi_C itself, so that no factor underflows (noise.cpp)
-static ScaledComplex noiseFactor(double minusChi, int power){
-    const long double x = power*(long double)minusChi/std::log(2.0L);
-    ScaledComplex factor;
-    factor.exponent = (long long)std::floor(x);
-    factor.real = std::exp2(x - factor.exponent);
-    return factor;
 }
 
 void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pulse* pls, Cluster* cls, Output* op, int*** localclusters){
@@ -369,6 +361,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             const bool stableProduct=!strcasecmp(quantity,"coherence") &&
                 (qubitInMatrix || isMECCE || !strcasecmp(method,"cce") || !strcasecmp(method,"pcce"));
             std::vector<ScaledComplex> stableWith(stableProduct ? nstep : 0);
+            // method noise: every cluster's values times its power, summed (noise.cpp); without: the positive powers
+            std::vector<double> noiseWith(cnf->noise ? noiseLength(cnf) : 0), noiseWithout(noiseWith.size()), noiseValue;
             std::vector<ScaledComplex> stableWithout(stableProduct ? nstep : 0);
             // mode "except" (adaptive-regroup-stage3b.md 1절): the run's own product is untouched; beside it P_K, the
             // product of every term not in the except list, and the raw curves of the excepted terms as probes.
@@ -568,6 +562,10 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         ownedResult = false;
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
+                    }else if (cnf->noise){     // method noise: the cluster's values (noise.cpp), summed below
+                        noiseCluster(qa, ba_cluster, cnf, pls, noiseValue);
+                        result_nth = cceResult.get();
+                        ownedResult = false;
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
                         result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
                         ownedResult = true;
@@ -604,14 +602,13 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     ladder.add(cluster,n,power,result_nth,inverseZero,unitZero);
                     if(gather && power!=1 && ngathered>0)flushGathered();
                     const std::complex<double>* direct=(small && smallPer==1 && gather) ? small : nullptr;   // X6
-                    for (int istep=0; istep<nstep; istep++){
-                        if((cnf->cluster_contributions || ladder.on) && power==0)continue;
-                        if(cnf->noise){   // the cluster gave -chi_C (noise.cpp)
-                            const ScaledComplex factor=noiseFactor(result_nth[istep](0,0).real(),power);
-                            stableWith[istep].multiplyLazy(factor);
-                            if(power>0)stableWithout[istep].multiplyLazy(factor);
-                            continue;
+                    if(cnf->noise)   // method noise: the values add with the powers (noiseFinish makes the outputs)
+                        for(size_t k=0;k<noiseValue.size();++k){
+                            noiseWith[k]+=power*noiseValue[k];
+                            if(power>0)noiseWithout[k]+=power*noiseValue[k];
                         }
+                    for (int istep=0; istep<nstep && !cnf->noise; istep++){
+                        if((cnf->cluster_contributions || ladder.on) && power==0)continue;
                         if(stableProduct){
                             const auto raw=direct ? direct[istep] : result_nth[istep](0,0),zero=result_0th[istep](0,0);
                             const bool invalid=!std::isfinite(raw.real()) || !std::isfinite(raw.imag()) ||
@@ -809,6 +806,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 err = MPI_Reduce(result_nD[istep].data(),result_nD_all[istep].data(),dim*dim,MPI_DOUBLE_COMPLEX,MPI_PROD,0,MPI_COMM_WORLD);
             }
 
+            // method noise: its sums, not the product above, make the outputs
+            const bool saveCoherence=!cnf->noise ||
+                noiseFinish(qa,cnf,pls,op,istate,noiseWith,noiseWithout,result_wD_all,result_nD_all);
             MPI_Barrier(MPI_COMM_WORLD);
             lap(PH_REDUCE);
 
@@ -846,7 +846,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 if(verbosity)printSubTitle("Save the results...");
                 adaptiveWriteCurve(cnf,result_wD_all,istate);
                 
-                if (strcasecmp(savemode,"coherence")==0){
+                if (!saveCoherence){   // method noise, compute correlation: its file alone (noiseFinish)
+                }else if (strcasecmp(savemode,"coherence")==0){
                     Output_save(op,result_wD_all,result_nD_all,nstep,deltat,istate);
                 }else if (strcasecmp(savemode,"cluster_coherence")==0 || strcasecmp(savemode,"cluster_density_matrix")==0){
                     Output_save(op,result_wD_all,result_nD_all,nstep,deltat,istate);

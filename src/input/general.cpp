@@ -46,6 +46,12 @@ Config* Config_init(){
     cnf->noise=false;
     strcpy(cnf->noise_model,"bath");
     cnf->noise_pseudo_secular=false;
+    strcpy(cnf->noise_compute,"coherence");
+    cnf->noise_fft_time_max=0;
+    cnf->noise_fft_nstep=0;
+    strcpy(cnf->noise_fft_window,"none");
+    cnf->noise_fft_pad_factor=1;
+    cnf->noise_fft_subtract_mean=cnf->noise_fft_clamp_negative=false;
     cnf->noise_sigma=cnf->noise_tau_c=0;
     cnf->noise_amplitude=cnf->noise_beta=cnf->noise_f_min=cnf->noise_f_max=0;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
@@ -1003,8 +1009,18 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
     const bool bundle = !strcasecmp(cnf->cluster_mode,"adaptive");   // cluster.mode bundle
     printStructElementChar("method",cnf->noise ? (char*)"noise" : Config_getMethod(cnf));   // noise: CCE inside
     if (cnf->noise) printStructElementChar("hamiltonian.noise.spectrum",cnf->noise_model);
-    if (cnf->noise && !strcmp(cnf->noise_model,"bath"))
+    if (cnf->noise && !strcmp(cnf->noise_model,"bath")){
         printStructElementChar("hamiltonian.noise.pseudo_secular",(char*)(cnf->noise_pseudo_secular ? "true" : "false"));
+        printStructElementChar("hamiltonian.noise.compute",cnf->noise_compute);
+        if (!strcmp(cnf->noise_compute,"spectrum")){
+            printStructElementDouble("hamiltonian.noise.fft.time_max",cnf->noise_fft_time_max);
+            printStructElementInt("hamiltonian.noise.fft.nstep",cnf->noise_fft_nstep);
+            printStructElementChar("hamiltonian.noise.fft.window",cnf->noise_fft_window);
+            printStructElementInt("hamiltonian.noise.fft.pad_factor",cnf->noise_fft_pad_factor);
+            printStructElementChar("hamiltonian.noise.fft.subtract_mean",(char*)(cnf->noise_fft_subtract_mean ? "true" : "false"));
+            printStructElementChar("hamiltonian.noise.fft.clamp_negative",(char*)(cnf->noise_fft_clamp_negative ? "true" : "false"));
+        }
+    }
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

@@ -274,8 +274,19 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //                                      // {"model": "OU", "sigma": kHz, "tau_c": ms} or
 //                                      // {"model": "power", "amplitude": kHz^2/kHz,
 //                                      // "beta", "f_min": kHz, "f_max": kHz}
-//          "pseudo_secular" : false    // the noise: A_zz I_z (secular, default), true adds
+//          "pseudo_secular" : false,   // the noise: A_zz I_z (secular, default), true adds
 //                                      // A_zx I_x + A_zy I_y (pseudo-secular)
+//          "compute"        : "coherence",
+//                                      // "coherence" (default), "spectrum" (C(t), FFT
+//                                      // S(f), the coherence) or "correlation" (C(t))
+//          "fft"            : {        // compute "spectrum" only
+//            "time_max"       : 3.0,   // ms (unit): C(t) on 0 .. time_max
+//            "nstep"          : 15000, // intervals
+//            "window"         : "none",// "none", "hann", "tukey" or "exp"
+//            "pad_factor"     : 1,     // FFT length pad_factor x (2 nstep + 1)
+//            "subtract_mean"  : false, // subtract the tail mean of C(t)
+//            "clamp_negative" : false  // S(f) < 0 set to 0
+//          }
 //      },
 //      "meCCE"  : {                    // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
 //          "jump_operators" : [
