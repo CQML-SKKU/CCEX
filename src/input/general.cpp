@@ -43,6 +43,10 @@ Config* Config_init(){
     cnf->bath_mean_field_off=false;
     cnf->hamiltonian_ccce_given=false;
     cnf->delta_A=false;
+    cnf->noise=false;
+    strcpy(cnf->noise_model,"bath");
+    cnf->noise_sigma=cnf->noise_tau_c=0;
+    cnf->noise_amplitude=cnf->noise_beta=cnf->noise_f_min=cnf->noise_f_max=0;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
     cnf->gpu_batch_clusters = 8;
     cnf->gpu_cluster_batch_mb = 64;
@@ -412,9 +416,9 @@ void Config_setMethod(Config* cnf, char* method){
 
 void Config_setQuantity(Config* cnf, char* quantity){
 
-    // "noise" used to be accepted, but nothing computes it: the run gave the coherence under that name (review 20261013-doxygen D22)
+    // "noise" used to be accepted, but nothing computed it: the run gave the coherence under that name (review 20261013-doxygen D22)
     if (strcasecmp(quantity,"noise") == 0) {
-        ccexRefusalPrint(stderr, "Error: quantity \"noise\" is not supported (no noise calculation exists), use coherence or dm\n");
+        ccexRefusalPrint(stderr, "Error: quantity \"noise\" is not supported, the noise calculation is method \"noise\" (with quantity coherence)\n");
         ccexRefuse();
     }
 
@@ -996,7 +1000,8 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
 
     const bool pcce = methodUsesPcceClusters(cnf->method);
     const bool bundle = !strcasecmp(cnf->cluster_mode,"adaptive");   // cluster.mode bundle
-    printStructElementChar("method",Config_getMethod(cnf));
+    printStructElementChar("method",cnf->noise ? (char*)"noise" : Config_getMethod(cnf));   // noise: CCE inside
+    if (cnf->noise) printStructElementChar("hamiltonian.noise.spectrum",cnf->noise_model);
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

@@ -27,7 +27,8 @@ Tags in this section are about the simulation parameters: the method, the number
       [file_without_defect](#tag_quadrupole_file_without_defect), [cell](#tag_quadrupole_cell), [frame](#tag_quadrupole_frame))
     - cCCE: [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A) (meCCE reads them too)
     - meCCE, megCCE: [jump_operators](#tag_jump_operators)
-    - gCCE, noise: no settings yet (noise is a reserved method)
+    - gCCE: no settings yet
+    - noise: [spectrum](#tag_noise_spectrum)
 - [keys read and not used](#tag_not_used), [turning a part off](#tag_turn_off)
 
 The qubit's position file (`Qubit.qubit[].file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubit_file); the files of the defect bath
@@ -54,7 +55,7 @@ and gCCE; `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE, meCCE and megCCE w
 | `gCCE`  | Generalized CCE |
 | `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
 | `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU; the qubit sequence as given (Manual and any rotation included) with `pulse.per_qubit` false and `pulse.detuning_factor` 1 (others refused); DEER bath pulses (`pulse.bath`) run with it |
-| `noise` | reserved: refused as not implemented yet |
+| `noise` | the Gaussian (second-cumulant) coherence exp(−χ) of the qubit's phase noise, from a model spectrum or from the bath (the semi-classical CCE of `semi-cce`, [spectrum](#tag_noise_spectrum)). cCCE clusters (`cluster.mode` standard only), CPU, one qubit, ideal π pulses, quantity `coherence` |
 
 Old values are refused with their current form ([old names](InputFile.md#OldNames)).
 
@@ -77,7 +78,7 @@ usual one; `dm` (gCCE) follows the whole qubit density matrix, for populations o
 | `coherence` | Coherence function             |
 | `dm`        | Density matrix                 |
 
-Any other value is refused, `noise` included: there is no noise calculation.
+Any other value is refused, `noise` included: the noise calculation is [method](#tag_method) `noise`.
 
 With `dm` (gCCE), the reduced density matrix of the qubits is written as blocks of rows, one
 block per time step, and the cluster expansion is applied element by element. An element the
@@ -584,8 +585,8 @@ The terms of the Hamiltonian that are chosen, not given by the files: `common` h
 `gCCE`, `meCCE` and `megCCE` what one method reads (meCCE reads `cCCE` too: it builds the cCCE's Hamiltonian). A setting
 in the block of another method is refused (a `cCCE` setting in a gCCE or megCCE run, a `meCCE` or `megCCE` section in a
 run of another method); `meCCE` and `megCCE` hold
-[jump_operators](#tag_jump_operators) only; `gCCE` has no settings yet, nor has `noise`, the section of the reserved
-method (an empty section is allowed, a key in it is refused). Every key has a default, so the block may be left out. <br>
+[jump_operators](#tag_jump_operators) only; `noise` holds [spectrum](#tag_noise_spectrum) and is refused in a run of
+another method; `gCCE` has no settings yet (an empty section is allowed, a key in it is refused). Every key has a default, so the block may be left out. <br>
 
 <b>Data Type:</b> Object `{"common": {...}, "cCCE": {...}, "gCCE": {}, "meCCE": {...}, "megCCE": {...}}`
 
@@ -962,6 +963,35 @@ runs S₋ and S₊ on the ¹³C against cCCE. <br>
         {"bath_name": "e",     "operator": "+", "rate": 1.5915e-4},
         {"bath_name": "qubit", "operator": "z", "rate": 1.5915e-4}]}}
     ```
+
+<a id="tag_noise_spectrum"></a>
+## spectrum
+<b>Description:</b><br>
+`hamiltonian.noise`, method `noise` only. Where the noise of the qubit transition frequency comes from. The coherence is
+W(T) = exp(−χ(T)), χ = ⟨φ²⟩/2 of the phase φ = ∫ f(t) δω(t) dt, f = ±1 flipped by each (ideal π) pulse of the sequence:
+the Gaussian approximation, which needs many weakly coupled noise sources (no backaction of the qubit on the bath, no
+non-Gaussian part; strongly coupled spins need cCCE or gCCE).
+
+- `"bath"` (the default): the bath of the run. Each cCCE cluster gives
+  χ_C = (1/2D) Σ_ab |⟨a|δω|b⟩|² |Y(ω_ab)|², Y(ω) = ∫ f(t) e^{iωt} dt, over the eigenstates of
+  H_bath + p Σ_i A_z,i·I_i with p = (|m_α| + |m_β|)/2, at infinite temperature, with δω = (m_α − m_β) Σ_i A_zz,i I_z,i;
+  the χ_C add over the CCE terms (the cCCE product of the exp(−χ_C)). With `s_range` a bath state enters only through
+  the mean field of the other bath spins ([bath_bath_mean_field](#tag_bath_bath_mean_field)). For a Hahn echo this is
+  `semi-cce`'s `mode_sum`; p and the A_zz-only δω are its conventions.
+- `{"model": "OU", "sigma": σ, "tau_c": τ_c}`: Ornstein–Uhlenbeck noise of the frequency, ⟨δν(t)δν(0)⟩ = σ² e^{−|t|/τ_c}
+  (σ in kHz, τ_c in ms; both take a unit). χ is exact for any ideal π sequence.
+- `{"model": "power", "amplitude": A, "beta": β, "f_min": f_min, "f_max": f_max}`: S(f) = A (f / 1 kHz)^{−β}
+  (kHz²/kHz, two-sided) on [f_min, f_max] (kHz, both take a unit), χ = 4π² ∫ S(f) |Y(2πf)|² df by Gauss–Legendre;
+  the work grows as f_max T.
+
+A model run reads no bath: `configuration`, the Defect block and the clusters are not used, but `order`, `bfield`,
+`rbath`, `rdip` and `Qubit` are still required by the readers (any value).
+
+<b>Data Type:</b> String `"bath"` or Object
+
+<b>Default:</b> `"bath"`
+
+<b>Example:</b> ``` "method" : "noise", "hamiltonian" : {"noise": {"spectrum": {"model": "OU", "sigma": 10, "tau_c": {"value": 50, "unit": "us"}}}} ```
 
 <a id="tag_not_used"></a>
 ## Keys read and not used

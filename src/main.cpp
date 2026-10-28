@@ -20,6 +20,7 @@
 // Simulators
 #include "../include/calculation/simulator.h"
 #include "../include/calculation/simulator_gcce_bath.h"
+#include "../include/calculation/noise.h"
 #include "../include/calculation/memory_estimate.h"
 #include "../include/calculation/superoperator.h"
 #include "../include/calculation/gpu/compute_backend.h"
@@ -179,8 +180,8 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
     // A94 (R2): a finite pulse (pulse.detuning_factor other than 1, of pulse.duration) is the gCCE kernel's alone; the
     // cCCE kernel ignored both keys without a word (meCCE and megCCE refuse detuning_factor, validateMasterEquation)
     if(!strcmp(kernel,"cce") && (pls->detuning_factor!=1.0 || pls->pulse_time!=0.0)) {
-        if(rank==0) fprintf(stderr,"Error: method cCCE needs pulse.detuning_factor = 1 and pulse.duration = 0 (it calculates ideal "
-                                   "instantaneous pulses; a finite pulse needs method gCCE)\n");
+        if(rank==0) fprintf(stderr,"Error: method %s needs pulse.detuning_factor = 1 and pulse.duration = 0 (it calculates ideal "
+                                   "instantaneous pulses; a finite pulse needs method gCCE)\n",cnf->noise ? "noise" : "cCCE");
         ccexRefuse();
     }
     if(!strcmp(kernel,"gcce") && pls->detuning_factor==1.0 && pls->pulse_time!=0.0)
@@ -191,7 +192,7 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
         if((axis=='X' || axis=='Y') && pls->pulse_angles[i]==180.0) continue;
         if(rank==0) fprintf(stderr,"Error: method %s calculates every pulse as an ideal pi flip (X or Y, 180), "
                                    "but pulse %d of %s is %c %g. Use method %s for other rotations.\n",
-                            inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i],
+                            cnf->noise ? "noise" : inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i],
                             !strcmp(kernel,"mecce") ? "megCCE" : "gCCE");   // meCCE, pmeCCE: the ME method that rotates
         ccexRefuse();
     }
@@ -282,6 +283,20 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
 // validateBathPulseTargets), not a cluster: most clusters lack a species. The names compare as the kernels do (case
 // ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation). A name that is both the qubit's and a
 // bath spin's is refused too: the megCCE kernel takes it as a qubit jump and drops the bath spins without a word.
+// method noise (noise.cpp): the cCCE clusters with a kernel of its own, on the CPU; what that kernel leaves out is refused
+void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa) {
+    if (!cnf->noise) return;
+    if (QubitArray_getNqubit(qa) != 1)        refuseRun("method noise supports one qubit");
+    if (strcasecmp(cnf->quantity,"coherence")) refuseRun("method noise computes quantity coherence only");
+    if (Pulse_getPulseiter(pls))              refuseRun("method noise needs pulse.per_qubit = false");
+    if (strcasecmp(cnf->propagator,"eigen"))  refuseRun("method noise needs execution.propagator eigen");
+    if (Config_getKnight(cnf) || Config_getHfmedi(cnf) || cnf->delta_A)
+        refuseRun("method noise does not take hamiltonian.cCCE (knight, hfmedi, delta_A)");
+    if (!strcasecmp(cnf->backend,"cuda"))     refuseRun("method noise runs on the CPU only, set execution.backend to cpu");
+    strcpy(cnf->backend,"cpu");               // auto: the CPU, and none of the GPU batches
+    cnf->gpu_packed_max_dim = cnf->gpu_warp_max_dim = 0;
+}
+
 void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, Config* cnf) {
     if (!isMasterEquationMethod(cnf->method) || !cnf->jump_operators) return;
     std::vector<const char*> names;   // the distinct bath spin names (case ignored), in the order met
@@ -944,6 +959,7 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
     Config_validateEvolutionUpdate(cnf);       // after the packed kernel's value (A36)
     validatePulsesForMethod(cnf,pls);
     validateHamiltonianForMethod(cnf,qa);
+    validateNoise(cnf,pls,qa);                 // before computeBackendInit: it settles the backend
     validateAdaptiveConfig(cnf,cls);
     Config_validatePcceCache(cnf);
     if (clusterPlanOnly && ((strcasecmp(cnf->method,"cce") &&
@@ -1013,6 +1029,21 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
         printLineSection();
     }
     MPI_Barrier(MPI_COMM_WORLD);
+
+    if (cnf->noise && strcmp(cnf->noise_model,"bath")){   // method noise with a model spectrum: no bath, no clusters
+        noiseModelRun(cnf,pls,op);
+        MPI_Barrier(MPI_COMM_WORLD);
+        clearAdaptiveConnectionCheck();
+        QubitArray_freeAll(qa);
+        Cluster_freeAll(cls);
+        Config_freeAll(cnf);
+        BathArray_freeAll(ba);
+        DefectArray_freeAll(dfa);
+        Pulse_freeAll(pls);
+        Output_freeAll(op);
+        computeBackendFinish(ranged && k < rangeLast);
+        return 0;
+    }
 
     //=======================================================
     // Set simulators

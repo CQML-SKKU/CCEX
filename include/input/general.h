@@ -53,7 +53,7 @@ typedef struct {
     char method[MAX_CHARARRAY_LENGTH];
     struct JumpOperatorArray* jump_operators;   /**< hamiltonian.meCCE / megCCE.jump_operators; NULL: none (ME methods then run at rate 0) */
     char jump_operators_section[MAX_CHARARRAY_LENGTH];   /**< "meCCE" or "megCCE": the hamiltonian section it came from ("" if none) */
-    char quantity[MAX_CHARARRAY_LENGTH];  /**< Measurement : coherence | dm (noise is refused: not implemented) */
+    char quantity[MAX_CHARARRAY_LENGTH];  /**< Measurement : coherence | dm (noise is refused: method noise is the noise calculation) */
     char propagator[MAX_CHARARRAY_LENGTH];/**< free-evolution propagator : eigen | expm (gCCE) | sparse */
     long sparse_min_dim;                  /**< propagator sparse: clusters of this Hilbert dimension and above take it (default 4096) */
     double sparse_tol;                    /**< propagator sparse: the Krylov expansion tolerance (default 1e-12) */
@@ -73,6 +73,10 @@ typedef struct {
     bool bath_mean_field_off;             /**< no static mean field of the other bath spins at all (hamiltonian.common.bath_bath_mean_field "off") */
     bool hamiltonian_ccce_given;          /**< hamiltonian.cCCE has a setting: refused in a gCCE run (validateHamiltonianForMethod, main.cpp) */
     bool delta_A;                         /**< hamiltonian.cCCE.delta_A: the second-order term delta_A(m_s).I of each bath spin (Maze 2008 eq. A3, A83) */
+    bool noise;                           /**< method noise: the Gaussian coherence exp(-chi) of the phase noise (noise.cpp); inside, method is CCE */
+    char noise_model[8];                  /**< hamiltonian.noise.spectrum: "bath" (default, the cluster mode sum), "OU" or "power" (a model, no bath) */
+    double noise_sigma, noise_tau_c;      /**< OU: rms of the qubit frequency noise (kHz) and its correlation time (ms) */
+    double noise_amplitude, noise_beta, noise_f_min, noise_f_max;   /**< power: S(f) = amplitude (f / 1 kHz)^-beta (kHz^2/kHz, two-sided) on [f_min, f_max] (kHz) */
     int pcce_detail_limit;                /**< rank-zero trial details, 0 disables */
     int gpu_cache_mb;                      /**< reusable device-buffer cache per rank; 0 disables */
     double probe_memory_gb;                /**< node budget for the probes running at once; 0: 80 % of RAM (and of the GPU) */

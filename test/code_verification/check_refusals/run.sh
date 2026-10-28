@@ -745,8 +745,12 @@ reject_case p1_manual_hahn rj_hamiltonian_ccce_in_gcce "hamiltonian.cCCE (knight
   "d.setdefault('hamiltonian', {})['cCCE'] = {'knight': True}"
 reject_case natab_knight_shift rj_hamiltonian_ccce_cli_gcce "hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE, this run is gCCE" "d['method'] = 'gCCE'"
 reject_case natab_cce2_hahn rj_hamiltonian_gcce_key "hamiltonian.gCCE has no settings yet" "d['hamiltonian'] = {'gCCE': {'knight': True}}"
-# the reserved method noise (A49): refused as not implemented yet
-reject_case natab_cce2_hahn rj_method_noise "method \"noise\" is not implemented yet" "d['method'] = 'noise'"
+# method noise (noise.cpp): cluster.mode standard only, its hamiltonian section in its own runs, a known model
+reject_case natab_cce2_hahn rj_noise_pcce "method noise with cluster.mode \"pcce\" is not implemented" "d['method'] = 'noise'; d['cluster_mode'] = 'pcce'"
+reject_case natab_cce2_hahn rj_hamiltonian_noise_in_ccce "hamiltonian.noise belongs to method noise" \
+  "d['hamiltonian'] = {'noise': {'spectrum': 'bath'}}"
+reject_case natab_cce2_hahn rj_noise_model "hamiltonian.noise.spectrum.model must be \"OU\" or \"power\"" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'spectrum': {'model': 'white'}}}"
 # the adaptive block belongs to cluster_mode pcce or bundle; the pcce block to pcce
 reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" \
   "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"

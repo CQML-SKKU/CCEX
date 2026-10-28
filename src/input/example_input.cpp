@@ -45,7 +45,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
     //          (https://cqml-skku.github.io/CCEX/md_docs_2user_2InputFile__General.html#tag_method)
     // Example: example/tutorial/06_cCCE_vs_gCCE (cCCE, gCCE, meCCE), example/tutorial/03_P1 (dm in
     //          gCCE2_Ramsey_population)
-    "method"           : "cCCE",        // cCCE (default), gCCE, meCCE, megCCE (noise is a reserved name, refused) cCCE:
+    "method"           : "cCCE",        // cCCE (default), gCCE, meCCE, megCCE, noise (Gaussian phase noise) cCCE:
                                         // the qubit only sets the field each bath spin feels (pure dephasing). gCCE:
                                         // the qubit is in every cluster's Hamiltonian (qubit-bath flip-flops, any qubit
                                         // spin and field). meCCE, megCCE: cCCE, gCCE with Lindblad jump operators
@@ -268,7 +268,13 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //          "delta_A" : false           // true adds the second-order dA term of each bath spin (Maze 2008; strong
                                         // hyperfine near the defect), not with hfmedi, default false
 //      },
-//      "gCCE"   : {},                  // no settings yet (also "noise": {}, a reserved method)
+//      "gCCE"   : {},                  // no settings yet
+//      "noise"  : {                    // method noise: where the phase noise comes from
+//          "spectrum" : "bath"         // "bath" (default: the clusters), or a model,
+//                                      // {"model": "OU", "sigma": kHz, "tau_c": ms} or
+//                                      // {"model": "power", "amplitude": kHz^2/kHz,
+//                                      // "beta", "f_min": kHz, "f_max": kHz}
+//      },
 //      "meCCE"  : {                    // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
 //          "jump_operators" : [
 //              {"bath_name": "13C", "operator": "z", "rate": 0.001}

@@ -115,7 +115,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     SmallClusterBatch smallGpu(qa,ba,dfa,cnf,pls,isGCCE,localclusters,order,savemode);   // A26: small cCCE clusters on the GPU; A40: the warp kernel (off: nothing)
     // A30: small cCCE clusters batched on the CPU (A48: also beside the GPU batch); the cCCE kernel only: never a gCCE or
     // master-equation cluster
-    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE);
+    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE || cnf->noise);   // noise: its own kernel too
     // A68: the log of a state. Rank 0 reports its own clusters at every tenth of them (-v: the per-cluster lines of
     // before, every 5000/nprocess clusters of an order), and a state ends with one line: its index, the number of
     // clusters of every rank and its time. The bath states, mean fields, qubit states and the steps of a state are
