@@ -59,9 +59,15 @@ static void addNoiseModelDefaults(cJSON* root){
     cJSON* method = untrackedItem(root,"method");
     cJSON* spectrum = untrackedItem(untrackedItem(untrackedItem(root,"hamiltonian"),"noise"),"spectrum");
     if (!cJSON_IsString(method) || strcasecmp(method->valuestring,"noise") || !cJSON_IsObject(spectrum)) return;
+    const char* why = "a model spectrum (hamiltonian.noise.spectrum) reads no bath and makes no clusters";
     for (const char* key : {"order", "bfield", "rbath", "rdip"})
         if (!untrackedItem(root,key)) cJSON_AddNumberToObject(root,key,!strcmp(key,"order") ? 1 : 0);
+        else warnNotUsed(key,why);
     if (!untrackedItem(root,"Qubit")) cJSON_AddItemToObject(root,"Qubit",cJSON_Parse("{\"qubit\": [{\"xyz\": [0, 0, 0]}]}"));
+    else warnNotUsed("Qubit",why);
+    // the bath's blocks are taken out, so that no reader opens the files they name
+    for (const char* key : {"configuration", "Defect"})
+        if (untrackedItem(root,key)){ warnNotUsed(key,why); cJSON_DeleteItemFromObject(root,key); }
 }
 static cJSON* trackedParse(const char* text){
     cJSON* root = cJSON_Parse(text);

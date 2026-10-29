@@ -313,8 +313,8 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
 void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
     if (!cnf->noise) return;
     // a cluster's value is -chi_C there (noise.cpp), not a coherence: what reads the clusters' values is refused
-    if (!strcasecmp(op->savemode,"cluster_coherence"))
-        refuseRun("method noise does not write output.savemode cluster_coherence");
+    if (!strcasecmp(op->savemode,"cluster_coherence") || !strcasecmp(op->savemode,"cluster_density_matrix"))
+        refuseRun("method noise does not write output.savemode %s",op->savemode);
     if (cnf->nrdip_ladder > 0)      refuseRun("method noise does not take rdip_ladder");
     if (cnf->cluster_contributions) refuseRun("method noise does not take output.cluster_contributions");
     if (QubitArray_getNqubit(qa) != 1)        refuseRun("method noise supports one qubit");
@@ -990,6 +990,9 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
     Config_validateEvolutionUpdate(cnf);       // after the packed kernel's value (A36)
     validatePulsesForMethod(cnf,pls);
     validateHamiltonianForMethod(cnf,qa);
+    // A98: before validateNoise and validatePseudospin, which turn backend auto into cpu: the message names the method
+    if (cnf->gpu_ranks_per_gpu > 0 && (cnf->noise || cnf->pseudospin))
+        refuseRun("method %s runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu",cnf->noise ? "noise" : "pseudospin");
     validateNoise(cnf,pls,qa,op);              // before computeBackendInit: it settles the backend
     validatePseudospin(cnf,pls,qa,cls);        // before computeBackendInit: it settles the backend
     validateAdaptiveConfig(cnf,cls);

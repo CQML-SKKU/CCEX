@@ -9,8 +9,9 @@
   semi-cce's `mode_sum`; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
   only); a model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath (`order`, `bfield`,
   `rbath`, `rdip` and `Qubit` may be left out then). cluster.mode
-  standard, CPU, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence`, `rdip_ladder` and
-  `cluster_contributions` are refused with it. `hamiltonian.noise.pseudo_secular` (default false, semi-cce's: the noise
+  standard, CPU, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence` and
+  `cluster_density_matrix`, `rdip_ladder`, `cluster_contributions` and `gpu_options.ranks_per_gpu` are
+  refused with it. `hamiltonian.noise.pseudo_secular` (default false, semi-cce's: the noise
   is the secular A_zz I_z) adds the pseudo-secular A_zx I_x + A_zy I_y to the noise. `hamiltonian.noise.compute` chooses what is computed
   from the bath: `"coherence"` (default; χ from the clusters' eigenmodes, no time grid), `"spectrum"` (semi-cce's `psd`:
   C(t) on the grid of `hamiltonian.noise.fft`, S(f) by FFT with its `window`, `pad_factor`, `subtract_mean`,

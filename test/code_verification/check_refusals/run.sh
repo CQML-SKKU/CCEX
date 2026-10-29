@@ -543,6 +543,9 @@ reject_work rj_state_without_factors "state and step require factors mode" "" "{
 reject_work rj_except_gcce "factors/except work requires method cce" "d['method'] = 'gCCE'" "$E"
 reject_work rj_except_order1 "factors/except work requires bundle order 2" "d['order'] = 1" "$E"
 reject_work rj_except_probes "probes require probe mode" "" "${E%\}}, \"probes\": [[0]]}"
+# method noise runs inside as cCCE, so the method check above lets it through; its cluster.mode refusal stops it (adaptive
+# work needs cluster.mode bundle), as it must: noise keeps no cluster coherence for the work to read
+reject_work rj_except_noise "method noise with cluster.mode \"bundle\" is not implemented" "d['method'] = 'noise'" "$E"
 reject_work rj_except_empty "except mode requires a nonempty except list" "" "{\"mode\": \"except\", $B, \"except\": []}"
 reject_work rj_except_twice "except lists a term twice" "" "{\"mode\": \"except\", $B, \"except\": [[0, 3], [0, 3]]}"
 reject_work rj_except_not_a_term "an except entry is not a term of this partition's expansion" "" "{\"mode\": \"except\", $B, \"except\": [[0, 1]]}"
@@ -773,6 +776,11 @@ reject_case natab_cce2_hahn rj_noise_model_correlation "hamiltonian.noise.comput
 # method noise hands the product -chi_C per cluster, not a coherence: what reads the clusters' values is refused
 reject_case natab_cce2_hahn rj_noise_cluster_coherence "method noise does not write output.savemode cluster_coherence" \
   "d['method'] = 'noise'; d['savemode'] = 'cluster_coherence'"
+reject_case natab_cce2_hahn rj_noise_cluster_dm "method noise does not write output.savemode cluster_density_matrix" \
+  "d['method'] = 'noise'; d['savemode'] = 'cluster_density_matrix'"
+# method noise turns backend auto into cpu; with GPU ranks asked for, the message names the method (A98)
+reject_case natab_cce2_hahn rj_noise_ranks_per_gpu "method noise runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu" \
+  "d['method'] = 'noise'; d['backend'] = 'auto'; d['gpu_options'] = {'ranks_per_gpu': 4}"
 # the adaptive block belongs to cluster_mode pcce or bundle; the pcce block to pcce
 reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" \
   "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"

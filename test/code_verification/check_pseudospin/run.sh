@@ -48,5 +48,7 @@ refuse(){ # refuse <name> <expected fragment>
 }
 input r_order pseudospin 0.5 1 3 ""; refuse r_order "method pseudospin is a pair model"
 input r_nstate pseudospin 0.5 1 2 ""; sed -i 's/"seed": 1}/"seed": 1, "s_range": [1, 1]}/' "$W/r_nstate.json"; refuse r_nstate "method pseudospin takes the ensemble only"
+input r_gpu pseudospin 0.5 1 2 '"execution": {"backend": "auto", "gpu_options": {"ranks_per_gpu": 4}},'
+refuse r_gpu "method pseudospin runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu"
 echo "check_pseudospin: $PASS passed, $FAIL failed"
 [ $FAIL -eq 0 ]

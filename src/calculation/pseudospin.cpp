@@ -15,13 +15,15 @@
  */
 #include "../../include/calculation/pseudospin.h"
 #include "../../include/calculation/small_hamiltonian.h"
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <string>
 #include <vector>
 
 namespace {
-FILE* channelFile = nullptr;
+bool channelOn = false;      // between pseudospinChannelsBegin and pseudospinChannelsEnd
+std::string channelText;     // this rank's lines: sent to rank 0 at the end, which alone writes the file
 std::string channelName;
 
 // the ensemble coherence of the bath under Ha, Hb with the run's pulses, at every time point
@@ -86,49 +88,60 @@ void calCoherencePseudospinInto(QubitArray* qa, BathArray* ba, Config* cnf, Puls
     for (size_t i=0; i<pair.size(); ++i)
         result[i] = MatrixXcd::Constant(1,1,pair[i]/(cut1[i]*cut2[i])*full1[i]*full2[i]);
 
-    if (channelFile){   // kHz: the Hamiltonians are in rad/ms
+    if (channelOn){   // kHz: the Hamiltonians are in rad/ms
         const double* x1 = BathArray_getBath_i_xyz(ba,0);
         const double* x2 = BathArray_getBath_i_xyz(ba,1);
         const double I1 = 0.5*(d1-1), I2 = 0.5*(d2-1);
-        for (auto [r,s] : channels)
-            fprintf(channelFile,"%s %.4f %.4f %.4f %s %.4f %.4f %.4f %g %g %.16e %.16e %.16e\n",
-                    BathArray_getBath_i_name(ba,0),x1[0],x1[1],x1[2],BathArray_getBath_i_name(ba,1),x2[0],x2[1],x2[2],
-                    I1-r/d2,I2-r%d2,2*std::abs(Ca(r,s))/(2*M_PI),
-                    (Ca(r,r)-Ca(s,s)).real()/(2*M_PI),(Cb(r,r)-Cb(s,s)).real()/(2*M_PI));
+        char line[512];
+        for (auto [r,s] : channels){
+            snprintf(line,sizeof line,"%s %.4f %.4f %.4f %s %.4f %.4f %.4f %g %g %.16e %.16e %.16e\n",
+                     BathArray_getBath_i_name(ba,0),x1[0],x1[1],x1[2],BathArray_getBath_i_name(ba,1),x2[0],x2[1],x2[2],
+                     I1-r/d2,I2-r%d2,2*std::abs(Ca(r,s))/(2*M_PI),
+                     (Ca(r,r)-Ca(s,s)).real()/(2*M_PI),(Cb(r,r)-Cb(s,s)).real()/(2*M_PI));
+            channelText += line;
+        }
     }
 }
 
 void pseudospinChannelsBegin(Output* op){
     channelName = std::string(Output_getOutfile(op))+"_pseudospin_channels";
-    channelFile = std::fopen((channelName+".rank"+std::to_string(rank)).c_str(),"w");
-    if (!channelFile){
-        fprintf(stderr,"Error: cannot write %s.rank%d\n",channelName.c_str(),rank);
-        ccexFatal();
-    }
+    channelText.clear();
+    channelOn = true;
 }
 
+// Rank 0 writes the header, its own lines and those of the other ranks in rank order, sent by MPI (no rank file, so the
+// ranks need no shared file system, and only rank 0 opens a file); in pieces of at most 1 GiB (an int count)
 void pseudospinChannelsEnd(){
-    std::fclose(channelFile);
-    channelFile = nullptr;
-    MPI_Barrier(MPI_COMM_WORLD);
-    if (rank != 0) return;
-    FILE* out = std::fopen(channelName.c_str(),"w");
-    if (!out){
-        fprintf(stderr,"Error: cannot write %s\n",channelName.c_str());
-        ccexFatal();
+    channelOn = false;
+    FILE* out = nullptr;
+    if (rank == 0){
+        out = std::fopen(channelName.c_str(),"w");
+        if (!out){
+            fprintf(stderr,"Error: cannot write %s\n",channelName.c_str());
+            ccexFatal();
+        }
+        fprintf(out,"# name1 x1 y1 z1 name2 x2 y2 z2 (A) m1 m2: the channel |m1,m2> <-> |m1-1,m2+1>; Omega (kHz, the flip-flop "
+                    "splitting 2|<m1,m2|H|m1-1,m2+1>|), Delta_alpha, Delta_beta (kHz, E(m1,m2) - E(m1-1,m2+1) in the qubit's alpha "
+                    "and beta states)\n");
+        std::fwrite(channelText.data(),1,channelText.size(),out);
     }
-    fprintf(out,"# name1 x1 y1 z1 name2 x2 y2 z2 (A) m1 m2: the channel |m1,m2> <-> |m1-1,m2+1>; Omega (kHz, the flip-flop "
-                "splitting 2|<m1,m2|H|m1-1,m2+1>|), Delta_alpha, Delta_beta (kHz, E(m1,m2) - E(m1-1,m2+1) in the qubit's alpha "
-                "and beta states)\n");
-    for (int r=0; r<nprocess; ++r){
-        const std::string part = channelName+".rank"+std::to_string(r);
-        if (FILE* in = std::fopen(part.c_str(),"r")){
-            char buf[4096];
-            size_t n;
-            while ((n = std::fread(buf,1,sizeof buf,in)) > 0) std::fwrite(buf,1,n,out);
-            std::fclose(in);
-            std::remove(part.c_str());
+    constexpr long long piece = 1LL << 30;
+    for (int r=1; r<nprocess; ++r){
+        if (rank == r){
+            long long size = (long long)channelText.size();
+            MPI_Send(&size,1,MPI_LONG_LONG,0,0,MPI_COMM_WORLD);
+            for (long long at=0; at<size; at+=piece)
+                MPI_Send(channelText.data()+at,int(std::min(piece,size-at)),MPI_CHAR,0,1,MPI_COMM_WORLD);
+        } else if (rank == 0){
+            long long size = 0;
+            MPI_Recv(&size,1,MPI_LONG_LONG,r,0,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            std::string text(size,'\0');
+            for (long long at=0; at<size; at+=piece)
+                MPI_Recv(&text[at],int(std::min(piece,size-at)),MPI_CHAR,r,1,MPI_COMM_WORLD,MPI_STATUS_IGNORE);
+            std::fwrite(text.data(),1,text.size(),out);
         }
     }
-    std::fclose(out);
+    std::string().swap(channelText);
+    if (out) std::fclose(out);
+    MPI_Barrier(MPI_COMM_WORLD);
 }

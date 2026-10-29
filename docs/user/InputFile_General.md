@@ -948,7 +948,10 @@ It is exact for two spins 1/2; for larger spins it misses what couples the chann
 channels), which matters when the quadrupole does not separate them. `"block"` evolves the cut pair exactly. The pair's
 term is its coherence over its two spins' under the cut Hamiltonians, so the run's coherence is
 Π<sub>k</sub> L<sub>k</sub> Π<sub>pairs</sub> P. Running both and cCCE order 2 separates the two approximations: the cut
-(cCCE against block) and the independent channels (block against channel). <br>
+(cCCE against block) and the independent channels (block against channel). The division is by the cut single-spin
+coherences: under a Hahn echo or CPMG they are 1, without a pulse (`pulse.count` 0) they oscillate and can pass through
+zero, and a time point where one is zero is reported as `[numerical-invalid]`, as cCCE's own division by a zero single
+coherence is. <br>
 
 <b>Data Type:</b> String
 
@@ -1010,11 +1013,12 @@ non-Gaussian part; strongly coupled spins need cCCE or gCCE).
 
 With `"bath"` the clusters' values (−χ_C, or their correlations with [compute](#tag_noise_compute)) are summed over the
 CCE terms, not multiplied as cCCE's coherences (no exp(−χ_C) of one cluster can underflow): `output.savemode`
-`cluster_coherence`, `rdip_ladder` and `output.cluster_contributions` are refused with method `noise`.
+`cluster_coherence` and `cluster_density_matrix`, `rdip_ladder` and `output.cluster_contributions` are refused with
+method `noise`.
 
 A model run reads no bath: `configuration`, the Defect block and the clusters are not used, and `order`, `bfield`,
 `rbath`, `rdip` and `Qubit` may be left out (the run takes order 1, bfield 0, rbath 0, rdip 0 and one qubit at the
-origin, which it does not use; given, they are not used either).
+origin, which it does not use; given, they are not used either, and the log warns that they are not used).
 
 <b>Data Type:</b> String `"bath"` or Object
 
