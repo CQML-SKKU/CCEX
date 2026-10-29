@@ -15,6 +15,7 @@ they read; `run.sh` runs all nine in order and then exits with the status of the
 | `check_mean_field/` | does `bath_bath_mean_field` "xyz" (`vector_mean_field` until 2026-10-13) give the default z mean field's curve byte for byte where the answer is known (one P1 with its 14N and no other bath spin)? | `bash check_mean_field/run.sh` |
 | `check_rdip_ladder/` | does each `rdip_ladder` rung equal a separate run at that rdip (≤ 1e-9), and are the inputs it does not cover refused? about 7 min | `bash check_rdip_ladder/run.sh` |
 | `check_noise/` | does method `noise` give the OU closed forms, the quadrature of a 1/f spectrum and semi-cce's `mode_sum`, `cumulant` and `psd` for P1 and ¹³C baths (FID, Hahn, CPMG; ≤ 2e-10, the printed digits), and do the three `compute` values agree with each other and `correlation` with PyCCE? about 8 min; numpy, scipy, PyCCE (skipped without it), and semi-cce 2851449 or later for the half against it | `bash check_noise/run.sh` |
+| `check_pseudospin/` | is method pseudospin exact where it has to be (two spins on the qubit axis: block = cCCE2 for spins 1/2 and 3/2, channel = cCCE2 for 1/2 and its channel file's closed form for 3/2, 1e-9), and are order 3 and sampled states refused? | `bash check_pseudospin/run.sh` |
 | `bath_data/` | not a check: the frozen baths, tensors and state files the checks read | — |
 
 Every check needs `bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`;
@@ -22,4 +23,4 @@ Every check needs `bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`;
 matplotlib (the analyzer's command line imports them; `test/requirements.txt`). What a
 check writes goes to its `_work/`, which is ignored and wiped at each run.
 Each folder's README says what it checks and how it decides; `check_mean_field/`, `check_rdip_ladder/` and
-`check_noise/` have none and are described in `../README.md` (`check_noise/check.py` in its header).
+`check_noise/` have none and are described in `../README.md` (`check_noise/check.py` in its header); `check_pseudospin/` says it in its `run.sh`.

@@ -54,6 +54,7 @@ Config* Config_init(){
     cnf->noise_fft_subtract_mean=cnf->noise_fft_clamp_negative=false;
     cnf->noise_sigma=cnf->noise_tau_c=0;
     cnf->noise_amplitude=cnf->noise_beta=cnf->noise_f_min=cnf->noise_f_max=0;
+    cnf->pseudospin=cnf->pseudospin_block=false;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
     cnf->gpu_batch_clusters = 8;
     cnf->gpu_cluster_batch_mb = 64;
@@ -1007,7 +1008,7 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
 
     const bool pcce = methodUsesPcceClusters(cnf->method);
     const bool bundle = !strcasecmp(cnf->cluster_mode,"adaptive");   // cluster.mode bundle
-    printStructElementChar("method",cnf->noise ? (char*)"noise" : Config_getMethod(cnf));   // noise: CCE inside
+    printStructElementChar("method",cnf->noise ? (char*)"noise" : cnf->pseudospin ? (char*)"pseudospin" : Config_getMethod(cnf));   // noise, pseudospin: CCE inside
     if (cnf->noise) printStructElementChar("hamiltonian.noise.spectrum",cnf->noise_model);
     if (cnf->noise && !strcmp(cnf->noise_model,"bath")){
         printStructElementChar("hamiltonian.noise.pseudo_secular",(char*)(cnf->noise_pseudo_secular ? "true" : "false"));
@@ -1021,6 +1022,7 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
             printStructElementChar("hamiltonian.noise.fft.clamp_negative",(char*)(cnf->noise_fft_clamp_negative ? "true" : "false"));
         }
     }
+    if (cnf->pseudospin) printStructElementChar("hamiltonian.pseudospin.pair",(char*)(cnf->pseudospin_block ? "block" : "channel"));
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

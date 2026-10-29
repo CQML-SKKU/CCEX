@@ -45,7 +45,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
     //          (https://cqml-skku.github.io/CCEX/md_docs_2user_2InputFile__General.html#tag_method)
     // Example: example/tutorial/06_cCCE_vs_gCCE (cCCE, gCCE, meCCE), example/tutorial/03_P1 (dm in
     //          gCCE2_Ramsey_population)
-    "method"           : "cCCE",        // cCCE (default), gCCE, meCCE, megCCE, noise (Gaussian phase noise) cCCE:
+    "method"           : "cCCE",        // cCCE (default), gCCE, meCCE, megCCE, noise (Gaussian phase noise), pseudospin cCCE:
                                         // the qubit only sets the field each bath spin feels (pure dephasing). gCCE:
                                         // the qubit is in every cluster's Hamiltonian (qubit-bath flip-flops, any qubit
                                         // spin and field). meCCE, megCCE: cCCE, gCCE with Lindblad jump operators
@@ -288,6 +288,8 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //            "clamp_negative" : false  // S(f) < 0 set to 0
 //          }
 //      },
+//                                      // method pseudospin: "pseudospin": {"pair": "channel"} (every flip-flop
+//                                      // channel alone, the default) or "block" (the cut pair exactly)
 //      "meCCE"  : {                    // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
 //          "jump_operators" : [
 //              {"bath_name": "13C", "operator": "z", "rate": 0.001}
