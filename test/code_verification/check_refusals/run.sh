@@ -601,6 +601,15 @@ reject_case p1_cce2_single rj_min_dim_zero "gpu_options.min_dim must be a positi
 reject_case p1_cce2_single rj_packed_cpu_binary "gpu_options.packed_max_dim needs the GPU binary" "d['gpu_options'] = {'packed_max_dim': 4}"
 reject_case p1_manual_hahn rj_packed_gcce "gpu_options.packed_max_dim works with method=CCE" \
   "d['gpu_options'] = {'packed_max_dim': 4}; d['method'] = 'gCCE'"
+# A98: ranks_per_gpu splits cCCE clusters of cluster.mode standard over the GPU ranks of backend auto
+reject_case p1_cce2_single rj_ranks_per_gpu_negative "gpu_options.ranks_per_gpu must be a nonnegative 32-bit integer" \
+  "d['gpu_options'] = {'ranks_per_gpu': -1}"
+reject_case p1_cce2_single rj_ranks_per_gpu_cpu "ranks_per_gpu needs execution.backend auto and method cCCE" \
+  "d['gpu_options'] = {'ranks_per_gpu': 4}"
+reject_case p1_manual_hahn rj_ranks_per_gpu_gcce "ranks_per_gpu needs execution.backend auto and method cCCE" \
+  "d['gpu_options'] = {'ranks_per_gpu': 4}; d['backend'] = 'auto'; d['method'] = 'gCCE'"
+reject_case p1_pcce2_sk2 rj_ranks_per_gpu_pcce "ranks_per_gpu needs execution.backend auto and method cCCE" \
+  "d['gpu_options'] = {'ranks_per_gpu': 4}; d['backend'] = 'auto'"
 
 echo "=== savemode"
 # savemode is a string or {"mode": ..., "nodiv": ...} since 2026-10-13 (docs/user/InputFile_Output.md#tag_savemode): the

@@ -17,6 +17,18 @@ void zheevd_(const char*, const char*, const int*, std::complex<double>*, const 
              const int*, double*, const int*, int*, const int*, int*);
 }
 
+#ifndef CCEX_BLAS_ACCELERATE
+#include <cstdlib>
+extern "C" int MKL_CBWR_Set(int) __attribute__((weak));   // MKL's; null with another library behind the calls
+namespace {
+// MKL's results depend on where in memory the arrays start unless its reproducible mode is on: with MKL 2026.2 two runs
+// that take the same path wrote different last digits (check_input_forms column_evolution C1-C3, 2026-10-28). AUTO keeps
+// the CPU's fastest code path (the run times did not change), STRICT makes it independent of the alignment. Before any
+// MKL call (static initialization); an MKL_CBWR the user set is left to MKL
+const int cbwrSet = MKL_CBWR_Set && !std::getenv("MKL_CBWR") ? MKL_CBWR_Set(2 /* MKL_CBWR_AUTO */ | 0x10000 /* MKL_CBWR_STRICT */) : 0;
+}
+#endif
+
 void ccexBlas::hahnProduct(const Eigen::MatrixXcd& M, const Eigen::VectorXcd& d, Eigen::MatrixXcd& scratch,
                            Eigen::MatrixXcd& X){
     const int n = int(M.rows());

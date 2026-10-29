@@ -127,6 +127,8 @@ void Cluster_clusterize(Cluster* cls, BathArray* ba, Config* config,
 // A31: a cluster's cost D^2 (D + nstep), D its dimension (the qubit's too in gCCE), for MPI_getLocalClusters.
 // Built from the bath as it is now: pCCE cuts the bath in clusterize, so call it after the bath is final.
 std::function<double(int,const int*)> Cluster_costFunction(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* dfa);
+// The D of that cost (A98: gpu_options.ranks_per_gpu sends a cluster to the GPU ranks by it)
+std::function<double(int,const int*)> Cluster_dimFunction(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* dfa);
 
 // free
 void Cluster_freeAll(Cluster* cls);

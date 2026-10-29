@@ -203,7 +203,9 @@ int*** MPI_getLocalClusters(int order, int*** clusters,
                             const std::vector<double>* givenLoads = nullptr);
 // The rows (1-based, ascending) this rank takes of m clusters with costs rowCost(0..m-1) in list order (A45); loads
 // (every rank's cost so far, resized to nprocess) is added to.
-std::vector<int> rankClusterRows(int m, const std::function<double(int)>& rowCost, std::vector<double>& loads);
+// rowOf (A98, with gpu_options.ranks_per_gpu): row i's spins at [1..n] - the clusters the GPU takes go to the GPU ranks only
+std::vector<int> rankClusterRows(int m, const std::function<double(int)>& rowCost, std::vector<double>& loads,
+                                 int n = 0, const std::function<const int*(int)>& rowOf = nullptr);
 // Free the owned copy returned by MPI_getLocalClusters, including its headers.
 // The zeroth header is allocated even on ranks whose zeroth weight is zero.
 void MPI_freeLocalClusters(int order, int**** localClusters);

@@ -18,6 +18,7 @@
 #include "../../include/common/blas_option.h"   // the thresholds printBanner reports
 #endif
 #include "../../include/calculation/gpu/small_cluster_batch.h"   // smallClusterWarmDown (ccexRefuse)
+#include "../../include/calculation/gpu/compute_backend.h"       // the GPU ranks (A98)
 
 /* utils ---------------------------------------------------*/
 MatrixXcd Double1dToMatrixXcd(double* val, int n){
@@ -894,9 +895,53 @@ int min(int x, int y)
 // same doubles in the same order, so all agree. All costs equal, no cost, or no cluster: the equal-count contiguous
 // split (para_range), so a bath of one kind of spin is distributed as before (byte-identical); loads then grow by
 // each rank's count times that cost.
-std::vector<int> rankClusterRows(int m, const std::function<double(int)>& rowCost, std::vector<double>& loads){
+// A98: the split with GPU ranks (gpu_options.ranks_per_gpu). The dimensions the GPU takes are timed first, on a
+// made-up cluster each (computeGpuSplitCalibrate, collective: every rank sees the same rows). Then, largest cost first, a
+// cluster the GPU may take goes to the least-loaded GPU rank at its cost times the weight (computeGpuSplitWeight) or to
+// the least-loaded CPU rank at its cost, whichever ends first; any other goes to the least-loaded rank of all (the GPU
+// ranks too), at its cost. Equal loads: the GPU rank, then the lower rank.
+static std::vector<int> rankClusterRowsGpu(int m, const std::function<double(int)>& rowCost, std::vector<double>& loads,
+                                           int n, const std::function<const int*(int)>& rowOf){
+    std::set<int> pending;
+    for (int i=0; i<m; i++)
+        if (const int d = computeGpuSplitPending(n,rowOf(i))) pending.insert(d);
+    computeGpuSplitCalibrate(pending);
+    // shortcut: a cost and an index per row (12 B; clusterizePairs keeps 12 B a pair), for lists far above 1e8 rows a pass per cost group
+    std::vector<double> cost(m);
+    for (int i=0; i<m; i++) cost[i] = rowCost(i);
+    std::vector<int> order(m);
+    for (int i=0; i<m; i++) order[i] = i;
+    std::stable_sort(order.begin(), order.end(), [&](int a, int b){ return cost[a] > cost[b]; });
+    const std::vector<int>& gpuRanks = computeGpuSplitRanks();
+    // the least-loaded rank without a GPU (a heap: only these placements change their loads); the GPU ranks are few, scanned
+    std::priority_queue<std::pair<double,int>, std::vector<std::pair<double,int>>, std::greater<std::pair<double,int>>> cpuLeast;
+    std::vector<char> gpu(nprocess,0);
+    for (int g : gpuRanks) gpu[g] = 1;
+    for (int r=0; r<nprocess; r++) if (!gpu[r]) cpuLeast.push({loads[r], r});
+    std::vector<int> rows;
+    for (int i : order){
+        const double w = computeGpuSplitWeight(n,rowOf(i));
+        int g = gpuRanks[0];
+        for (int x : gpuRanks) if (loads[x] < loads[g]) g = x;
+        const int c = cpuLeast.empty() ? -1 : cpuLeast.top().second;
+        // a cluster the GPU may take: on a GPU rank's card or on a CPU rank, whichever finishes it first; any other: the
+        // CPU of the least-loaded rank, a GPU rank's too
+        const double onG = loads[g] + cost[i]*(w > 0 ? w : 1), onC = c < 0 ? 0 : loads[c] + cost[i];
+        const bool toG = c < 0 || (w > 0 ? onG <= onC : (loads[g] < loads[c] || (loads[g] == loads[c] && g < c)));
+        const int r = toG ? g : c;
+        if (toG) loads[g] = onG;
+        else { cpuLeast.pop(); loads[c] = onC; cpuLeast.push({onC, c}); }
+        if (r == rank) rows.push_back(i+1);
+    }
+    std::sort(rows.begin(), rows.end());
+    return rows;
+}
+
+std::vector<int> rankClusterRows(int m, const std::function<double(int)>& rowCost, std::vector<double>& loads,
+                                 int n, const std::function<const int*(int)>& rowOf){
     std::vector<int> rows;
     loads.resize(nprocess, 0.0);
+    if (rowCost && rowOf && m > 0 && computeGpuSplitOn()) return rankClusterRowsGpu(m,rowCost,loads,n,rowOf);
     bool uniform = true;
     double c0 = 0.0;
     if (rowCost && m > 0){
@@ -966,7 +1011,7 @@ int*** MPI_getLocalClusters(int order, int*** clusters, const std::function<doub
         }
         std::function<double(int)> rowCost;
         if (cost) rowCost = [&](int i){ return cost(n, clusters[n][i+1]); };
-        rows[n] = rankClusterRows(clusters[n][0][0]-1, rowCost, loads);
+        rows[n] = rankClusterRows(clusters[n][0][0]-1, rowCost, loads, n, [&](int i){ return (const int*)clusters[n][i+1]; });
     }
 
     MPI_Barrier(MPI_COMM_WORLD);
