@@ -43,6 +43,7 @@ Config* Config_init(){
     cnf->bath_mean_field_off=false;
     cnf->hamiltonian_ccce_given=false;
     cnf->delta_A=false;
+    cnf->pseudospin=cnf->pseudospin_block=false;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
     cnf->gpu_batch_clusters = 8;
     cnf->gpu_cluster_batch_mb = 64;
@@ -996,7 +997,8 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
 
     const bool pcce = methodUsesPcceClusters(cnf->method);
     const bool bundle = !strcasecmp(cnf->cluster_mode,"adaptive");   // cluster.mode bundle
-    printStructElementChar("method",Config_getMethod(cnf));
+    printStructElementChar("method",cnf->pseudospin ? (char*)"pseudospin" : Config_getMethod(cnf));   // pseudospin: CCE inside
+    if (cnf->pseudospin) printStructElementChar("hamiltonian.pseudospin.pair",(char*)(cnf->pseudospin_block ? "block" : "channel"));
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

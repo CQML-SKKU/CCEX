@@ -149,6 +149,7 @@ bool ccebatchRunTakes(QubitArray* qa, Config* cnf, Pulse* pls, bool isGCCE, cceb
     dimOk[0] = dimOk[1] = false;
     if (ccebatch::lanes() == 0){ *why = "no kernel for this build"; return false; }
     if (isGCCE){ *why = "method gCCE"; return false; }
+    if (cnf->pseudospin){ *why = "method pseudospin (its pair kernel)"; return false; }
     if (getenv("CCEX_SMALL_CLUSTER_DUMP")){ *why = "CCEX_SMALL_CLUSTER_DUMP is set"; return false; }
     if (getenv("CCEX_CPU_BATCH") && !strcmp(getenv("CCEX_CPU_BATCH"),"0")){ *why = "CCEX_CPU_BATCH=0"; return false; }
     if (QubitArray_getNqubit(qa) != 1 || strcasecmp(Config_getQuantity(cnf),"coherence")){ *why = "not one qubit with quantity coherence"; return false; }

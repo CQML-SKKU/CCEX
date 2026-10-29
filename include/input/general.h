@@ -73,6 +73,8 @@ typedef struct {
     bool bath_mean_field_off;             /**< no static mean field of the other bath spins at all (hamiltonian.common.bath_bath_mean_field "off") */
     bool hamiltonian_ccce_given;          /**< hamiltonian.cCCE has a setting: refused in a gCCE run (validateHamiltonianForMethod, main.cpp) */
     bool delta_A;                         /**< hamiltonian.cCCE.delta_A: the second-order term delta_A(m_s).I of each bath spin (Maze 2008 eq. A3, A83) */
+    bool pseudospin;                      /**< method pseudospin: the cCCE with its pair clusters in the pseudospin model (pseudospin.cpp) */
+    bool pseudospin_block;                /**< hamiltonian.pseudospin.pair "block" (the cut pair exactly); false: "channel" */
     int pcce_detail_limit;                /**< rank-zero trial details, 0 disables */
     int gpu_cache_mb;                      /**< reusable device-buffer cache per rank; 0 disables */
     double probe_memory_gb;                /**< node budget for the probes running at once; 0: 80 % of RAM (and of the GPU) */

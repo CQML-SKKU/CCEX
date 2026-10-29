@@ -1,5 +1,17 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **method `pseudospin`**: the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al. 2016;
+  Lee, Park, Seo 2022), for any nuclear spin. The single spins are the cCCE's; a pair's Hamiltonians are cut to the
+  diagonal and the flip-flops |m1,m2> <-> |m1-1,m2+1>, then `hamiltonian.pseudospin.pair` `"channel"` (default) evolves
+  every channel alone and `"block"` the cut pair exactly. Each channel's Omega, Delta_alpha, Delta_beta go to
+  `{output.file}_pseudospin_channels`. Checked by `test/code_verification/check_pseudospin` (exact cases, 1e-9). On the
+  h-BN case of check_numerics (DFT hyperfine and quadrupole, 3 T, Hahn), block is within 2.6e-3 of cCCE order 2 and
+  channel within 1.3e-6 of block.
+
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 
 ### Fixed

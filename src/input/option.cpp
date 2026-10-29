@@ -695,7 +695,8 @@ bool cJSON_readConfigurationRange(char* fccein, long* first, long* last){
 // and methodKernel, general.h); the adding_MECCE branch's method names pgCCE, pmeCCE and pmegCCE are refused with the new
 // form. gCCE also runs with bundle; dsj, itb and dsjitb run with cCCE only (gCCE with them is not implemented yet;
 // improvements.md A47). noise is a reserved method name (A49): accepted by the reader, refused as not implemented yet.
-// A method name: cCCE, gCCE, meCCE or megCCE (true for gCCE); reserved, old and unknown names are refused.
+// pseudospin runs inside as CCE with cnf->pseudospin set (pseudospin.cpp), cluster_mode standard.
+// A method name: cCCE, gCCE, meCCE, megCCE or pseudospin (true for gCCE); reserved, old and unknown names are refused.
 static bool checkedMethodName(const char* method, const char* where){
     const bool gcce = !strcasecmp(method,"gcce");
     const bool mecce = !strcasecmp(method,"mecce"), megcce = !strcasecmp(method,"megcce");
@@ -704,7 +705,7 @@ static bool checkedMethodName(const char* method, const char* where){
                        "and megCCE)\n",where,method);
         ccexRefuse();
     }
-    if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce")){
+    if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce") && strcasecmp(method,"pseudospin")){
         // CCE, pCCE, dsj, itb and dsjitb never come here: refuseOldInputKeys refuses them with the new form, before any reader
         static const char* branch[][2] = {{"pgcce","gCCE"}, {"pmecce","meCCE"}, {"pmegcce","megCCE"}};   // adding_MECCE
         const char* now = nullptr;
@@ -712,7 +713,7 @@ static bool checkedMethodName(const char* method, const char* where){
         if (now)
             ccexRefusalPrint(stderr,"Error: %s \"%s\" is now method \"%s\" with \"cluster.mode\": \"pcce\" in the input\n",where,method,now);
         else
-            ccexRefusalPrint(stderr,"Error: %s must be cCCE, gCCE, meCCE or megCCE (noise is reserved, not implemented yet), not \"%s\"\n",
+            ccexRefusalPrint(stderr,"Error: %s must be cCCE, gCCE, meCCE, megCCE or pseudospin (noise is reserved, not implemented yet), not \"%s\"\n",
                     where,method);
         ccexRefuse();
     }
@@ -727,6 +728,10 @@ static void internalMethod(const char* method, const char* shape, const char* wh
     while (k < 6 && strcasecmp(shape,shapes[k])) ++k;
     if (k == 6){   // "adaptive" (bundle now) never comes here: refuseOldInputKeys refuses it first
         ccexRefusalPrint(stderr,"Error: cluster.mode must be standard, pcce, bundle, dsj, itb or dsjitb, not \"%s\"\n",shape);
+        ccexRefuse();
+    }
+    if (!strcasecmp(method,"pseudospin") && k != 0){   // pseudospin.cpp: the cCCE pairs, cluster.mode standard only
+        ccexRefusalPrint(stderr,"Error: method pseudospin with cluster.mode \"%s\" is not implemented (cluster.mode standard)\n",shapes[k]);
         ccexRefuse();
     }
     if ((mecce || megcce) && k != 0 && k != 1){
@@ -1463,6 +1468,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     char method[MAX_CHARARRAY_LENGTH], clusterMode[16];
     readMethod(root,method,clusterMode);
     Config_setMethod(cnf,method); // inside: CCE, gCCE, pCCE, dsj, dsjitb, itb (from method and cluster_mode)
+    cnf->pseudospin = !strcasecmp(cJSON_ReadString(root,"method",true,"cCCE"),"pseudospin");   // inside CCE, its pair kernel
     strcpy(cnf->cluster_mode,clusterMode);   // inside: standard, or adaptive for cluster_mode bundle
 
     char* quantity = cJSON_ReadString(root,"quantity",true,"coherence");
@@ -2069,7 +2075,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printf("          hyperfine { dipole, contact, file, missing_row },\n");
         printf("          quadrupole (\"off\" or { structure, file, file_without_defect, cell }) ]\n");
         printf("        hamiltonian.cCCE : [ knight, hfmedi, delta_A ]\n");
-        printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n\n");
+        printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n");
+        printf("        hamiltonian.pseudospin : [ pair (\"channel\" or \"block\") ]\n\n");
     }
     cJSON* hamiltonian = readBlock(root,"hamiltonian");
     // A94 (G1) named the sections by role, corrections and dissipation; reverted 2026-10-17, the sections stay by method
@@ -2092,6 +2099,19 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             ccexRefusalPrint(stderr,"Error: hamiltonian.%s has no settings yet (\"%s\")\n",name,section->child->string);
             ccexRefuse();
         }
+    }
+    // method pseudospin: pair "channel" (default, every flip-flop channel alone) or "block" (the cut pair exactly)
+    if (cJSON* section = hamiltonian ? readBlock(hamiltonian,"pseudospin") : NULL){
+        if (!cnf->pseudospin && section->child){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin belongs to method pseudospin, this run is not\n");
+            ccexRefuse();
+        }
+        const char* pair = cJSON_ReadString(section,(char*)"pair",true,(char*)"channel");
+        if (strcasecmp(pair,"channel") && strcasecmp(pair,"block")){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin.pair must be \"channel\" or \"block\", not \"%s\"\n",pair);
+            ccexRefuse();
+        }
+        cnf->pseudospin_block = !strcasecmp(pair,"block");
     }
     // the master-equation methods: jump_operators only; which method the section belongs to is checked once every
     // reader has run (main.cpp, validateHamiltonianForMethod)

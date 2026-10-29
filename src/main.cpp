@@ -20,6 +20,7 @@
 // Simulators
 #include "../include/calculation/simulator.h"
 #include "../include/calculation/simulator_gcce_bath.h"
+#include "../include/calculation/pseudospin.h"
 #include "../include/calculation/memory_estimate.h"
 #include "../include/calculation/superoperator.h"
 #include "../include/calculation/gpu/compute_backend.h"
@@ -165,8 +166,14 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     }
 
     // Calculate the dynamics
+    if (cnf->pseudospin){   // a defect spin with added spins makes an order-1 cluster of two spins, taken for a pair
+        for (int idf=0; idf<DefectArray_getNdefect(dfa); ++idf)
+            if (DefectArray_getDefect_idf_naddspin(dfa,idf) > 0) { ccexRefusalPrint(stderr,"Error: method pseudospin does not take defects with added spins\n"); ccexRefuse(); }
+        pseudospinChannelsBegin(op);
+    }
     if(!clusterPlanOnly && adaptiveWork(cnf).mode!="plan")calculate(qa,ba,dfa,cnf,pls,cls,op,localclusters);
     MPI_Barrier(MPI_COMM_WORLD);
+    if (cnf->pseudospin) pseudospinChannelsEnd();
     MPI_freeLocalClusters(order,&localclusters);
 }
 
@@ -237,6 +244,24 @@ void validateBathPulses(Config* cnf, Pulse* pls) {
         if (rank==0) fprintf(stdout,"[backend] auto: bath pulses use CPU\n");
         strcpy(cnf->backend,"cpu");
     }
+}
+
+// method pseudospin (pseudospin.cpp): the cCCE clusters, the pairs cut to the pseudospin Hamiltonian; what it leaves out is refused
+void validatePseudospin(Config* cnf, Pulse* pls, QubitArray* qa, Cluster* cls) {
+    if (!cnf->pseudospin) return;
+    if (QubitArray_getNqubit(qa) != 1)         refuseRun("method pseudospin supports one qubit");
+    if (strcasecmp(cnf->quantity,"coherence")) refuseRun("method pseudospin computes quantity coherence only");
+    if (Config_getNstate(cnf) != 0)            refuseRun("method pseudospin takes the ensemble only (leave configuration.s_range out)");
+    if (Cluster_getOrder(cls) > 2)             refuseRun("method pseudospin is a pair model, order 1 or 2");
+    if (Pulse_getPulseiter(pls))               refuseRun("method pseudospin needs pulse.per_qubit = false");
+    if (strcasecmp(cnf->propagator,"eigen"))   refuseRun("method pseudospin needs execution.propagator eigen");
+    if (Config_getKnight(cnf) || Config_getHfmedi(cnf) || cnf->delta_A)
+        refuseRun("method pseudospin does not take hamiltonian.cCCE (knight, hfmedi, delta_A)");
+    const float* B = Config_getBfield(cnf);   // the cut keeps m_I of the computational z axis: the nuclear Zeeman axis
+    if (B[0] != 0 || B[1] != 0)                refuseRun("method pseudospin needs the field along the qubit axis (bfield [0, 0, B])");
+    if (!strcasecmp(cnf->backend,"cuda"))      refuseRun("method pseudospin runs on the CPU only, set execution.backend to cpu");
+    strcpy(cnf->backend,"cpu");                // auto: the CPU, and none of the GPU batches
+    cnf->gpu_packed_max_dim = cnf->gpu_warp_max_dim = 0;
 }
 
 bool isMasterEquationMethod(const char* m) {   // meCCE, megCCE and their pcce forms (pmeCCE, pmegCCE)
@@ -944,6 +969,7 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
     Config_validateEvolutionUpdate(cnf);       // after the packed kernel's value (A36)
     validatePulsesForMethod(cnf,pls);
     validateHamiltonianForMethod(cnf,qa);
+    validatePseudospin(cnf,pls,qa,cls);        // before computeBackendInit: it settles the backend
     validateAdaptiveConfig(cnf,cls);
     Config_validatePcceCache(cnf);
     if (clusterPlanOnly && ((strcasecmp(cnf->method,"cce") &&

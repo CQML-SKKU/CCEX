@@ -14,6 +14,7 @@ they read; `run.sh` runs all nine in order and then exits with the status of the
 | `check_input_forms/` | do the new input forms say the same physics as the legacy forms? 32 comparisons under one binary, the analyzer reading the outputs, then the gyro, comments, nodiv, evolution_update, gpu_options, tensor_format and autoconv stages | `bash check_input_forms/run.sh` |
 | `check_mean_field/` | does `bath_bath_mean_field` "xyz" (`vector_mean_field` until 2026-10-13) give the default z mean field's curve byte for byte where the answer is known (one P1 with its 14N and no other bath spin)? | `bash check_mean_field/run.sh` |
 | `check_rdip_ladder/` | does each `rdip_ladder` rung equal a separate run at that rdip (≤ 1e-9), and are the inputs it does not cover refused? about 7 min | `bash check_rdip_ladder/run.sh` |
+| `check_pseudospin/` | is method pseudospin exact where it has to be (two spins on the qubit axis: block = cCCE2 for spins 1/2 and 3/2, channel = cCCE2 for 1/2 and its channel file's closed form for 3/2, 1e-9), and are order 3 and sampled states refused? | `bash check_pseudospin/run.sh` |
 | `bath_data/` | not a check: the frozen baths, tensors and state files the checks read | — |
 
 Every check needs `bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`;
@@ -21,4 +22,4 @@ Every check needs `bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`;
 matplotlib (the analyzer's command line imports them; `test/requirements.txt`). What a
 check writes goes to its `_work/`, which is ignored and wiped at each run.
 Each folder's README says what it checks and how it decides; `check_mean_field/` and
-`check_rdip_ladder/` have none and are described in `../README.md`.
+`check_rdip_ladder/` have none and are described in `../README.md`; `check_pseudospin/` says it in its `run.sh`.

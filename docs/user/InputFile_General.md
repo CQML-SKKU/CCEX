@@ -28,6 +28,7 @@ Tags in this section are about the simulation parameters: the method, the number
     - cCCE: [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A) (meCCE reads them too)
     - meCCE, megCCE: [jump_operators](#tag_jump_operators)
     - gCCE, noise: no settings yet (noise is a reserved method)
+    - pseudospin: [pair](#tag_pseudospin_pair)
 - [keys read and not used](#tag_not_used), [turning a part off](#tag_turn_off)
 
 The qubit's position file (`Qubit.qubit[].file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubit_file); the files of the defect bath
@@ -55,6 +56,7 @@ and gCCE; `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE, meCCE and megCCE w
 | `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
 | `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU; the qubit sequence as given (Manual and any rotation included) with `pulse.per_qubit` false and `pulse.detuning_factor` 1 (others refused); DEER bath pulses (`pulse.bath`) run with it |
 | `noise` | reserved: refused as not implemented yet |
+| `pseudospin` | the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al., Nat. Commun. 7, 12935 (2016); Lee, Park, Seo, npj 2D Mater. Appl. 6, 60 (2022)), for reading a decay rather than for the best curve: the single spins are the cCCE's (exact, ESEEM included), each pair's Hamiltonians are cut to their diagonal and the flip-flops \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−1, m<sub>2</sub>+1⟩, any nuclear spin, and the pair is evolved as [pair](#tag_pseudospin_pair) says. Writes every channel's flip-flop Ω and level gaps Δ<sub>α</sub>, Δ<sub>β</sub> (kHz) to `{output.file}_pseudospin_channels`. One qubit, ensemble, order 1 or 2, `cluster.mode` standard, the field along the qubit axis, ideal π pulses from `pulse.count`, CPU |
 
 Old values are refused with their current form ([old names](InputFile.md#OldNames)).
 
@@ -931,6 +933,26 @@ cluster's spins by their mean; that comparison is gone.) <br>
 <b>Default:</b> `false`
 
 <b>Example:</b> ``` "hamiltonian" : {"cCCE": {"delta_A": true}} ```
+
+<a id="tag_pseudospin_pair"></a>
+## pseudospin.pair
+<b>Description:</b><br>
+How [method](#tag_method) pseudospin evolves a pair under its cut Hamiltonians. `"channel"` is the pseudospin model:
+every flip-flop channel alone, a two-level system, and the pair
+L<sub>pair</sub> = L<sub>diag</sub> + (2/d) Σ<sub>c</sub> (l<sub>c</sub> − l<sub>c,diag</sub>), d = (2I<sub>1</sub>+1)(2I<sub>2</sub>+1),
+L<sub>diag</sub> and l<sub>c,diag</sub> without the flip-flops; for a Hahn echo
+l<sub>c</sub> = 1 − 2 \|n̂<sub>α</sub> × n̂<sub>β</sub>\|² sin²(ω<sub>α</sub>t/4) sin²(ω<sub>β</sub>t/4) with the fields (Ω, 0, Δ<sub>α,β</sub>).
+It is exact for two spins 1/2; for larger spins it misses what couples the channels of a chain (a state in two
+channels), which matters when the quadrupole does not separate them. `"block"` evolves the cut pair exactly. The pair's
+term is its coherence over its two spins' under the cut Hamiltonians, so the run's coherence is
+Π<sub>k</sub> L<sub>k</sub> Π<sub>pairs</sub> P. Running both and cCCE order 2 separates the two approximations: the cut
+(cCCE against block) and the independent channels (block against channel). <br>
+
+<b>Data Type:</b> String
+
+<b>Default:</b> `"channel"`
+
+<b>Example:</b> ``` "method" : "pseudospin", "hamiltonian" : {"pseudospin": {"pair": "block"}} ```
 
 <a id="tag_jump_operators"></a>
 ## jump_operators
