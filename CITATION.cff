@@ -12,6 +12,6 @@ authors:
 - family-names: "Seo"
   given-names: "Hosung"
 title: "CCEX"
-version: 2.0.1
-date-released: 2026-10-22
+version: 2.1.0
+date-released: 2026-10-29
 url: "https://github.com/CQML-SKKU/CCEX"

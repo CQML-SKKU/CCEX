@@ -34,7 +34,7 @@
 # Eigen, uthash and SQLite are in external/. MKL when it is found (CCEX_BLAS, see do_compile.sh).
 
 cmake_minimum_required(VERSION 3.18)
-project(CCEX VERSION 2.0.1 LANGUAGES C CXX)
+project(CCEX VERSION 2.1.0 LANGUAGES C CXX)
 
 set(CCEX_CUDA AUTO CACHE STRING "CUDA backend binary: AUTO, ON or OFF")
 set(CCEX_CUDA_SPLIT_COMPILE 5 CACHE STRING "nvcc -split-compile threads for the CUDA files (0: every CPU, 1: off)")
