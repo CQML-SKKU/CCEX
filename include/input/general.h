@@ -82,6 +82,7 @@ typedef struct {
     char gpu_packed_source[64];            /**< "given", or the default and why (Config_resolvePackedMaxDim) */
     int gpu_warp_max_dim;                  /**< gpu_options.warp_max_dim: clusters of a compiled total dimension up to this value to the warp kernel; 0 off; -1 until Config_resolveWarpMaxDim */
     char gpu_warp_source[64];              /**< "given", or the default and why (Config_resolveWarpMaxDim) */
+    int gpu_ranks_per_gpu;                 /**< gpu_options.ranks_per_gpu (A98): backend auto, only this many ranks per GPU open it; 0: every rank may */
     bool profile;                         /**< print per-rank, per-dimension timing totals */
     bool cluster_only;                    /**< write OUTFILE.clusters.json and stop before the dynamics (output.cluster_only) */
     bool cluster_contributions;           /**< record irreducible cluster log importance over all input times */

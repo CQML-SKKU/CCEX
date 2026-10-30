@@ -50,6 +50,7 @@ Config* Config_init(){
     cnf->gpu_packed_source[0] = '\0';
     cnf->gpu_warp_max_dim = -1;                 // not given; Config_resolveWarpMaxDim picks the default (A40)
     cnf->gpu_warp_source[0] = '\0';
+    cnf->gpu_ranks_per_gpu = 0;                 // A98: every rank may open the GPU
     cnf->profile = false;
     cnf->cluster_only = false;
     cnf->cluster_contributions = false;
@@ -1029,6 +1030,7 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
     printStructElementChar("  chosen by",cnf->gpu_packed_source);
     printStructElementInt("gpu_options.warp_max_dim",cnf->gpu_warp_max_dim);
     printStructElementChar("  chosen by",cnf->gpu_warp_source);
+    if (cnf->gpu_ranks_per_gpu > 0) printStructElementInt("gpu_options.ranks_per_gpu",cnf->gpu_ranks_per_gpu);
     // cluster.mode as the input names it: the method carries pcce, dsj, itb, dsjitb inside (Config_setMethod)
     const char* mode = bundle ? "bundle" : pcce ? "pcce" :
         (!strcasecmp(cnf->method,"dsj") || !strcasecmp(cnf->method,"itb") || !strcasecmp(cnf->method,"dsjitb")) ? cnf->method : "standard";

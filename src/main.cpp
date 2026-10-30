@@ -86,6 +86,7 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     for (long i = 0; i < DefectArray_paxesDraws(); ++i)
         rand();
     double time_start_step = 0., time_end = 0.;
+    computeGpuSplitSetup(cnf,qa,ba,dfa,pls);   // A98: before the clusters are split over the ranks
     //=======================================================
     // Clusterize
     //=======================================================
@@ -956,6 +957,15 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
     // the refinement runs its steps with dynamics; the -P it replaced was dropped there without a word
     if (clusterPlanOnly && !adaptiveArgs.empty()) {
         ccexRefusalPrint(stderr,"Error: output.cluster_only does not apply to the adaptive refinement (an adaptive block in the input)\n");
+        ccexRefuse();
+    }
+    // A98: the GPU ranks split the clusters in rankClusterRows (cCCE, cluster.mode standard: bundle and pCCE split their
+    // own work) and are chosen among the ranks backend auto lets onto the GPU
+    if (cnf->gpu_ranks_per_gpu > 0 && (strcasecmp(cnf->backend,"auto") || strcasecmp(cnf->method,"cce") ||
+                                       strcasecmp(cnf->cluster_mode,"standard"))){
+        ccexRefusalPrint(stderr,"Error: execution.gpu_options.ranks_per_gpu needs execution.backend auto and method cCCE with cluster.mode "
+                                "standard (this run: backend %s, method %s, cluster.mode %s)\n",cnf->backend,cnf->method,
+                         !strcasecmp(cnf->cluster_mode,"adaptive") ? "bundle" : cnf->cluster_mode);
         ccexRefuse();
     }
     computeBackendInit(cnf,qa,pls,Output_getSavemode(op));

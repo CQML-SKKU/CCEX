@@ -7,6 +7,7 @@
 #include <cmath>
 #include <iostream>
 #include <memory>
+#include <random>
 #include <utility>
 #include "../../include/calculation/gpu/compute_backend.h"
 #include "../../include/calculation/hamiltonian_check.h"
@@ -53,9 +54,11 @@ void cceCudaDurations(const Pulse* pulse,bool ensemble,int count,double dt,
 #ifdef CCEX_USE_CUDA
 #include "../../include/calculation/gpu/gpu_backend.h"
 #include <memory>
+#include <random>
 
+// psi: the bath's initial state (BathArray_Psi0), unused for the ensemble
 static MatrixXcd* calCoherenceCceCuda(const MatrixXcd& ha, const MatrixXcd& hb,
-    BathArray* ba, Config* cnf, Pulse* pulse, double start, double buildEnd){
+    const MatrixXcd& psi, Config* cnf, Pulse* pulse, double start, double buildEnd){
     try {
         validateCceCudaHamiltonians(ha,hb);
         if (strcasecmp(Config_getQuantity(cnf),"coherence"))
@@ -63,8 +66,6 @@ static MatrixXcd* calCoherenceCceCuda(const MatrixXcd& ha, const MatrixXcd& hb,
         const bool ensemble=Config_getNstate(cnf)==0;
         const int d=ha.rows(), nstep=Config_getNstep(cnf), npulse=Pulse_getNpulse(pulse);
         const int batch=std::min(cnf->gpu_batch_steps,std::max(1,nstep));
-        MatrixXcd psi;
-        if (!ensemble) psi=BathArray_Psi0(ba);
         std::unique_ptr<GpuCce,void(*)(GpuCce*)> work(
             gpuCceCreate(d,ensemble,batch,npulse,ha.data(),hb.data(),ensemble ? nullptr : psi.data()),gpuCceDestroy);
         const double setupEnd=cnf->profile ? MPI_Wtime() : 0.0;
@@ -261,7 +262,8 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* puls
 #ifdef CCEX_USE_CUDA
     if (computeUseCuda(cnf,bdim)){
         const double buildEnd=cnf->profile ? MPI_Wtime() : 0.0;
-        MatrixXcd* cuda=calCoherenceCceCuda(ws.Halpha,ws.Hbeta,ba,cnf,pulse,stime,buildEnd);
+        const MatrixXcd psi = Config_getNstate(cnf)==0 ? MatrixXcd() : BathArray_Psi0(ba);
+        MatrixXcd* cuda=calCoherenceCceCuda(ws.Halpha,ws.Hbeta,psi,cnf,pulse,stime,buildEnd);
         if (cuda){                     // nullptr: out of GPU memory under backend auto, on the CPU below
             for (int i=0; i<Config_getNstep(cnf); i++) result[i] = cuda[i];
             delete[] cuda;
@@ -768,3 +770,41 @@ std::vector<MatrixXcd*> calCoherenceCceCudaBatch(QubitArray* qa,
     }
 }
 #endif
+
+// A98 (gpu_options.ranks_per_gpu): the seconds of one cCCE cluster of dimension d - a made-up Hermitian pair and state, so
+// that neither the bath's states nor the cluster are needed - through the path calCoherenceCceInto takes after the
+// Hamiltonians, on the CPU or (gpu, the card started by the caller) the GPU; < 0 when the GPU ran out of memory
+double cceTimeMadeUp(Config* cnf, Pulse* pls, int d, bool gpu){
+    std::mt19937_64 random(d);                         // not rand(): the run's random stream stays where it is
+    std::normal_distribution<double> normal;
+    auto hermitian = [&](){
+        MatrixXcd a(d,d);
+        for (int j=0; j<d; j++) for (int i=0; i<d; i++) a(i,j) = doublec(normal(random),normal(random));
+        return MatrixXcd((a + a.adjoint())*0.5);
+    };
+    CceWorkspace ws;
+    ws.Halpha = hermitian();
+    ws.Hbeta = hermitian();
+    MatrixXcd psi;
+    if (Config_getNstate(cnf) > 0){
+        psi = MatrixXcd(d,1);
+        for (int i=0; i<d; i++) psi(i,0) = doublec(normal(random),normal(random));
+        psi /= psi.norm();
+    }
+    std::vector<MatrixXcd> result(Config_getNstep(cnf));
+    const double start = MPI_Wtime();
+#ifdef CCEX_USE_CUDA
+    if (gpu){
+        MatrixXcd* cuda = calCoherenceCceCuda(ws.Halpha,ws.Hbeta,psi,cnf,pls,start,start);
+        if (!cuda) return -1;
+        delete[] cuda;
+        return MPI_Wtime()-start;
+    }
+#else
+    (void)gpu;
+#endif
+    const MatrixXcd* state = psi.size() ? &psi : nullptr;
+    if (!cceSetupSmallAlone(ws,state)) cceSetup(ws,state);
+    cceEvolve(cnf,pls,result.data(),ws);
+    return MPI_Wtime()-start;
+}

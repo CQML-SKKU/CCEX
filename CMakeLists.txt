@@ -5,7 +5,8 @@
 #     cmake --build build -j 8           # -> build/bin/main.out
 #
 # Options (-D on the configure line):
-#     CCEX_CUDA=AUTO|ON|OFF   the CUDA backend binary; AUTO builds it when a CUDA compiler of 13.2 or newer is found,
+#     CCEX_CUDA=AUTO|ON|OFF   the CUDA backend binary; AUTO builds it when a CUDA compiler of 13.2 or newer is found
+#                             (any version when CMAKE_CUDA_ARCHITECTURES names only capabilities below 120),
 #                             ON stops on an older one
 #     CCEX_CUDA_SPLIT_COMPILE=N  nvcc -split-compile threads for the CUDA files (5, do_compile.sh's CCEX_JOBS default;
 #                             0 every CPU, 1 off): the optimizer takes a file's kernels at once
@@ -107,10 +108,21 @@ else()
   message(STATUS "CCEX: MKL off (MKLConfig.cmake not found; source setvars.sh or set MKL_DIR)")
 endif()
 
-# ---- CUDA: AUTO means "when nvcc is found", and only CUDA 13.2 or newer is taken: 12.8 miscompiles the pulse
-# kernel applyPulse for compute capability 12.0 (A97, CHANGELOG.md). AUTO leaves an older nvcc out with a
-# warning; ON stops on it.
+# ---- CUDA: AUTO means "when nvcc is found". 12.8 miscompiles the pulse kernel applyPulse for compute capability
+# 12.0 (A97, CHANGELOG.md), so CUDA 13.2 or newer is taken unless CMAKE_CUDA_ARCHITECTURES names only capabilities
+# below 12.0 (e.g. 90 for GH200, whose driver for CUDA 12.x runs 13.2 only in compat mode, without MPS); make gpu-test
+# shows an older nvcc compiles applyPulse right there. AUTO leaves a refused nvcc out with a warning; ON stops on it.
 set(CCEX_CUDA_MIN 13.2)
+set(_ccex_cuda_old_ok OFF)   # every named architecture below 120 ("native", "all" or none named: not known here)
+foreach(_a ${CMAKE_CUDA_ARCHITECTURES})
+  string(REGEX MATCH "^[0-9]+" _n "${_a}")
+  if(_n AND _n LESS 120)
+    set(_ccex_cuda_old_ok ON)
+  else()
+    set(_ccex_cuda_old_ok OFF)
+    break()
+  endif()
+endforeach()
 include(CheckLanguage)
 if(CCEX_CUDA STREQUAL "AUTO")
   check_language(CUDA)
@@ -121,8 +133,8 @@ if(CCEX_CUDA STREQUAL "AUTO")
     else()
       set(_ccex_nvcc 0)
     endif()
-    if(_ccex_nvcc VERSION_LESS CCEX_CUDA_MIN)
-      message(WARNING "CCEX: ${CMAKE_CUDA_COMPILER} is CUDA ${_ccex_nvcc}; the CUDA backend needs ${CCEX_CUDA_MIN} or newer, so main_gpu.out is not built (-DCMAKE_CUDA_COMPILER=<newer nvcc>, or -DCCEX_CUDA=OFF)")
+    if(_ccex_nvcc VERSION_LESS CCEX_CUDA_MIN AND NOT _ccex_cuda_old_ok)
+      message(WARNING "CCEX: ${CMAKE_CUDA_COMPILER} is CUDA ${_ccex_nvcc}; the CUDA backend needs ${CCEX_CUDA_MIN} or newer unless CMAKE_CUDA_ARCHITECTURES names only capabilities below 120, so main_gpu.out is not built (-DCMAKE_CUDA_COMPILER=<newer nvcc>, -DCMAKE_CUDA_ARCHITECTURES=90, or -DCCEX_CUDA=OFF)")
       set(_ccex_cuda OFF)
     else()
       set(_ccex_cuda ON)
@@ -145,9 +157,13 @@ if(_ccex_cuda)
   endif()
   enable_language(CUDA)
   if(CMAKE_CUDA_COMPILER_VERSION VERSION_LESS CCEX_CUDA_MIN)
-    message(FATAL_ERROR "CCEX: ${CMAKE_CUDA_COMPILER} is CUDA ${CMAKE_CUDA_COMPILER_VERSION}; the CUDA backend needs ${CCEX_CUDA_MIN} or newer (12.8 miscompiles applyPulse, see CHANGELOG.md). Give -DCMAKE_CUDA_COMPILER=<CUDA ${CCEX_CUDA_MIN} or newer>/bin/nvcc, or -DCCEX_CUDA=OFF")
+    if(NOT _ccex_cuda_old_ok)
+      message(FATAL_ERROR "CCEX: ${CMAKE_CUDA_COMPILER} is CUDA ${CMAKE_CUDA_COMPILER_VERSION}; the CUDA backend needs ${CCEX_CUDA_MIN} or newer (12.8 miscompiles applyPulse for compute capability 12.0, see CHANGELOG.md) unless CMAKE_CUDA_ARCHITECTURES names only capabilities below 120. Give -DCMAKE_CUDA_COMPILER=<CUDA ${CCEX_CUDA_MIN} or newer>/bin/nvcc, -DCMAKE_CUDA_ARCHITECTURES=<cc below 120>, or -DCCEX_CUDA=OFF")
+    endif()
+    find_package(CUDAToolkit REQUIRED)
+  else()
+    find_package(CUDAToolkit ${CCEX_CUDA_MIN} REQUIRED)
   endif()
-  find_package(CUDAToolkit ${CCEX_CUDA_MIN} REQUIRED)
   set(CMAKE_CUDA_STANDARD 17)
 endif()
 message(STATUS "CCEX: MPI ${MPI_CXX_COMPILER}; CUDA backend ${_ccex_cuda}")

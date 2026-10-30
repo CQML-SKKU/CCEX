@@ -33,6 +33,15 @@ Cluster* Cluster_init(){
 std::function<double(int,const int*)> Cluster_costFunction(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* dfa){
     // A31: one D^3 eigensolve and nstep steps of D^2 work; measured on h-BN (dimensions 3..49) it follows the time per
     // cluster within about 20 %. (Moved here from main.cpp by A38, which also needs it inside clusterizePairs.)
+    const std::function<double(int,const int*)> dim = Cluster_dimFunction(cnf,qa,ba,dfa);
+    const double nstep = Config_getNstep(cnf);
+    return [dim, nstep](int n, const int* row){
+        const double d = dim(n,row);
+        return d*d*(d+nstep);
+    };
+}
+
+std::function<double(int,const int*)> Cluster_dimFunction(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* dfa){
     std::vector<double> siteDim(ba->nspin, 1.0);
     for (int i=0; i<ba->nspin; i++){
         siteDim[i] = BathSpin_dim(BathArray_getBath_i(ba,i));
@@ -44,11 +53,10 @@ std::function<double(int,const int*)> Cluster_costFunction(Config* cnf, QubitArr
     // alone left megCCE, pgCCE and pmegCCE at dimension 1 - the split of the clusters over the ranks only, not results)
     const char* kernel = methodKernel(cnf->method);
     const double qubitDim = strcmp(kernel,"gcce") && strcmp(kernel,"megcce") ? 1.0 : QubitArray_dim(qa);
-    const double nstep = Config_getNstep(cnf);
-    return [siteDim, qubitDim, nstep](int n, const int* row){
+    return [siteDim, qubitDim](int n, const int* row){
         double d = qubitDim;
         for (int j=1; j<=n; j++) d *= siteDim[row[j]];
-        return d*d*(d+nstep);
+        return d;
     };
 }
 
