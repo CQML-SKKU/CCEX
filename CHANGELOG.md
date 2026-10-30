@@ -37,7 +37,7 @@
   rank, counted at its cost times the GPU/CPU time, or to a CPU rank at its cost, whichever would finish it first, and
   every other cluster to the least-loaded rank of all. The split follows
   the timings, so outputs agree within rounding from run to run, not bit for bit. Without the key nothing changes.
-  Measured on one GH200 node (288 Grace cores, four GPUs, driver 570, CUDA 12.8, no MPS; MgO transition-metal bath,
+  Measured on one GH200 node (288 Grace cores, four GPUs, driver 570, CUDA 12.8, no MPS; a bath of transition-metal spins,
   cCCE2, two states, 601 points, about 980,000 pairs, one run each): with ranks_per_gpu 4 the 1 atm case took 477 s
   against 767 s on 288 CPU ranks and 2,104 s with backend auto on 64 ranks, and the O-rich case 155 s against 316 s and
   259 s (ranks_per_gpu 16: 530 s and 166 s; 32 with MPS: 543 s and 186 s), the GPU and the CPU ranks busy for about
