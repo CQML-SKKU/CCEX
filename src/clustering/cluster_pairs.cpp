@@ -152,7 +152,11 @@ void clusterizePairs(Cluster* cls, BathArray* ba, float rdip, float rdipcut,
             row[1] = pairRow[sorted[i]];
             row[2] = pairCol[sorted[i]];
             return cost(2,row);
-        },loads);
+        },loads,2,[&](int i){
+            row[1] = pairRow[sorted[i]];
+            row[2] = pairCol[sorted[i]];
+            return (const int*)row;
+        });
         free(cls->pairRows);
         cls->npairRows = (int)held.size();
         cls->pairRows = held.empty() ? NULL : (int*)malloc(held.size()*sizeof(int));

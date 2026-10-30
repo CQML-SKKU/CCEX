@@ -1,5 +1,46 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **`execution.gpu_options.ranks_per_gpu`: GPU ranks under `backend` = `auto` (cCCE, `cluster.mode` standard).** Every rank
+  that meets a cluster of `min_dim` or above opened a CUDA context of its own; without MPS a GH200 node admitted 16 per
+  GPU, which held its 288 cores to 64 ranks. With k, only the first k × (visible GPUs) ranks of a node use the GPU, the
+  others never start CUDA. Before the clusters are split over the ranks, each dimension of `min_dim` and above is timed
+  on a made-up cluster of that dimension, on the CPU by every rank at once and on the GPU by every GPU rank at once (k
+  on a card, taking turns without MPS, together with it), so as loaded as in the run; such a cluster then goes to a GPU
+  rank, counted at its cost times the GPU/CPU time, or to a CPU rank at its cost, whichever would finish it first, and
+  every other cluster to the least-loaded rank of all. The split follows
+  the timings, so outputs agree within rounding from run to run, not bit for bit. Without the key nothing changes.
+  Measured on one GH200 node (288 Grace cores, four GPUs, driver 570, CUDA 12.8, no MPS; a bath of transition-metal spins,
+  cCCE2, two states, 601 points, about 980,000 pairs, one run each): with ranks_per_gpu 4 the 1 atm case took 477 s
+  against 767 s on 288 CPU ranks and 2,104 s with backend auto on 64 ranks, and the O-rich case 155 s against 316 s and
+  259 s (ranks_per_gpu 16: 530 s and 166 s; 32 with MPS: 543 s and 186 s), the GPU and the CPU ranks busy for about
+  as long; the outputs agreed with the CPU run to 1.7e-6 (`max|dL|`).
+- **CUDA 12.8 with the system MPS on a GH200 node.** Built with CUDA 12.8 (below) against the driver's own library, 128
+  ranks connected to MPS there (through CUDA 13.2's forward-compatibility library they had not connected): backend
+  auto took 1,074 s on the 1 atm case and 199 s on the O-rich one. `make gpu-test` passed (CUDA 12.8, sm_90).
+
+### Fixed
+
+- **Two runs of one path wrote different last digits with MKL.** MKL picks its code path by where in memory an array
+  starts unless its reproducible mode is on, so with MKL 2026.2 two runs that take the same path differed by 1e-10 in
+  the written values (`check_input_forms` column_evolution C1-C3: `{"enabled": false}` against a `min_dim` no cluster
+  reaches). The MKL builds now set `MKL_CBWR_AUTO | MKL_CBWR_STRICT` at start (the CPU's fastest code path, independent
+  of the alignment; a p1_cce2e2n CCE4 run took the same time); an `MKL_CBWR` in the environment is left to MKL.
+
+### Builds
+
+- **CUDA 13.2 is required only for compute capability 12.0 and above.** 2.0.1 refused every nvcc older than 13.2
+  because 12.8 miscompiles `applyPulse` for the RTX PRO 6000 (compute capability 12.0, A97 below). That also refused
+  the toolkit of a driver for CUDA 12.x on other cards: on a GH200 (compute capability 9.0) with driver 570, CUDA 13.2
+  ran only through the forward-compatibility library, and MPS clients did not connect there, so the GPU runs were
+  limited to 16 ranks per GPU. `do_compile.sh` now takes an older nvcc when `CUDA_ARCH` is below 120, and CMake when
+  `CMAKE_CUDA_ARCHITECTURES` names only capabilities below 120 (`native`, `all` or none named still need 13.2, since
+  the architecture is not known at configure time). Whether 12.x compiles `applyPulse` right for such a card is not
+  known: `make gpu-test` (`test_gcce_cuda`'s q = 9 case) on that card checks it.
+
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 
 ### Fixed

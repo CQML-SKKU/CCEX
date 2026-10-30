@@ -5,6 +5,10 @@
 #include "../../../include/calculation/gpu/compute_backend.h"
 #include "../../../include/calculation/gpu/small_cluster_batch.h"
 #include "../../../include/calculation/small_eigensolver.h"
+#include "../../../include/calculation/simulator.h"
+#include "../../../include/clustering/cluster.h"
+#include <functional>
+#include <set>
 #include <climits>
 #include <cstdarg>
 #include <map>
@@ -29,6 +33,21 @@ struct Timing { long long count=0; double build=0, setup=0, evolution=0; };
 std::map<std::tuple<std::string,std::string,int>,Timing> timings;
 struct BatchTiming { long long batches=0, clusters=0; int largest=0; };
 std::map<int,BatchTiming> clusterBatches;
+// A98: gpu_options.ranks_per_gpu (computeGpuSplitSetup)
+struct GpuSplit {
+    bool on = false;
+    std::vector<int> ranks;                 // the GPU ranks, ascending
+    std::vector<char> isGpu;                // per rank
+    Config* config = nullptr; Pulse* pls = nullptr;
+    std::function<double(int,const int*)> dim;
+    std::map<int,double> ratio;             // dimension -> GPU time / CPU time; 0: the GPU did not take it
+} split;
+// A98: on this rank the GPU may take the dimension: a GPU rank, and not measured slower there than on the CPU
+bool splitGpuTakes(int dimension){
+    if (!split.isGpu[rank]) return false;
+    const auto it = split.ratio.find(dimension);
+    return it == split.ratio.end() || (it->second > 0 && it->second < 1);
+}
 void append(std::string& text, const char* format, ...){
     char line[512];
     va_list args; va_start(args,format);
@@ -115,6 +134,7 @@ std::size_t computeDeviceMemory(const Config* config){
 
 bool computeUseCuda(const Config* config, int dimension){
     if (!cudaSupported || !strcasecmp(config->backend,"cpu")) return false;
+    if (split.on && !splitGpuTakes(dimension)) return false;   // A98: not a GPU rank, or measured slower on the GPU
 #ifdef CCEX_USE_CUDA
     // X12: a new cluster - whatever the last out-of-memory left is destroyed by now, so the cache works again
     if (recovering){ gpuOutOfMemoryRecovery(false); recovering=false; }
@@ -135,6 +155,7 @@ bool computeUseCuda(const Config* config, int dimension){
 bool computeMayUseCuda(const Config* config, int dimension){
 #ifdef CCEX_USE_CUDA
     if (!cudaSupported || !strcasecmp(config->backend,"cpu") || (cudaAttempted && !cudaReady)) return false;
+    if (split.on && !splitGpuTakes(dimension)) return false;   // A98: not a GPU rank, or measured slower on the GPU
     return strcasecmp(config->backend,"auto") || (dimension>=config->gpu_min_dim && dimension<cpuFromDimension);
 #else
     (void)config; (void)dimension;
@@ -247,4 +268,111 @@ void computeClusterBatch(const Config* config,int dimension,int count){
     auto& timing=clusterBatches[dimension];
     ++timing.batches; timing.clusters+=count;
     timing.largest=std::max(timing.largest,count);
+}
+
+void computeGpuSplitSetup(Config* config, QubitArray* qa, BathArray* ba, DefectArray* dfa, Pulse* pls){
+    split = GpuSplit{};
+    if (config->gpu_ranks_per_gpu <= 0 || !cudaSupported) return;
+#ifdef CCEX_USE_CUDA
+    // node rank 0 alone asks the driver, so the other ranks never start CUDA
+    MPI_Comm node;
+    MPI_Comm_split_type(MPI_COMM_WORLD,MPI_COMM_TYPE_SHARED,rank,MPI_INFO_NULL,&node);
+    int devices = nodeRank==0 ? gpuVisibleDevices() : 0;
+    MPI_Bcast(&devices,1,MPI_INT,0,node);
+    MPI_Comm_free(&node);
+    int mine = nodeRank < (long long)config->gpu_ranks_per_gpu*devices ? 1 : 0;
+    std::vector<int> all(nprocess,0);
+    MPI_Allgather(&mine,1,MPI_INT,all.data(),1,MPI_INT,MPI_COMM_WORLD);
+    split.isGpu.assign(all.begin(),all.end());
+    for (int r=0; r<nprocess; r++) if (all[r]) split.ranks.push_back(r);
+    if (rank==0) printf("[gpu-split] ranks_per_gpu=%d: %zu GPU rank(s) of %d\n",config->gpu_ranks_per_gpu,split.ranks.size(),nprocess);
+    if (split.ranks.empty()) return;   // no GPU visible: every cluster on the CPU, split as without the key
+    split.on = true;
+    split.config = config; split.pls = pls;
+    split.dim = Cluster_dimFunction(config,qa,ba,dfa);
+#else
+    (void)qa; (void)ba; (void)dfa; (void)pls;
+#endif
+}
+
+bool computeGpuSplitOn(){ return split.on; }
+const std::vector<int>& computeGpuSplitRanks(){ return split.ranks; }
+
+int computeGpuSplitPending(int n, const int* row){
+    const double d = split.dim(n,row);
+    return d >= split.config->gpu_min_dim && d <= INT_MAX && !split.ratio.count(int(d)) ? int(d) : 0;
+}
+
+double computeGpuSplitWeight(int n, const int* row){
+    const double d = split.dim(n,row);
+    if (d < split.config->gpu_min_dim || d > INT_MAX) return 0;
+    const auto it = split.ratio.find(int(d));
+    return it == split.ratio.end() || it->second >= 1 ? 0 : it->second;
+}
+
+namespace {
+// the seconds of a made-up cluster of this dimension on the CPU or the GPU (cceTimeMadeUp; the fastest of `repeats`: the
+// first GPU one starts the card); < 0 when the GPU does not take it. The GPU under backend auto from this dimension on,
+// so that running out of its memory leaves the cluster to the CPU (computeCudaOutOfMemory), as in the run
+double timeDimension(int dimension, bool gpu, int repeats){
+    Config* c = split.config;
+    char saved[sizeof c->backend];
+    strcpy(saved,c->backend);
+    const int minDim = c->gpu_min_dim;
+    const bool profile = c->profile;
+    c->profile = false;                     // not in the [profile] totals of the run
+    strcpy(c->backend,gpu ? "auto" : "cpu");
+    c->gpu_min_dim = dimension;
+    double best = -1;
+    if (!gpu || computeUseCuda(c,dimension)){
+        for (int i=0; i<repeats; i++){
+            const double dt = cceTimeMadeUp(c,split.pls,dimension,gpu);
+            if (dt < 0){ best = -1; break; }
+            if (best < 0 || dt < best) best = dt;
+        }
+    }
+    strcpy(c->backend,saved);
+    c->gpu_min_dim = minDim;
+    c->profile = profile;
+    return best;
+}
+}
+
+void computeGpuSplitCalibrate(const std::set<int>& dimensions){
+    if (dimensions.empty()) return;
+    const std::vector<int> dims(dimensions.begin(),dimensions.end());
+    const int nd = int(dims.size());
+    // t[2j], t[2j+1]: CPU and GPU seconds summed over the ranks that timed dimension j; count[2j], count[2j+1]: those ranks
+    std::vector<double> t(2*nd,0.0), count(2*nd,0.0);
+    // the CPU under the load of the run: every rank at once, rank r on dimension r mod nd (fewer ranks than dimensions:
+    // on those j with j mod nprocess = r) - the ranks share the memory bandwidth; on a GH200 node a D = 900 cluster took
+    // 1.9 s alone and 5.8 s with 288 ranks
+    for (int j=0; j<nd; j++)
+        if (nprocess >= nd ? rank % nd == j : j % nprocess == rank){ t[2*j] += timeDimension(dims[j],false,1); count[2*j] += 1; }
+    // the GPU as loaded as in the run: one dimension at a time, every GPU rank on it at once from a barrier, so that each
+    // card has its ranks_per_gpu ranks on it for the whole timing - taking turns without MPS (each waits about k times as
+    // long), running together with it. The time is then what such a cluster holds its rank in the run, with or without
+    // MPS. (Dimensions dealt round the GPU ranks finished at different times and were timed nearly alone: Hangang, 1 atm
+    // case, D = 480 at 14 ms against 13.6 ms alone with 4 ranks per card.) Twice: the first starts the card
+    const bool gpuRank = split.isGpu[rank];
+    for (int j=0; j<nd; j++){
+        double dt = 0;
+        for (int rep=0; rep<2; rep++){
+            MPI_Barrier(MPI_COMM_WORLD);
+            if (gpuRank) dt = timeDimension(dims[j],true,1);
+        }
+        if (gpuRank && dt > 0){ t[2*j+1] += dt; count[2*j+1] += 1; }
+    }
+    MPI_Allreduce(MPI_IN_PLACE,count.data(),2*nd,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    MPI_Allreduce(MPI_IN_PLACE,t.data(),int(t.size()),MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    size_t j = 0;
+    for (int d : dimensions){
+        const double cpu = t[2*j]/count[2*j], gpu = count[2*j+1] > 0 ? t[2*j+1]/count[2*j+1] : 0;
+        split.ratio[d] = cpu > 0 && gpu > 0 ? gpu/cpu : 0;
+        if (rank==0) printf("[gpu-split] dim=%d cpu=%.4g s gpu=%.4g s gpu/cpu=%.4g%s\n",d,cpu,gpu,split.ratio[d],
+                            gpu <= 0 ? " (the GPU did not take it: every rank, on the CPU)" :
+                            split.ratio[d] >= 1 ? " (slower on the GPU: every rank, on the CPU)" : "");
+        j++;
+    }
+    fflush(stdout);
 }

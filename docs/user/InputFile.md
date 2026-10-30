@@ -222,7 +222,7 @@ The keys of this group are described in [InputFile_Backend.md](InputFile_Backend
 Where and how the cluster dynamics is computed, and what the run reports about it: the `execution` block.
 
 - [backend](InputFile_Backend.md#tag_backend)
-- [gpu_options](InputFile_Backend.md#tag_gpu_options) (min_dim, packed_max_dim, evolution_batch_size, evolution_batch_steps, cluster_batch_mb, cache_mb, warp_max_dim)
+- [gpu_options](InputFile_Backend.md#tag_gpu_options) (min_dim, packed_max_dim, evolution_batch_size, evolution_batch_steps, cluster_batch_mb, cache_mb, warp_max_dim, ranks_per_gpu)
 - [propagator](InputFile_Backend.md#tag_propagator)
 - [evolution](InputFile_Backend.md#tag_evolution)
 - [evolution_update](InputFile_Backend.md#tag_evolution_update)
