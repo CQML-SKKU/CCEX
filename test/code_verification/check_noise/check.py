@@ -265,7 +265,34 @@ def compute():
     dW = np.abs(ws - wc).max()   # held to the FFT's accuracy on this grid, 1e-9, not to the printed digits
     print(f"  {'PASS' if dW <= 1e-9 else 'FAIL'}  compute spectrum (FFT) and coherence: the coherence, max|dW| = {dW:.2e} "
           f"(<= 1e-9; W down to {wc.min():.2g})")
-    return dW <= 1e-9 and ok
+    return dW <= 1e-9 and ok and autogrid()
+
+
+def autogrid():
+    """compute spectrum without fft or with one of its two keys: the coherence of compute coherence, the same grid on 1 and 4 ranks"""
+    ok = True
+    runs = {"hahn": ({}, {}), "fid": ({"pulse": {"count": 0}, "deltat": 0.0002}, {}), "cpmg4": ({"pulse": {"count": 4}}, {}),
+            "time_only": ({}, {"time_max": 2.0}), "nstep_only": ({}, {"nstep": 8000})}
+    grid = re.compile(r"hamiltonian\.noise\.fft: time_max (\S+) ms, nstep (\d+)")
+    for name, (over, fft) in runs.items():
+        d = dict(natab(), deltat=0.002, nstep=501)
+        d.update(over)
+        noise = {"compute": "spectrum"}
+        if fft:
+            noise["fft"] = fft
+        ccex(f"auto_{name}_c", d, 4)
+        ccex(f"auto_{name}_s", dict(d, hamiltonian={"noise": noise}), 4)
+        dW = np.abs(coherence(f"{work}/out/auto_{name}_s_wiDiv")[1] - coherence(f"{work}/out/auto_{name}_c_wiDiv")[1]).max()
+        good = dW <= 1e-6
+        print(f"  {'PASS' if good else 'FAIL'}  fft default {name}: max|dW| = {dW:.1e} (<= 1e-6)")
+        ok &= bool(good)
+    d = dict(natab(), deltat=0.002, nstep=501, hamiltonian={"noise": {"compute": "spectrum"}})
+    ccex("auto_n1", d, 1)
+    ccex("auto_n4", d, 4)
+    a, b = (grid.search(open(f"{work}/proc_auto_n{n}").read()) for n in (1, 4))
+    good = bool(a and b and a.groups() == b.groups())
+    print(f"  {'PASS' if good else 'FAIL'}  fft default: the grid on 1 and 4 ranks ({a.groups() if a else None}, {b.groups() if b else None})")
+    return ok and good
 
 
 def pycce():
@@ -319,7 +346,8 @@ os._exit(0)   # PyCCE 1.1.1 crashes at interpreter exit on this machine (double 
 def gpu(gpu_bin):
     """execution.backend cuda against the CPU, 2 ranks: the coherence to the printed digits, C(t) and S(f) to 1e-9 relative.
     compute spectrum's coherence to 2e-9: the 2e-13 relative rounding of C(t) grows through the FFT and the integral, so the
-    CPU alone moves it by up to 8e-10 between 1, 2, 3, 4 and 8 ranks (natural-abundance 13C, 2026-11-02)"""
+    CPU alone moves it by up to 8e-10 between 1, 2, 3, 4 and 8 ranks (natural-abundance 13C, 2026-11-02), and by 5e-9 on the
+    default grid with a sampled state (MKL's reproducible mode does not change that), held to 1e-8 there"""
     state = {"s_range": [1, 1], "bath_state_file": [f"{NATAB}/state_{{s}}"]}
     fft = {"time_max": 3.0, "nstep": 5000}
     cases = {"hahn": {"pulse": {"count": 1}}, "fid": {"pulse": {"count": 0}, "deltat": 0.0002}, "cpmg4": {"pulse": {"count": 4}},
@@ -328,7 +356,9 @@ def gpu(gpu_bin):
              "corr_state": {"hamiltonian": {"noise": {"compute": "correlation"}}, "configuration": state},
              "spec": {"hamiltonian": {"noise": {"compute": "spectrum", "fft": fft}}},
              "spec_opt": {"hamiltonian": {"noise": {"compute": "spectrum", "fft": dict(fft, window="tukey", pad_factor=2,
-                          subtract_mean=True, clamp_negative=True)}}}}
+                          subtract_mean=True, clamp_negative=True)}}},
+             "spec_auto": {"hamiltonian": {"noise": {"compute": "spectrum"}}},
+             "spec_auto_state": {"hamiltonian": {"noise": {"compute": "spectrum"}}, "configuration": state}}
     ok = True
     for name, over in cases.items():
         d = dict(natab(), deltat=0.002, nstep=501)
@@ -352,7 +382,7 @@ def gpu(gpu_bin):
             else:
                 x, y = np.loadtxt(a)[:, 1], np.loadtxt(b)[:, 1]
                 rel = max(rel, np.abs(x - y).max() / np.abs(x).max())
-        good = worst <= (2e-9 if name.startswith("spec") else TOL) and rel <= 1e-9
+        good = worst <= (1e-8 if "auto" in name else 2e-9 if name.startswith("spec") else TOL) and rel <= 1e-9
         print(f"  {'PASS' if good else 'FAIL'}  GPU {name}: max|dW| = {worst:.1e}, C(t), S(f) {rel:.1e} relative")
         ok &= bool(good)
     return ok

@@ -230,6 +230,43 @@ void addMode(Config* cnf, int power, double omega, double re, double im, std::ve
 }
 #endif
 
+namespace {
+// compute spectrum without fft.nstep: the clusters' modes, kept until noiseFinish knows the grid.
+// shortcut: all of them in memory (24 B each, dim^2 a cluster), give fft.nstep for a run with too many.
+std::vector<double> keptOmega, keptRe, keptIm;
+
+// The intervals that resolve the bath's modes but for a share eps of their weight, the fastest ones; on all ranks. By a
+// histogram of log |w|, as a threshold per mode would depend on how many modes the bath has. The weight is C(t)'s, not
+// chi's (divided by w^2): a dropped mode folds into the low frequencies, where the filter is large (13C, 2026-11-02). The static part (w = 0) has
+// no period and does not count.
+int autoNstep(Config* cnf){
+    const int perOctave = 8, nbin = 1601, centre = nbin/2;
+    std::vector<double> hist(nbin,0.0);
+    for (size_t k=0; k<keptOmega.size(); ++k)
+        if (keptOmega[k] != 0){
+            const int bin = centre + int(std::floor(perOctave*std::log2(std::fabs(keptOmega[k]))));
+            hist[std::min(nbin-1,std::max(0,bin))] += keptRe[k];   // signed: the CCE terms of one mode cancel
+        }
+    MPI_Allreduce(MPI_IN_PLACE,hist.data(),nbin,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    double total = 0, above = 0, fastest = 0;
+    for (double& h : hist) total += h = std::fabs(h);
+    const double eps = 1e-3, pointsPerPeriod = 8;   // coherence within 5e-7 on 1 ppm P1, 2e-10 on 13C (2026-11-02)
+    for (int bin=nbin-1; bin>=0; --bin){
+        above += hist[bin];
+        if (above > eps*total){ fastest = std::pow(2.0,double(bin+1-centre)/perOctave); break; }
+    }
+    const double nstep = std::max(2.0,std::ceil(cnf->noise_fft_time_max*fastest/(2*M_PI)*pointsPerPeriod));
+    if (nstep > 1e8){
+        if (rank == 0) fprintf(stderr,"Error: hamiltonian.noise.fft.nstep would be %.3g (fastest mode %.4g rad/ms over time_max %g ms): give fft.nstep\n",
+                               nstep,fastest,cnf->noise_fft_time_max);
+        ccexFatal(1);
+    }
+    if (rank == 0) printf("      hamiltonian.noise.fft: time_max %g ms, nstep %d (fastest mode kept %.6g kHz)\n",
+                          cnf->noise_fft_time_max,int(nstep),fastest/(2*M_PI));
+    return int(nstep);
+}
+}
+
 int noiseLength(Config* cnf){
     return !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_nstep + 1 : Config_getNstep(cnf);
 }
@@ -244,10 +281,11 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int po
     const MatrixXcd& U = es.eigenvectors();
     const Eigen::VectorXd& E = es.eigenvalues();
     const MatrixXcd M = U.adjoint()*B*U;
-    const std::vector<double> times = valueTimes(cnf);
+    const bool keepModes = cnf->noise_fft_auto_nstep;
+    const std::vector<double> times = keepModes ? std::vector<double>() : valueTimes(cnf);
 #ifdef CCEX_USE_CUDA
     const bool onCard = !strcasecmp(cnf->backend,"cuda");
-    if (onCard && !noiseCard){
+    if (onCard && !noiseCard && !keepModes){
         const std::vector<double> frac = intervalFractions(pls);
         batchLimit = batchModes(times.size(),!strcmp(cnf->noise_compute,"coherence") ? frac.size() : 1);
         try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
@@ -289,6 +327,16 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int po
         G = M.cwiseProduct((MR + RM).transpose())*(0.5/(4*M_PI*M_PI));
     }else
         G = M.cwiseAbs2().cast<std::complex<double>>()*(1.0/(4*M_PI*M_PI*bdim));
+    if (keepModes){
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b)
+                if (G(a,b) != 0.0){
+                    keptOmega.push_back(E(a)-E(b));
+                    keptRe.push_back(power*G(a,b).real());
+                    keptIm.push_back(power*G(a,b).imag());
+                }
+        return;
+    }
 #ifdef CCEX_USE_CUDA
     if (onCard){
         for (int a=0; a<bdim; ++a)
@@ -306,6 +354,25 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int po
 
 bool noiseFinish(QubitArray* qa, Config* cnf, Pulse* pls, Output* op, int istate,
                  std::vector<double>& with, std::vector<double>& without, MatrixXcd* wD, MatrixXcd* nD){
+    if (cnf->noise_fft_auto_nstep){   // the grid is known now; a state has its own (its mean field moves the modes)
+        cnf->noise_fft_nstep = autoNstep(cnf);
+        with.assign(noiseLength(cnf),0.0);
+        without.assign(with.size(),0.0);
+        const std::vector<double> times = valueTimes(cnf);
+#ifdef CCEX_USE_CUDA
+        if (!strcasecmp(cnf->backend,"cuda")){
+            batchLimit = batchModes(times.size(),1);
+            const std::vector<double> frac = intervalFractions(pls);
+            try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
+            catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+            for (size_t k=0; k<keptOmega.size(); ++k) addMode(cnf,1,keptOmega[k],keptRe[k],keptIm[k],with,without);
+        }else
+#endif
+        for (size_t i=0; i<times.size(); ++i)
+            for (size_t k=0; k<keptOmega.size(); ++k)
+                with[i] += (std::complex<double>(keptRe[k],keptIm[k])*std::polar(1.0,keptOmega[k]*times[i])).real();
+        keptOmega.clear(); keptRe.clear(); keptIm.clear();
+    }
 #ifdef CCEX_USE_CUDA
     if (noiseCard){   // this state's modes that still wait, and a card without work for the next state's grid
         flushModes(cnf,0,with,without);

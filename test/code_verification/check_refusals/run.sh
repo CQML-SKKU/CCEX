@@ -755,8 +755,8 @@ reject_case natab_cce2_hahn rj_noise_pseudo_secular "hamiltonian.noise.pseudo_se
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'pseudo_secular': 'yes'}}"
 reject_case natab_cce2_hahn rj_noise_compute "hamiltonian.noise.compute must be \"coherence\", \"spectrum\" or \"correlation\"" \
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'psd'}}"
-reject_case natab_cce2_hahn rj_noise_spectrum_no_fft "hamiltonian.noise.compute \"spectrum\" needs hamiltonian.noise.fft" \
-  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum'}}"
+reject_case natab_cce2_hahn rj_noise_fft_time_max "hamiltonian.noise.fft needs time_max > 0" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum', 'fft': {'time_max': 0}}}"
 reject_case natab_cce2_hahn rj_noise_fft_window "hamiltonian.noise.fft.window must be" \
   "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum', 'fft': {'time_max': 1, 'nstep': 10, 'window': 'blackman'}}}"
 reject_case natab_cce2_hahn rj_noise_model_correlation "hamiltonian.noise.compute \"correlation\" needs hamiltonian.noise.spectrum \"bath\"" \

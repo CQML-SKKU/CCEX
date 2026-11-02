@@ -303,6 +303,10 @@ void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
         warnNotUsed("execution.backend","a model spectrum is computed on the CPU");
     if (strcasecmp(cnf->backend,"cuda") || strcmp(cnf->noise_model,"bath")) strcpy(cnf->backend,"cpu");
     cnf->gpu_packed_max_dim = cnf->gpu_warp_max_dim = 0;
+    if (!strcmp(cnf->noise_compute,"spectrum") && !(cnf->noise_fft_time_max > 0)){   // chi(T) needs C(t) up to T only
+        cnf->noise_fft_time_max = Config_getDeltat(cnf)*(Config_getNstep(cnf)-1);
+        if (!(cnf->noise_fft_time_max > 0)) refuseRun("hamiltonian.noise.fft.time_max cannot be set from a run of one time point: give it");
+    }
 }
 
 void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, Config* cnf) {

@@ -1039,7 +1039,7 @@ S(f) is two-sided, kHz²/kHz (`_noise_spectrum`: f in kHz, S). ρ is 1/D (infini
 `"correlation"` it is the cluster's pure state with `s_range`, with the mean field of the other spins, as in PyCCE
 (1/D without `s_range`). So without `s_range` the three agree: `"correlation"` and `"spectrum"` give the same C(t), and
 `"spectrum"` gives the coherence of `"coherence"` to the accuracy of its grid (a step below the period of the fastest
-bath frequency, a window longer than the times asked for; about 1e-9 at best, the rounding of C(t) growing through the FFT and
+bath frequency, a window longer than the times asked for; about 1e-9 at best, up to 5e-9 on the default grid, the rounding of C(t) growing through the FFT and
 the integral, so that it moves by that much with the number of ranks); with `s_range` `"correlation"` is another quantity.
 A model spectrum computes the coherence alone (another value is refused). <br>
 
@@ -1052,13 +1052,13 @@ A model spectrum computes the coherence alone (another value is refused). <br>
 <a id="tag_noise_fft"></a>
 ## fft
 <b>Description:</b><br>
-`hamiltonian.noise`, with [compute](#tag_noise_compute) `"spectrum"` (required there, not used otherwise): the time grid
+`hamiltonian.noise`, with [compute](#tag_noise_compute) `"spectrum"` (not used otherwise; every key has a default): the time grid
 of C(t) and the FFT, `semi-cce`'s `psd` keys.
 
 | Key | Meaning | Default |
 |---|---|---|
-| `time_max` | the end of the grid (ms, takes a unit): C(t) at t = 0, Δt, ..., `time_max` | required |
-| `nstep` | its intervals (`nstep` + 1 points, Δt = `time_max`/`nstep`) | required |
+| `time_max` | the end of the grid (ms, takes a unit): C(t) at t = 0, Δt, ..., `time_max` | the run's last time, `deltat` × (`nstep` − 1) of the top level |
+| `nstep` | its intervals (`nstep` + 1 points, Δt = `time_max`/`nstep`) | from the bath's modes, see below |
 | `window` | `"none"`, `"hann"`, `"tukey"` (the last half tapered) or `"exp"` (exp(−3t/`time_max`)) on C(t) | `"none"` |
 | `pad_factor` | the FFT length is `pad_factor` × (2 `nstep` + 1), made odd; the padding holds the mean of the last fifth of C(t) | 1 |
 | `subtract_mean` | subtract that mean from C(t) first (and pad with 0) | `false` |
@@ -1067,6 +1067,12 @@ of C(t) and the FFT, `semi-cce`'s `psd` keys.
 S(f) = Δt Re FFT of C(t) made even, at f = k/(M Δt), k = 0 .. M/2 for an FFT of length M. The highest frequency is
 1/(2Δt) and the resolution 1/(M Δt): Δt has to resolve the fastest bath frequency (the ¹³C Larmor period is 1.9 µs at
 500 G) and `time_max` to cover the times of the coherence. <br>
+Without `nstep`, Δt gives 8 points per period of the fastest modes left after dropping at most 10⁻³ of the weight (the modes'
+signed weights over the CCE terms, in frequency bands); the log prints the values taken. The coherence then stays within 5×10⁻⁷ of
+`compute` `"coherence"` on 1 ppm P1 and 2×10⁻¹⁰ on natural-abundance ¹³C (2026-11-02). All the modes stay in memory until the end
+of the run (24 bytes each, a cluster has dimension² of them): give `nstep` if there are too many, and it stops if `nstep` would
+pass 10⁸. The default `time_max` is what the coherence needs, not a resolved S(f): for a finer S(f), or with a `window` (it would
+taper C(t) inside the times of the coherence), give a longer `time_max`. <br>
 
 <b>Data Type:</b> Object
 
