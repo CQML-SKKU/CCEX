@@ -694,6 +694,8 @@ std::vector<GpuCce*> gpuCceCreateBatch(int n, int d, bool ensemble, int batchSte
     if (!context) throw std::runtime_error("CUDA backend was not initialized");
     if (n<1 || d<1 || batchSteps<1 || pulseCount<0 || pulseCount==INT_MAX || (!ensemble && !initial))
         throw std::runtime_error("invalid cCCE GPU batch dimensions or initial states");
+    // one cluster: Zheevd, which is faster than XsyevBatched on one pair (GH200, D = 900: 82 against 168 ms)
+    if (n==1) return {gpuCceCreate(d,ensemble,batchSteps,pulseCount,hAlpha[0],hBeta[0],ensemble ? nullptr : initial[0])};
     const int width=ensemble ? d : 1;
     const size_t square=(size_t)d*d, columns=(size_t)width*batchSteps;
     if (square>INT_MAX || columns>INT_MAX/(size_t)d)

@@ -197,11 +197,14 @@ def main():
     # X12 (review 20261013b-gpu-perf I1): 8192 bytes lets the first small allocations of a cluster through and fails a later
     # one, so the failing work has buffers to release; afterwards nothing may stay in the reuse cache (no later GPU cluster
     # here: every cluster the GPU would take has the failed dimension). gpu-test's test_review_memory checks the buffers
-    # released after the failure was caught (a batch's other works).
-    late={'CCEX_TEST_GPU_OOM_BYTES':'8192'}
+    # released after the failure was caught (a batch's other works). A cCCE batch of several clusters starts with the
+    # Hamiltonians of all of them (2 x 8 x 8^2 x 16 = 16384 bytes for 8 clusters of dimension 8): 32768 lets that through
+    # and fails the evolution buffers (8 x 8 x 64 steps x 16 = 65536 bytes)
     for size in (8,1):
-        for name,binary_input,reference in ((f'cce3-oom-late-batch{size}',dict(third,backend='auto',gpu_options={'min_dim':8,'packed_max_dim':0,'warp_max_dim':0,'evolution_batch_size':size}),'cce3-cpu'),
-                                            (f'gcce-oom-late-batch{size}',{'backend':'auto','gpu_options':{'min_dim':6,'warp_max_dim':0,'evolution_batch_size':size}},'baseline')):
+        for name,binary_input,reference,late in ((f'cce3-oom-late-batch{size}',dict(third,backend='auto',gpu_options={'min_dim':8,'packed_max_dim':0,'warp_max_dim':0,'evolution_batch_size':size}),'cce3-cpu',
+                                                  {'CCEX_TEST_GPU_OOM_BYTES':'32768' if size>1 else '8192'}),
+                                                 (f'gcce-oom-late-batch{size}',{'backend':'auto','gpu_options':{'min_dim':6,'warp_max_dim':0,'evolution_batch_size':size}},'baseline',
+                                                  {'CCEX_TEST_GPU_OOM_BYTES':'8192'})):
             run(name,args.cuda,binary_input,reference=reference,env_extra=late)
             fell_back(name)
             memory=re.search(r'\[gpu-memory\] rank=0 allocations=(\d+) reuses=\d+ cached_bytes=(\d+)',(args.output/name/'run.log').read_text())
