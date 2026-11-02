@@ -297,7 +297,8 @@ void computeGpuSplitSetup(Config* config, QubitArray* qa, BathArray* ba, DefectA
 
 bool computeBatchByDimension(const Config* config){
 #ifdef CCEX_USE_CUDA
-    return cudaSupported && config->gpu_batch_clusters > 1 && (!split.on || split.isGpu[rank]);   // a CPU rank does not batch
+    // a CPU rank does not batch; nor do the large clusters within the default 64 MiB, where the order only costs
+    return cudaSupported && config->gpu_batch_clusters > 1 && config->gpu_cluster_batch_mb > 64 && (!split.on || split.isGpu[rank]);
 #else
     (void)config; return false;
 #endif

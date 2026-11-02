@@ -47,7 +47,8 @@
   auto took 1,074 s on the 1 atm case and 199 s on the O-rich one. `make gpu-test` passed (CUDA 12.8, sm_90).
 
 - **A GPU batch of cCCE clusters is diagonalized in one call** (`cusolverDnXsyevBatched`) instead of matrix by matrix, and
-  a rank that uses the GPU goes through its clusters by size, so that clusters of one dimension meet. `cluster_batch_mb`
+  with `cluster_batch_mb` above its default, a rank that uses the GPU goes through its clusters by size, so that clusters
+  of one dimension meet. `cluster_batch_mb`
   now also counts the eigensolver's workspace, so the default batches at D = 256 hold 2 clusters instead of 7. The
   defaults of `evolution_batch_size` and `cluster_batch_mb` are unchanged and leave most of the gain out: on the GH200
   node above, with `ranks_per_gpu` 4, `evolution_batch_size` 32 and `cluster_batch_mb` 8192 took the 1 atm case to 328 s and
