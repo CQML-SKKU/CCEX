@@ -326,7 +326,8 @@ CCEX_UNIT_OBJS='$<JOIN:$<TARGET_OBJECTS:ccex_core>, > $<JOIN:$<TARGET_OBJECTS:cc
 if(_ccex_cuda)
   add_library(ccex_gpu_backend OBJECT ${CMAKE_SOURCE_DIR}/src/calculation/gpu/gpu_backend.cu
               ${CMAKE_SOURCE_DIR}/src/calculation/gpu/small_cluster_gpu.cu
-              ${CMAKE_SOURCE_DIR}/src/calculation/gpu/warp_cluster_gpu.cu)
+              ${CMAKE_SOURCE_DIR}/src/calculation/gpu/warp_cluster_gpu.cu
+              ${CMAKE_SOURCE_DIR}/src/calculation/gpu/noise_gpu.cu)
   target_include_directories(ccex_gpu_backend PRIVATE ${CMAKE_SOURCE_DIR}/include)
   target_compile_options(ccex_gpu_backend PRIVATE -O3 -lineinfo -split-compile=${CCEX_CUDA_SPLIT_COMPILE})
   # A68: the architecture in the Build line; "native" leaves it to the list nvcc compiled for (gpu_backend.cu)

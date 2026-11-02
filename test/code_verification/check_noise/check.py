@@ -13,9 +13,10 @@ semi   against semi-cce's quantum-bath-noise (order 2): a P1 bath by mode_sum (H
 compute the three values of hamiltonian.noise.compute on one 13C bath agree (C(t) of correlation and spectrum; the
        coherence of spectrum, by FFT, and of coherence).
 pycce  compute correlation against PyCCE's noise (CCENoise): the ensemble and a sampled state.
+gpu    execution.backend cuda against the CPU for every compute value.
 semi   also compute spectrum against semi-cce's psd (C(t), S(f), the coherence; two sets of its options).
 
-Usage: python3 check.py model|compute|pycce|semi WORKDIR BIN MPIRUN [SEMI_CCE]; exit 0 pass, 1 fail.
+Usage: python3 check.py model|compute|pycce|gpu|semi WORKDIR BIN MPIRUN [SEMI_CCE or GPU binary]; exit 0 pass, 1 fail.
 CCEX writes W with 10 decimals, so W is compared to TOL = 2e-10.
 """
 import json, os, re, subprocess, sys
@@ -27,9 +28,9 @@ mode, work, BIN, MPIRUN = sys.argv[1:5]
 os.makedirs(work, exist_ok=True)
 
 
-def ccex(name, d, np_=1):
+def ccex(name, d, np_=1, binary=None):
     json.dump(d, open(f"{work}/{name}.json", "w"), indent=1)
-    r = subprocess.run([MPIRUN, "-n", str(np_), BIN, "-f", f"{name}.json", "-o", "out"], cwd=work,
+    r = subprocess.run([MPIRUN, "-n", str(np_), binary or BIN, "-f", f"{name}.json", "-o", "out"], cwd=work,
                        capture_output=True, text=True, stdin=subprocess.DEVNULL)
     open(f"{work}/proc_{name}", "w").write(r.stdout + r.stderr)
     if r.returncode:
@@ -315,8 +316,52 @@ os._exit(0)   # PyCCE 1.1.1 crashes at interpreter exit on this machine (double 
     return ok
 
 
+def gpu(gpu_bin):
+    """execution.backend cuda against the CPU, 2 ranks: the coherence to the printed digits, C(t) and S(f) to 1e-9 relative.
+    compute spectrum's coherence to 2e-9: the 2e-13 relative rounding of C(t) grows through the FFT and the integral, so the
+    CPU alone moves it by up to 8e-10 between 1, 2, 3, 4 and 8 ranks (natural-abundance 13C, 2026-11-02)"""
+    state = {"s_range": [1, 1], "bath_state_file": [f"{NATAB}/state_{{s}}"]}
+    fft = {"time_max": 3.0, "nstep": 5000}
+    cases = {"hahn": {"pulse": {"count": 1}}, "fid": {"pulse": {"count": 0}, "deltat": 0.0002}, "cpmg4": {"pulse": {"count": 4}},
+             "pseudo": {"hamiltonian": {"noise": {"pseudo_secular": True}}}, "state": {"configuration": state},
+             "corr": {"hamiltonian": {"noise": {"compute": "correlation"}}},
+             "corr_state": {"hamiltonian": {"noise": {"compute": "correlation"}}, "configuration": state},
+             "spec": {"hamiltonian": {"noise": {"compute": "spectrum", "fft": fft}}},
+             "spec_opt": {"hamiltonian": {"noise": {"compute": "spectrum", "fft": dict(fft, window="tukey", pad_factor=2,
+                          subtract_mean=True, clamp_negative=True)}}}}
+    ok = True
+    for name, over in cases.items():
+        d = dict(natab(), deltat=0.002, nstep=501)
+        for k, v in over.items():
+            d[k] = dict(d[k], **v) if k == "configuration" else v
+        ccex(f"{name}_cpu", d, 2)
+        ccex(f"{name}_gpu", dict(d, execution={"backend": "cuda"}), 2, gpu_bin)
+        if "name=" not in open(f"{work}/proc_{name}_gpu").read():
+            print(f"  FAIL  {name}: the run did not open a card")
+            ok = False
+        tail = "_state1" if "configuration" in over else ""
+        worst, rel = 0.0, 0.0
+        for suffix in ("_wiDiv", "_noise_correlation", "_noise_spectrum"):
+            a, b = f"{work}/out/{name}_cpu{tail}{suffix}", f"{work}/out/{name}_gpu{tail}{suffix}"
+            if os.path.exists(a) != os.path.exists(b):
+                raise SystemExit(f"  FAIL  {name}: {suffix} only on one side")
+            if not os.path.exists(a):
+                continue
+            if suffix == "_wiDiv":
+                worst = np.abs(coherence(a)[1] - coherence(b)[1]).max()
+            else:
+                x, y = np.loadtxt(a)[:, 1], np.loadtxt(b)[:, 1]
+                rel = max(rel, np.abs(x - y).max() / np.abs(x).max())
+        good = worst <= (2e-9 if name.startswith("spec") else TOL) and rel <= 1e-9
+        print(f"  {'PASS' if good else 'FAIL'}  GPU {name}: max|dW| = {worst:.1e}, C(t), S(f) {rel:.1e} relative")
+        ok &= bool(good)
+    return ok
+
+
 if mode == "model":
     sys.exit(0 if model() else 1)
+if mode == "gpu":
+    sys.exit(0 if gpu(sys.argv[5]) else 1)
 if mode == "compute":
     sys.exit(0 if compute() else 1)
 if mode == "pycce":

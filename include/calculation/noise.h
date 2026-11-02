@@ -13,8 +13,11 @@ double noiseModelChi(Config* cnf, Pulse* pls, double T);
 void noiseModelRun(Config* cnf, Pulse* pls, Output* op);
 /** The number of values a cluster gives: the run's time points, or those of hamiltonian.noise.fft (compute spectrum) */
 int noiseLength(Config* cnf);
-/** One cluster's values (hamiltonian.noise.compute): -chi_C at the run's times (coherence), or its correlation C_C(t) */
-void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::vector<double>& value);
+/** One cluster's values (hamiltonian.noise.compute: -chi_C at the run's times, or its correlation C_C(t)) times its power,
+ *  added to with and, for a positive power, to without. On the GPU (execution.backend cuda) its modes wait in a batch
+ *  until noiseFinish, or until the batch is full. */
+void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int power, std::vector<double>& with,
+                  std::vector<double>& without);
 /** The sums of every rank's clusters (values times powers; without: the positive powers alone) to the outputs: the
  *  coherence into wD and nD on rank 0, the correlation and spectrum files. Returns false where no coherence is written
  *  (compute correlation). Collective. */

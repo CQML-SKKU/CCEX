@@ -15,7 +15,8 @@
   from the bath: `"coherence"` (default; χ from the clusters' eigenmodes, no time grid), `"spectrum"` (semi-cce's `psd`:
   C(t) on the grid of `hamiltonian.noise.fft`, S(f) by FFT with its `window`, `pad_factor`, `subtract_mean`,
   `clamp_negative`, and the coherence; writes `_noise_correlation` and `_noise_spectrum`) or `"correlation"` (PyCCE's
-  `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `check_noise` compares it with closed forms, quadrature and semi-cce
+  `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
+  computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `check_noise` compares it with closed forms, quadrature and semi-cce
   (P1 and 13C baths, FID, Hahn and CPMG).
   `noise` was a reserved name refused as not implemented (A49).
 ### Builds

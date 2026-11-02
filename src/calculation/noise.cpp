@@ -31,6 +31,9 @@
 #include <string>
 #include <vector>
 #include <unsupported/Eigen/FFT>
+#ifdef CCEX_USE_CUDA
+#include "../../include/calculation/gpu/noise_gpu.h"
+#endif
 
 namespace {
 // the interval lengths as fractions of T; interval j has the sign (-1)^j (every pulse an X or Y pi flip,
@@ -178,11 +181,62 @@ void spectrumOf(std::vector<double> C, double dt, Config* cnf, std::vector<doubl
 }
 }
 
+// the time points of a cluster's values
+static std::vector<double> valueTimes(Config* cnf){
+    const double dt = !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_time_max/cnf->noise_fft_nstep : Config_getDeltat(cnf);
+    std::vector<double> t(noiseLength(cnf));
+    for (size_t i=0; i<t.size(); ++i) t[i] = i*dt;
+    return t;
+}
+
+#ifdef CCEX_USE_CUDA
+namespace {
+// the modes of the clusters waiting for the card: index 0 powers above 0 (they go into with and without), 1 below 0
+struct ModeBatch { std::vector<double> omega, re, im; };
+// As many modes as a kernel may hold, 5e7 phases: short enough for a driver's watchdog (WDDM under WSL, about 2 s), and each
+// transfer of the host's batches then carries many modes.
+size_t batchModes(size_t ntime, size_t nfraction){
+    return std::min<size_t>(size_t(1)<<20, std::max<size_t>(1024, size_t(50000000)/(ntime*nfraction)));
+}
+size_t batchLimit = 0;
+GpuNoise* noiseCard = nullptr;
+ModeBatch waiting[2];
+std::vector<double> cardSum;
+
+void flushModes(Config* cnf, int which, std::vector<double>& with, std::vector<double>& without){
+    ModeBatch& b = waiting[which];
+    if (b.omega.empty()) return;
+    cardSum.assign(with.size(),0.0);
+    try {
+        if (!strcmp(cnf->noise_compute,"coherence")) gpuNoisePhase(noiseCard,b.omega.size(),b.omega.data(),b.re.data(),cardSum.data());
+        else gpuNoiseCosine(noiseCard,b.omega.size(),b.omega.data(),b.re.data(),b.im.data(),cardSum.data());
+    } catch (const std::exception& e){
+        fprintf(stderr,"Error: %s\n",e.what());
+        ccexFatal(1);
+    }
+    for (size_t k=0; k<with.size(); ++k){
+        with[k] += cardSum[k];
+        if (which == 0) without[k] += cardSum[k];
+    }
+    b.omega.clear(); b.re.clear(); b.im.clear();
+}
+void addMode(Config* cnf, int power, double omega, double re, double im, std::vector<double>& with, std::vector<double>& without){
+    if (re == 0 && im == 0) return;
+    const int which = power > 0 ? 0 : 1;
+    ModeBatch& b = waiting[which];
+    b.omega.push_back(omega); b.re.push_back(power*re); b.im.push_back(power*im);
+    if (b.omega.size() >= batchLimit) flushModes(cnf,which,with,without);
+}
+}
+#endif
+
 int noiseLength(Config* cnf){
     return !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_nstep + 1 : Config_getNstep(cnf);
 }
 
-void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::vector<double>& value){
+void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int power, std::vector<double>& with,
+                  std::vector<double>& without){
+    if (power == 0) return;
     const int bdim = BathArray_dim(ba);
     MatrixXcd H, B;
     clusterOperators(qa,ba,cnf,H,B);
@@ -190,18 +244,38 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::v
     const MatrixXcd& U = es.eigenvectors();
     const Eigen::VectorXd& E = es.eigenvalues();
     const MatrixXcd M = U.adjoint()*B*U;
-    value.assign(noiseLength(cnf),0.0);
+    const std::vector<double> times = valueTimes(cnf);
+#ifdef CCEX_USE_CUDA
+    const bool onCard = !strcasecmp(cnf->backend,"cuda");
+    if (onCard && !noiseCard){
+        const std::vector<double> frac = intervalFractions(pls);
+        batchLimit = batchModes(times.size(),!strcmp(cnf->noise_compute,"coherence") ? frac.size() : 1);
+        try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
+        catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+    }
+#endif
+    const auto add = [&](size_t i, double value){
+        with[i] += power*value;
+        if (power > 0) without[i] += power*value;
+    };
 
     if (!strcmp(cnf->noise_compute,"coherence")){
         const Eigen::MatrixXd M2 = M.cwiseAbs2()*(deltaMs(qa)*deltaMs(qa));
+#ifdef CCEX_USE_CUDA
+        if (onCard){
+            addMode(cnf,power,0.0,-0.5*M2.diagonal().sum()/bdim,0.0,with,without);   // the static part (FID only)
+            for (int a=0; a<bdim; ++a)
+                for (int b=a+1; b<bdim; ++b) addMode(cnf,power,E(a)-E(b),-M2(a,b)/bdim,0.0,with,without);
+            return;
+        }
+#endif
         const std::vector<double> frac = intervalFractions(pls);
-        const double deltat = Config_getDeltat(cnf);
-        for (size_t i=0; i<value.size(); ++i){
-            const double T = i*deltat;
+        for (size_t i=0; i<times.size(); ++i){
+            const double T = times[i];
             double chi = 0.5*M2.diagonal().sum()*std::norm(phaseIntegral(0,T,frac));   // the static part (FID only)
             for (int a=0; a<bdim; ++a)
                 for (int b=a+1; b<bdim; ++b) chi += M2(a,b)*std::norm(phaseIntegral(E(a)-E(b),T,frac));
-            value[i] = -chi/bdim;
+            add(i,-chi/bdim);
         }
         return;
     }
@@ -215,18 +289,31 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::v
         G = M.cwiseProduct((MR + RM).transpose())*(0.5/(4*M_PI*M_PI));
     }else
         G = M.cwiseAbs2().cast<std::complex<double>>()*(1.0/(4*M_PI*M_PI*bdim));
-    const double dt = !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_time_max/cnf->noise_fft_nstep : Config_getDeltat(cnf);
-    for (size_t i=0; i<value.size(); ++i){
-        const double t = i*dt;
+#ifdef CCEX_USE_CUDA
+    if (onCard){
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b) addMode(cnf,power,E(a)-E(b),G(a,b).real(),G(a,b).imag(),with,without);
+        return;
+    }
+#endif
+    for (size_t i=0; i<times.size(); ++i){
         double c = 0;
         for (int a=0; a<bdim; ++a)
-            for (int b=0; b<bdim; ++b) c += (G(a,b)*std::polar(1.0,(E(a)-E(b))*t)).real();
-        value[i] = c;
+            for (int b=0; b<bdim; ++b) c += (G(a,b)*std::polar(1.0,(E(a)-E(b))*times[i])).real();
+        add(i,c);
     }
 }
 
 bool noiseFinish(QubitArray* qa, Config* cnf, Pulse* pls, Output* op, int istate,
                  std::vector<double>& with, std::vector<double>& without, MatrixXcd* wD, MatrixXcd* nD){
+#ifdef CCEX_USE_CUDA
+    if (noiseCard){   // this state's modes that still wait, and a card without work for the next state's grid
+        flushModes(cnf,0,with,without);
+        flushModes(cnf,1,with,without);
+        gpuNoiseDestroy(noiseCard);
+        noiseCard = nullptr;
+    }
+#endif
     const int n = int(with.size());
     std::vector<double> sumWith(n), sumWithout(n);
     MPI_Reduce(with.data(),sumWith.data(),n,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
@@ -255,6 +342,28 @@ bool noiseFinish(QubitArray* qa, Config* cnf, Pulse* pls, Output* op, int istate
     if (cnf->noise_fft_clamp_negative) for (double& s : S) s = std::max(s,0.0);
     const std::vector<double> frac = intervalFractions(pls);
     const double dm2 = deltaMs(qa)*deltaMs(qa);
+#ifdef CCEX_USE_CUDA
+    if (!strcasecmp(cnf->backend,"cuda")){   // the same trapezoid, as modes: weight S(f) 2 pi^2 (its share of the f grid)
+        std::vector<double> T(nstep), chi(nstep,0.0);
+        for (int i=0; i<nstep; ++i) T[i] = i*deltat;
+        std::vector<double> omega, weight;
+        try {
+            GpuNoise* card = gpuNoiseCreate(nstep,T.data(),int(frac.size()),frac.data());
+            for (size_t k=0; k<f.size(); ++k){
+                const double width = 0.5*((k+1<f.size() ? f[k+1]-f[k] : 0) + (k ? f[k]-f[k-1] : 0));
+                omega.push_back(2*M_PI*f[k]);
+                weight.push_back(S[k]*2*M_PI*M_PI*width);
+                if (omega.size() == batchModes(T.size(),frac.size()) || k+1 == f.size()){
+                    gpuNoisePhase(card,omega.size(),omega.data(),weight.data(),chi.data());
+                    omega.clear(); weight.clear();
+                }
+            }
+            gpuNoiseDestroy(card);
+        } catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+        for (int i=0; i<nstep; ++i) wD[i] = nD[i] = MatrixXcd::Constant(1,1,std::exp(-2*dm2*chi[i]));
+        return true;
+    }
+#endif
     for (int i=0; i<nstep; ++i){
         const double T = i*deltat;
         double chi = 0, prev = 0;

@@ -283,7 +283,7 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
 // validateBathPulseTargets), not a cluster: most clusters lack a species. The names compare as the kernels do (case
 // ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation). A name that is both the qubit's and a
 // bath spin's is refused too: the megCCE kernel takes it as a qubit jump and drops the bath spins without a word.
-// method noise (noise.cpp): the cCCE clusters with a kernel of its own, on the CPU; what that kernel leaves out is refused
+// method noise (noise.cpp): the cCCE clusters with a kernel of its own; what that kernel leaves out is refused
 void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
     if (!cnf->noise) return;
     // a cluster's value is -chi_C there (noise.cpp), not a coherence: what reads the clusters' values is refused
@@ -297,8 +297,11 @@ void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
     if (strcasecmp(cnf->propagator,"eigen"))  refuseRun("method noise needs execution.propagator eigen");
     if (Config_getKnight(cnf) || Config_getHfmedi(cnf) || cnf->delta_A)
         refuseRun("method noise does not take hamiltonian.cCCE (knight, hfmedi, delta_A)");
-    if (!strcasecmp(cnf->backend,"cuda"))     refuseRun("method noise runs on the CPU only, set execution.backend to cpu");
-    strcpy(cnf->backend,"cpu");               // auto: the CPU, and none of the GPU batches
+    // execution.backend cuda: the sums over the modes on the card (noise_gpu.cu); auto is the CPU, a model has no modes.
+    // None of the cCCE GPU batches either way.
+    if (!strcasecmp(cnf->backend,"cuda") && strcmp(cnf->noise_model,"bath"))
+        warnNotUsed("execution.backend","a model spectrum is computed on the CPU");
+    if (strcasecmp(cnf->backend,"cuda") || strcmp(cnf->noise_model,"bath")) strcpy(cnf->backend,"cpu");
     cnf->gpu_packed_max_dim = cnf->gpu_warp_max_dim = 0;
 }
 

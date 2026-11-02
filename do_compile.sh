@@ -362,7 +362,7 @@ TARGET_GPU := \$(BIN_DIR)/main_gpu.out
 CORE_DIRS := \$(SRC_DIR)/input \$(SRC_DIR)/physical \$(SRC_DIR)/clustering \$(SRC_DIR)/clustering/bundle \$(SRC_DIR)/calculation \$(SRC_DIR)/calculation/gpu \$(SRC_DIR)/common \$(SRC_DIR)/auto_convergence
 NAMES := \$(notdir \$(basename \$(wildcard \$(SRC_DIR)/*.cpp) \$(foreach d,\$(CORE_DIRS),\$(wildcard \$(d)/*.cpp))))
 OBJS     := \$(addprefix \$(OBJ_DIR)/,\$(addsuffix .o,\$(NAMES)))
-OBJS_GPU := \$(addprefix \$(OBJ_GPU_DIR)/,\$(addsuffix .o,\$(NAMES))) \$(OBJ_GPU_DIR)/gpu_backend.o \$(OBJ_GPU_DIR)/small_cluster_gpu.o \$(OBJ_GPU_DIR)/warp_cluster_gpu.o
+OBJS_GPU := \$(addprefix \$(OBJ_GPU_DIR)/,\$(addsuffix .o,\$(NAMES))) \$(OBJ_GPU_DIR)/gpu_backend.o \$(OBJ_GPU_DIR)/small_cluster_gpu.o \$(OBJ_GPU_DIR)/warp_cluster_gpu.o \$(OBJ_GPU_DIR)/noise_gpu.o
 
 # The refinement policies (src/clustering/algo_adaptive) and sqlite do not depend on the backend:
 # compiled once, linked into both binaries. adaptive_main.cpp comes with its own main()
@@ -436,6 +436,12 @@ BUILD_COMMIT_LINE := \#define CCEX_BUILD_COMMIT "\$(BUILD_COMMIT)"
 	    -gencode arch=compute_\$(CUDA_ARCH),code=compute_\$(CUDA_ARCH) -c \$< -o \$@
 # A26: the batched small-cluster cCCE kernel (one thread per cluster)
 \$(OBJ_GPU_DIR)/small_cluster_gpu.o: \$(SRC_DIR)/calculation/gpu/small_cluster_gpu.cu \$(wildcard ./include/calculation/gpu/*.h) | \$(OBJ_GPU_DIR)
+	\$(NVCC) -std=c++17 -O3 -lineinfo \$(NVCC_SPLIT) -I./include \\
+	    -gencode arch=compute_\$(CUDA_ARCH),code=sm_\$(CUDA_ARCH) \\
+	    -gencode arch=compute_\$(CUDA_ARCH),code=compute_\$(CUDA_ARCH) -c \$< -o \$@
+
+# method noise: its sums over the bath's modes
+\$(OBJ_GPU_DIR)/noise_gpu.o: \$(SRC_DIR)/calculation/gpu/noise_gpu.cu \$(wildcard ./include/calculation/gpu/*.h) | \$(OBJ_GPU_DIR)
 	\$(NVCC) -std=c++17 -O3 -lineinfo \$(NVCC_SPLIT) -I./include \\
 	    -gencode arch=compute_\$(CUDA_ARCH),code=sm_\$(CUDA_ARCH) \\
 	    -gencode arch=compute_\$(CUDA_ARCH),code=compute_\$(CUDA_ARCH) -c \$< -o \$@

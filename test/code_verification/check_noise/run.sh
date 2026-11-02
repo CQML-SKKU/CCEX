@@ -20,6 +20,12 @@ if python3 -c "import os, pycce; os._exit(0)" > /dev/null 2>&1; then
 else
     echo "  SKIP  correlation against PyCCE: no pycce on python3"
 fi
+GPU_BIN="${CCEX_GPU_BIN:-$REPO/bin/main_gpu.out}"
+if [ -x "$GPU_BIN" ] && { [ -e /dev/nvidia0 ] || [ -e /dev/dxg ]; }; then
+    python3 "$HERE/check.py" gpu "$W/gpu" "$BIN_DEV" "$MPIRUN" "$GPU_BIN" || status=1
+else
+    echo "  SKIP  the GPU against the CPU: no $GPU_BIN or no card (set CCEX_GPU_BIN)"
+fi
 if [ -f "$SEMI/quantum-bath-noise/run_quantum.py" ]; then
     python3 "$HERE/check.py" semi "$W/semi" "$BIN_DEV" "$MPIRUN" "$SEMI" || status=1
 else

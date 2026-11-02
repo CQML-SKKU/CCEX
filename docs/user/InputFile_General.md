@@ -56,7 +56,7 @@ and gCCE; `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE, meCCE and megCCE w
 | `gCCE`  | Generalized CCE |
 | `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
 | `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU; the qubit sequence as given (Manual and any rotation included) with `pulse.per_qubit` false and `pulse.detuning_factor` 1 (others refused); DEER bath pulses (`pulse.bath`) run with it |
-| `noise` | the Gaussian (second-cumulant) coherence exp(−χ) of the qubit's phase noise, from a model spectrum or from the bath (the semi-classical CCE of `semi-cce`, [spectrum](#tag_noise_spectrum)). cCCE clusters (`cluster.mode` standard only), CPU, one qubit, ideal π pulses, quantity `coherence` |
+| `noise` | the Gaussian (second-cumulant) coherence exp(−χ) of the qubit's phase noise, from a model spectrum or from the bath (the semi-classical CCE of `semi-cce`, [spectrum](#tag_noise_spectrum)). cCCE clusters (`cluster.mode` standard only), one qubit, ideal π pulses, quantity `coherence`. `execution.backend` `cuda` (`bin/main_gpu.out`) computes the sums over the bath's modes on the card, the eigensystems stay on the CPU; `auto` and a model spectrum run on the CPU |
 
 Old values are refused with their current form ([old names](InputFile.md#OldNames)).
 
@@ -1039,7 +1039,8 @@ S(f) is two-sided, kHz²/kHz (`_noise_spectrum`: f in kHz, S). ρ is 1/D (infini
 `"correlation"` it is the cluster's pure state with `s_range`, with the mean field of the other spins, as in PyCCE
 (1/D without `s_range`). So without `s_range` the three agree: `"correlation"` and `"spectrum"` give the same C(t), and
 `"spectrum"` gives the coherence of `"coherence"` to the accuracy of its grid (a step below the period of the fastest
-bath frequency, a window longer than the times asked for); with `s_range` `"correlation"` is another quantity.
+bath frequency, a window longer than the times asked for; about 1e-9 at best, the rounding of C(t) growing through the FFT and
+the integral, so that it moves by that much with the number of ranks); with `s_range` `"correlation"` is another quantity.
 A model spectrum computes the coherence alone (another value is refused). <br>
 
 <b>Data Type:</b> String, `"coherence"`, `"spectrum"` or `"correlation"` (case is not significant)
