@@ -52,7 +52,9 @@
   now also counts the eigensolver's workspace, so the default batches at D = 256 hold 2 clusters instead of 7. The
   defaults of `evolution_batch_size` and `cluster_batch_mb` are unchanged and leave most of the gain out: on the GH200
   node above, with `ranks_per_gpu` 4, `evolution_batch_size` 32 and `cluster_batch_mb` 8192 took the 1 atm case to 328 s and
-  the O-rich case to 137 s (477 s and 155 s without), one run each, `max|dL|` against the CPU run 1.7e-6.
+  the O-rich case to 137 s (477 s and 155 s without), one run each, `max|dL|` against the CPU run 1.7e-6. With the
+  defaults the same cases took 487 s and 170 s, one run each, 2 % and 10 % above the times without the batched
+  eigensolver; the cause was not found and may be the spread between runs.
 
 ### Fixed
 
