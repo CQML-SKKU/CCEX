@@ -58,7 +58,7 @@ and gCCE; `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE, meCCE and megCCE w
 | `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
 | `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU; the qubit sequence as given (Manual and any rotation included) with `pulse.per_qubit` false and `pulse.detuning_factor` 1 (others refused); DEER bath pulses (`pulse.bath`) run with it |
 | `noise` | the Gaussian (second-cumulant) coherence exp(−χ) of the qubit's phase noise, from a model spectrum or from the bath (the semi-classical CCE of `semi-cce`, [spectrum](#tag_noise_spectrum)). cCCE clusters (`cluster.mode` standard only), one qubit, ideal π pulses, quantity `coherence`. `execution.backend` `cuda` (`bin/main_gpu.out`) computes the sums over the bath's modes on the card, the eigensystems stay on the CPU; `auto` and a model spectrum run on the CPU |
-| `pseudospin` | the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al., Nat. Commun. 7, 12935 (2016); Lee, Park, Seo, npj 2D Mater. Appl. 6, 60 (2022)), for reading a decay rather than for the best curve: the single spins are the cCCE's (exact, ESEEM included), each pair's Hamiltonians are cut to their diagonal and the flip-flops \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−1, m<sub>2</sub>+1⟩, any nuclear spin, and the pair is evolved as [pair](#tag_pseudospin_pair) says. Writes every channel's flip-flop Ω and level gaps Δ<sub>α</sub>, Δ<sub>β</sub> (kHz) to `{output.file}_pseudospin_channels`. One qubit, ensemble, order 1 or 2, `cluster.mode` standard, the field along the qubit axis, ideal π pulses from `pulse.count`, CPU |
+| `pseudospin` | the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al., Nat. Commun. 7, 12935 (2016); Lee, Park, Seo, npj 2D Mater. Appl. 6, 60 (2022)), for reading a decay rather than for the best curve: the single spins are the cCCE's (exact, ESEEM included), each pair's Hamiltonian in each qubit state is written in the product basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and cut there to its diagonal and every nonzero element between product states that differ in both spins (the flip-flops \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−1, m<sub>2</sub>+1⟩, the flip-flips \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>+1, m<sub>2</sub>+1⟩, and with a quadrupole that mixes the \|m⟩ the double-quantum ones such as \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−2, m<sub>2</sub>+2⟩), any nuclear spin, and the pair is evolved as [pair](#tag_pseudospin_pair) says. Writes every channel's Ω<sub>α</sub>, Ω<sub>β</sub> and level gaps Δ<sub>α</sub>, Δ<sub>β</sub> (kHz) to `{output.file}_pseudospin_channels`. One qubit, ensemble, order 1 or 2, `cluster.mode` standard, the field along the qubit axis, ideal π pulses from `pulse.count`, CPU |
 
 Old values are refused with their current form ([old names](InputFile.md#OldNames)).
 
@@ -939,19 +939,25 @@ cluster's spins by their mean; that comparison is gone.) <br>
 <a id="tag_pseudospin_pair"></a>
 ## pseudospin.pair
 <b>Description:</b><br>
-How [method](#tag_method) pseudospin evolves a pair under its cut Hamiltonians. `"channel"` is the pseudospin model:
-every flip-flop channel alone, a two-level system, and the pair
+How [method](#tag_method) pseudospin evolves a pair under its cut Hamiltonians (each qubit state in its own basis,
+[method](#tag_method)). A channel is a nonzero element of the cut between two product states that differ in both spins.
+`"channel"` is the pseudospin model: the α and β product states of one index are taken as one state (their overlap, the
+pair's share of the ESEEM, is left out), every channel alone is a two-level system with the fields (Ω<sub>α,β</sub>, 0,
+Δ<sub>α,β</sub>), and the pair
 L<sub>pair</sub> = L<sub>diag</sub> + (2/d) Σ<sub>c</sub> (l<sub>c</sub> − l<sub>c,diag</sub>), d = (2I<sub>1</sub>+1)(2I<sub>2</sub>+1),
-L<sub>diag</sub> and l<sub>c,diag</sub> without the flip-flops; for a Hahn echo
-l<sub>c</sub> = 1 − 2 \|n̂<sub>α</sub> × n̂<sub>β</sub>\|² sin²(ω<sub>α</sub>t/4) sin²(ω<sub>β</sub>t/4) with the fields (Ω, 0, Δ<sub>α,β</sub>).
-It is exact for two spins 1/2; for larger spins it misses what couples the channels of a chain (a state in two
-channels), which matters when the quadrupole does not separate them. `"block"` evolves the cut pair exactly. The pair's
-term is its coherence over its two spins' under the cut Hamiltonians, so the run's coherence is
-Π<sub>k</sub> L<sub>k</sub> Π<sub>pairs</sub> P. Running both and cCCE order 2 separates the two approximations: the cut
-(cCCE against block) and the independent channels (block against channel). The division is by the cut single-spin
-coherences: under a Hahn echo or CPMG they are 1, without a pulse (`pulse.count` 0) they oscillate and can pass through
-zero, and a time point where one is zero is reported as `[numerical-invalid]`, as cCCE's own division by a zero single
-coherence is. <br>
+L<sub>diag</sub> and l<sub>c,diag</sub> without the channels; for a Hahn echo with Ω<sub>α</sub> = Ω<sub>β</sub>
+l<sub>c</sub> = 1 − 2 \|n̂<sub>α</sub> × n̂<sub>β</sub>\|² sin²(ω<sub>α</sub>t/4) sin²(ω<sub>β</sub>t/4). The pair's term is
+P = L<sub>pair</sub> / (L<sub>1</sub> L<sub>2</sub>) with the single spins from their eigenvalues alone, and the cluster's value
+P times the exact single-spin coherences. It is exact for two spins 1/2 whose α and β bases agree; it misses the α-β
+overlap and what couples the channels of a chain (a state in two channels). `"block"` evolves the cut pair exactly
+(both qubit states with their own bases, back in the \|m⟩ basis); the single spins are exact under the cut, so its value
+is the cut pair's coherence. The run's coherence is Π<sub>k</sub> L<sub>k</sub> Π<sub>pairs</sub> P in both. Running both and
+cCCE order 2 separates the approximations: the cut (cCCE against block) and the pseudospin model (block against
+channel). On the h-BN case of check_numerics (DFT hyperfine and quadrupole, Hahn, 200 points) block was within
+1.3e-6, 2.7e-4 and 2.1e-3 of cCCE order 2 at 3, 0.3 and 0.03 T, channel within 2.0e-3, 2.2e-2 and 4.2e-2. Channel divides
+by the single spins' coherences from their eigenvalues: under a Hahn echo or CPMG they are 1, without a pulse
+(`pulse.count` 0) they oscillate and can pass through zero, and a time point where one is zero is reported as
+`[numerical-invalid]`, as cCCE's own division by a zero single coherence is. <br>
 
 <b>Data Type:</b> String
 

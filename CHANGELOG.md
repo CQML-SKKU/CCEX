@@ -22,12 +22,17 @@
   (P1 and 13C baths, FID, Hahn and CPMG).
   `noise` was a reserved name refused as not implemented (A49).
 - **method `pseudospin`**: the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al. 2016;
-  Lee, Park, Seo 2022), for any nuclear spin. The single spins are the cCCE's; a pair's Hamiltonians are cut to the
-  diagonal and the flip-flops |m1,m2> <-> |m1-1,m2+1>, then `hamiltonian.pseudospin.pair` `"channel"` (default) evolves
-  every channel alone and `"block"` the cut pair exactly. Each channel's Omega, Delta_alpha, Delta_beta go to
-  `{output.file}_pseudospin_channels`. Checked by `test/code_verification/check_pseudospin` (exact cases, 1e-9). On the
-  h-BN case of check_numerics (DFT hyperfine and quadrupole, 3 T, Hahn), block is within 2.6e-3 of cCCE order 2 and
-  channel within 1.3e-6 of block.
+  Lee, Park, Seo 2022), for any nuclear spin. The single spins are the cCCE's. A pair's Hamiltonian in each qubit state
+  is written in the basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and
+  cut there to the diagonal and every nonzero element between product states that differ in both spins: the flip-flops
+  |m1,m2> <-> |m1-1,m2+1>, the flip-flips |m1,m2> <-> |m1+1,m2+1>, and with a quadrupole that mixes the |m> the
+  double-quantum ones such as |m1,m2> <-> |m1-2,m2+2>. `hamiltonian.pseudospin.pair` `"channel"` (default) is the
+  pseudospin model, every channel a two-level system of its Omega and Delta_alpha, Delta_beta, and `"block"` evolves the
+  cut pair exactly. Each channel's Omega_alpha, Omega_beta, Delta_alpha, Delta_beta go to
+  `{output.file}_pseudospin_channels`. Checked by `test/code_verification/check_pseudospin` (exact cases, 1e-9; the
+  flip-flips of two spins in the qubit's plane, the double-quantum channels of an asymmetric quadrupole). On the h-BN
+  case of check_numerics (DFT hyperfine and quadrupole, Hahn, 200 points), block is within 1.3e-6, 2.7e-4 and 2.1e-3 of
+  cCCE order 2 at 3, 0.3 and 0.03 T, and channel within 2.0e-3, 2.2e-2 and 4.2e-2.
 
 - **`execution.gpu_options.ranks_per_gpu`: GPU ranks under `backend` = `auto` (cCCE, `cluster.mode` standard).** Every rank
   that meets a cluster of `min_dim` or above opened a CUDA context of its own; without MPS a GH200 node admitted 16 per
