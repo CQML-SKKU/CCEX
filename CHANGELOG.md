@@ -28,7 +28,7 @@
   starts unless its reproducible mode is on, so with MKL 2026.2 two runs that take the same path differed by 1e-10 in
   the written values (`check_input_forms` column_evolution C1-C3: `{"enabled": false}` against a `min_dim` no cluster
   reaches). The MKL builds now set `MKL_CBWR_AUTO | MKL_CBWR_STRICT` at start (the CPU's fastest code path, independent
-  of the alignment; a p1_cce2e2n CCE4 run took the same time); an `MKL_CBWR` in the environment is left to MKL.
+  of the alignment); an `MKL_CBWR` in the environment is left to MKL.
 
 ### Builds
 
