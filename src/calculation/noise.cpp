@@ -31,6 +31,9 @@
 #include <string>
 #include <vector>
 #include <unsupported/Eigen/FFT>
+#ifdef CCEX_USE_CUDA
+#include "../../include/calculation/gpu/noise_gpu.h"
+#endif
 
 namespace {
 // the interval lengths as fractions of T; interval j has the sign (-1)^j (every pulse an X or Y pi flip,
@@ -178,11 +181,99 @@ void spectrumOf(std::vector<double> C, double dt, Config* cnf, std::vector<doubl
 }
 }
 
+// the time points of a cluster's values
+static std::vector<double> valueTimes(Config* cnf){
+    const double dt = !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_time_max/cnf->noise_fft_nstep : Config_getDeltat(cnf);
+    std::vector<double> t(noiseLength(cnf));
+    for (size_t i=0; i<t.size(); ++i) t[i] = i*dt;
+    return t;
+}
+
+#ifdef CCEX_USE_CUDA
+namespace {
+// the modes of the clusters waiting for the card: index 0 powers above 0 (they go into with and without), 1 below 0
+struct ModeBatch { std::vector<double> omega, re, im; };
+// As many modes as a kernel may hold, 5e7 phases: short enough for a driver's watchdog (WDDM under WSL, about 2 s), and each
+// transfer of the host's batches then carries many modes.
+size_t batchModes(size_t ntime, size_t nfraction){
+    return std::min<size_t>(size_t(1)<<20, std::max<size_t>(1024, size_t(50000000)/(ntime*nfraction)));
+}
+size_t batchLimit = 0;
+GpuNoise* noiseCard = nullptr;
+ModeBatch waiting[2];
+std::vector<double> cardSum;
+
+void flushModes(Config* cnf, int which, std::vector<double>& with, std::vector<double>& without){
+    ModeBatch& b = waiting[which];
+    if (b.omega.empty()) return;
+    cardSum.assign(with.size(),0.0);
+    try {
+        if (!strcmp(cnf->noise_compute,"coherence")) gpuNoisePhase(noiseCard,b.omega.size(),b.omega.data(),b.re.data(),cardSum.data());
+        else gpuNoiseCosine(noiseCard,b.omega.size(),b.omega.data(),b.re.data(),b.im.data(),cardSum.data());
+    } catch (const std::exception& e){
+        fprintf(stderr,"Error: %s\n",e.what());
+        ccexFatal(1);
+    }
+    for (size_t k=0; k<with.size(); ++k){
+        with[k] += cardSum[k];
+        if (which == 0) without[k] += cardSum[k];
+    }
+    b.omega.clear(); b.re.clear(); b.im.clear();
+}
+void addMode(Config* cnf, int power, double omega, double re, double im, std::vector<double>& with, std::vector<double>& without){
+    if (re == 0 && im == 0) return;
+    const int which = power > 0 ? 0 : 1;
+    ModeBatch& b = waiting[which];
+    b.omega.push_back(omega); b.re.push_back(power*re); b.im.push_back(power*im);
+    if (b.omega.size() >= batchLimit) flushModes(cnf,which,with,without);
+}
+}
+#endif
+
+namespace {
+// compute spectrum without fft.nstep: the clusters' modes, kept until noiseFinish knows the grid.
+// shortcut: all of them in memory (24 B each, dim^2 a cluster), give fft.nstep for a run with too many.
+std::vector<double> keptOmega, keptRe, keptIm;
+
+// The intervals that resolve the bath's modes but for a share eps of their weight, the fastest ones; on all ranks. By a
+// histogram of log |w|, as a threshold per mode would depend on how many modes the bath has. The weight is C(t)'s, not
+// chi's (divided by w^2): a dropped mode folds into the low frequencies, where the filter is large (13C, 2026-11-02). The static part (w = 0) has
+// no period and does not count.
+int autoNstep(Config* cnf){
+    const int perOctave = 8, nbin = 1601, centre = nbin/2;
+    std::vector<double> hist(nbin,0.0);
+    for (size_t k=0; k<keptOmega.size(); ++k)
+        if (keptOmega[k] != 0){
+            const int bin = centre + int(std::floor(perOctave*std::log2(std::fabs(keptOmega[k]))));
+            hist[std::min(nbin-1,std::max(0,bin))] += keptRe[k];   // signed: the CCE terms of one mode cancel
+        }
+    MPI_Allreduce(MPI_IN_PLACE,hist.data(),nbin,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    double total = 0, above = 0, fastest = 0;
+    for (double& h : hist) total += h = std::fabs(h);
+    const double eps = 1e-3, pointsPerPeriod = 8;   // coherence within 5e-7 on 1 ppm P1, 2e-10 on 13C (2026-11-02)
+    for (int bin=nbin-1; bin>=0; --bin){
+        above += hist[bin];
+        if (above > eps*total){ fastest = std::pow(2.0,double(bin+1-centre)/perOctave); break; }
+    }
+    const double nstep = std::max(2.0,std::ceil(cnf->noise_fft_time_max*fastest/(2*M_PI)*pointsPerPeriod));
+    if (nstep > 1e8){
+        if (rank == 0) fprintf(stderr,"Error: hamiltonian.noise.fft.nstep would be %.3g (fastest mode %.4g rad/ms over time_max %g ms): give fft.nstep\n",
+                               nstep,fastest,cnf->noise_fft_time_max);
+        ccexFatal(1);
+    }
+    if (rank == 0) printf("      hamiltonian.noise.fft: time_max %g ms, nstep %d (fastest mode kept %.6g kHz)\n",
+                          cnf->noise_fft_time_max,int(nstep),fastest/(2*M_PI));
+    return int(nstep);
+}
+}
+
 int noiseLength(Config* cnf){
     return !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_nstep + 1 : Config_getNstep(cnf);
 }
 
-void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::vector<double>& value){
+void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int power, std::vector<double>& with,
+                  std::vector<double>& without){
+    if (power == 0) return;
     const int bdim = BathArray_dim(ba);
     MatrixXcd H, B;
     clusterOperators(qa,ba,cnf,H,B);
@@ -190,18 +281,39 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::v
     const MatrixXcd& U = es.eigenvectors();
     const Eigen::VectorXd& E = es.eigenvalues();
     const MatrixXcd M = U.adjoint()*B*U;
-    value.assign(noiseLength(cnf),0.0);
+    const bool keepModes = cnf->noise_fft_auto_nstep;
+    const std::vector<double> times = keepModes ? std::vector<double>() : valueTimes(cnf);
+#ifdef CCEX_USE_CUDA
+    const bool onCard = !strcasecmp(cnf->backend,"cuda");
+    if (onCard && !noiseCard && !keepModes){
+        const std::vector<double> frac = intervalFractions(pls);
+        batchLimit = batchModes(times.size(),!strcmp(cnf->noise_compute,"coherence") ? frac.size() : 1);
+        try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
+        catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+    }
+#endif
+    const auto add = [&](size_t i, double value){
+        with[i] += power*value;
+        if (power > 0) without[i] += power*value;
+    };
 
     if (!strcmp(cnf->noise_compute,"coherence")){
         const Eigen::MatrixXd M2 = M.cwiseAbs2()*(deltaMs(qa)*deltaMs(qa));
+#ifdef CCEX_USE_CUDA
+        if (onCard){
+            addMode(cnf,power,0.0,-0.5*M2.diagonal().sum()/bdim,0.0,with,without);   // the static part (FID only)
+            for (int a=0; a<bdim; ++a)
+                for (int b=a+1; b<bdim; ++b) addMode(cnf,power,E(a)-E(b),-M2(a,b)/bdim,0.0,with,without);
+            return;
+        }
+#endif
         const std::vector<double> frac = intervalFractions(pls);
-        const double deltat = Config_getDeltat(cnf);
-        for (size_t i=0; i<value.size(); ++i){
-            const double T = i*deltat;
+        for (size_t i=0; i<times.size(); ++i){
+            const double T = times[i];
             double chi = 0.5*M2.diagonal().sum()*std::norm(phaseIntegral(0,T,frac));   // the static part (FID only)
             for (int a=0; a<bdim; ++a)
                 for (int b=a+1; b<bdim; ++b) chi += M2(a,b)*std::norm(phaseIntegral(E(a)-E(b),T,frac));
-            value[i] = -chi/bdim;
+            add(i,-chi/bdim);
         }
         return;
     }
@@ -215,18 +327,60 @@ void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, std::v
         G = M.cwiseProduct((MR + RM).transpose())*(0.5/(4*M_PI*M_PI));
     }else
         G = M.cwiseAbs2().cast<std::complex<double>>()*(1.0/(4*M_PI*M_PI*bdim));
-    const double dt = !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_time_max/cnf->noise_fft_nstep : Config_getDeltat(cnf);
-    for (size_t i=0; i<value.size(); ++i){
-        const double t = i*dt;
+    if (keepModes){
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b)
+                if (G(a,b) != 0.0){
+                    keptOmega.push_back(E(a)-E(b));
+                    keptRe.push_back(power*G(a,b).real());
+                    keptIm.push_back(power*G(a,b).imag());
+                }
+        return;
+    }
+#ifdef CCEX_USE_CUDA
+    if (onCard){
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b) addMode(cnf,power,E(a)-E(b),G(a,b).real(),G(a,b).imag(),with,without);
+        return;
+    }
+#endif
+    for (size_t i=0; i<times.size(); ++i){
         double c = 0;
         for (int a=0; a<bdim; ++a)
-            for (int b=0; b<bdim; ++b) c += (G(a,b)*std::polar(1.0,(E(a)-E(b))*t)).real();
-        value[i] = c;
+            for (int b=0; b<bdim; ++b) c += (G(a,b)*std::polar(1.0,(E(a)-E(b))*times[i])).real();
+        add(i,c);
     }
 }
 
 bool noiseFinish(QubitArray* qa, Config* cnf, Pulse* pls, Output* op, int istate,
                  std::vector<double>& with, std::vector<double>& without, MatrixXcd* wD, MatrixXcd* nD){
+    if (cnf->noise_fft_auto_nstep){   // the grid is known now; a state has its own (its mean field moves the modes)
+        cnf->noise_fft_nstep = autoNstep(cnf);
+        with.assign(noiseLength(cnf),0.0);
+        without.assign(with.size(),0.0);
+        const std::vector<double> times = valueTimes(cnf);
+#ifdef CCEX_USE_CUDA
+        if (!strcasecmp(cnf->backend,"cuda")){
+            batchLimit = batchModes(times.size(),1);
+            const std::vector<double> frac = intervalFractions(pls);
+            try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
+            catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+            for (size_t k=0; k<keptOmega.size(); ++k) addMode(cnf,1,keptOmega[k],keptRe[k],keptIm[k],with,without);
+        }else
+#endif
+        for (size_t i=0; i<times.size(); ++i)
+            for (size_t k=0; k<keptOmega.size(); ++k)
+                with[i] += (std::complex<double>(keptRe[k],keptIm[k])*std::polar(1.0,keptOmega[k]*times[i])).real();
+        keptOmega.clear(); keptRe.clear(); keptIm.clear();
+    }
+#ifdef CCEX_USE_CUDA
+    if (noiseCard){   // this state's modes that still wait, and a card without work for the next state's grid
+        flushModes(cnf,0,with,without);
+        flushModes(cnf,1,with,without);
+        gpuNoiseDestroy(noiseCard);
+        noiseCard = nullptr;
+    }
+#endif
     const int n = int(with.size());
     std::vector<double> sumWith(n), sumWithout(n);
     MPI_Reduce(with.data(),sumWith.data(),n,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
@@ -255,6 +409,28 @@ bool noiseFinish(QubitArray* qa, Config* cnf, Pulse* pls, Output* op, int istate
     if (cnf->noise_fft_clamp_negative) for (double& s : S) s = std::max(s,0.0);
     const std::vector<double> frac = intervalFractions(pls);
     const double dm2 = deltaMs(qa)*deltaMs(qa);
+#ifdef CCEX_USE_CUDA
+    if (!strcasecmp(cnf->backend,"cuda")){   // the same trapezoid, as modes: weight S(f) 2 pi^2 (its share of the f grid)
+        std::vector<double> T(nstep), chi(nstep,0.0);
+        for (int i=0; i<nstep; ++i) T[i] = i*deltat;
+        std::vector<double> omega, weight;
+        try {
+            GpuNoise* card = gpuNoiseCreate(nstep,T.data(),int(frac.size()),frac.data());
+            for (size_t k=0; k<f.size(); ++k){
+                const double width = 0.5*((k+1<f.size() ? f[k+1]-f[k] : 0) + (k ? f[k]-f[k-1] : 0));
+                omega.push_back(2*M_PI*f[k]);
+                weight.push_back(S[k]*2*M_PI*M_PI*width);
+                if (omega.size() == batchModes(T.size(),frac.size()) || k+1 == f.size()){
+                    gpuNoisePhase(card,omega.size(),omega.data(),weight.data(),chi.data());
+                    omega.clear(); weight.clear();
+                }
+            }
+            gpuNoiseDestroy(card);
+        } catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+        for (int i=0; i<nstep; ++i) wD[i] = nD[i] = MatrixXcd::Constant(1,1,std::exp(-2*dm2*chi[i]));
+        return true;
+    }
+#endif
     for (int i=0; i<nstep; ++i){
         const double T = i*deltat;
         double chi = 0, prev = 0;

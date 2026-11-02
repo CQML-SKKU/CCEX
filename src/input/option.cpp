@@ -800,14 +800,14 @@ static void readNoiseSpectrum(Config* cnf, cJSON* section){
     if (fft && strcmp(cnf->noise_compute,"spectrum"))
         warnNotUsed("hamiltonian.noise.fft","it is read with hamiltonian.noise.compute \"spectrum\" only");
     else if (!strcmp(cnf->noise_compute,"spectrum")){
-        if (!fft){
-            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.compute \"spectrum\" needs hamiltonian.noise.fft {\"time_max\", \"nstep\"}\n");
-            ccexRefuse();
-        }
-        cnf->noise_fft_time_max = cJSON_ReadDouble(fft,(char*)"time_max",false,0);
-        cnf->noise_fft_nstep = cJSON_ReadInt(fft,(char*)"nstep",false,0);
+        if (!fft) fft = cJSON_CreateObject();   // every key has a default
+        // a key left out is set later: time_max by validateNoise, nstep by noiseFinish (noise.cpp)
+        const bool hasTimeMax = cJSON_HasObjectItem(fft,"time_max"), hasNstep = cJSON_HasObjectItem(fft,"nstep");
+        cnf->noise_fft_time_max = hasTimeMax ? cJSON_ReadDouble(fft,(char*)"time_max",false,0) : 0;
+        cnf->noise_fft_nstep = hasNstep ? cJSON_ReadInt(fft,(char*)"nstep",false,0) : 0;
+        cnf->noise_fft_auto_nstep = !hasNstep;
         cnf->noise_fft_pad_factor = cJSON_ReadInt(fft,(char*)"pad_factor",true,1);
-        if (!(cnf->noise_fft_time_max > 0) || cnf->noise_fft_nstep < 2 || cnf->noise_fft_pad_factor < 1){
+        if ((hasTimeMax && !(cnf->noise_fft_time_max > 0)) || (hasNstep && cnf->noise_fft_nstep < 2) || cnf->noise_fft_pad_factor < 1){
             ccexRefusalPrint(stderr,"Error: hamiltonian.noise.fft needs time_max > 0, nstep >= 2 and pad_factor >= 1\n");
             ccexRefuse();
         }

@@ -49,6 +49,7 @@ Config* Config_init(){
     strcpy(cnf->noise_compute,"coherence");
     cnf->noise_fft_time_max=0;
     cnf->noise_fft_nstep=0;
+    cnf->noise_fft_auto_nstep=false;
     strcpy(cnf->noise_fft_window,"none");
     cnf->noise_fft_pad_factor=1;
     cnf->noise_fft_subtract_mean=cnf->noise_fft_clamp_negative=false;
@@ -1016,7 +1017,8 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
         printStructElementChar("hamiltonian.noise.compute",cnf->noise_compute);
         if (!strcmp(cnf->noise_compute,"spectrum")){
             printStructElementDouble("hamiltonian.noise.fft.time_max",cnf->noise_fft_time_max);
-            printStructElementInt("hamiltonian.noise.fft.nstep",cnf->noise_fft_nstep);
+            if (cnf->noise_fft_auto_nstep) printStructElementChar("hamiltonian.noise.fft.nstep",(char*)"from the bath's modes");
+            else printStructElementInt("hamiltonian.noise.fft.nstep",cnf->noise_fft_nstep);
             printStructElementChar("hamiltonian.noise.fft.window",cnf->noise_fft_window);
             printStructElementInt("hamiltonian.noise.fft.pad_factor",cnf->noise_fft_pad_factor);
             printStructElementChar("hamiltonian.noise.fft.subtract_mean",(char*)(cnf->noise_fft_subtract_mean ? "true" : "false"));

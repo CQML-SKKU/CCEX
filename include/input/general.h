@@ -79,6 +79,7 @@ typedef struct {
     char noise_compute[16];               /**< hamiltonian.noise.compute: "coherence" (default), "spectrum" (semi-cce's psd: C(t), S(f) by FFT, the coherence) or "correlation" (PyCCE's: C(t) alone) */
     double noise_fft_time_max;            /**< hamiltonian.noise.fft.time_max: the correlation window of compute spectrum (ms) */
     int noise_fft_nstep;                  /**< hamiltonian.noise.fft.nstep: its intervals (nstep + 1 points) */
+    bool noise_fft_auto_nstep;            /**< nstep not given: noiseFinish sets it from the bath's modes */
     char noise_fft_window[8];             /**< hamiltonian.noise.fft.window: none (default), hann, tukey, exp */
     int noise_fft_pad_factor;             /**< hamiltonian.noise.fft.pad_factor (default 1) */
     bool noise_fft_subtract_mean, noise_fft_clamp_negative;   /**< hamiltonian.noise.fft.subtract_mean, clamp_negative (default false) */

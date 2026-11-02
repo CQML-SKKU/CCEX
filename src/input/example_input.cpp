@@ -280,8 +280,8 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //                                      // "coherence" (default), "spectrum" (C(t), FFT
 //                                      // S(f), the coherence) or "correlation" (C(t))
 //          "fft"            : {        // compute "spectrum" only
-//            "time_max"       : 3.0,   // ms (unit): C(t) on 0 .. time_max
-//            "nstep"          : 15000, // intervals
+//            "time_max"       : 3.0,   // ms (unit): C(t) on 0 .. time_max (default: the run's last time)
+//            "nstep"          : 15000, // intervals (default: from the bath's modes)
 //            "window"         : "none",// "none", "hann", "tukey" or "exp"
 //            "pad_factor"     : 1,     // FFT length pad_factor x (2 nstep + 1)
 //            "subtract_mean"  : false, // subtract the tail mean of C(t)

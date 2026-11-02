@@ -362,7 +362,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 (qubitInMatrix || isMECCE || !strcasecmp(method,"cce") || !strcasecmp(method,"pcce"));
             std::vector<ScaledComplex> stableWith(stableProduct ? nstep : 0);
             // method noise: every cluster's values times its power, summed (noise.cpp); without: the positive powers
-            std::vector<double> noiseWith(cnf->noise ? noiseLength(cnf) : 0), noiseWithout(noiseWith.size()), noiseValue;
+            std::vector<double> noiseWith(cnf->noise ? noiseLength(cnf) : 0), noiseWithout(noiseWith.size());
             std::vector<ScaledComplex> stableWithout(stableProduct ? nstep : 0);
             // mode "except" (adaptive-regroup-stage3b.md 1절): the run's own product is untouched; beside it P_K, the
             // product of every term not in the except list, and the raw curves of the excepted terms as probes.
@@ -515,7 +515,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     const int qubitFactor=isGCCE ? QubitArray_dim(qa) : 1;
                     // P1-05: a dimension the packed batch does not take keeps this batching (its look-ahead takes only clusters
                     // of the same dimension, so none of them is the packed batch's)
-                    if(!small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
+                    if(!cnf->noise && !small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
                        (!isGCCE || strcasecmp(savemode,"cluster_density_matrix")) &&
                        cnf->gpu_batch_clusters>1 && computeUseCuda(cnf,qubitFactor*BathArray_dim(ba_cluster))){
                         const int d=qubitFactor*BathArray_dim(ba_cluster);
@@ -563,8 +563,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         ownedResult = false;
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
-                    }else if (cnf->noise){     // method noise: the cluster's values (noise.cpp), summed below
-                        noiseCluster(qa, ba_cluster, cnf, pls, noiseValue);
+                    }else if (cnf->noise){     // method noise: the cluster's values, summed with its power (noise.cpp)
+                        noiseCluster(qa, ba_cluster, cnf, pls, power, noiseWith, noiseWithout);
                         result_nth = cceResult.get();
                         ownedResult = false;
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
@@ -603,11 +603,6 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     ladder.add(cluster,n,power,result_nth,inverseZero,unitZero);
                     if(gather && power!=1 && ngathered>0)flushGathered();
                     const std::complex<double>* direct=(small && smallPer==1 && gather) ? small : nullptr;   // X6
-                    if(cnf->noise)   // method noise: the values add with the powers (noiseFinish makes the outputs)
-                        for(size_t k=0;k<noiseValue.size();++k){
-                            noiseWith[k]+=power*noiseValue[k];
-                            if(power>0)noiseWithout[k]+=power*noiseValue[k];
-                        }
                     for (int istep=0; istep<nstep && !cnf->noise; istep++){
                         if((cnf->cluster_contributions || ladder.on) && power==0)continue;
                         if(stableProduct){
