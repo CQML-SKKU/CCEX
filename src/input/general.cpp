@@ -64,6 +64,7 @@ Config* Config_init(){
     cnf->gpu_warp_max_dim = -1;                 // not given; Config_resolveWarpMaxDim picks the default (A40)
     cnf->gpu_warp_source[0] = '\0';
     cnf->gpu_ranks_per_gpu = 0;                 // A98: every rank may open the GPU
+    cnf->gpu_options_given = 0;
     cnf->profile = false;
     cnf->cluster_only = false;
     cnf->cluster_contributions = false;

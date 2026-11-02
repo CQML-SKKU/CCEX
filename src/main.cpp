@@ -89,6 +89,7 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     for (long i = 0; i < DefectArray_paxesDraws(); ++i)
         rand();
     double time_start_step = 0., time_end = 0.;
+    computeGpuAutoSettings(cnf);               // the gpu_options the input leaves out, before the split uses them
     computeGpuSplitSetup(cnf,qa,ba,dfa,pls);   // A98: before the clusters are split over the ranks
     //=======================================================
     // Clusterize

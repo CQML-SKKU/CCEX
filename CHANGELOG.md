@@ -62,6 +62,14 @@
   defaults the same cases took 487 s and 170 s, one run each, 2 % and 10 % above the times without the batched
   eigensolver; the cause was not found and may be the spread between runs.
 
+- **Automatic `gpu_options` for cCCE on the GPU.** With `backend` `auto` or `cuda` in `bin/main_gpu.out` and a GPU
+  visible, the keys the input leaves out are set at the start (a `[gpu-auto]` line): `ranks_per_gpu` 4 when a node has
+  more than 4 ranks a GPU (`backend` `auto`, `cluster.mode` standard), `min_dim` 256 with `ranks_per_gpu`,
+  `evolution_batch_size` 32, `cluster_batch_mb` two thirds of the smallest card over the ranks that open a card. Given keys
+  are used as given; gCCE keeps the fixed defaults. On an RTX PRO 6000 with 32 ranks (test2 of the GH200 cases, one run
+  each) CPU only took 616 s, `backend` `auto` with the fixed defaults 887 s, and 4 ranks a card with batches of 32 490 s,
+  the fastest of `ranks_per_gpu` 0, 4, 8, 16 with and without batches, as on the GH200 node.
+
 ### Fixed
 
 - **Two runs of one path wrote different last digits with MKL.** MKL picks its code path by where in memory an array

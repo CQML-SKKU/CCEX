@@ -91,19 +91,31 @@ default below holds: the GPU build with `backend` `cuda` or `auto` runs the smal
 (`packed_max_dim`, below) and the gCCE and cCCE clusters of dimension up to 27 in the warp kernel (`warp_max_dim`,
 below). <br>
 
+<b>Automatic values.</b> For cCCE (`method` cCCE, any `cluster.mode`) in `bin/main_gpu.out` with `backend` `auto` or
+`cuda` and a GPU visible, the keys `min_dim`, `evolution_batch_size`, `cluster_batch_mb` and `ranks_per_gpu` that the
+input leaves out are set at the start of the run, and a `[gpu-auto]` line in the log says to what: `ranks_per_gpu` 4
+when a node has more than 4 ranks a GPU (`backend` `auto`, `cluster.mode` standard), `min_dim` 256 with `ranks_per_gpu`
+(given or automatic; the timing of `ranks_per_gpu` then keeps on the CPU every dimension the GPU is slower at),
+`evolution_batch_size` 32, and `cluster_batch_mb` two thirds of the smallest card's memory over the ranks that open a card
+(at least 64). A key the input gives is used as given. Measured on test2 of the `ranks_per_gpu` cases below (one run
+each): on an RTX PRO 6000 with 32 ranks (MPS), CPU only 616 s, `backend` `auto` with the fixed defaults 887 s,
+`ranks_per_gpu` 4, 8, 16 with batches of 32 and `cluster_batch_mb` 16384, 8192, 4096: 490, 526, 608 s, with the fixed
+batch defaults 573, 599, 629 s; on the GH200 node, `ranks_per_gpu` 4 with batches of 32 in 8192 MiB 136 s against 170 s
+with the fixed batch defaults. gCCE keeps the fixed defaults. The defaults in the table are those of the other runs. <br>
+
 <b>Data Type:</b> Object
 
 <b>Keys:</b><br>
 | Key | Type, default | Meaning |
 |---|---|---|
-| `min_dim` | positive integer, `768` | with `backend` = `auto`, the smallest cluster Hilbert dimension that goes to the GPU; smaller clusters stay on the CPU. Ignored by `cpu` and `cuda`. 768: on an RTX PRO 6000 with 32 ranks the GPU was faster from about 670-750 on in every path (cCCE and gCCE, single state and ensemble) and slower at 648 and below |
+| `min_dim` | positive integer, `768` (cCCE with `ranks_per_gpu`: `256`, automatic values above) | with `backend` = `auto`, the smallest cluster Hilbert dimension that goes to the GPU; smaller clusters stay on the CPU. Ignored by `cpu` and `cuda`. 768: on an RTX PRO 6000 with 32 ranks the GPU was faster from about 670-750 on in every path (cCCE and gCCE, single state and ensemble) and slower at 648 and below |
 | `packed_max_dim` | `0`, `2` or `4`; `4` in `bin/main_gpu.out` with `backend` `cuda` or `auto` and `method` cCCE (`cluster.mode` standard or bundle), else `0` | the packed kernel (below): cCCE clusters of bath dimension up to this value on the GPU, many at once. `0` is off |
-| `evolution_batch_size` | positive integer, `8` | the largest number of clusters of one dimension taken together on the GPU (`backend` `cuda`/`auto`): cCCE diagonalizes and evolves them together, gCCE evolves them together; `1` takes one cluster at a time. With `cluster_batch_mb` above 64, a rank that uses the GPU goes through its clusters by size, so that clusters of one dimension follow each other |
+| `evolution_batch_size` | positive integer, `8` (cCCE on the GPU: `32`, automatic values above) | the largest number of clusters of one dimension taken together on the GPU (`backend` `cuda`/`auto`): cCCE diagonalizes and evolves them together, gCCE evolves them together; `1` takes one cluster at a time. With `cluster_batch_mb` above 64, a rank that uses the GPU goes through its clusters by size, so that clusters of one dimension follow each other |
 | `evolution_batch_steps` | positive integer, `64` | the largest number of time points a GPU evolution processes together |
-| `cluster_batch_mb` | positive integer, `64` (MiB per rank) | the budget that limits how many clusters one GPU batch may hold: the evolution buffers and, for cCCE, the eigensolver's workspace, about 14 D² complex numbers a cluster. With the default a cCCE batch holds 2 clusters at D = 256 and one from about D = 310 on: to gain from it, raise this and `evolution_batch_size` as the card's memory allows, below |
+| `cluster_batch_mb` | positive integer, `64` (MiB per rank; cCCE on the GPU: two thirds of the card over its ranks, automatic values above) | the budget that limits how many clusters one GPU batch may hold: the evolution buffers and, for cCCE, the eigensolver's workspace, about 14 D² complex numbers a cluster. With 64 a cCCE batch holds 2 clusters at D = 256 and one from about D = 310 on |
 | `cache_mb` | nonnegative integer, `64` (MiB per rank) | GPU memory that freed allocations are kept in for reuse; `0` disables the cache |
 | `warp_max_dim` | `0` to `32`; `27` in `bin/main_gpu.out` with `backend` `cuda` or `auto` and `method` cCCE or gCCE, else `0` | the warp kernel (below): gCCE and cCCE clusters of a compiled total dimension up to this value on the GPU, one per warp. `0` is off |
-| `ranks_per_gpu` | nonnegative integer, `0` | with `backend` = `auto` and `method` cCCE (`cluster.mode` standard), only this many ranks per GPU open it, and the clusters of `min_dim` and above go to them (below). `0`: every rank may open the GPU |
+| `ranks_per_gpu` | nonnegative integer, `0` (cCCE, `cluster.mode` standard, `backend` `auto`, more than 4 ranks a GPU on a node: `4`, automatic values above) | with `backend` = `auto` and `method` cCCE (`cluster.mode` standard), only this many ranks per GPU open it, and the clusters of `min_dim` and above go to them (below). `0`: every rank may open the GPU |
 
 <b>The packed kernel (`packed_max_dim`).</b> The `cuda`/`auto` backends send a cluster to the GPU on its own, which
 for the dimension-2 and 4 clusters of a P1 bath costs far more than the CPU (about 400 times slower).
@@ -227,8 +239,9 @@ cCCE with `cluster.mode` standard (refused otherwise; bundle and pCCE split thei
 node with 4 processes on a card, 32 random Hermitian matrices a call against one at a time: 8.7 times the rate at
 D = 256, 4.8 at 480, 3.9 at 576, 2.9 at 900, 2.3 at 1296. It needs many clusters of one dimension and the memory for them:
 `evolution_batch_size` 32 with `cluster_batch_mb` 8192 on that node (120 GB a card, 4 ranks a card) took 328 s and 137 s
-on the two cases of `ranks_per_gpu` above, against 477 s and 155 s without. The memory is the user's to weigh: ranks on a
-card × `cluster_batch_mb` should stay below the card's. A batch that runs out of GPU memory leaves its clusters to the CPU. <br>
+on the two cases of `ranks_per_gpu` above, against 477 s and 155 s without. A given `cluster_batch_mb` is the user's to
+weigh: ranks on a card × `cluster_batch_mb` should stay below the card's. A batch that runs out of GPU memory leaves its
+clusters to the CPU. <br>
 
 <b>Example:</b> ``` "execution" : {"gpu_options": {"min_dim": 256, "packed_max_dim": 4}} ```, ``` "execution" : {"gpu_options": {"warp_max_dim": 12}} ```, ``` "execution" : {"backend": "auto", "gpu_options": {"min_dim": 256, "ranks_per_gpu": 4}} ```, ``` "execution" : {"backend": "auto", "gpu_options": {"min_dim": 256, "ranks_per_gpu": 4, "evolution_batch_size": 32, "cluster_batch_mb": 8192}} ```
 

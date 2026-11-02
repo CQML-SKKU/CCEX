@@ -1695,6 +1695,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         for (int k=0; k<8; ++k){
             cJSON* item = cJSON_GetObjectItem(block,gpuKeys[k]);   // recorded as read (cJSON_checkInputKeys)
             if (!item) continue;
+            cnf->gpu_options_given |= 1u << k;
             char name[64];
             snprintf(name,sizeof name,"execution.gpu_options.%s",gpuKeys[k]);
             const double value = readFiniteNumber(item,name);
