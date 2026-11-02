@@ -523,7 +523,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         // A conservative buffer estimate limits bundleing. A single
                         // cluster still follows the existing allocation/error path.
                         const bool vectorState=isGCCE ? !strcasecmp(cnf->evolution,"vector") : cnf->nstate>0;
-                        const long double bytes=gpuClusterMemoryEstimate(d,qubitFactor,timeBatch,pls->npulse,isGCCE,vectorState);
+                        const long double bytes=gpuClusterMemoryEstimate(d,qubitFactor,timeBatch,pls->npulse,isGCCE,vectorState)
+                                                +(isGCCE ? 0 : gpuCceBatchWorkspaceEstimate(d));
                         const long double budget=1048576.0L*cnf->gpu_cluster_batch_mb;
                         batchBaths.push_back(ba_cluster);
                         while(batchBaths.size()<(size_t)cnf->gpu_batch_clusters &&

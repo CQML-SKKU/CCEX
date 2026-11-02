@@ -98,9 +98,9 @@ below). <br>
 |---|---|---|
 | `min_dim` | positive integer, `768` | with `backend` = `auto`, the smallest cluster Hilbert dimension that goes to the GPU; smaller clusters stay on the CPU. Ignored by `cpu` and `cuda`. 768: on an RTX PRO 6000 with 32 ranks the GPU was faster from about 670-750 on in every path (cCCE and gCCE, single state and ensemble) and slower at 648 and below |
 | `packed_max_dim` | `0`, `2` or `4`; `4` in `bin/main_gpu.out` with `backend` `cuda` or `auto` and `method` cCCE (`cluster.mode` standard or bundle), else `0` | the packed kernel (below): cCCE clusters of bath dimension up to this value on the GPU, many at once. `0` is off |
-| `evolution_batch_size` | positive integer, `8` | the largest number of consecutive clusters of one dimension evolved together on the GPU (`backend` `cuda`/`auto`); `1` evolves one cluster at a time |
+| `evolution_batch_size` | positive integer, `8` | the largest number of clusters of one dimension taken together on the GPU (`backend` `cuda`/`auto`): cCCE diagonalizes and evolves them together, gCCE evolves them together; `1` takes one cluster at a time. A rank that uses the GPU goes through its clusters by size, so that clusters of one dimension follow each other |
 | `evolution_batch_steps` | positive integer, `64` | the largest number of time points a GPU evolution processes together |
-| `cluster_batch_mb` | positive integer, `64` (MiB per rank) | the evolution-buffer budget that limits how many clusters one GPU batch may hold |
+| `cluster_batch_mb` | positive integer, `64` (MiB per rank) | the budget that limits how many clusters one GPU batch may hold: the evolution buffers and, for cCCE, the eigensolver's workspace, about 14 D² complex numbers a cluster. With the default a cCCE batch holds 2 clusters at D = 256 and one from about D = 310 on: to gain from it, raise this and `evolution_batch_size` as the card's memory allows, below |
 | `cache_mb` | nonnegative integer, `64` (MiB per rank) | GPU memory that freed allocations are kept in for reuse; `0` disables the cache |
 | `warp_max_dim` | `0` to `32`; `27` in `bin/main_gpu.out` with `backend` `cuda` or `auto` and `method` cCCE or gCCE, else `0` | the warp kernel (below): gCCE and cCCE clusters of a compiled total dimension up to this value on the GPU, one per warp. `0` is off |
 | `ranks_per_gpu` | nonnegative integer, `0` | with `backend` = `auto` and `method` cCCE (`cluster.mode` standard), only this many ranks per GPU open it, and the clusters of `min_dim` and above go to them (below). `0`: every rank may open the GPU |
@@ -222,7 +222,15 @@ CPU to the run. The packed and warp kernels already use one
 context per node (node rank 0, a GPU rank) and are unchanged. Needs `bin/main_gpu.out`, `backend` = `auto` and `method`
 cCCE with `cluster.mode` standard (refused otherwise; bundle and pCCE split their work themselves). <br>
 
-<b>Example:</b> ``` "execution" : {"gpu_options": {"min_dim": 256, "packed_max_dim": 4}} ```, ``` "execution" : {"gpu_options": {"warp_max_dim": 12}} ```, ``` "execution" : {"backend": "auto", "gpu_options": {"min_dim": 256, "ranks_per_gpu": 4}} ```
+<b>Batches of large cCCE clusters.</b> A GPU batch of cCCE clusters goes through the eigensolver in one call
+(`cusolverDnXsyevBatched`), so that the transfer, launch and wait are paid once instead of per matrix. Measured on a GH200
+node with 4 processes on a card, 32 random Hermitian matrices a call against one at a time: 8.7 times the rate at
+D = 256, 4.8 at 480, 3.9 at 576, 2.9 at 900, 2.3 at 1296. It needs many clusters of one dimension and the memory for them:
+`evolution_batch_size` 32 with `cluster_batch_mb` 8192 on that node (120 GB a card, 4 ranks a card) took 328 s and 137 s
+on the two cases of `ranks_per_gpu` above, against 477 s and 155 s without. The memory is the user's to weigh: ranks on a
+card × `cluster_batch_mb` should stay below the card's. A batch that runs out of GPU memory leaves its clusters to the CPU. <br>
+
+<b>Example:</b> ``` "execution" : {"gpu_options": {"min_dim": 256, "packed_max_dim": 4}} ```, ``` "execution" : {"gpu_options": {"warp_max_dim": 12}} ```, ``` "execution" : {"backend": "auto", "gpu_options": {"min_dim": 256, "ranks_per_gpu": 4}} ```, ``` "execution" : {"backend": "auto", "gpu_options": {"min_dim": 256, "ranks_per_gpu": 4, "evolution_batch_size": 32, "cluster_batch_mb": 8192}} ```
 
 <a id="tag_propagator"></a>
 ## execution.propagator

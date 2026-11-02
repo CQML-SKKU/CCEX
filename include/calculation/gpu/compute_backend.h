@@ -23,6 +23,10 @@ bool computeMayUseCuda(const Config* config, int dimension);
 // The methods whose clusters may go to the GPU: cCCE (cluster_mode standard or pcce) and gCCE with propagator=eigen.
 // computeBackendInit and the evolution_update default (Config_validateEvolutionUpdate, A36) ask the same.
 bool computeBackendMethodSupported(const Config* config);
+// the GPU cluster batches take consecutive clusters of one dimension: this rank's clusters are then ordered by size. Not
+// on the CPU ranks of gpu_options.ranks_per_gpu, which do not batch: all of them on their large clusters at once cost more
+// (GH200, the 1 atm case: 386 s ordered, 328 s not)
+bool computeBatchByDimension(const Config* config);
 // A cluster of this dimension ran out of GPU memory (GpuOutOfMemory, gpu_backend.h; what = its message). backend auto
 // (user 2026-10-13, A37 job 699): true - the caller computes the cluster on the CPU, and from now on this rank sends no
 // cluster of this dimension or larger to the GPU (computeUseCuda says no); one line on stdout. Otherwise (cuda) false: the

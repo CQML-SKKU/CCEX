@@ -46,6 +46,7 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
+#include <algorithm>
 #include <vector>
 #include <cmath>
 #include <cctype>
@@ -136,6 +137,20 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     const std::vector<int> pairRows(cls->pairRows, cls->pairRows + cls->npairRows);
     const std::vector<double> pairLoads(cls->pairLoads, cls->pairLoads + (cls->pairLoads ? nprocess : 0));
     int*** localclusters = MPI_getLocalClusters(order,clusters,clusterCost,cls->pairsLocal ? 2 : 0,&pairRows,&pairLoads);
+    // B: the GPU cluster batches take consecutive clusters of one dimension, so with a mixed bath a rank's clusters go by
+    // size (the product does not depend on the order but for rounding). The rows keep their memory, their contents move
+    if (computeBatchByDimension(cnf)) for (int n=1; n<=order; n++){
+        const int m = localclusters[n][0][0]-1;
+        std::vector<int> index(m), flat((size_t)m*(n+1));
+        std::vector<double> size(m);
+        for (int i=0; i<m; i++){
+            index[i] = i; size[i] = clusterCost(n,localclusters[n][i+1]);
+            std::copy(localclusters[n][i+1],localclusters[n][i+1]+n+1,flat.begin()+(size_t)i*(n+1));
+        }
+        std::stable_sort(index.begin(),index.end(),[&](int a,int b){ return size[a] > size[b]; });
+        for (int i=0; i<m; i++)
+            std::copy_n(flat.begin()+(size_t)index[i]*(n+1),n+1,localclusters[n][i+1]);
+    }
     // int*** localclusters = clusters; // No MPI
     // reportClusinfo(localclusters,order);
     // A68: one line with the clusters of every order, over all ranks (each rank holds its own share)

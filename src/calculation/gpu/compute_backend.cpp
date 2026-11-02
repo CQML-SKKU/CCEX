@@ -295,6 +295,14 @@ void computeGpuSplitSetup(Config* config, QubitArray* qa, BathArray* ba, DefectA
 #endif
 }
 
+bool computeBatchByDimension(const Config* config){
+#ifdef CCEX_USE_CUDA
+    return cudaSupported && config->gpu_batch_clusters > 1 && (!split.on || split.isGpu[rank]);   // a CPU rank does not batch
+#else
+    (void)config; return false;
+#endif
+}
+
 bool computeGpuSplitOn(){ return split.on; }
 const std::vector<int>& computeGpuSplitRanks(){ return split.ranks; }
 

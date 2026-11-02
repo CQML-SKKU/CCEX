@@ -46,6 +46,13 @@
   ranks connected to MPS there (through CUDA 13.2's forward-compatibility library they had not connected): backend
   auto took 1,074 s on the 1 atm case and 199 s on the O-rich one. `make gpu-test` passed (CUDA 12.8, sm_90).
 
+- **A GPU batch of cCCE clusters is diagonalized in one call** (`cusolverDnXsyevBatched`) instead of matrix by matrix, and
+  a rank that uses the GPU goes through its clusters by size, so that clusters of one dimension meet. `cluster_batch_mb`
+  now also counts the eigensolver's workspace, so the default batches at D = 256 hold 2 clusters instead of 7. The
+  defaults of `evolution_batch_size` and `cluster_batch_mb` are unchanged and leave most of the gain out: on the GH200
+  node above, with `ranks_per_gpu` 4, `evolution_batch_size` 32 and `cluster_batch_mb` 8192 took the 1 atm case to 328 s and
+  the O-rich case to 137 s (477 s and 155 s without), one run each, `max|dL|` against the CPU run 1.7e-6.
+
 ### Fixed
 
 - **Two runs of one path wrote different last digits with MKL.** MKL picks its code path by where in memory an array

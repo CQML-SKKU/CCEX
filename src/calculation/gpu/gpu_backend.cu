@@ -71,6 +71,7 @@ struct Context {
     cudaStream_t stream=nullptr;
     cublasHandle_t blas=nullptr;
     cusolverDnHandle_t solver=nullptr;
+    cusolverDnParams_t solverParams=nullptr;   // XsyevBatched's, made at its first call
     size_t cacheLimit=size_t(ccex::gpuCacheMiB)*1024*1024;
     bool recovering=false;              // gpuOutOfMemoryRecovery: released buffers are freed, not cached
     GpuMemoryStats memory{};
@@ -83,6 +84,7 @@ struct Context {
     ~Context(){
         if (stream) cudaStreamSynchronize(stream);
         trim();
+        if (solverParams) cusolverDnDestroyParams(solverParams);
         if (solver) cusolverDnDestroy(solver);
         if (blas) cublasDestroy(blas);
         if (stream) cudaStreamDestroy(stream);
@@ -682,6 +684,70 @@ GpuCce* gpuCceCreate(int d, bool ensemble, int batchSteps, int pulseCount,
     w->durations.allocate((size_t)batchSteps*(pulseCount+1));
     GPU_CHECK(cudaStreamSynchronize(context->stream));
     return w.release();
+}
+
+// The n clusters of one dimension in one call of the eigensolver: n x 2 Hamiltonians side by side, the transfer, launch
+// and wait paid once instead of per matrix (on a GH200 8.7 times the rate at D = 256, 3.9 at 576, 2.3 at 1296, 32 matrices
+// a call, 4 processes on a card). The buffers afterwards are gpuCceCreate's.
+std::vector<GpuCce*> gpuCceCreateBatch(int n, int d, bool ensemble, int batchSteps, int pulseCount,
+        const void* const* hAlpha, const void* const* hBeta, const void* const* initial){
+    if (!context) throw std::runtime_error("CUDA backend was not initialized");
+    if (n<1 || d<1 || batchSteps<1 || pulseCount<0 || pulseCount==INT_MAX || (!ensemble && !initial))
+        throw std::runtime_error("invalid cCCE GPU batch dimensions or initial states");
+    const int width=ensemble ? d : 1;
+    const size_t square=(size_t)d*d, columns=(size_t)width*batchSteps;
+    if (square>INT_MAX || columns>INT_MAX/(size_t)d)
+        throw std::runtime_error("GPU batch exceeds 32-bit indexing, reduce gpu_batch_steps or cluster dimension");
+    const auto stream=context->stream;
+    Buffer<Z> vectors; vectors.allocate(2*(size_t)n*square);
+    Buffer<double> values; values.allocate(2*(size_t)n*d);
+    Buffer<int> info; info.allocate(2*(size_t)n);
+    for (int c=0; c<n; ++c){
+        GPU_CHECK(cudaMemcpyAsync(vectors.p+2*(size_t)c*square,hAlpha[c],square*sizeof(Z),cudaMemcpyHostToDevice,stream));
+        GPU_CHECK(cudaMemcpyAsync(vectors.p+(2*(size_t)c+1)*square,hBeta[c],square*sizeof(Z),cudaMemcpyHostToDevice,stream));
+    }
+    if (!context->solverParams) GPU_CHECK(cusolverDnCreateParams(&context->solverParams));
+    size_t deviceBytes=0, hostBytes=0;
+    GPU_CHECK(cusolverDnXsyevBatched_bufferSize(context->solver,context->solverParams,CUSOLVER_EIG_MODE_VECTOR,CUBLAS_FILL_MODE_LOWER,
+              d,CUDA_C_64F,vectors.p,d,CUDA_R_64F,values.p,CUDA_C_64F,&deviceBytes,&hostBytes,2*(int64_t)n));
+    Buffer<char> workspace; workspace.allocate(deviceBytes);
+    std::vector<char> hostWorkspace(hostBytes);
+    GPU_CHECK(cusolverDnXsyevBatched(context->solver,context->solverParams,CUSOLVER_EIG_MODE_VECTOR,CUBLAS_FILL_MODE_LOWER,
+              d,CUDA_C_64F,vectors.p,d,CUDA_R_64F,values.p,CUDA_C_64F,workspace.p,deviceBytes,hostWorkspace.data(),hostBytes,
+              info.p,2*(int64_t)n));
+    std::vector<int> hostInfo(2*(size_t)n);
+    GPU_CHECK(cudaMemcpyAsync(hostInfo.data(),info.p,hostInfo.size()*sizeof(int),cudaMemcpyDeviceToHost,stream));
+    GPU_CHECK(cudaStreamSynchronize(stream));
+    for (int x : hostInfo) if (x) throw std::runtime_error("Hermitian batched eigensolver failed: info="+std::to_string(x));
+
+    std::vector<std::unique_ptr<GpuCce>> works;
+    Buffer<Z> psi;
+    if (!ensemble) psi.allocate((size_t)n*d);
+    for (int c=0; c<n; ++c){
+        auto w=std::make_unique<GpuCce>();
+        w->d=d; w->width=width; w->batch=batchSteps; w->npulse=pulseCount; w->ensemble=ensemble;
+        const Z* va=vectors.p+2*(size_t)c*square; const Z* vb=va+square;
+        w->evalA.allocate(d); w->evalB.allocate(d);
+        GPU_CHECK(cudaMemcpyAsync(w->evalA.p,values.p+2*(size_t)c*d,d*sizeof(double),cudaMemcpyDeviceToDevice,stream));
+        GPU_CHECK(cudaMemcpyAsync(w->evalB.p,values.p+(2*(size_t)c+1)*d,d*sizeof(double),cudaMemcpyDeviceToDevice,stream));
+        w->overlap.allocate(square);
+        gemm(d,d,va,vb,w->overlap.p,CUBLAS_OP_C);
+        if (!ensemble){
+            Z* state=psi.p+(size_t)c*d;
+            w->initialA.allocate(d); w->initialB.allocate(d);
+            GPU_CHECK(cudaMemcpyAsync(state,initial[c],(size_t)d*sizeof(Z),cudaMemcpyHostToDevice,stream));
+            gemm(d,1,va,state,w->initialA.p,CUBLAS_OP_C);
+            gemm(d,1,vb,state,w->initialB.p,CUBLAS_OP_C);
+        }
+        w->a.allocate(d*columns); w->b.allocate(d*columns); w->scratch.allocate(d*columns);
+        w->result.allocate(batchSteps);
+        w->durations.allocate((size_t)batchSteps*(pulseCount+1));
+        works.push_back(std::move(w));
+    }
+    GPU_CHECK(cudaStreamSynchronize(stream));
+    std::vector<GpuCce*> out;
+    for (auto& w : works) out.push_back(w.release());
+    return out;
 }
 
 void gpuCceEvolve(GpuCce* w, int count, const double* durations, void* coherence){
