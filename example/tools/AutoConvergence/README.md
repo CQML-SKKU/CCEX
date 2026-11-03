@@ -7,8 +7,7 @@ production (the order is the input's; the adaptive refinement is excluded). The 
 exists for order 2 of cCCE, gCCE and pCCE with standard clusters; otherwise (order 3 and above, fixed bundles) each rdip
 candidate is its own run, which costs more but is judged alike. You
 prepare the bath files (and, if you like, state files with `configuration.s_range`); almost everything else is found. Every calculation is an
-ordinary CCEX run in its own folder. The rules and the decisions behind them are in (internal notes)
-(section 2 the rules, section 3 one line per decision).
+ordinary CCEX run in its own folder.
 
 ```sh
 mpirun -n 8 main.out -f input.json   # every CCEX run with mpirun -n 8 (rank 0 alone runs the runner)
@@ -223,7 +222,7 @@ oscillates (a physical plateau) is not handled. The start estimates (300 spins, 
 example and P1 100 ppm 500 G) are starts only: the steps converge from them. Tested end to end on the NV-¹³C example with
 the candidates given, and from the automatic starts on dense baths: P1 cCCE2 and gCCE2 (ensemble and
 single) and an h-BN gCCE2 ensemble at 3 T converged; P1 pCCE2 does not converge in rbath (spiky curves: the fitted areas
-disagree, and where the fit fails the raw area disagrees too, (internal notes)), and h-BN at 500 G (collapse and revival, not one stretched exponential) and noisy curves stop at the time window.
+disagree, and where the fit fails the raw area disagrees too), and h-BN at 500 G (collapse and revival, not one stretched exponential) and noisy curves stop at the time window.
 
 ## Other commands (analysis of existing runs)
 

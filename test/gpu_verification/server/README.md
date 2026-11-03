@@ -43,7 +43,7 @@ leave the only copy there). The node has no outside network (packages come throu
 `check_gpu/check_options.py` 95/0, P1 CR0 cCCE2 `main_gpu.out` against `main.out` within 2.2e-10. Job 17401 ran `build.sbatch` with `--export=NONE`: the
 build and the eight `backend=cpu` comparisons passed (max error 0).
 Jobs 17444 and 17447 (2026-10-14, review 20261013-221715 group 4) used the `/scratch` way: `make gpu-test` 201/0, `check_options.py` 110 PASS, and
-P1 gCCE2 warp runs old against new ((internal notes)).
+P1 gCCE2 warp runs old against new.
 
 ```bash
 mkdir server-results
@@ -134,7 +134,7 @@ Job output remains under the isolated source directory:
 - `server-results/measure-JOB/cuda/summary.json`: CPU versus forced CUDA.
 - `server-results/measure-JOB/auto/summary.json`: CPU versus automatic selection.
 
-Two measurement jobs for `execution.gpu_options.min_dim` (A3 of (internal notes)) build with `do_compile.sh gpu` themselves:
+Two measurement jobs for `execution.gpu_options.min_dim` build with `do_compile.sh gpu` themselves:
 
 - `min_dim.sbatch` (8 ranks, gpu-long): `gpu_benchmarks/benchmark_min_dim.py`, CPU against forced CUDA per cluster dimension for ten
   conditions; `server-results/min-dim-JOB.log` and `min-dim-JOB/conditions/summary.json` (jobs 648, 659).

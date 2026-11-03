@@ -54,8 +54,7 @@ in both:
 With `centers` two partitions whose spins are close can stay unconnected when their centroids are far apart, more so
 for a larger `partition_size`; `spins` connects them. `spins` looks at every spin pair (a cost that grows as N²) and
 usually connects more partition pairs, so it gives more clusters. The rank-0 log prints the rule and how many partition pairs it
-connected (`pCCE connections : ...`). A comparison of the two rules on the P1 bath of `example/tutorial/03_P1` is in
-the repository ((internal notes)). The clusters themselves are then made from this graph as
+connected (`pCCE connections : ...`). The clusters themselves are then made from this graph as
 in standard CCE, with [max_per_order](../user/InputFile_Cluster.md#tag_max_clusters_per_order) and
 [add_subclusters](../user/InputFile_Cluster.md#tag_add_subclusters) counting partitions.
 

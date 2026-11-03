@@ -735,8 +735,8 @@ against the CPU path (relative 1.3e-6, 1.6e-5 on the diverging CR60 curve).
 - MKL as a requirement (it is optional now), `hf_cutoff`, `DefectTotSpin`, `CorrTotSpin`, the bundled `zlib/`, the
   top-level `main.cpp` and `config/` (moved into `src/` and the tools).
 - `example/tools/Runner/` (job folders per variable value) and `example/analysis/ConvTest/`: `configuration.k_range`
-  and the automatic convergence took their place (git history has both). The adaptive-refinement study scripts moved to
-  (internal notes).
+  and the automatic convergence took their place (git history has both). The adaptive-refinement study scripts were moved out of
+  the repository.
 - The P1 bath of the tutorials keeps 1 and 10 ppm × 5 configurations (99 MB → 0.9 MB); the other configurations are in
   git history (`git show c3c862972:example/tutorial/04_Diamond_NV_P1Bath/bath/...`).
 
@@ -764,7 +764,7 @@ Where the coherence converges, it agrees with v1.2.2 within 1e-4; with `deltat` 
 within 1e-9 to 1e-10 (P1 cCCE2 and gCCE2, ¹³C). Larger differences come only from fixes in this release (`deltat` read
 as a float, the ensemble half interval in double, the complex conjugate for an even pulse count, the static Overhauser
 field of gCCE, the density-matrix `nan`, the pCCE partition) or from points where the curve already diverges
-(|L| > 1), where v1.2.2 often wrote `nan`. The scripts and tables are under (internal notes).
+(|L| > 1), where v1.2.2 often wrote `nan`.
 
 #### On the GPU node
 

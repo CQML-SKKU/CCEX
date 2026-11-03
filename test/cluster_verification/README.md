@@ -1,7 +1,6 @@
 # test/cluster_verification/
 
-The clustering methods of this branch. (internal notes)
-names them: **bundle clustering** builds the bundles once (`cluster_mode=bundle`,
+The clustering methods added on this branch: **bundle clustering** builds the bundles once (`cluster_mode=bundle`,
 `src/clustering/bundle/`); **adaptive refinement** rebuilds them from measured
 error (the `adaptive` block, `src/clustering/algo_adaptive/`); **pCCE** partitions the bath
 into centres.

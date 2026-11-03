@@ -34,7 +34,7 @@ local_before/after, with the same decisions). The golden answers stay the ones r
 
 `cpp/bin*/` and `cpp/out/` are what a run writes; both are ignored.
 
-## Method D (`--regroup`, (internal notes))
+## Method D (`--regroup`)
 
 The unit test `cpp/test_regroup.cpp` checks every function of `policy_regroup` on its own (NaN, inf, zero and ties
 included) and whole rounds against a bath whose expansion is known in closed form, so each of the three acceptance
@@ -73,12 +73,9 @@ the six (eight) sites nearest the NV, their positions pulled halfway toward the 
 dropped and the P1 hyperfine given as the axis detunings the stored P1 subsystems used, five states, 30 points.
 
 The replay of the stored P1 probes (stage 0/4 of the plan) needs the stored data (`~/tmp/ccex-p1-cluster`), so it is a
-study and not a standing check: `rebundle2.py trace` ((internal notes)) writes the
+study and not a standing check: `rebundle2.py trace` writes the
 prototype's decisions with `REBUNDLE_NOREVISIT=1`, `cpp/bin/regroup_replay` makes the C++ decisions on the same probes,
-and `regroup_parity.py PY.jsonl CPP.jsonl` compares them ((internal notes)).
-`regroup_replay --factors --except` takes the paths of the two options on the same probes
-((internal notes)).
+and `regroup_parity.py PY.jsonl CPP.jsonl` compares them.
+`regroup_replay --factors --except` takes the paths of the two options on the same probes.
 
-The factors and except paths (`--regroup-factors factors`, `--regroup-whole except`; (internal notes),
--stage3b.md) against the probe path on the regroup cases, on 1 and 3 ranks:
-(internal notes).
+The factors and except paths (`--regroup-factors factors`, `--regroup-whole except`) against the probe path on the regroup cases, on 1 and 3 ranks.

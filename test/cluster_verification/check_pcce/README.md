@@ -15,7 +15,7 @@ On 2026-09-24 `check_reproducibility.py`, `check_edge_cases.py` and the three
 unit-check drivers passed on the WSL build. `test_adaptive_partition.cpp`,
 `test_adaptive_connections.cpp` and `test_adaptive_high_order.cpp` (the bundle partition, connections and
 high-order expansion) are built and run by `make cpu-test` / the CMake `cpu-test` target since 2026-10-02
-(D31); (internal notes) still has their compile lines. `test_partition_cache_format.cpp`
+(D31). `test_partition_cache_format.cpp`
 (the cache file codec: binary64 roundtrip, every byte flipped and every truncation, trailing data, a changed key,
 a missing file) runs in `cpu-test` as well since 2026-10-02 (D32), with a file in `obj/` or the CMake build folder
 that it removes; it is also meant for an ASan/UBSan build. `benchmark_*.py` time the partition search and the cache;
@@ -28,5 +28,4 @@ the sweep and analysis tools of the 2026-09-11..12 PL6 work (`run_sweep.py`,
 `product_trace.h`, `replay_product.cpp`, `probe_product_mpi.cpp`,
 `cluster_inventory.cpp`, `Makefile.inventory`) and 22 dated records
 (`grid-*`, `benchmark-*`, `pilot-*`, `validation-*`, `performance-*`, 20 MB);
-`product-convergence-20260912.json` stays because
-(internal notes) cites it.
+`product-convergence-20260912.json` stays as a record.

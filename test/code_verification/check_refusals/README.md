@@ -47,8 +47,8 @@ Since 2026-10-01 it also checks failures that used to end with exit status 0 (or
 | a result file that cannot be written in full, in `normal` and in `info` mode | `Output_save` and `Output_save_info` checked only that the files opened. With its result files linked to `/dev/full` (every write fails with ENOSPC, as on a full disk), `check_numerics/cases/natab_cce2_hahn` ended with exit 0. Until 2026-10-02 the case used a 4 KB file-size limit (`ulimit -f 4`), which also broke Open MPI's own start-up |
 | a `_noDiv` file that cannot be opened, in both modes | a directory in its place; `Output_save_info` checked only the `_wiDiv` file and would have written to a null file |
 
-Since 2026-10-11 it also checks the requests of the `factors` and `except` work modes of method D's regroup
-((internal notes) 4절, `-stage3b.md` 1절), written by hand on the P1 input of the regroup
+Since 2026-10-11 it also checks the requests of the `factors` and `except` work modes of method D's regroup,
+written by hand on the P1 input of the regroup
 regression (`test/cluster_verification/check_adaptive/regression/inputs/regroup-p1-0.json`). Each has to be refused
 before any state is calculated (no response file of a state is written):
 

@@ -14,7 +14,7 @@ and, without a display, `MPLBACKEND=Agg`.
 Removed before 2.0.0 (git history has them): `ConvTest/` (the convergence over
 one variable, `do_convTest.py`; the automatic convergence of `tools/AutoConvergence/`
 and `configuration.k_range` took its place) and `AdaptiveStudy/` (the scripts of the
-adaptive-refinement study, now (internal notes)).
+adaptive-refinement study).
 
 ## Use as-is, do not rewrite
 

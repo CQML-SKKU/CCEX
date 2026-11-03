@@ -142,15 +142,13 @@ done while the bath is read and the clusters are made, and released when no rank
 the ranks compute on the CPU), so a run of a few
 seconds gains nothing. Measured on a GPU node (32 ranks + one RTX PRO 6000, the production P1 cCCE2 inputs, whole
 run against the CPU binary on the same node, median of AB BA AB): CR60 σ4 30 states 70.7 → 44.2 s (0.62), its ensemble
-6.5 → 3.9 s (0.59), CR0 30 states 13.6 → 11.4 s (0.84), but the CR0 ensemble, a 1.8 s run, 1.80 → 1.71 s (0.95);
-(internal notes). In that measurement the 12 small fixture runs (under 1 s) finished before the GPU was
+6.5 → 3.9 s (0.59), CR0 30 states 13.6 → 11.4 s (0.84), but the CR0 ensemble, a 1.8 s run, 1.80 → 1.71 s (0.95). In that measurement the 12 small fixture runs (under 1 s) finished before the GPU was
 up and ran entirely on the CPU. <br>
 <b>When they stay off.</b> With neither `packed_max_dim` nor `warp_max_dim` given, the packed
 and warp kernels are not started at all when the cluster evaluations they would take (clusters × states: each cluster
 once per state, the states of `s_range` or 1 for the ensemble), counted over all ranks from order 1 up, are fewer than 20000 per
 rank (640000 for 32 ranks): on a full node starting the card costs about 0.5 s, and the card saves about 4.4 rank-µs per
-packed evaluation and 21 per warp one, so such runs gain little or lose (the reasoning and the numbers:
-(internal notes)). The log says so (`[gpu-packed] off: N cluster evaluations
+packed evaluation and 21 per warp one, so such runs gain little or lose. The log says so (`[gpu-packed] off: N cluster evaluations
 (clusters x states) for the packed kernel, fewer than the threshold ...`), and every cluster is computed on the CPU path,
 byte-identical to the run with both set to 0. The card's early start (opened beside the bath reading, before the count is
 known) is closed again at that point; it is not avoided, except where the input alone rules the kernels out
@@ -168,8 +166,7 @@ those of a run whose packed kernel is off, and the ones the card gives back. Wit
 CPU batch takes (cCCE, one qubit, coherence, one state with at most 16 intervals or the ensemble Hahn echo; not `backend`
 `cuda`), the packed kernel is used only where it beats the CPU batch: **one state** - when the clusters of bath dimension
 2 and 4 are at least 40000 per rank per state (each state evaluates them all; summed over the ranks and divided by their
-number), else off; **the ensemble** - off. Measured on a GPU node with 32 ranks and MPS
-((internal notes)): per state and rank the card loses about 0.105 s and saves 2.65 µs per
+number), else off; **the ensemble** - off. Measured on a GPU node with 32 ranks and MPS: per state and rank the card loses about 0.105 s and saves 2.65 µs per
 evaluation (break-even about 39.6 k; 36 k: +0.06 s, 54 k: -0.81 s); the ensemble gained nothing at 25-178 k. A run the
 CPU batch does not take keeps the threshold of the paragraph above; the warp kernel is unchanged, and a given
 `packed_max_dim` is kept as given. The log says which: `[gpu-packed] on: one state, at least 40000 evaluations ...`,
@@ -211,7 +208,7 @@ its refined eigensystem (`gcce_refinement`) by about 5e-7 and the warp kernel by
 14 of 2416 values differ by 2–5.5e-6 relative - all in the stretch where the product diverges (|L| > 1 and the points
 between), which the acceptance leaves out. Measured on a GPU node (32 ranks + one RTX PRO 6000, MPS, whole run against
 the warp kernel off, AB BA AB): P1 CR0 gCCE2 14.2 → 9.8 s (0.69), CR60 σ4 60.0 → 36.0 s (0.60),
-h-BN gCCE2 10.9 → 9.3 s (0.86); (internal notes). <br>
+h-BN gCCE2 10.9 → 9.3 s (0.86). <br>
 
 <b>GPU ranks (`ranks_per_gpu`).</b> Under `backend` = `auto` every rank that meets a cluster of `min_dim` or above opens a
 CUDA context of its own. Without MPS the ranks on a GPU take turns on it, and a node may admit only a few contexts per GPU
@@ -266,7 +263,7 @@ spectral width of the Hamiltonian times the interval, and the second and later i
 state at every time point, so the work also grows with the square of the number of time points. On the P1 probe at
 500 G (Hahn echo, 151 points to 15 µs) dim 4096 takes about 18 h with `sparse` (11 points: 6 min, × (151/11)²) against 5 min with `eigen`, and dim 16384 about
 5 days against 6 h (11 points: 40 min; one core); at 0 G the same
-dim-1024 cluster takes as long as `eigen` ((internal notes)). Without an
+dim-1024 cluster takes as long as `eigen`. Without an
 `evolution_update` key `sparse` runs `exact` (the default `recursive` does not apply to it); an explicit `recursive` is
 refused. Must be a JSON string or an object. <br>
 
@@ -340,8 +337,7 @@ the GPU takes (cCCE with `cluster.mode` standard, pcce or bundle, gCCE with `eig
 kernel. `backend` = `cuda` in the CPU build is refused in any case. <br>
 Measured on the production P1 inputs (CR0 and CR60 σ4, cCCE2 and gCCE2, 30 states; 64 ranks): `recursive` takes
 about 0.73–0.76 of the time of `exact` for cCCE2 and 0.82–0.84 for gCCE2. The `wiDiv`
-curves moved by at most 2.2e-10 for cCCE2 (the outputs have 10 decimals) and 1.3e-8 for gCCE2 at points with |L| ≤ 1
-((internal notes)). The results are not bit-identical to `exact`, so a converged
+curves moved by at most 2.2e-10 for cCCE2 (the outputs have 10 decimals) and 1.3e-8 for gCCE2 at points with |L| ≤ 1. The results are not bit-identical to `exact`, so a converged
 series should not switch between the two. Must be a JSON string. <br>
 
 <b>Data Type:</b> String
@@ -380,8 +376,7 @@ sK4 with 256; Hahn and CPMG-8, nstep 200 and 1000; 12 inputs): with MKL the geom
 CPMG-8 nstep 1000: 114.3 s → 13.4 s, 8.5 times faster; sK4: 0.65–0.97), with Eigen alone (`CCEX_BLAS` off) 0.61. The
 curves agree with the run without it to 1e-10 (the last printed digit; most are identical). Peak memory per rank moved by
 −8 to +11 MB (MKL: 344–346 → 352–356 MB for sK5). `min_dim` 384 left sK4 unchanged (1.01) and 768 also sK3o3 (1.00);
-`columns` 32 and 128 were within a few per cent of 64, 128 with up to +27 MB. Results and scripts:
-(internal notes).
+`columns` 32 and 128 were within a few per cent of 64, 128 with up to +27 MB.
 Without the block it is on with these values; a block without `enabled` is on with the values it gives (the others as above); `{"enabled": false}`
 turns it off (the usual one-vector path). `enabled` must be a JSON boolean, `min_dim` and `columns` positive
 integers. The run log prints `column_evolution.min_dim` and `.columns` when it is on. <br>
@@ -432,7 +427,7 @@ turns the refinement on (a block without `enabled` is on, as an `auto_convergenc
 written block off. `enabled` must be a JSON boolean. <br>
 Off by default: on the NV–¹³C gCCE4 case the refinement was made for, and on P1 gCCE3, it
 changed the error-corrected final coherence by at most 6.7e-7
-((internal notes); the raw `wiDiv` differs by more at points where it diverges with either
+(the raw `wiDiv` differs by more at points where it diverges with either
 setting — up to 12.7 on NV–¹³C and 2.75e11 on P1 gCCE3 — so the predeclared 1e-6 bound on every raw point was not met), while it took most of the setup time of a gCCE
 cluster (dim 768: about 4 s of 4.8 s on the CPU). Turn it on where the bath energies are very small beside the
 qubit's and the curve is read to better than 1e-6. <br>

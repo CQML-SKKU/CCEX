@@ -214,8 +214,7 @@ distance under either rule. (`cluster.mode` bundle connects its bundles by [bund
 With `partition_size` = 1 the two rules are the same. Under `centers` two partitions whose spins
 are close can stay unconnected when their centroids are far apart, and the more so
 the larger `partition_size`; `spins` connects them. The rank-0 log says which rule ran and how
-many partition pairs it connected. The comparison of the two rules on the P1 bath of tutorial `03_P1`
-is (internal notes): at that tutorial's `rdip` (620 Å) the two rules
+many partition pairs it connected. On the P1 bath of tutorial `03_P1` the two rules were compared: at that tutorial's `rdip` (620 Å) the two rules
 differ less than pCCE2 differs from CCE4, and `spins` costs 27-65 % more; at an `rdip` comparable
 to the partition size, `spins` is the closer of the two to CCE4.
 

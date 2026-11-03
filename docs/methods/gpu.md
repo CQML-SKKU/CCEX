@@ -74,7 +74,7 @@ small bath energies beside large central-spin energies: writing the `gcce_refine
 It is off by default (on the NV–¹³C gCCE4 case it was made for
 it changed the error-corrected final coherence by at most 6.7e-7 — the predeclared bound 1e-6 on every raw `wiDiv`
 point was not met, because `wiDiv` diverges at some points whatever the setting (all-point differences up to 12.7, and
-2.75e11 on P1 gCCE3; (internal notes)) — while it took most of a cluster's setup
+2.75e11 on P1 gCCE3) — while it took most of a cluster's setup
 time; `../user/InputFile_Backend.md`). When on, it is strict: nonconvergence within
 `gcce_refinement.max_sweeps` (default 32) stops the run and reports the dimension
 and sweep limit, and it never silently accepts the unrefined eigensystem.
@@ -253,8 +253,7 @@ its MPI dependence and potentially repeated search streams.
 ## The packed kernel for small cCCE clusters (gpu_options.packed_max_dim)
 
 The paths above give each cluster its own eigensolver calls, copies and synchronizations. For the bath-dimension 2 and 4
-clusters of a P1 bath (millions per bath state) that fixed cost is about 400 times the CPU's time per cluster
-((internal notes)), and batching the time evolution
+clusters of a P1 bath (millions per bath state) that fixed cost is about 400 times the CPU's time per cluster, and batching the time evolution
 (`evolution_batch_size`) does not remove it. `"execution": {"gpu_options": {"packed_max_dim": 4}}` (or 2) takes those clusters off
 that path:
 
@@ -292,8 +291,7 @@ that path:
 Every loop over the matrix indices has a compile-time trip count and is unrolled. The step-0 prototype without that
 unrolling got dimension-4 eigenvalues wrong on the device (up to 3.4e6): after the first rotation the device read the
 diagonal from before it. `-G` and `-Xcicc -O0` gave the host's values and `ptxas -O0` did not, so it is nvcc 12.8's
-NVVM optimizer (cicc -O3) on the dynamically indexed local arrays
-((internal notes)). The standing check `test_small_cluster_cuda`
+NVVM optimizer (cicc -O3) on the dynamically indexed local arrays. The standing check `test_small_cluster_cuda`
 (`make gpu-test`) runs the kernel on CPU-dumped clusters (11 files: single state and ensemble, Hahn, CPMG, Ramsey,
 `exact` and `recursive`, 128 production P1 clusters) against 1e-8 + 2e-6 |CPU| per point.
 
@@ -316,7 +314,7 @@ dimension up to it to
   over the $d_\text{bath}$ starts $\psi_q \otimes e_m$; a single state with `evolution=matrix` uses the pure start $\psi_q \otimes \psi_\text{bath}$. Quantity
   coherence or dm (the qdim × qdim reduced density matrix). cCCE ensemble Hahn by the CPU's identity, as the packed
   kernel. Phases exact (with the tail of `refinedPhases` for gCCE). Compiled: gCCE qubit dimension 3 × bath 2, 3, 4, 6, 7,
-  8, 9; cCCE bath 8 and 16. The step-0 prototype ((internal notes)) of this scheme ran
+  8, 9; cCCE bath 8 and 16. The step-0 prototype of this scheme ran
   P1 dimension-12 clusters 1.6 times as fast as 32 CPU cores;
 - **the packed kernel's node feeder**: the clusters go into the same windows of node shared memory, in an input area of
   their own (6 MiB per window; a window closes early when it is full), their outputs after the packed ones; the feeder
@@ -513,8 +511,7 @@ Library references: [cuSOLVER Hermitian eigensolver](https://docs.nvidia.com/cud
 
 On a GPU server, CCE2 Slurm jobs (`test/gpu_verification/server/README.md`) build
 the code on the server and compare all four combinations on the original inputs.
-See the server CCE2–4 measurements ((internal notes)) and
-the test summary ((internal notes), in Korean). CCE2 and CCE3 passed; CCE4
+In the server CCE2–4 measurements, CCE2 and CCE3 passed; CCE4
 stopped on a numerical comparison failure after six passing cases; the full-bath CCE5 case was not run.
 The accuracy fix, MPI reproducibility and cluster batching that followed were validated locally and on the server.
 On the tested server, the small NV–¹³C and PL6 matrices favored CPU execution;
@@ -522,8 +519,6 @@ large MoS₂ pCCE matrices favored CUDA/auto with about four MPI ranks per GPU.
 P1 sK2 favored CUDA at two MPI ranks, but CPU at 16 ranks was faster than the
 best CUDA configuration. The dimension-only `auto` threshold is a heuristic;
 use the recorded bath-specific timings to choose the backend and MPI count.
-The pCCE validation report ((internal notes)) covers the subsequent pCCE
-extension and the supplied PL6 archive comparison.
 
 The Python tools use only the standard library, read the existing regression
 inputs, and require a new output directory so previous results are preserved.
@@ -576,5 +571,3 @@ largest observed errors, and retains every run's timings and profile. Exit code 
 the standalone CUDA numerical test means GPU initialization was unavailable;
 it is not a numerical pass.
 
-See cCCE measurements ((internal notes)) and gCCE measurements ((internal notes))
-for accuracy, timing and the limits of the tested hardware and inputs.

@@ -146,7 +146,7 @@ ensemble case. Since then CCEX refuses such a key (D24).
 **2026-10-13: the five h-BN cases re-recorded in `head-20261013-8a775921f`** (`hbn_cce2_hf3_qd0`, `hbn_cce2_hf3_qd2`,
 `hbn_gcce2_dm`, `hbn_gcce2_oh`, `hbn_hfmedi`). Their hyperfine file was `hBN_VB_flat_ATensor_HSE_CellPBE_tag`:
 SpinTensorReader v1 data (the OUTCAR hyperfine x 2) with a `VASP` first line, which CCEX reads x 1 - every tensor 2x
-(nearest ¹⁴N A_zz 97.3 MHz against 47 measured; hfmedi 4x; (internal notes)).
+(nearest ¹⁴N A_zz 97.3 MHz against 47 measured; hfmedi 4x).
 It is now `inputs/hbn/hBN_VB_flat_ATensor_HSE_CellPBE_v3`, tensor format v3 (tag and provenance line, read x 1) with the
 v1 numbers / 2. The change against `head-20261012-aa883d0d4` (noDiv/dm, wiDiv): `hbn_cce2_hf3_qd0` 5.37e-2 / 5.37e-2,
 `hbn_cce2_hf3_qd2` 0.694 / 3.46e-2, `hbn_gcce2_dm` 0.544 / 0.619, `hbn_gcce2_oh` 0.614 / 0.117, `hbn_hfmedi` 0.880 /
