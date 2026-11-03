@@ -1,6 +1,20 @@
 # Changelog
 
-## 2.1.0 — 2026-10-29 (changes since 2.0.1)
+## 2.1.0 — 2026-11-03 (changes since 2.0.1)
+
+### Summary
+
+- **Two new methods.** `noise` gives the Gaussian phase-noise coherence from the modes of the bath's clusters or from a
+  model spectrum (ported from semi-cce; its mode sums also run on the GPU). `pseudospin` gives the pair clusters in the
+  pseudospin model of nuclear flip-flops, for reading a decay rather than for the best curve.
+- **GPU runs on a full node.** `gpu_options.ranks_per_gpu` lets some of a node's ranks use the GPU and the others the
+  CPU; a GPU batch of cCCE clusters is diagonalized in one call; with `backend` `auto` or `cuda` the `gpu_options` an
+  input leaves out are chosen at the start.
+- **Builds.** An nvcc older than 13.2 is accepted for cards below compute capability 12.0 (CUDA 12.8 with MPS on a GH200).
+- **Fixed.** The MKL builds write the same last digits from run to run.
+- **Inputs.** No key of 2.0.1 was renamed or removed. In `bin/main_gpu.out` with `backend` `auto` the automatic
+  `gpu_options` change which clusters go to the card, so the outputs move within rounding (1.7e-6 against the CPU run in
+  the measured cases).
 
 ### Added
 
@@ -8,7 +22,8 @@
   semi-cce). `hamiltonian.noise.spectrum` `"bath"` (the default) sums each cCCE cluster's eigenmodes (for a Hahn echo
   semi-cce's `mode_sum`; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
   only); a model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath (`order`, `bfield`,
-  `rbath`, `rdip` and `Qubit` may be left out then). cluster.mode
+  `rbath`, `rdip` and `Qubit` may be left out then; given, they and `configuration` and `Defect` are reported as not
+  used, and no file they name is opened). cluster.mode
   standard, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence` and
   `cluster_density_matrix`, `rdip_ladder`, `cluster_contributions` and `gpu_options.ranks_per_gpu` are
   refused with it. `hamiltonian.noise.pseudo_secular` (default false, semi-cce's: the noise
@@ -19,7 +34,8 @@
   `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
   computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `hamiltonian.noise.fft` is optional:
   `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and semi-cce
-  (P1 and 13C baths, FID, Hahn and CPMG).
+  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/11_noise`: method noise against cCCE2 for a
+  1 ppm P1 bath, and an OU model spectrum without the bath keys.
   `noise` was a reserved name refused as not implemented (A49).
 - **method `pseudospin`**: the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops, alone (Seo et
   al. 2016, Supplementary eqs. 20-24; Lee, Park, Seo 2022), for any nuclear spin: the output is the product of the pairs'

@@ -4,7 +4,7 @@ CCEX computes the decoherence of spin qubits in a bath of nuclear and electron s
 expansion (CCE). From an input file that names the qubit(s), the bath and the pulse sequence, it builds the spin
 Hamiltonian, cuts the bath into clusters, solves each cluster exactly and combines them into the coherence L(t) of the
 qubit (or, with gCCE, its density matrix). It is a C++17/MPI code with an optional CUDA backend, by the CQML group at
-Sungkyunkwan University (<https://github.com/CQML-SKKU/CCEX>); this is version 2.1.0, released 2026-10-29.
+Sungkyunkwan University (<https://github.com/CQML-SKKU/CCEX>); this is version 2.1.0, released 2026-11-03.
 
 ## Quick start
 
