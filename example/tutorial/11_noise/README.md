@@ -43,3 +43,24 @@ Inputs: [`ccein_noise.jsonc`](noise2_Hahn_vsCCE/ccein_noise.jsonc), [`ccein_cce.
 ![noiseModel_OU: expected result](noiseModel_OU/expected.png)
 
 Input: [`ccein.jsonc`](noiseModel_OU/ccein.jsonc)
+
+## noiseSpectrum_13C
+
+- **What it shows:** the noise itself, as a noise-spectroscopy experiment sees it: the NV of `00_quickstart` in its
+  natural-abundance ¹³C (980 ¹³C within 50 Å, 500 G, Hahn echo) by method `noise` with
+  `hamiltonian.noise.compute` `"spectrum"`, which writes the correlation C(t) of the qubit's frequency noise, its
+  spectrum S(f) by FFT and the coherence from S(f). `ccein_coherence.jsonc` is the same run with `compute`
+  `"coherence"` (χ straight from the clusters' eigenmodes): the two coherences agree, which checks the FFT grid.
+  The figure shows the two coherences, C(t) over its first 10 µs and |S(f)| up to 1.5 MHz.
+- **Keys that matter:** `hamiltonian.noise.compute`; `hamiltonian.noise.fft` is left out, so its defaults hold:
+  `time_max` the run's last time (1.999 ms) and 32,156 intervals from the bath's fastest mode (the log line
+  `hamiltonian.noise.fft:` says so). `"correlation"` would write C(t) alone, at the run's times.
+- **How to run:** `NP=4 bash run.sh`: 7 s for both, 0.05 GB per rank. Writes `results/ccein_spectrum_noise_correlation`
+  (t in ms, C in kHz²) and `results/ccein_spectrum_noise_spectrum` (f in kHz, S in kHz²/kHz, two-sided), 1.3 MB each.
+- **Expected result:** `expected.png`; T2 0.972 ms from both, the coherences within 2.4e-9 of each other.
+- **What to change next:** `"fft": {"window": "hann"}` in `hamiltonian.noise` (a window on C(t) before the FFT;
+  [fft](../../../docs/user/InputFile_General.md#tag_noise_fft)); `pulse.count` 4 (another filter on the same S(f)).
+
+![noiseSpectrum_13C: expected result](noiseSpectrum_13C/expected.png)
+
+Inputs: [`ccein_spectrum.jsonc`](noiseSpectrum_13C/ccein_spectrum.jsonc), [`ccein_coherence.jsonc`](noiseSpectrum_13C/ccein_coherence.jsonc)

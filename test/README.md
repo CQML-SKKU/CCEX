@@ -24,7 +24,7 @@ of the golden answers move by 1e-5 relative (their READMEs say why).
 
 ## code_verification/ — does the code still do what it did, and what it says
 
-`bash test/code_verification/run.sh` runs the nine in order.
+`bash test/code_verification/run.sh` runs the eleven at once (`check_refusals` and `check_input_forms` one after the other: both write `check_input_forms/_work`) and prints their logs in the order of the table.
 
 | Folder | Answers | Run |
 |---|---|---|

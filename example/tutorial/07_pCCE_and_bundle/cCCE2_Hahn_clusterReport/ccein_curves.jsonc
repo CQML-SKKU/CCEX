@@ -1,17 +1,24 @@
 {
     // 00_quickstart's input cut to the 13C within 15 A (rbath), with output.savemode cluster_coherence: beside the
-    // result, the coherence of every cluster, results/ccein_curves_<bath indices>_wiDiv and _noDiv (one pair of files
-    // per cluster, so only for a small bath).
+    // result, the coherence of every cluster (116 here), results/ccein_curves_<bath indices>_wiDiv and _noDiv (one
+    // pair of files per cluster, so only for a small bath). |L| at 2 ms is 0.65 with this small bath, against the
+    // rbath 50 A curve of ccein_contributions.jsonc.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the NV's position from 00_quickstart's defect file; spin 1, L between ms +1
+                                      // and 0 (the defaults)
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 15,
-    "rdip"          : 10,
-    "deltat"        : 0.001,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 1},
+                                      // the 13C isotope line (rad kHz/G) and 00_quickstart's bath (Angstrom)
+    "order"         : 2,              // single 13C and pairs (cCCE2)
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 15,             // Angstrom: a small bath, since every cluster gets its own pair of files
+    "rdip"          : 10,             // Angstrom: two 13C closer than this form a pair cluster
+    "deltat"        : 0.001,          // the time step in ms (1 us)
+    "nstep"         : 2000,           // 2000 time points: 0 .. 2 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
     "output"        : {"savemode": "cluster_coherence"}
+                                      // savemode as a string is the mode. cluster_coherence: the result and each
+                                      // cluster's curve. coherence (the default) writes the result alone;
+                                      // cluster_density_matrix (gCCE) also each cluster's density matrix
 }

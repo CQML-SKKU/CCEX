@@ -2,16 +2,36 @@
     // A system written by hand: one 13C (the file bath: a count line, then x y z name), its spin and gamma (gyro_13C:
     // name, spin, rad/ms/G) and a spin-1 qubit at the origin; gCCE order 1 of the qubit density matrix (quantity dm)
     // for one sampled bath state, alpha = ms 0, beta = ms +1.
+    //
+    // The physics: the smallest gCCE run, the qubit with one nuclear spin, solved exactly (order 1 is the only
+    // cluster). The 13C sits at (10, 20, 30) A, 37 A from the qubit, so its coupling is tiny and |L| stays 1.000
+    // (README). A template for writing your own bath, gyro and qubit by hand.
+    //
+    // Writes results/ccein_state1_wiDiv and _noDiv: per time step a block of the 3 x 3 qubit density matrix, basis
+    // ms +1, 0, -1 (docs/user/OutputFiles.md). The only input of this folder.
     // Sampled bath states: configuration.s_range [1, 1], each state s its own output _state<s>.
-    "method"        : "gCCE",
-    "quantity"      : "dm",
-    "Qubit"         : {"qubit": [{"name": "qubit1", "xyz": [0.0, 0.0, 0.0]}], "alpha_state": {"ms": [0]}, "beta_state": {"ms": [1]}},
+    "method"        : "gCCE",         // generalized CCE: the qubit is in the cluster's Hamiltonian (quantity dm needs
+                                      // it)
+    "quantity"      : "dm",           // write the qubit density matrix at every time; the default coherence writes
+                                      // L(t) alone
+    "Qubit"         : {"qubit": [{"name": "qubit1", "xyz": [0.0, 0.0, 0.0]}],
+                       "alpha_state": {"ms": [0]}, "beta_state": {"ms": [1]}},
+                                      // qubit: a name and the position xyz (Angstrom, the frame of the bath file).
+                                      // Not written: spin 1 and the electron's gyromagnetic ratio; no intmap, so no
+                                      // zero-field splitting (the levels are split by the field alone). alpha_state,
+                                      // beta_state: L is between ms 0 and ms +1, one m_s per qubit in the list
+                                      // (the defaults are ms +1 and 0)
     "configuration" : {"gyrofile": "gyro_13C", "bathfile": ["bath"], "s_range": [1, 1], "seed": 1},
-    "order"         : 1,
-    "bfield"        : 500,
-    "rbath"         : 500,
-    "rdip"          : 100,
-    "deltat"        : 0.001,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 1}
+                                      // files of this folder. gyro_13C: "13C 0.5 6.728284" (name, spin, rad kHz/G).
+                                      // bath: the count line, then "10.0 20.0 30.0 13C". s_range [1, 1]: one sampled
+                                      // bath state, the 13C's m drawn from seed (no bath_state_file); seed 1 gives
+                                      // the same draw on every run
+    "order"         : 1,              // the largest cluster: one bath spin (gCCE1), here the whole bath. 2 needs a
+                                      // second 13C in bath
+    "bfield"        : 500,            // Gauss along z (the 13C precess at 535 kHz)
+    "rbath"         : 500,            // Angstrom: far larger than the system, so the 13C is kept
+    "rdip"          : 100,            // Angstrom: required, but one spin at order 1 forms no pair
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
+    "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
 }

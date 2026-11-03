@@ -1,13 +1,22 @@
 {
-    // 00_quickstart's input: the bath as generated, the NV axis along z (the field direction)
+    // 00_quickstart's input, the reference of this folder: the Hahn echo of an NV (ms +1 / 0) in natural-abundance
+    // 13C, cCCE2, the bath file as generated, with the NV axis along z, so "bfield": 500 is 500 G along the NV axis.
+    // No frame block: none is needed when the file's z is already the qubit's axis. Writes
+    // results/ccein_aligned_wiDiv (and _noDiv). The siblings read the same spins written in the cubic crystal frame,
+    // with the rotation on (ccein_cubic_rotated.jsonc, the same curve) and off (ccein_cubic_norotation.jsonc).
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
-    "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C", "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 50,
-    "rdip"          : 10,
-    "deltat"        : 0.001,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 1}
+                                      // the qubit's position, the first line of this file (x y z, Angstrom);
+                                      // defaults: spin 1, the electron's gamma, L between ms +1 and 0
+    "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
+                       "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
+                                      // gyrofile: spin and gamma of 13C; bathfile: 00_quickstart's 150 A cube with
+                                      // 1.1 % 13C, written with the NV axis along z
+    "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
+    "bfield"        : 500,            // Gauss along z of the frame CCEX works in, here the NV axis
+    "rbath"         : 50,             // Angstrom: the 13C within 50 A of the NV are kept (980 here)
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair (3366 pairs here)
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence
+    "nstep"         : 2000,           // the number of time points: t = 0 .. 1.999 ms
+    "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
 }

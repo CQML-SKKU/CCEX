@@ -44,11 +44,14 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
     // Details: docs/user/InputFile_General.md#tag_method
     //          (https://cqml-skku.github.io/CCEX/md_docs_2user_2InputFile__General.html#tag_method)
     // Example: example/tutorial/06_cCCE_vs_gCCE (cCCE, gCCE, meCCE), example/tutorial/03_P1 (dm in
-    //          gCCE2_Ramsey_population)
-    "method"           : "cCCE",        // cCCE (default), gCCE, meCCE, megCCE, noise (Gaussian phase noise), pseudospin cCCE:
-                                        // the qubit only sets the field each bath spin feels (pure dephasing). gCCE:
-                                        // the qubit is in every cluster's Hamiltonian (qubit-bath flip-flops, any qubit
-                                        // spin and field). meCCE, megCCE: cCCE, gCCE with Lindblad jump operators
+    //          gCCE2_Ramsey_population), example/tutorial/11_noise (noise), example/tutorial/12_pseudospin (pseudospin)
+    "method"           : "cCCE",        // cCCE (default), gCCE, meCCE, megCCE, noise or pseudospin. cCCE: the qubit
+                                        // only sets the field each bath spin feels (pure dephasing). gCCE: the qubit
+                                        // is in every cluster's Hamiltonian (qubit-bath flip-flops, any qubit spin and
+                                        // field). meCCE, megCCE: cCCE, gCCE with Lindblad jump operators. noise: the
+                                        // Gaussian phase-noise coherence exp(-chi) from the bath's cluster modes or a
+                                        // model spectrum (hamiltonian.noise). pseudospin: the pairs alone in the
+                                        // pseudospin model of nuclear flip-flops, for reading a decay (order 2)
     "quantity"         : "coherence",   // coherence (default): the qubit coherence L(t) between alpha and beta. dm
                                         // (gCCE): the qubit density matrix at every time, for populations
 
@@ -218,7 +221,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
     //          example/tutorial/06_cCCE_vs_gCCE (knight, meCCE jump_operators), example/tutorial/03_P1
     //          (bath_bath_mean_field in cCCE2_Hahn_meanField)
 //  "hamiltonian"      : {
-//      "common" : {                    // read by every method
+//      "common"     : {                // read by every method
 //          "qubit_bath_mean_field" : false,
                                         // gCCE, megCCE with s_range: true adds the static (Overhauser) field of the
                                         // sampled bath outside each cluster to the qubit, default false (the qubit
@@ -260,7 +263,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
                                         // components, file or qubit, as for hyperfine
 //          }
 //      },
-//      "cCCE"   : {                    // cCCE terms (meCCE reads them too)
+//      "cCCE"       : {                // cCCE terms (meCCE reads them too)
 //          "knight"  : false,          // true adds the Knight shift: in a field with a part transverse to the qubit
                                         // axis the qubit shifts the bath spins' precession, default false
 //          "hfmedi"  : false,          // true adds the hyperfine-mediated coupling of bath spins (second order through
@@ -268,29 +271,41 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //          "delta_A" : false           // true adds the second-order dA term of each bath spin (Maze 2008; strong
                                         // hyperfine near the defect), not with hfmedi, default false
 //      },
-//      "gCCE"   : {},                  // no settings yet
-//      "noise"  : {                    // method noise: where the phase noise comes from
-//          "spectrum"       : "bath",  // "bath" (default: the clusters), or a model,
-//                                      // {"model": "OU", "sigma": kHz, "tau_c": ms} or
-//                                      // {"model": "power", "amplitude": kHz^2/kHz,
-//                                      // "beta", "f_min": kHz, "f_max": kHz}
-//          "pseudo_secular" : false,   // the noise: A_zz I_z (secular, default), true adds
-//                                      // A_zx I_x + A_zy I_y (pseudo-secular)
+//      "gCCE"       : {},              // no settings yet
+//      "noise"      : {                // method noise: the source of the qubit's frequency noise, what is written
+//          "spectrum"       : "bath",  // "bath" (default): every cCCE cluster's eigenmodes. Or a model spectrum,
+                                        // which needs no bath (order, bfield, rbath, rdip and Qubit may be left out):
+                                        // {"model": "OU", "sigma": 10.0, "tau_c": 0.1} (sigma kHz, the noise's
+                                        // amplitude; tau_c ms, its correlation time) or {"model": "power",
+                                        // "amplitude": 1.0, "beta": 1.0, "f_min": 0.1, "f_max": 1000.0}
+                                        // (S(f) = amplitude (f / 1 kHz)^-beta kHz^2/kHz on f_min .. f_max kHz)
+//          "pseudo_secular" : false,   // false (default): the noise of a bath spin is its secular A_zz I_z; true
+                                        // adds the pseudo-secular A_zx I_x + A_zy I_y (the coupling cCCE keeps)
 //          "compute"        : "coherence",
-//                                      // "coherence" (default), "spectrum" (C(t), FFT
-//                                      // S(f), the coherence) or "correlation" (C(t))
-//          "fft"            : {        // compute "spectrum" only
-//            "time_max"       : 3.0,   // ms (unit): C(t) on 0 .. time_max (default: the run's last time)
-//            "nstep"          : 15000, // intervals (default: from the bath's modes)
-//            "window"         : "none",// "none", "hann", "tukey" or "exp"
-//            "pad_factor"     : 1,     // FFT length pad_factor x (2 nstep + 1)
-//            "subtract_mean"  : false, // subtract the tail mean of C(t)
-//            "clamp_negative" : false  // S(f) < 0 set to 0
+                                        // coherence (default): chi from the modes, no time grid. spectrum: also the
+                                        // correlation C(t) and the spectrum S(f) by FFT on the fft grid below,
+                                        // written to <file>_noise_correlation and <file>_noise_spectrum.
+                                        // correlation: C(t) alone at the run's times
+//          "fft"            : {        // compute spectrum only; every key has a default
+//              "time_max"       : 3.0, // ms (unit): C(t) on 0 .. time_max, default the run's last time
+//              "nstep"          : 15000,
+                                        // intervals of that grid, default: 8 points per period of the fastest mode
+//              "window"         : "none",
+                                        // none (default), hann, tukey or exp, applied to C(t) before the FFT
+//              "pad_factor"     : 1,   // FFT length pad_factor x (2 nstep + 1), default 1
+//              "subtract_mean"  : false,
+                                        // true subtracts the tail mean of C(t) first, default false
+//              "clamp_negative" : false
+                                        // true sets S(f) < 0 to 0, default false
 //          }
 //      },
-//                                      // method pseudospin: "pseudospin": {"channels": "grouped"} (the states
-//                                      // joined by channels as one block, the default) or "pairwise" (every channel alone)
-//      "meCCE"  : {                    // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
+//      "pseudospin" : {                // method pseudospin
+//          "channels" : "grouped"      // a channel is two product states of a pair that differ in both spins (a
+                                        // flip-flop). grouped (default): the states joined by channels (a chain, e.g.
+                                        // |1,-1> <-> |0,0> <-> |-1,1> of two spins 1) evolve as one block; pairwise:
+                                        // every channel alone as a two-level system (misses the coupling of a chain)
+//      },
+//      "meCCE"      : {                // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
 //          "jump_operators" : [
 //              {"bath_name": "13C", "operator": "z", "rate": 0.001}
                                         // a jump sqrt(gamma) S_op on every spin named bath_name (megCCE: also "qubit"),
@@ -482,7 +497,12 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //  "execution"        : {
 //      "backend"          : "cpu",     // cpu (default), cuda (main_gpu.out: the clusters on the GPU) or auto
                                         // (main_gpu.out: the clusters of gpu_options.min_dim and above on the GPU)
-//      "gpu_options"      : {          // main_gpu.out (main.out reports them as not used)
+//      "gpu_options"      : {          // main_gpu.out (main.out reports them as not used). For cCCE with backend auto
+                                        // or cuda, the keys left out are chosen at the start and a [gpu-auto] line in
+                                        // the log says to what: ranks_per_gpu 4 (backend auto, cluster.mode standard,
+                                        // more than 4 ranks a GPU on the node), min_dim 256 with ranks_per_gpu,
+                                        // evolution_batch_size 32, cluster_batch_mb two thirds of the card over its
+                                        // ranks. The defaults written below are those of the other runs (gCCE)
 //          "min_dim"               : 768,
                                         // positive, auto: smallest cluster dimension sent to the GPU, default 768
 //          "packed_max_dim"        : 4,

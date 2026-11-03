@@ -965,7 +965,9 @@ INPUT                  = ../../include \
                          ../../example/tutorial/07_pCCE_and_bundle/README.md \
                          ../../example/tutorial/08_GPU/README.md \
                          ../../example/tutorial/09_auto_convergence/README.md \
-                         ../../example/tutorial/10_coordinate_rotation/README.md
+                         ../../example/tutorial/10_coordinate_rotation/README.md \
+                         ../../example/tutorial/11_noise/README.md \
+                         ../../example/tutorial/12_pseudospin/README.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

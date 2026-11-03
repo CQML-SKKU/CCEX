@@ -1,15 +1,34 @@
 {
     // the same with cluster.mode dsj: the clusters are the disjoint groups of the coupling graph
+    //
+    // The physics: the Hahn echo of 00_quickstart's NV and 13C bath, cCCE2, with disjoint clusters. dsj splits the
+    // bath into groups of at most order (here 2) 13C: the pairs within rdip are taken from the strongest coupling
+    // |J_zz| down, and two spins join when the group stays within order spins. Each group is computed once as one
+    // cluster and L is the product over the groups, with no other clusters: far fewer clusters than standard, at the
+    // price of the pairs between groups. T2 1.092 ms against 1.068 ms for standard, largest difference 0.064 (README).
+    //
+    // Writes results/ccein_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_standard.jsonc is the same
+    // input with the default cluster.mode standard.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the NV: its position from the first line of the defect file (73.74 75.73
+                                      // 73.97 A). Not written, so the defaults: spin 1, the electron's gyromagnetic
+                                      // ratio, L between ms +1 (alpha) and ms 0 (beta); no zero-field splitting,
+                                      // which this cCCE does not use
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 50,
-    "rdip"          : 10,
-    "deltat"        : 0.001,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 1},
-    "cluster"       : {"mode": "dsj"}
+                                      // 00_quickstart's bath: gyro_13C (name, spin, rad kHz/G) and a 150 A cube of
+                                      // diamond with 1.1 % 13C
+    "order"         : 2,              // with dsj: the largest group, here single 13C and pairs
+    "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
+    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rdip"          : 10,             // Angstrom: the pairs closer than 10 A are the edges of the coupling graph that
+                                      // dsj groups
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
+    "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "cluster"       : {"mode": "dsj"} // how the bath is cut into clusters. standard (default): every connected
+                                      // cluster up to order spins. dsj: the disjoint groups above (cCCE only; gCCE,
+                                      // meCCE and megCCE refuse it). itb: only the pair factors between groups;
+                                      // dsjitb: both, which at order 2 equals standard CCE2 (docs/methods/cce.md)
 }

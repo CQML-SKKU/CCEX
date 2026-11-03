@@ -1,8 +1,36 @@
 #!/bin/bash
-# Every check under test/code_verification/, in order. Exit status is the first failure's.
+# Every check under test/code_verification/, at once: each check writes its own _work folder, except check_refusals,
+# which writes check_input_forms/_work too, so those two run one after the other. The logs are printed afterwards in
+# the order below, each framed as before. Exit status is the first failure's, in that order.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; status=0
-for s in check_analytic/run.sh check_deer/run.sh check_master_equation/run.sh check_numerics/run.sh check_rotation/run.sh check_refusals/run.sh check_input_forms/run.sh check_mean_field/run.sh check_rdip_ladder/run.sh check_noise/run.sh check_pseudospin/run.sh; do
-  echo; echo "################ $s"; bash "$HERE/$s"; rc=$?; echo "################ $s: exit $rc"
-  [ $rc -ne 0 ] && [ $status -eq 0 ] && status=$rc
+CHECKS=(check_analytic check_deer check_master_equation check_numerics check_rotation check_refusals check_input_forms
+        check_mean_field check_rdip_ladder check_noise check_pseudospin)
+# check_input_forms/lib.sh's lock (D29) keeps a second run of this checkout out of check_input_forms/_work. The checks
+# that source lib.sh take it too, so it is taken here once and handed down (CCEX_RUN_LOCK), as check_input_forms/run.sh
+# hands it to its stages; within this run, the order of check_refusals and check_input_forms keeps them apart.
+LOCKDIR="$(cd "$HERE/../.." && pwd)/test/code_verification/check_input_forms"
+if [ "${CCEX_RUN_LOCK:-}" != "$LOCKDIR" ]; then
+    exec 9>"$LOCKDIR/.run.lock"
+    if command -v flock >/dev/null 2>&1 && ! flock -n 9; then
+        echo "ERROR: another check is running in $LOCKDIR; wait for it or use another checkout" >&2; exit 1
+    fi
+    CCEX_RUN_LOCK="$LOCKDIR"; export CCEX_RUN_LOCK
+fi
+LOGS="$(mktemp -d)"; trap 'rm -rf "$LOGS"' EXIT
+one(){ bash "$HERE/$1/run.sh" > "$LOGS/$1.log" 2>&1; echo $? > "$LOGS/$1.rc"; }
+t0=$SECONDS
+for c in "${CHECKS[@]}"; do
+    case $c in
+        check_refusals) ( one check_refusals; one check_input_forms ) & ;;
+        check_input_forms) ;;
+        *) one "$c" & ;;
+    esac
 done
+wait
+for c in "${CHECKS[@]}"; do
+    echo; echo "################ $c/run.sh"; cat "$LOGS/$c.log"; rc=$(cat "$LOGS/$c.rc" 2>/dev/null || echo 1)
+    echo "################ $c/run.sh: exit $rc"
+    [ "$rc" -ne 0 ] && [ $status -eq 0 ] && status=$rc
+done
+echo; echo "all checks: $((SECONDS - t0)) s"
 exit $status

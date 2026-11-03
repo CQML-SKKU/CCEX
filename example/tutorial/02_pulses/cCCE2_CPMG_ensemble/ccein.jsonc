@@ -1,15 +1,32 @@
 {
-    // 00_quickstart's NV under CPMG-8: eight equally spaced pi pulses (pulse.count 8) over the total time t.
-    // run.sh also runs count 1 (the Hahn echo) and 2 (CPMG-2) for comparison.
-    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    // 00_quickstart's NV (ms +1 / 0, natural-abundance 13C, cCCE2, 500 G, the ensemble) under CPMG-8: eight equally
+    // spaced pi pulses over the total time t. Every key not written here has its default (`main.out -e` lists them).
+    //
+    // The physics: each pi pulse flips the qubit, so the phase the slow bath noise adds before a pulse is taken off
+    // after it. More pulses refocus faster noise, so the coherence lives longer: T2 grows from the Hahn echo (one
+    // pulse) to CPMG-2 and CPMG-8. Writes results/ccein_wiDiv (and _noDiv); run.sh also runs this input with
+    // pulse.count 1 and 2 (results/count1_wiDiv, count2_wiDiv) and plots the three.
+    //
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output). The sibling
+    // cCCE2_Manual_ensemble writes a CPMG-2 out pulse by pulse.
+
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the qubit: its position from the first line of this file (x y z, Angstrom).
+                                      // Defaults: spin 1, the electron's gyromagnetic ratio, L between ms +1 and 0
+
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 50,
-    "rdip"          : 10,
-    "deltat"        : 0.004,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 8}
+                                      // the bath: 00_quickstart's 150 A cube of diamond with 1.1 % 13C, and the
+                                      // spin and gyromagnetic ratio of 13C from the gyro file
+
+    "order"         : 2,              // the largest cluster: 2 = single 13C and pairs of 13C (cCCE2)
+    "bfield"        : 500,            // magnetic field in Gauss along z, the NV axis. The 13C precess at 0.54 MHz
+    "rbath"         : 50,             // Angstrom: only the 13C within 50 A of the NV are kept (980 here)
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster (3366 pairs here)
+    "deltat"        : 0.004,          // the time step in ms (4 us), four times 00_quickstart's: CPMG-8 lives longer,
+                                      // so the window has to be longer. t is the whole sequence
+    "nstep"         : 2000,           // the number of time points: t = 0 .. 7.996 ms. For CPMG-16 or 32 make the
+                                      // window longer still (a larger deltat or nstep)
+    "pulse"         : {"count": 8}    // the number of pi pulses: 0 Ramsey, 1 Hahn echo, 2 or more CPMG. CPMG-N puts
+                                      // the pulses at t/(2N), 3t/(2N), ..., (2N-1)t/(2N)
 }

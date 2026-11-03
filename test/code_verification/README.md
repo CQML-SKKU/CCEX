@@ -1,7 +1,7 @@
 # test/code_verification/
 
 Does the code still do what it did, and what it says. Nine checks and the data
-they read; `run.sh` runs all nine in order and then exits with the status of the first that failed.
+they read; `run.sh` runs all eleven at once (`check_refusals`, then `check_input_forms`, since both write `check_input_forms/_work`), prints their logs one after another and exits with the status of the first that failed.
 
 | folder | question | run |
 |---|---|---|

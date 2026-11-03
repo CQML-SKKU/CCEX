@@ -1,16 +1,38 @@
 {
     // The Hahn-echo coherence of an NV centre in diamond with natural-abundance 13C (1.1 %): conventional CCE to
     // order 2, the bath in its unpolarised (ensemble) state. Every key not written here has its default; `main.out -e`
-    // writes an input with all of them.
-    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    // writes an input with all of them, each with its meaning.
+    //
+    // What CCEX computes: the coherence L(t) of the qubit between two of its states (here the NV's ms = +1 and 0),
+    // after a pulse sequence of total length t, in a bath of nuclear spins. The bath is cut into clusters (single
+    // spins, pairs, ...); each cluster is solved exactly and the clusters' terms are multiplied. Writes
+    // results/ccein_wiDiv (t in ms, L(t) as a complex number per line) and ccein_noDiv.
+    //
+    // The ensemble: no configuration.s_range, so the bath spins start unpolarised (infinite temperature) and the
+    // output is that average, one curve.
+
     "Qubit"         : {"qubit": [{"file": "bath/bath_Diamond_NV_natab_defect"}]},
-                                      // the NV position (spin 1, ms +1 / 0 by default)
+                                      // the qubit (central spin). "file": its position, the first line of a defect
+                                      // file of example/tools/BathGenerator (x y z in Angstrom, in the frame of the
+                                      // bath file). Not written, so the defaults: spin 1, the electron's gyromagnetic
+                                      // ratio, and L between ms +1 (alpha_state) and ms 0 (beta_state)
+
     "configuration" : {"gyrofile": "bath/gyro_13C", "bathfile": ["bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,              // clusters of up to two 13C
-    "bfield"        : 500,            // G, along z (the NV axis)
-    "rbath"         : 50,             // A: the 13C within 50 A of the NV
-    "rdip"          : 10,             // A: two 13C closer than this form a pair cluster
-    "deltat"        : 0.001,          // ms
-    "nstep"         : 2000,           // 2000 x 1 us = 2 ms
-    "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
+                                      // the bath. gyrofile: one line per isotope (name, spin, gyromagnetic ratio in
+                                      // rad kHz/G); left out, the built-in isotope table is used. bathfile: a list of
+                                      // files of spins, a count line and then "x y z isotope" per spin (Angstrom).
+                                      // This one is a 150 A cube of diamond with 1.1 % 13C, made by bath/genbath
+
+    "order"         : 2,              // the largest cluster: 2 = single 13C and pairs of 13C (cCCE2). Raise it (3, 4)
+                                      // until the curve stops changing; for 13C in diamond 2 is usually enough
+    "bfield"        : 500,            // magnetic field in Gauss along z, the NV axis. A list [Bx, By, Bz] tilts it.
+                                      // The 13C precess at 0.54 MHz here, which gives the fast ripple (ESEEM)
+    "rbath"         : 50,             // Angstrom: only the 13C within 50 A of the NV are kept (980 here). Larger
+                                      // is more accurate and slower; check that L(t) no longer changes
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A are coupled and form a pair cluster; pairs
+                                      // farther apart are left out. Larger keeps more pairs (convergence parameter)
+    "deltat"        : 0.001,          // the time step in ms (1 us). The outputs are at t = 0, deltat, 2 deltat, ...,
+                                      // where t is the whole sequence (for the Hahn echo 2 tau)
+    "nstep"         : 2000,           // the number of time points: 2000 x 1 us = 0 .. 2 ms
+    "pulse"         : {"count": 1}    // the number of pi pulses: 0 Ramsey (free decay), 1 Hahn echo, 2 or more CPMG
 }

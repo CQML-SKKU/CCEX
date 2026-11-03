@@ -1,8 +1,36 @@
-# Changes in 2.0.0
+# Changes
+
+What changed in each version, in the current key names. Every change, with its details and measurements, is in the
+file `CHANGELOG.md` at the root of the CCEX repository.
+
+## 2.1.0
+
+Version 2.1.0, released 2026-11-03: what changed since 2.0.1 (2.0.1, 2026-10-22, fixed GPU gCCE and the builds of 2.0.0).
+
+- **Two new methods.** `noise` gives the Gaussian coherence exp(−χ) of the qubit's phase noise, from the modes of the
+  bath's cCCE clusters or from a model spectrum (Ornstein–Uhlenbeck or a power law), and with
+  `hamiltonian.noise.compute` its correlation function C(t) and spectrum S(f); ported from semi-cce, its mode sums
+  also run on the GPU ([method](InputFile_General.md#tag_method), tutorial
+  [11_noise](../../example/tutorial/11_noise/README.md)). `pseudospin` gives the bath's pairs alone in the pseudospin
+  model of nuclear flip-flops, for any nuclear spin, with a table of every channel's Ω and Δ
+  ([channels](InputFile_General.md#tag_pseudospin_channels), tutorial
+  [12_pseudospin](../../example/tutorial/12_pseudospin/README.md)).
+- **GPU runs on a full node.** `execution.gpu_options.ranks_per_gpu` lets only some ranks of a node use the GPU while
+  the others stay on the CPU, the clusters split between them by measured cost; a GPU batch of cCCE clusters is
+  diagonalized in one call; for cCCE with `backend` `auto` or `cuda` the `gpu_options` an input leaves out are chosen
+  at the start (a `[gpu-auto]` line in the log) ([Execution tags](InputFile_Backend.md#tag_backend)).
+- **Builds.** An nvcc older than 13.2 is accepted for cards below compute capability 12.0 (CUDA 12.8 with MPS on a
+  GH200).
+- **Fixed.** The MKL builds write the same last digits from run to run.
+- **Inputs.** No key of 2.0.1 was renamed or removed: a 2.0.1 input runs as it is. In `bin/main_gpu.out` with
+  `backend` `auto` the automatic `gpu_options` change which clusters go to the card, so the outputs move within
+  rounding.
+
+## 2.0.0
 
 Version 2.0.0, released 2026-10-17: what changed since v1.2.2, in the current key names.
 
-## Summary
+### Summary
 
 - **A new input format.** The keys are grouped in blocks (`configuration`, `Qubit`, `Defect`, `hamiltonian`, `pulse`,
   `cluster`, `execution`, `output`, `frame`, `auto_convergence`); inputs may be `.jsonc` files with `//` comments; many
@@ -25,7 +53,7 @@ Version 2.0.0, released 2026-10-17: what changed since v1.2.2, in the current ke
   `10_coordinate_rotation`), each with `run.sh` and `expected.png`; a rewritten manual (`docs/user/`), method pages
   (`docs/methods/`) and a doxygen site.
 
-## Updating old inputs
+### Updating old inputs
 
 `python3 example/tools/InputKeys/convert_input_keys.py FILE...` rewrites inputs in place, keeping their comments and
 listing what it changed (`--check` lists only, `--stdout` prints the new text). A rewritten input gives the same results
@@ -130,7 +158,7 @@ with more detail.
 | `--auto_status` | `python -m autoconv status FILE` in `example/tools/AutoConvergence` |
 | `-o FILE` (an output name) | `-o DIR` is the output folder; the name is `output.file` |
 
-## The full list
+### The full list
 
 Every change, with its details, the speed measurements and the comparison with v1.2.2, is in the file `CHANGELOG.md` at
 the root of the CCEX repository.

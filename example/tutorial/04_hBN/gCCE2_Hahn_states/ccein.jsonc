@@ -1,25 +1,49 @@
 {
     // V_B- in h-BN at 500 G, gCCE2 of one sampled bath state: the qubit density matrix (quantity dm) over 1 us in a
     // small bath (rbath 5 A).
+    //
+    // The physics: gCCE puts the qubit into every cluster's Hamiltonian, so qubit-nucleus flip-flops are kept; one
+    // sampled state is a pure bath state (each nucleus in one m), as one defect in an experiment sees it, and its
+    // static field acts on the cluster spins. T2 is 0.44 us here (README).
+    //
+    // Writes results/ccein_state1_wiDiv and _noDiv: per time step a block of the 3 x 3 density matrix of the qubit,
+    // basis ms +1, 0, -1 (docs/user/OutputFiles.md). run.sh plots the element between ms +1 and 0 divided by its value
+    // at t = 0. The only input of this folder.
     // Sampled bath states: configuration.s_range [1, 1], each state s its own output _state<s>.
-    "method"        : "gCCE",
-    "quantity"      : "dm",
+    "method"        : "gCCE",         // generalized CCE: the qubit is in every cluster (default cCCE leaves it out)
+    "quantity"      : "dm",           // write the qubit density matrix at every time (gCCE only); the default
+                                      // coherence writes L(t) alone
     "Qubit"         : {"qubit": [{"file": "../bath/flat/bath_hBN_VB_flat_Defect"}]},
+                                      // the V_B-: its position from the first line of the file (33.94 45.73 7.50 A).
+                                      // Defaults: spin 1, the electron's gyromagnetic ratio, alpha ms +1, beta ms 0
+                                      // (the start is their equal superposition). No intmap, so no zero-field
+                                      // splitting: the levels are split by the field alone. Add the intmap of
+                                      // ../gCCE2_Hahn_OH for the real V_B-
     "configuration" : {"gyrofile": "../bath/hBN_natab_gyro",
                        "bathfile": ["../bath/flat/bath_hBN_VB_flat_1"],
                        "s_range" : [1, 1],
                        "seed"    : 1},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 5,
-    "rdip"          : 3,
-    "deltat"        : 0.0001,
-    "nstep"         : 10,
-    "pulse"         : {"count": 1},
+                                      // gyrofile: name, spin, gyromagnetic ratio (rad kHz/G) of 10B, 11B, 14N, 15N.
+                                      // bathfile: one isotope draw of the layer. s_range [1, 1]: one sampled bath
+                                      // state, its m drawn from seed (no bath_state_file). seed 1: the same state on
+                                      // every run; s_range [1, 10] draws ten (average them afterwards)
+    "order"         : 2,              // the largest cluster: single nuclei and pairs (gCCE2)
+    "bfield"        : 500,            // Gauss along z, the V_B- axis
+    "rbath"         : 5,              // Angstrom: a small bath, the 24 nuclei within 5 A. README: try 10
+    "rdip"          : 3,              // Angstrom: two nuclei closer than 3 A form a pair cluster
+    "deltat"        : 0.0001,         // the time step in ms (0.1 us); t is the whole echo (2 tau)
+    "nstep"         : 10,             // 10 time points: t = 0 .. 0.9 us
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
     "hamiltonian"   : {"common": {
             "hyperfine"  : {"dipole": "dft", "contact": true,         // the DFT hyperfine tensors (dipolar and contact)
                             "file": "../bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
-            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients of the 11B, 10B, 14N
+                                                                      // dipole dft: the anisotropic part from the file
+                                                                      // (not the point dipole); contact true adds the
+                                                                      // Fermi contact part; MHz, tensor format v3
+            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients of the 11B,
+                                                                      // 10B, 14N
                             "file": "../bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}
+                                                                      // adds I.Q.I of each nucleus with I > 1/2;
+                                                                      // plain: one EFG file computed with the defect
         }}
 }

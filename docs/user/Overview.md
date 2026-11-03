@@ -17,6 +17,10 @@ time:
 - by conventional CCE (cCCE) or generalized CCE (gCCE), or their master-equation forms meCCE and megCCE
   (`method`), with partition CCE (pCCE), bundle
   clustering and the disjoint-cluster and inter-bath variants dsj, itb and dsjitb (`cluster.mode`);
+- or by two models for reading a decay (`method`): `noise`, the Gaussian coherence exp(−χ) of the qubit's phase
+  noise, from the modes of the bath's clusters or from a model spectrum, with its correlation function and spectrum
+  (`hamiltonian.noise`); and `pseudospin`, the bath's pairs alone in the pseudospin model of nuclear flip-flops, with
+  a table of every flip-flop channel (`hamiltonian.pseudospin`);
 - for a Hahn echo, a Ramsey experiment, CPMG (`pulse.count`) or any sequence written
   out pulse by pulse (`pulse.sequence`), with DEER pulses on the bath (`pulse.bath`);
 - for one bath configuration or an ensemble of them, and for electron-spin baths
@@ -27,8 +31,9 @@ quadrupole), electron-spin defects such as P1 centres with their own on-site
 spins and axes, or both. Beyond the standard clustering by order and distance
 CCEX has bundle clustering (`cluster.mode` bundle, `cluster.bundle.max_dim`) and an adaptive
 refinement of the clusters (the `cluster.adaptive` block), a CUDA backend for the
-cluster propagation (`execution.backend`), and a coordinate frame rotation that lets the
-bath file stay in the crystal frame (`frame.rotation`).
+cluster propagation (`execution.backend`; for cCCE the `gpu_options` an input leaves out are chosen from the node at
+the start, and part of a node's ranks can use the GPU while the others stay on the CPU), and a coordinate frame
+rotation that lets the bath file stay in the crystal frame (`frame.rotation`).
 
 <a id="WhatCCEComputes"></a>
 ## The cluster-correlation expansion in short
@@ -71,10 +76,13 @@ The methods pages give the details: [cCCE and gCCE](../methods/cce.md), [pCCE](.
 | `gCCE` | CPU, GPU¹ | CPU | CPU, GPU¹ | refused |
 | `meCCE` (cCCE + Lindblad jumps on bath spins) | CPU | CPU | refused | refused |
 | `megCCE` (gCCE + jumps on bath spins and the qubit) | CPU | CPU | refused | refused |
+| `noise` (Gaussian phase noise) | CPU, GPU² | refused | refused | refused |
+| `pseudospin` (the pairs in the pseudospin model) | CPU | refused | refused | refused |
 
 ¹ with `execution.propagator` `eigen` (the default); `expm` runs on the CPU. Also CPU only: DEER bath pulses
 (`pulse.bath`, gCCE and megCCE with `standard` or `pcce`) and an ensemble (no `s_range`) `Manual` sequence. `quantity`
-`dm` is for gCCE; meCCE and megCCE compute `coherence` only. The GPU needs the CUDA binary `bin/main_gpu.out`. Details:
+`dm` is for gCCE; meCCE, megCCE, noise and pseudospin compute `coherence` only. ² `backend` `cuda`
+sums over the bath's modes on the card; the eigensystems stay on the CPU, and `auto` runs on the CPU. The GPU needs the CUDA binary `bin/main_gpu.out`. Details:
 [method](InputFile_General.md#tag_method), [cluster.mode](InputFile_Cluster.md#tag_cluster_mode),
 [backend](InputFile_Backend.md#tag_backend), [GPU execution](../methods/gpu.md),
 [master-equation CCE](../methods/master-equation.md).
@@ -107,9 +115,9 @@ matrix) per bath configuration into text files ([Output files](OutputFiles.md)),
   run log, the environment variables and the order in which a run reads its input.
 - [Input file](InputFile.md): every key, by group, and the units of every number.
 - [Output files](OutputFiles.md): every file a run writes, and its columns.
-- [Examples](Examples.md): twelve worked tutorials, each a page of this site with its inputs and expected
-  figures, in learning order from a quickstart of seconds to the GPU backend, the automatic convergence and the
-  frame rotation.
+- [Examples](Examples.md): thirteen worked tutorials, each a page of this site with its inputs and expected
+  figures, in learning order from a quickstart of seconds to the GPU backend, the automatic convergence, the
+  frame rotation and the two models, noise and pseudospin.
 - [Analysis](Analysis.md) and [Tools](Tools.md): what runs on the output, and what
   makes the inputs (`example/analysis/`, `example/tools/`).
 - Methods ([overview](../methods/Methods.md)): [cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),
@@ -117,7 +125,7 @@ matrix) per bath configuration into text files ([Output files](OutputFiles.md)),
   [the coordinate frame rotation](../methods/coordinate-frame-rotation.md),
   [DEER bath pulses](../methods/deer.md), [master-equation CCE](../methods/master-equation.md) and
   [GPU execution](../methods/gpu.md).
-- [Changes](Changes.md): what changed in 2.0.0.
+- [Changes](Changes.md): what changed in 2.1.0 and in 2.0.0.
 - Data structures and Source files: the code itself, for developers.
 
 <a id="Citing"></a>

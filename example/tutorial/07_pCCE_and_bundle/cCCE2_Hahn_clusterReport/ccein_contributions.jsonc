@@ -1,19 +1,30 @@
 {
-    // 00_quickstart's input with a table of what every cluster contributes (output.cluster_contributions):
-    // results/ccein_contributions.contributions.state-0.tsv, one row per cluster (its sites, dimension, the largest
-    // |log L~| over the time points, ...), and ccein_contributions.contributions.sites.tsv (each site's name, spin,
-    // gyromagnetic ratio and position). savemode's nodiv false writes _wiDiv alone (no _noDiv).
+    // 00_quickstart's input (cCCE2 Hahn echo, NV in 13C, rbath 50 A, 2 ms) with a table of what every cluster
+    // contributes (output.cluster_contributions): results/ccein_contributions.contributions.state-0.tsv, one row per
+    // cluster (its sites, dimension, the largest |log L~| over the time points and the step where it is reached, ...),
+    // and ccein_contributions.contributions.sites.tsv (each site's name, spin, gyromagnetic ratio and position).
+    // Sorting the table by its fifth column lists the clusters that matter most. savemode's nodiv false writes
+    // ccein_contributions_wiDiv alone (no _noDiv). Of the three inputs here, the only one with this table.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the NV's position from 00_quickstart's defect file; spin 1, L between ms +1
+                                      // and 0 (the defaults)
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 50,
-    "rdip"          : 10,
-    "deltat"        : 0.001,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 1},
+                                      // the 13C isotope line (rad kHz/G) and 00_quickstart's bath (Angstrom)
+    "order"         : 2,              // single 13C and pairs (cCCE2)
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 50,             // Angstrom: 00_quickstart's bath radius, so the curve is the quickstart's
+    "rdip"          : 10,             // Angstrom: two 13C closer than this form a pair cluster
+    "deltat"        : 0.001,          // the time step in ms (1 us)
+    "nstep"         : 2000,           // 2000 time points: 0 .. 2 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
     "output"        : {"cluster_contributions": {"enabled": true},
                        "savemode"             : {"mode": "coherence", "nodiv": false}}
+                                      // cluster_contributions: enabled true writes the table (cCCE and gCCE
+                                      // coherence; default off); its max_mb, the memory per rank for the table,
+                                      // keeps its default 256.
+                                      // savemode: mode coherence (the default: the result alone); nodiv false
+                                      // leaves out _noDiv (the product without the division, not a
+                                      // coherence), which is written by default
 }

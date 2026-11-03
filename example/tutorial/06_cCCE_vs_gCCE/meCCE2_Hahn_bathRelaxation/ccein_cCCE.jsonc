@@ -1,15 +1,28 @@
 {
     // 00_quickstart's input on 500 time points of 4 us, by cCCE: the bath spins evolve without relaxation, the
     // reference of ccein_meCCE.jsonc.
+    //
+    // The physics: the 13C evolve coherently under their Hamiltonian (Zeeman, hyperfine, dipolar pairs), the qubit
+    // only sets the field each feels. T2 1.068 ms here, against 0.53 ms with the 13C relaxation of meCCE (README).
+    //
+    // Writes results/ccein_cCCE_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_meCCE.jsonc is the same
+    // with "method": "meCCE" and the jump operators.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the NV: its position from the first line of the defect file (73.74 75.73
+                                      // 73.97 A). Not written, so the defaults: spin 1, the electron's gyromagnetic
+                                      // ratio, L between ms +1 (alpha) and ms 0 (beta); no zero-field splitting,
+                                      // which this cCCE does not use
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 50,
-    "rdip"          : 10,
-    "deltat"        : 0.004,
-    "nstep"         : 500,
-    "pulse"         : {"count": 1}
+                                      // 00_quickstart's bath: gyro_13C (name, spin, rad kHz/G) and a 150 A cube of
+                                      // diamond with 1.1 % 13C
+    "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
+    "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
+    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
+    "deltat"        : 0.004,          // the time step in ms (4 us; 00_quickstart has 1 us), the grid of
+                                      // ccein_meCCE (the slow run: about 20 s on 4 ranks, this one under 1 s)
+    "nstep"         : 500,            // 500 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
 }

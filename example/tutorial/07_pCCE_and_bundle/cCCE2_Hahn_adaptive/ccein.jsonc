@@ -1,19 +1,41 @@
 {
-    // cCCE2_Hahn_bundle (rbath 20, 2 ms) with adaptive refinement: the bundled calculation is repeated, the error at
-    // the bundle boundaries measured, and bundles merged (policy merge) until the curve moves by less than atol.
-    // adaptive needs an explicit seed: every round recomputes the same system. The steps go to results/adaptive/.
+    // cCCE2_Hahn_bundle's bundled calculation (rbath 20, 2 ms, coarser time step) with the adaptive refinement: the
+    // bundled calculation is repeated, the error at the bundle boundaries measured (small patches of neighbouring
+    // bundles, their expansion against their direct calculation), and bundles merged (policy merge) until every patch
+    // is within atol, or max_rounds. Here it ends after three rounds (28 -> 26 bundles) with "no feasible improving
+    // merge" (exit status 2); the curve hardly moves. Every step goes to results/adaptive/ (one folder per step and
+    // summary.json); the result is the last run, named by final_directory in summary.json.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../../00_quickstart/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the NV's position from 00_quickstart's defect file; spin 1, L between ms +1
+                                      // and 0 (the defaults)
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["../../00_quickstart/bath/bath_Diamond_NV_natab_1"],
                        "seed"    : 9407},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 20,
-    "rdip"          : 10,
-    "deltat"        : 0.01,
-    "nstep"         : 200,
-    "pulse"         : {"count": 1},
+                                      // the 13C isotope line and 00_quickstart's bath. seed: the random seed; the
+                                      // adaptive refinement requires an explicit one, since every round recomputes the
+                                      // same system. Any fixed integer does
+    "order"         : 2,              // the largest cluster: 2 bundles
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 20,             // Angstrom: a small bath (cCCE2_Hahn_bundle has 30), because every round
+                                      // computes the whole bath again plus the probes of the patches
+    "rdip"          : 10,             // Angstrom: bundles with spins within 10 A are connected
+    "deltat"        : 0.01,           // the time step in ms (10 us), ten times cCCE2_Hahn_bundle's: fewer points,
+                                      // shorter rounds
+    "nstep"         : 200,            // 200 time points: 0 .. 1.99 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
     "cluster"       : {"mode": "bundle", "bundle": {"max_dim": 8},
                        "adaptive": {"workdir": "./results/adaptive", "atol": 1e-3, "rtol": 0, "max_rounds": 4}}
+                                      // mode bundle with bundles of up to dimension 8 (three 13C), as
+                                      // cCCE2_Hahn_bundle; the bundles of the first run are the starting point.
+                                      // adaptive: writing the block turns the refinement on (absent: one calculation).
+                                      //   workdir    : folder of the steps (0001-run, 0002-probe, ...) and
+                                      //                summary.json (required)
+                                      //   atol, rtol : a patch passes when |L_expansion - L_direct| <= atol + rtol
+                                      //                |L_direct| at every bath state and time point (both required).
+                                      //                1e-3 absolute, no relative part; 1e-4 makes it stricter (more
+                                      //                rounds)
+                                      //   max_rounds : the most rounds (default 8); 4 keeps the tutorial short
+                                      // policy is not written: merge is the only one. Every other key of the block
+                                      // (max_patches, neighbors, ...) has its default: docs/user/InputFile_Cluster.md
 }

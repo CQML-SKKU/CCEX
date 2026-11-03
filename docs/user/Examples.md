@@ -1,6 +1,6 @@
 # Examples
 
-Twelve worked examples live in `example/tutorial/`, in the order to learn them; each has a page here with its text,
+Thirteen worked examples live in `example/tutorial/`, in the order to learn them; each has a page here with its text,
 its input files and its expected figures. Each topic folder holds one folder per calculation, named
 `<method><order>_<pulse>_<approach>` (`cCCE2_Hahn_ensemble`: cCCE to order 2, Hahn echo, the bath ensemble; the
 approach is `ensemble`, `states` or what the calculation compares). A calculation folder has its inputs
@@ -21,7 +21,8 @@ how to run it (time, ranks, memory), the expected result and what to change next
 | [08_GPU](../../example/tutorial/08_GPU/README.md) | the CUDA backend against the CPU |
 | [09_auto_convergence](../../example/tutorial/09_auto_convergence/README.md) | the automatic convergence of the time window, rdip, rbath and the configurations |
 | [10_coordinate_rotation](../../example/tutorial/10_coordinate_rotation/README.md) | a bath written in another frame (`frame.rotation`) |
-| [11_noise](../../example/tutorial/11_noise/README.md) | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum |
+| [11_noise](../../example/tutorial/11_noise/README.md) | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum; its correlation C(t) and spectrum S(f) |
+| [12_pseudospin](../../example/tutorial/12_pseudospin/README.md) | method `pseudospin`: the pairs of a nuclear bath in the pseudospin model, against cCCE2 |
 
 <a id="RunningOne"></a>
 ## Running one
@@ -64,6 +65,8 @@ Times and memory on the pages are from the same workstation.
 | large clusters (Hilbert dimension of hundreds or more) and a GPU | `execution.backend` auto with `bin/main_gpu.out` | [08_GPU](../../example/tutorial/08_GPU/README.md) |
 | not sure which rbath, rdip, time window or number of configurations | the `auto_convergence` block | [09_auto_convergence](../../example/tutorial/09_auto_convergence/README.md) |
 | a bath file written in the crystal frame (defect axis not along z) | the `frame.rotation` block, `qubit_axis` | [10_coordinate_rotation](../../example/tutorial/10_coordinate_rotation/README.md) |
+| a decay from many weak noise sources, a noise spectrum S(f), or a model noise without a bath | `method` noise, `hamiltonian.noise` (`spectrum`, `compute`) | [11_noise](../../example/tutorial/11_noise/README.md) |
+| which nuclear pairs drive a decay (any nuclear spin, with quadrupoles) | `method` pseudospin, its channel table | [12_pseudospin](../../example/tutorial/12_pseudospin/README.md) |
 
 Which combinations of method, cluster mode and backend run at all is the table
 [What runs where](Overview.md#WhatRunsWhere).

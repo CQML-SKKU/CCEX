@@ -1,16 +1,46 @@
 {
-    // 00_quickstart's NV, averaged over four bath configurations. configuration.k_range runs one calculation per k
-    // with {k} replaced in the file names (outputs ccein_k1_wiDiv ... ccein_k4_wiDiv); run.sh makes the four files.
-    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    // The Hahn echo of 00_quickstart's NV (ms +1 / 0, conventional CCE to order 2, 500 G) in four different bath
+    // configurations: four random placements of the 1.1 % 13C around the NV. Every key not written here has its
+    // default; `main.out -e` writes an input with all of them, each with its meaning.
+    //
+    // Why: the coherence depends on where the 13C sit, most of all the few closest to the NV, so one bath file gives
+    // the curve of one NV. A measurement on many NV (or one NV against a model) needs the average over
+    // configurations. configuration.k_range runs the whole calculation once per k, with {k} in the file names replaced
+    // by k. Writes results/ccein_k1_wiDiv ... ccein_k4_wiDiv (and _noDiv): one curve per configuration, no average;
+    // run.sh plots the four and their mean.
+    //
+    // The ensemble: no configuration.s_range, so in each configuration the bath spins start unpolarised (infinite
+    // temperature). The sibling cCCE2_Hahn_states keeps one configuration and samples the bath state instead.
+
     "Qubit"         : {"qubit": [{"file": "results/bath/config_defect"}]},
+                                      // the qubit (central spin). "file": a file whose first line is its position
+                                      // (x y z, Angstrom). run.sh makes it next to the bath files: the NV is at the
+                                      // centre of every cell, so one file serves every k. Not written, so the
+                                      // defaults: spin 1, the electron's gyromagnetic ratio, L between ms +1 and 0
+
     "configuration" : {"gyrofile": "../../00_quickstart/bath/gyro_13C",
                        "bathfile": ["results/bath/config_{k}"],
                        "k_range" : [1, 4]},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 50,
-    "rdip"          : 10,
-    "deltat"        : 0.001,
-    "nstep"         : 2000,
-    "pulse"         : {"count": 1}
+                                      // the bath. gyrofile: the spin (1/2) and gyromagnetic ratio of 13C (rad kHz/G),
+                                      // one line per isotope. bathfile: a list of files of spins (a count line, then
+                                      // "x y z isotope" per spin, Angstrom); {k} is replaced by the configuration
+                                      // number, so this reads results/bath/config_1 ... config_4. run.sh writes them
+                                      // first with ../../make_natab_baths.sh (110 A cells of diamond with 1.1 % 13C,
+                                      // random seed k, so the same files every time).
+                                      // k_range [first, last]: the configurations, one run each, one after another,
+                                      // outputs named _k<k>_. [1, 20] for 20 (make 20 files with
+                                      // make_natab_baths.sh 20 results/bath); how many are enough is what
+                                      // 09_auto_convergence decides
+
+    "order"         : 2,              // the largest cluster: 2 = single 13C and pairs of 13C (cCCE2); enough for
+                                      // 13C in diamond at this field (raise to 3 to check)
+    "bfield"        : 500,            // magnetic field in Gauss along z, the NV axis. The 13C precess at 0.54 MHz
+    "rbath"         : 50,             // Angstrom: only the 13C within 50 A of the NV are kept. The 110 A cells hold
+                                      // spins out to about 53 A, so rbath cannot grow much without larger cells
+                                      // (the third argument of make_natab_baths.sh)
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A are coupled and form a pair cluster; pairs
+                                      // farther apart are left out (a convergence parameter, as rbath)
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence (for the Hahn echo 2 tau)
+    "nstep"         : 2000,           // the number of time points: t = 0, 1 us, ..., 1.999 ms
+    "pulse"         : {"count": 1}    // one pi pulse in the middle of t: the Hahn echo
 }

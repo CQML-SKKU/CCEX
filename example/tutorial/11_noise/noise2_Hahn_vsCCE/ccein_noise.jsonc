@@ -1,22 +1,37 @@
 {
-    // The Hahn echo of an NV in a 1 ppm P1 bath by method noise: the Gaussian coherence exp(-chi) of the qubit's
-    // phase noise, each cCCE cluster giving its share of chi from its eigenmodes. Ten sampled bath states of one
-    // configuration; a state sets the static field of the other spins (the mean field), the cluster is averaged at
-    // infinite temperature. ccein_cce.jsonc is the same bath by cCCE2.
-    "method"        : "noise",
-    "hamiltonian"   : {"noise": {"spectrum": "bath"}},    // the default; "pseudo_secular": true adds A_zx I_x + A_zy I_y
-    "Qubit"         : {"qubit": [{"file": "../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [-1]}},
+    // The Hahn echo of an NV (ms -1 / 0) in a 1 ppm P1 electron-spin bath (the bath of 03_P1, one configuration) by
+    // method noise: the Gaussian coherence W(T) = exp(-chi(T)) of the qubit's phase noise, chi = <phi^2>/2, each cCCE
+    // cluster giving its share of chi from its eigenmodes (semi-cce's semi-classical CCE). Ten sampled bath states;
+    // a state only sets the static field of the other spins (the mean field), the cluster itself is averaged at
+    // infinite temperature, with one bath Hamiltonian for both qubit states. The Gaussian approximation leaves out
+    // the qubit's back-action and the non-Gaussian part of the noise. Writes results/ccein_noise_state1_wiDiv ...
+    // state10 (and _noDiv). ccein_cce.jsonc is the same input by cCCE2, a different quantity: run.sh plots both means.
+    "method"        : "noise",        // the Gaussian phase-noise coherence instead of the default cCCE
+    "hamiltonian"   : {"noise": {"spectrum": "bath"}},
+                                      // spectrum "bath" (the default): the noise comes from the run's bath, cluster
+                                      // by cluster (a model such as {"model": "OU", ...} needs no bath, see
+                                      // noiseModel_OU). A bath spin's noise is its secular A_zz I_z;
+                                      // "pseudo_secular": true in this block adds A_zx I_x + A_zy I_y
+    "Qubit"         : {"qubit": [{"file": "../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}],
+                       "alpha_state": {"ms": [-1]}},
+                                      // the NV's position from the first line of the file (Angstrom), spin 1 by
+                                      // default; alpha_state ms -1 (beta stays ms 0), so L is between -1 and 0
     "configuration" : {"gyrofile": "../../03_P1/bath/DiaP1_gyro",
                        "bathfile": ["../../03_P1/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
                        "s_range" : [1, 10],
                        "seed"    : 1},
-    "order"         : 2,
-    "bfield"        : 500,
-    "rbath"         : 850,
-    "rdip"          : 620,
-    "deltat"        : 0.01,
-    "nstep"         : 300,
-    "pulse"         : {"count": 1},
+                                      // gyrofile: P1 as spin 1/2 with the electron's gamma (P1 is not an isotope,
+                                      // so it needs the file). bathfile: configuration 1 of 03_P1's 1 ppm baths.
+                                      // s_range: 10 sampled states, drawn from seed (axes and spin states), each its
+                                      // own output _state<s>
+    "order"         : 2,              // single P1 and pairs of P1
+    "bfield"        : 500,            // Gauss along the NV axis; the P1 electrons precess at 1.40 GHz
+    "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV are kept (469 here); an electron
+                                      // bath at 1 ppm is dilute and couples far, hence the large radius
+    "rdip"          : 620,            // Angstrom: two P1 closer than 620 A form a pair (25929 pairs here)
+    "deltat"        : 0.01,           // the time step in ms (10 us); t is the whole sequence
+    "nstep"         : 300,            // the number of time points: t = 0 .. 2.99 ms
+    "pulse"         : {"count": 1},   // one ideal pi pulse: the Hahn echo. 0 (Ramsey) or 4 (CPMG-4) to compare
     "Defect"        : {"species": [{
         "name"          : "P1",
         "n_axis_states" : 12,
@@ -24,4 +39,10 @@
                            [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
                            [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
                            [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+                                      // the P1 (substitutional N): an electron spin 1/2 whose 14N hyperfine shifts
+                                      // it by A m_I. name: the species name in the bath file. n_axis_states 12: one
+                                      // state per Jahn-Teller axis and 14N m_I (+1, 0, -1), each P1 given one at
+                                      // random from seed. detuning: [axis state, "e" (the electron), shift in MHz];
+                                      // 114.0264 MHz is A_zz of the axis along the NV, 84.946496 MHz that of the
+                                      // other three axes (as in 03_P1/cCCE2_Hahn_onsite14N's hyperfine tensors)
 }

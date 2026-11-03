@@ -28,6 +28,8 @@
       <tab type="user" url="@ref tutorial_08" title="08 GPU"/>
       <tab type="user" url="@ref tutorial_09" title="09 Automatic convergence"/>
       <tab type="user" url="@ref tutorial_10" title="10 Coordinate rotation"/>
+      <tab type="user" url="@ref tutorial_11" title="11 Phase noise (method noise)"/>
+      <tab type="user" url="@ref tutorial_12" title="12 Pseudospin pairs"/>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Analysis" title="Analysis"/>
     <tab type="user" url="@ref md_docs_2user_2Tools" title="Tools"/>

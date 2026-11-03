@@ -1,22 +1,55 @@
 {
     // V_B- in h-BN at 1000 G (spin 1 with its zero-field splitting, kHz), cCCE2 Hahn echo of the ensemble, one
     // configuration, with the hyperfine-mediated bath-bath term (hamiltonian.cCCE.hfmedi).
+    //
+    // The physics: the transverse part of the hyperfine (S_x, S_y) can flip the qubit for a moment; to second order
+    // this couples two nuclei through the qubit, with a strength of about A_i A_j over the qubit level spacing. The
+    // nearest 14N have A_zz 48.6 MHz, and on this short window (245 ns) the term makes most of the decay: T2 86 ns
+    // with it, while without it |L| is still 0.66 at 245 ns (README).
+    //
+    // Writes results/ccein_wi_hfmedi_wiDiv and _noDiv. The sibling ccein_wo_hfmedi.jsonc is the same input without
+    // the "cCCE" block.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
-    "Qubit"         : {"qubit": [{"file": "../bath/flat/bath_hBN_VB_flat_Defect"}], "intmap": [{"between": ["q0", "q0"], "tensor": [[-1080000, 0, 0], [0, -1180000, 0], [0, 0, 2320000]], "unit": "kHz"}]},
+    "Qubit"         : {"qubit": [{"file": "../bath/flat/bath_hBN_VB_flat_Defect"}],
+                       "intmap": [{"between": ["q0", "q0"],
+                                   "tensor": [[-1080000, 0, 0], [0, -1180000, 0], [0, 0, 2320000]], "unit": "kHz"}]},
+                                      // the V_B-: its position from the first line of the file (33.94 45.73 7.50 A),
+                                      // spin 1, alpha ms +1, beta ms 0 (defaults). intmap: one entry with the same
+                                      // qubit twice ("q0", the default name of the first qubit) is its zero-field
+                                      // splitting S.D.S, here diag(-1080, -1180, 2320) MHz written in kHz: D = 3/2 Dzz
+                                      // = 3.48 GHz, E = (Dxx - Dyy)/2 = 50 MHz. hfmedi needs it: the qubit level
+                                      // spacings (ZFS and Zeeman) are the denominators of the term
     "configuration" : {"gyrofile": "../bath/hBN_natab_gyro",
                        "bathfile": ["../bath/flat/bath_hBN_VB_flat_1"]},
-    "order"         : 2,
-    "bfield"        : 1000,
-    "rbath"         : 14,
-    "rdip"          : 8,
-    "deltat"        : 5e-06,
-    "nstep"         : 50,
-    "pulse"         : {"count": 1},
+                                      // the bath. gyrofile: name, spin, gyromagnetic ratio (rad kHz/G) of 10B, 11B,
+                                      // 14N, 15N. bathfile: one isotope draw of the layer (bath/flat has 50)
+    "order"         : 2,              // the largest cluster: single nuclei and pairs (cCCE2); the mediated term
+                                      // enters the Hamiltonian of each cluster
+    "bfield"        : 1000,           // Gauss along z, the V_B- axis. The nuclei precess at 1.37 MHz (11B), 0.46 MHz
+                                      // (10B), 0.31 MHz (14N)
+    "rbath"         : 14,             // Angstrom: the 230 nuclei within 14 A of the V_B- are kept
+    "rdip"          : 8,              // Angstrom: two nuclei closer than 8 A form a pair cluster
+    "deltat"        : 5e-06,          // the time step in ms (5 ns); t is the whole echo (2 tau)
+    "nstep"         : 50,             // 50 time points: t = 0 .. 245 ns
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
     "hamiltonian"   : {"common": {
             "hyperfine"  : {"dipole": "dft", "contact": true,         // the DFT hyperfine tensors (dipolar and contact)
                             "file": "../bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
-            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients of the 11B, 10B, 14N
+                                                                      // dipole dft: the anisotropic part from the file
+                                                                      // (not the point dipole); contact true adds the
+                                                                      // Fermi contact part; MHz, tensor format v3
+            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients of the 11B,
+                                                                      // 10B, 14N
                             "file": "../bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}
+                                                                      // adds I.Q.I of each nucleus with I > 1/2;
+                                                                      // plain: one EFG file computed with the defect
         },
         "cCCE": {"hfmedi": true}}
+                                                                      // cCCE terms. hfmedi true adds, for each qubit
+                                                                      // branch alpha, H = sum over the other qubit
+                                                                      // eigenstates beta of E E^+ / (w_alpha - w_beta)
+                                                                      // with E = sum_i <alpha|S|beta>.A_i.I_i: every
+                                                                      // pair (i, j) and the i = j term of each nucleus.
+                                                                      // Default false. Not together with delta_A,
+                                                                      // which it contains (docs/user/InputFile_General)
 }

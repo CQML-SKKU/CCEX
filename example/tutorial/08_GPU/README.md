@@ -26,6 +26,23 @@ last four of them (`bath_p1_4`), the NV position (`qubit_p1`) and the P1 gyromag
 
 Input: [`ccein.jsonc`](cCCE5_Hahn_backends/ccein.jsonc)
 
+## cCCE5_Hahn_autoOptions
+
+- **What it shows:** the input of `cCCE5_Hahn_backends` with `backend` `auto` and no `gpu_options`: for cCCE with
+  `auto` or `cuda`, `bin/main_gpu.out` sets the keys an input leaves out at the start and says so in a `[gpu-auto]`
+  line, which `run.sh` prints: `ranks_per_gpu` 4 when a node has more than 4 ranks a GPU (`auto`, `cluster.mode`
+  standard), `min_dim` 256 with it, `evolution_batch_size` 32 and `cluster_batch_mb` two thirds of the smallest card
+  over the ranks that open it ([Execution tags](../../../docs/user/InputFile_Backend.md#tag_backend)). On an RTX PRO
+  6000 with 32 ranks these values were as fast as the best ones chosen by hand on a larger bath (487 s against
+  490 s, `CHANGELOG.md` 2.1.0). The curve is compared with the same input on `cpu`.
+- **Keys that matter:** `execution.backend` `auto`, `execution.gpu_options` left out (write a key to fix it).
+- **How to run:** on a GPU node, `NP=32 bash run.sh`; without `bin/main_gpu.out` it runs `auto` on the CPU and
+  says so.
+- **Expected result:** no `expected.png` yet (the run needs a GPU node); `auto` within about 1e-10 of `cpu`.
+- **What to change next:** `"gpu_options": {"ranks_per_gpu": 0}` (every rank may open the GPU) to compare.
+
+Input: [`ccein.jsonc`](cCCE5_Hahn_autoOptions/ccein.jsonc)
+
 ## gCCE4_Hahn_backends
 
 - **What it shows:** gCCE4 Hahn echo of the NV (spin 1 with its zero-field splitting) in four P1: the cluster of all
