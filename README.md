@@ -43,14 +43,15 @@ You need a C++17 compiler behind an MPI wrapper. Eigen, uthash and SQLite are in
 when the build finds it. [Getting started](docs/user/GettingStarted.md#Building) covers the build options, the CUDA
 versions and the environment variables.
 
-## Documentation
+## Where to start
 
 - [Tutorials](example/tutorial/README.md): thirteen examples in learning order, from the quickstart to GPU runs, the
   automatic convergence and the noise and pseudospin models. Each has commented inputs, a `run.sh` and an
   `expected.png`.
 - [Input file](docs/user/InputFile.md): every key by block, with its unit and default.
 - [Output files](docs/user/OutputFiles.md) and the [analyzer](docs/user/Analysis.md).
-- [Methods](docs/methods/Methods.md): cCCE and gCCE, pCCE, bundles, master-equation CCE, DEER and GPU execution.
+- [Methods](docs/methods/Methods.md): cCCE and gCCE, pCCE, bundles, master-equation CCE, DEER, the Gaussian phase
+  noise, the pseudospin model and GPU execution.
 
 ## Folders
 
@@ -62,14 +63,11 @@ versions and the environment variables.
 | `docs/` | the manual, the method notes and the website ([docs/README.md](docs/README.md)) |
 | `external/` | Eigen, uthash and SQLite |
 
-## Checks and contributing
+## For developers
 
-`bash test/code_verification/run.sh` runs the core checks in about 8 minutes. [test/README.md](test/README.md) lists
-the checks each kind of change needs. `.github/workflows/ci.yml` runs the fast checks on every push.
-
-When you add a source file, add it to both builds ([src/README.md](src/README.md)). Change a reference output only on
-purpose, in the same commit as the change that moves it, and give the reason. When you add or rename an input key,
-update the converter, the `-e` template, its page in `docs/user/` and `CHANGELOG.md` in the same change.
+`bash test/code_verification/run.sh` runs the core checks (about 8 minutes), and CI runs the fast ones on every push.
+[test/README.md](test/README.md) says which checks a change needs, and [src/README.md](src/README.md) how to add a
+source file.
 
 ## Changes and citing
 

@@ -1,10 +1,12 @@
 # Output files
 <a id="OutputFiles"></a>
 
-Every file a run writes, its name and its columns. The keys that choose them are in [Output tags](InputFile_Output.md);
-the folder is `-o DIR`, else [output.path](InputFile_Output.md#tag_output_path), else the working directory, and the
-name `<file>` below is [output.file](InputFile_Output.md#tag_outfile) (by default the input file's name without `.json`
-or `.jsonc`).
+This page lists every file a run writes, with its name and its columns. The keys that choose the files are in
+[Output tags](InputFile_Output.md).
+
+- The folder is `-o DIR`, else [output.path](InputFile_Output.md#tag_output_path), else the working directory.
+- The name `<file>` below is [output.file](InputFile_Output.md#tag_outfile). By default it is the input file's name
+  without `.json` or `.jsonc`.
 
 | File | Written when | Section |
 |---|---|---|
@@ -21,14 +23,19 @@ or `.jsonc`).
 | the `auto_convergence.workdir` folder | an `auto_convergence` block | [Automatic convergence](#out_autoconv) |
 | `<-fo>` files of the analyzer | `example/analysis/Analyzer` | [Analyzer outputs](#out_analyzer) |
 
-The run log goes to standard output (and the refusals to standard error); [The run log](GettingStarted.md#RunLog)
+The run log goes to standard output, and the refusals to standard error. [The run log](GettingStarted.md#RunLog)
 describes it.
 
 <a id="out_coherence"></a>
 ## The coherence files: `_wiDiv` and `_noDiv`
 
-One line per time step, `nstep` lines: the time in ms (`%15g`), a tab, the complex value as `+re+imj` with ten decimals
-(real part `%+15.10f` followed by the imaginary part and `j`), and a tab. The first line is t = 0; the step is `deltat`.
+Each file has one line per time step, `nstep` lines in all. A line holds:
+
+1. the time in ms (`%15g`), then a tab;
+2. the complex value as `+re+imj` with ten decimals (real part `%+15.10f` followed by the imaginary part and `j`), then
+   a tab.
+
+The first line is t = 0, and the step is `deltat`.
 
 ```
               0	  +1.0000000000+0.0000000000j	
@@ -36,22 +43,23 @@ One line per time step, `nstep` lines: the time in ms (`%15g`), a tab, the compl
           0.002	  +0.8232539603+0.0000033616j	
 ```
 
-(the first lines of `example/tutorial/00_quickstart`'s `ccein_wiDiv`). A value that is not a number is written `nan`.
+These are the first lines of `ccein_wiDiv` in `example/tutorial/00_quickstart`. A value that is not a number is
+written `nan`.
 
-- **`_wiDiv`** is the CCE result: the product of the irreducible cluster contributions, each cluster's coherence divided
-  by those of its sub-clusters,
+- `_wiDiv` is the CCE result. It is the product of the irreducible cluster contributions, where each cluster's
+  coherence is divided by those of its sub-clusters:
 
   $$L(t) = \prod_{C} \tilde L_C(t), \qquad \tilde L_C = \frac{L_C}{\prod_{C' \subset C} \tilde L_{C'}} .$$
 
-  This is the coherence to read and plot. Where a sub-cluster's coherence passes near zero the division can make it
-  large; |L| > 1 is a sign of that (a divergence), not a physical value.
-- **`_noDiv`** is the product of the cluster coherences with positive powers only, without the division. It does not
-  diverge but it is **not** a coherence: the analyzer's error correction compares `_wiDiv` with it to find the divergent
+  This is the coherence to read and plot. Where a sub-cluster's coherence passes near zero, the division can make it
+  large. $|L| > 1$ is a sign of such a divergence; it is not a physical value.
+- `_noDiv` is the product of the cluster coherences with positive powers only, without the division. It does not
+  diverge, and it is not a coherence. The analyzer's error correction compares `_wiDiv` with it to find the divergent
   points ([Analysis](Analysis.md)). `output.savemode` `{"nodiv": false}` leaves it out.
 
-Read them with `read_coherence` of `example/analysis/Analyzer/CoherenceAnalyzer.v1/coherence.py` (time and a complex
-array), or in any language: split each line at the tab and parse the second field as a complex number (Python's
-`complex()` reads `+re+imj` after the spaces are removed).
+To read them, use `read_coherence` of `example/analysis/Analyzer/CoherenceAnalyzer.v1/coherence.py`, which returns
+the time and a complex array. In any other language, split each line at the tab and parse the second field as a
+complex number. Python's `complex()` reads `+re+imj` once the spaces are removed.
 
 <a id="out_names"></a>
 ## Names
@@ -70,49 +78,69 @@ The name is built in this order, each part only when it applies:
 | `_full` | `cluster_density_matrix`: the density matrix of the whole qubit + cluster space |
 | `_state<s>` | [configuration.s_range](InputFile_General.md#tag_s_range): the sampled state s = first ... last; absent for the ensemble (no `s_range`) |
 
-So the ensemble writes `ccein_wiDiv`, `s_range` [1, 20] writes `ccein_state1_wiDiv` ... `ccein_state20_wiDiv` (and [11, 20]
-the last ten of them), and `k_range`
-[1, 4] in the ensemble writes `ccein_k1_wiDiv` ... `ccein_k4_wiDiv`. The states are not averaged by CCEX: average them
-(and the configurations) as complex numbers afterwards ([Analysis](Analysis.md)).
+For example:
+
+- the ensemble writes `ccein_wiDiv`;
+- `s_range` [1, 20] writes `ccein_state1_wiDiv` ... `ccein_state20_wiDiv`, and [11, 20] the last ten of them;
+- `k_range` [1, 4] in the ensemble writes `ccein_k1_wiDiv` ... `ccein_k4_wiDiv`.
+
+CCEX does not average the states. Average them, and the configurations, as complex numbers afterwards
+([Analysis](Analysis.md)).
 
 <a id="out_dm"></a>
 ## The density matrix (`quantity` dm)
 
 With [quantity](InputFile_General.md#tag_quantity) `dm` (gCCE) the same files hold, per time step, the reduced density
-matrix of the qubits, D × D with D the qubit dimension (3 for one NV, 3ⁿ for n spin-1 qubits). One block per time step:
-its first line starts with the time, the elements follow row by row (ρ₀₀, ρ₀₁, ..., ρ₀,D−1, ρ₁₀, ...), three to a line,
-and each continuation line starts with an empty time field (15 spaces) and a tab. The basis is the $S_z$ basis of each
-qubit, m = +S first down to −S (for an NV: ms +1, 0, −1), and for several qubits their product with the first qubit the
-slowest index (kron(q₀, q₁, ...), the last qubit varies fastest).
+matrix of the qubits. It is D × D, with D the qubit dimension (3 for one NV, $3^n$ for n spin-1 qubits).
 
-The cluster expansion is applied element by element. An element the free evolution keeps at zero is left at zero; when
-clusters would put a value into it the run prints a `[dm]` line with the largest such value.
+- There is one block per time step. Its first line starts with the time.
+- The elements follow row by row ($\rho_{00}, \rho_{01}, \ldots, \rho_{0,D-1}, \rho_{10}, \ldots$), three to a line.
+- Each continuation line starts with an empty time field (15 spaces) and a tab.
+- The basis is the $S_z$ basis of each qubit, from m = +S down to −S (for an NV: $m_s$ = +1, 0, −1).
+- For several qubits the basis is their product, with the first qubit the slowest index: kron(q₀, q₁, ...), so the
+  last qubit varies fastest.
 
-`example/tutorial/plot_coherence.py` reads these blocks (its `read` function); the analyzer's `read_coherence` reads only
-the one-value files.
+The cluster expansion is applied element by element. An element the free evolution keeps at zero is left at zero.
+When clusters would put a value into it, the run prints a `[dm]` line with the largest such value.
+
+`example/tutorial/plot_coherence.py` reads these blocks with its `read` function. The analyzer's `read_coherence`
+reads only the one-value files.
 
 <a id="out_tagged"></a>
 ## Tagged rows (`coherence_tagged`)
 
-The names are those of `coherence`. Every time row ends, after the coherence, with three more tab-separated fields: the
-zx and the zz component of the first bath spin's hyperfine tensor (in rad/ms, the unit CCEX holds the tensors in, ten
-decimals) and the name of the first bath file. They tell the results of many bath files apart after they are collected.
+The names are those of `coherence`. Every time row ends, after the coherence, with three more tab-separated fields:
+
+1. the zx component of the first bath spin's hyperfine tensor;
+2. its zz component;
+3. the name of the first bath file.
+
+The two components are in rad/ms, the unit CCEX holds the tensors in, with ten decimals. The fields tell the results of
+many bath files apart after they are collected.
 
 <a id="out_clusters"></a>
 ## One file per cluster (`cluster_coherence`, `cluster_density_matrix`)
 
-`cluster_coherence` writes the result as `coherence` does and, for every cluster and state, that cluster's own coherence
-$L_C$ (not the divided $\tilde L_C$): `<file>_<cluster>[_state<s>]_wiDiv` and `_noDiv`, where `<cluster>` is the cluster's bath
-indices joined by `_` (`ccein_curves_519_557_wiDiv`); the two files of one cluster hold the same curve.
-`cluster_density_matrix` writes all of that and, with gCCE, for every cluster the density matrix of the whole qubit +
-cluster space at every time step, as blocks of rows like [the density matrix](#out_dm) with the full dimension, to
-`<file>_<cluster>_full[_state<s>]_wiDiv` (`<file>_full_...` for the qubits alone). cCCE has no qubit + bath density
-matrix: there it writes what `cluster_coherence` writes. Both are for small systems: one file per cluster.
+Both modes write one file per cluster, so they are for small systems.
+
+`cluster_coherence` writes the result as `coherence` does. It also writes, for every cluster and state, that cluster's
+own coherence $L_C$, before the division that gives $\tilde L_C$.
+
+- The files are `<file>_<cluster>[_state<s>]_wiDiv` and `_noDiv`, where `<cluster>` is the cluster's bath indices
+  joined by `_` (`ccein_curves_519_557_wiDiv`).
+- The two files of one cluster hold the same curve.
+
+`cluster_density_matrix` writes all of that. With gCCE it also writes, for every cluster, the density matrix of the
+whole qubit + cluster space at every time step.
+
+- The blocks of rows are like those of [the density matrix](#out_dm), with the full dimension.
+- The file is `<file>_<cluster>_full[_state<s>]_wiDiv` (`<file>_full_...` for the qubits alone).
+- cCCE has no qubit + bath density matrix, so there it writes what `cluster_coherence` writes.
 
 <a id="out_plan"></a>
 ## The cluster plan (`<file>.clusters.json`)
 
-[output.cluster_only](InputFile_Output.md#tag_cluster_only) writes the clusters and stops before the dynamics; the log
+[output.cluster_only](InputFile_Output.md#tag_cluster_only) writes the clusters and stops before the dynamics. The log
 prints one `[cluster-plan]` line with the number of sites and clusters and the path. The file is one JSON object:
 
 | Key | Value |
@@ -132,12 +160,16 @@ prints one `[cluster-plan]` line with the number of sites and clusters and the p
 <a id="out_contributions"></a>
 ## Cluster contributions (`.contributions.state-<s>.tsv`)
 
-[output.cluster_contributions](InputFile_Output.md#tag_cluster_contributions) (cCCE and gCCE, `quantity` coherence)
-writes, for every state, `<file>.contributions.state-<s>.tsv` (s = 0 for the ensemble, first ... last of `s_range` for sampled states)
-and once `<file>.contributions.sites.tsv`. The table's first line is a header comment beginning
-`# schema=ccex-contributions-v1`, with the number of time points (`nstep=`), the time step in ms (`deltat_ms=`), the
-method, and `normalization=` (`factor_t0` for gCCE, `none` otherwise); then one line of column names and one row per
-cluster, tab-separated:
+[output.cluster_contributions](InputFile_Output.md#tag_cluster_contributions) works with cCCE and gCCE, `quantity`
+coherence. It writes:
+
+- for every state, `<file>.contributions.state-<s>.tsv`, with s = 0 for the ensemble and first ... last of `s_range`
+  for sampled states;
+- once, `<file>.contributions.sites.tsv`.
+
+The table's first line is a header comment beginning `# schema=ccex-contributions-v1`. It gives the number of time
+points (`nstep=`), the time step in ms (`deltat_ms=`), the method, and `normalization=` (`factor_t0` for gCCE, `none`
+otherwise). Then come one line of column names and one row per cluster, tab-separated:
 
 | Column | Meaning |
 |---|---|
@@ -145,21 +177,30 @@ cluster, tab-separated:
 | `bundles` | the bundles it is made of (with `cluster.mode` standard, each site is its own bundle) |
 | `production_power` | its power in the product of the result; 0 for a sub-cluster added only for this table |
 | `dimension` | the Hilbert dimension of the cluster (with the qubit for gCCE) |
-| `max_abs_log_tilde` | the largest \|log L̃_C(t)\| over the time points: the logarithm of the cluster's coherence relative to the qubit alone, minus those of all its sub-clusters (the irreducible contribution), with the imaginary part folded into (−π, π]; for gCCE each log is first referred to its value at t = 0. `nan` when any point is undefined |
+| `max_abs_log_tilde` | the largest $\lvert\log \tilde L_C(t)\rvert$ over the time points. This is the irreducible contribution: the logarithm of the cluster's coherence relative to the qubit alone, minus those of all its sub-clusters, with the imaginary part folded into (−π, π]. For gCCE each log is first referred to its value at t = 0. `nan` when any point is undefined |
 | `undefined_points` | the time points where it is not finite (a zero or an overflow) |
 | `worst_step` | the time index (0 ... nstep − 1) of the largest value |
 
-The largest values are the clusters that dominate the decay (or diverge): `sort -t "$(printf '\t')" -k5 -g -r` on the table lists
-them first. `.contributions.sites.tsv` has one row per site: `site`, `name`, `spin`, `gyro` (rad/ms/G), `x_A`, `y_A`,
-`z_A` (Å). The log prints `[cluster-contributions]` lines with the rows added and the time it took.
+The clusters with the largest values dominate the decay, or diverge. `sort -t "$(printf '\t')" -k5 -g -r` on the
+table lists them first.
+
+`.contributions.sites.tsv` has one row per site: `site`, `name`, `spin`, `gyro` (rad/ms/G), `x_A`, `y_A`, `z_A` (Å).
+The log prints `[cluster-contributions]` lines with the rows added and the time it took.
 
 <a id="out_adaptive"></a>
 ## Adaptive refinement (`cluster.adaptive.workdir`)
 
-With a [cluster.adaptive](InputFile_Cluster.md#tag_adaptive) block every step of the refinement is an ordinary run in
-its own folder under `workdir`, numbered in order with its kind: `0001-run`, `0002-probe`, ... Each holds `request.json`
-(what the step was asked), `input.json` (the run's input), `run.log`, the step's coherence `coherence_wiDiv` (and
-`_noDiv`, `_state<s>_` with sampled states) and its response files. In `output` itself:
+With a [cluster.adaptive](InputFile_Cluster.md#tag_adaptive) block, every step of the refinement is an ordinary run in
+its own folder under `workdir`. The folders are numbered in order with their kind: `0001-run`, `0002-probe`, ... Each
+holds:
+
+- `request.json`, what the step was asked;
+- `input.json`, the run's input;
+- `run.log`;
+- the step's coherence `coherence_wiDiv` (and `_noDiv`, `_state<s>_` with sampled states);
+- its response files.
+
+In `output` itself:
 
 | File | Content |
 |---|---|
@@ -167,11 +208,16 @@ its own folder under `workdir`, numbered in order with its kind: `0001-run`, `00
 | `final-bundles.json` | the bundles of the final step |
 | `final-input.json`, `final-request.json` | an input that reruns the final partition as one calculation |
 
-`summary.json` holds `status`, `input` (the input as read), `settings`, `binary_sha256`, `input_file_sha256`, `runs`
-(one record per step: `directory`, `mode`, `wall_s`, `returncode`, `timeout`), `rounds` (one record per round of
-the policy), `limitations`, and at the end `final_directory`, `final_bundles`, `cached_probe_clusters`,
-`raw_nonfinite_values`, `raw_zero_values` (and `raw_cache` when a probe cache file is used). **The final curve is
-`<final_directory>/coherence_wiDiv`.**
+The final curve is `<final_directory>/coherence_wiDiv`.
+
+`summary.json` holds these keys:
+
+- `status`, `input` (the input as read), `settings`, `binary_sha256`, `input_file_sha256`;
+- `runs`, one record per step: `directory`, `mode`, `wall_s`, `returncode`, `timeout`;
+- `rounds`, one record per round of the policy;
+- `limitations`;
+- at the end, `final_directory`, `final_bundles`, `cached_probe_clusters`, `raw_nonfinite_values`, `raw_zero_values`,
+  and `raw_cache` when a probe cache file is used.
 
 The status and the exit code of `main.out`:
 
@@ -181,9 +227,9 @@ The status and the exit code of `main.out`:
 | `round_limit`, `no_feasible_improving_merge`, `probe_budget_limited` (merge); `no_candidate`, `no_positive_culprit`, `budget_limited`, `change_limit` (regroup) | 2 |
 | an error during the refinement | 1 |
 
-A status with exit code 2 is not a failure of the run: the refinement stopped there and its last step is the result
-(`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_adaptive` ends with `no_feasible_improving_merge`). The run prints the
-status and the path of `summary.json` as its last line before the wall time.
+Exit code 2 does not mean the run failed. The refinement stopped at that status, and its last step is the result.
+`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_adaptive`, for example, ends with `no_feasible_improving_merge`. The run
+prints the status and the path of `summary.json` as its last line before the wall time.
 
 <a id="out_autoconv"></a>
 ## Automatic convergence (`auto_convergence.workdir`)
@@ -202,14 +248,14 @@ With an [auto_convergence](InputFile_AutoConvergence.md) block everything goes u
 | `result/1_window.png` ... `result/6_converged_coherence.png` | the figures of the steps and of the converged coherence |
 | `lock` | held while a runner works in the folder |
 
-Its exit codes (0 converged, 3 unresolved, 2 refused, 4 stopped, 1 error) and how to continue a cut job are in
-[Results and exit codes](InputFile_AutoConvergence.md#tag_ac_results).
+Its exit codes are 0 converged, 3 unresolved, 2 refused, 4 stopped and 1 error.
+[Results and exit codes](InputFile_AutoConvergence.md#tag_ac_results) explains them and how to continue a cut job.
 
 <a id="out_analyzer"></a>
 ## Analyzer outputs
 
 The analyzer (`example/analysis/Analyzer/CoherenceAnalyzer.v1/run.py`, [Analysis](Analysis.md)) writes files named by
-its `-fo` option, in the same two-column format (time, then `+re+imj`, ten decimals):
+its `-fo` option. They have the same two-column format: the time, then `+re+imj` with ten decimals.
 
 | Option | File |
 |---|---|

@@ -380,7 +380,9 @@ class TestEnvelopeStep(unittest.TestCase):
         t = np.linspace(0, 1, 2500)
         x = np.sin(9 * t) + 0.1 * np.cos(70 * t)
         k = np.exp(-0.5 * ((t[:, None] - t[None, :]) / 0.03) ** 2)
-        self.assertTrue(np.array_equal(truncation._smooth(t, 0.03, x), (k / k.sum(1, keepdims=True)) @ x))
+        # the same sum in another order: equal to rounding, not bit for bit (numpy 2 and other BLAS builds order it
+        # differently)
+        np.testing.assert_allclose(truncation._smooth(t, 0.03, x), (k / k.sum(1, keepdims=True)) @ x, rtol=1e-12, atol=1e-15)
 
 
 if __name__ == "__main__":

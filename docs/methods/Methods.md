@@ -1,6 +1,6 @@
 # Methods
 
-How CCEX computes what it computes, one page per method; the keys themselves are in the
+Each page explains how one method works. The input keys are in the
 [input reference](../user/InputFile.md).
 
 | Page | What it describes |

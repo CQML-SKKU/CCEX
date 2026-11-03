@@ -1,36 +1,45 @@
 # Defect tags
-The `Defect` block describes the paramagnetic defects of the bath: the list of defect species, the model (old key names are in the table of
-[old names](InputFile.md#OldNames)). The files of their axes and states are bath-configuration keys:
-[configuration.defect_axis_file](InputFile_General.md#tag_defect_axis_file) and
+The `Defect` block describes the paramagnetic defects of the bath: the list of defect species, which is the model.
+Old key names are in the table of [old names](InputFile.md#OldNames). The files of the defects' axes and states are
+bath-configuration keys: [configuration.defect_axis_file](InputFile_General.md#tag_defect_axis_file) and
 [configuration.defect_state_file](InputFile_General.md#tag_defect_state_file).
 
 <a id="DefectModel"></a>
-**The bath model.** A bath spin whose name in the bath file is a species' `name` is a paramagnetic defect: an electron
-spin (its spin and γ from the gyro file) with a set of indexed *axis states*, `1 .. n_axis_states`. An axis state stands
-for what the electron's environment can be: a principal (Jahn-Teller) axis of a P1 centre, or a frozen state of its
-nucleus. Each defect spin is given one axis state, from
-[configuration.defect_axis_file](InputFile_General.md#tag_defect_axis_file) or at random from `configuration.seed`, and
-its tensors are those of that state. A nucleus on the defect site enters in one of two ways:
-- through the electron's [detuning](#tag_df_detuning) only: the hyperfine coupling taken as a static shift
-  A·m<sub>I</sub> of the electron (one axis state per axis and m<sub>I</sub>, as the twelve detunings of a P1 with
-  <sup>14</sup>N), with `n_onsite_spins` 0;
-- as an on-site spin of its own (`n_onsite_spins` > 0, with [types](#tag_df_types), [spins](#tag_df_spins),
-  [gyros](#tag_df_gyros) and per axis state its [position](#tag_df_nuclear_positions), [hyperfine](#tag_df_hyperfine)
-  and [efg](#tag_df_efg)), which joins its electron in every cluster the defect is in.
+**The bath model.** A bath spin whose name in the bath file is a species' `name` is a paramagnetic defect. It is an
+electron spin (its spin and γ from the gyro file) with a set of indexed *axis states*, `1 .. n_axis_states`.
 
-With [configuration.s_range](InputFile_General.md#tag_s_range) the bath is sampled in product states: the
-electrons' states from `bath_state_file` or `seed`, the on-site spins' from `defect_state_file` or `seed`, and the static
-field of the spins outside a cluster enters as a mean field
-([bath_bath_mean_field](InputFile_General.md#tag_bath_bath_mean_field)). The Hamiltonian and the approximations are in
-[CCE methods](../methods/cce.md); `example/tutorial/03_P1/` runs the P1 bath both ways.
+An axis state stands for what the electron's environment can be: a principal (Jahn-Teller) axis of a P1 centre, or a
+frozen state of its nucleus. Each defect spin is given one axis state, from
+[configuration.defect_axis_file](InputFile_General.md#tag_defect_axis_file) or at random from `configuration.seed`.
+Its tensors are those of that state.
+
+A nucleus on the defect site enters in one of two ways:
+- through the electron's [detuning](#tag_df_detuning) only, with `n_onsite_spins` 0: the hyperfine coupling is taken
+  as a static shift A·m<sub>I</sub> of the electron, with one axis state per axis and m<sub>I</sub> (as the twelve
+  detunings of a P1 with <sup>14</sup>N);
+- as an on-site spin of its own (`n_onsite_spins` > 0, with [types](#tag_df_types), [spins](#tag_df_spins),
+  [gyros](#tag_df_gyros) and, per axis state, its [position](#tag_df_nuclear_positions),
+  [hyperfine](#tag_df_hyperfine) and [efg](#tag_df_efg)). It joins its electron in every cluster the defect is in.
+
+With [configuration.s_range](InputFile_General.md#tag_s_range) the bath is sampled in product states:
+- the electrons' states come from `bath_state_file` or `seed`;
+- the on-site spins' states come from `defect_state_file` or `seed`;
+- the static field of the spins outside a cluster enters as a mean field
+  ([bath_bath_mean_field](InputFile_General.md#tag_bath_bath_mean_field)).
+
+The Hamiltonian and the approximations are in [CCE methods](../methods/cce.md); `example/tutorial/03_P1/` runs the P1
+bath both ways.
 
 <a id="tag_df_forms"></a>
-**Two forms of the values**: a key written as a list `[[axis state, name, value], ...]` holds a value per axis
-state; the object form holds one value for every axis state (`zfs`: `{"D", "axis", "unit"}` or `{"tensor", "unit"}`) or
-wraps the same list with a unit (`hyperfine`, `efg`, `detuning`, `gyros`, `quadrupole_moments`: `{"values": [...],
-"unit": ...}`, where `"value"` is taken too, the word the other keys use; both in one object are refused). A unit is
-written with its case, as in the tables below (`"mhz"` is refused with the table's `"MHz"`; it was compared without
-regard to case). A plain frequency here is MHz, where a qubit's ([Qubit.qubit[].detuning](InputFile_Qubit.md#tag_detuning),
+**Two forms of the values.**
+- The list form `[[axis state, name, value], ...]` holds a value per axis state.
+- The object form holds one value for every axis state (`zfs`: `{"D", "axis", "unit"}` or `{"tensor", "unit"}`), or
+  wraps the same list with a unit (`hyperfine`, `efg`, `detuning`, `gyros`, `quadrupole_moments`:
+  `{"values": [...], "unit": ...}`). `"value"`, the word the other keys use, is taken too; both in one object are
+  refused.
+
+A unit is written with its case, as in the tables below: `"mhz"` is refused with the table's `"MHz"`. A plain
+frequency here is MHz, while a qubit's ([Qubit.qubit[].detuning](InputFile_Qubit.md#tag_detuning),
 [Qubit.intmap](InputFile_Qubit.md#tag_intmap)) is kHz.
 
 <details><summary><b>Example:</b> Click here to show example code</summary>
@@ -74,7 +83,7 @@ regard to case). A plain frequency here is MHz, where a qubit's ([Qubit.qubit[].
 <a id="tag_Defect"></a>
 ## Defect
 <b>Description:</b><br>
-Detailed information of the paramagnetic \(PM\) defect bath: `species`, the list of defect species. <br>
+The paramagnetic (PM) defect bath: `species`, the list of defect species. <br>
 <b>Data Type:</b> Dictionary `{"species": [...]}`
 
 <b>Default:</b> -
@@ -132,10 +141,11 @@ Name of the paramagnetic defect. <br>
 ## n_onsite_spins
 <b>Description:</b><br>
 Number of on-site (nuclear) spins of the paramagnetic defect. <br>
-Each on-site spin (with its [types](#tag_df_types), [spins](#tag_df_spins), [gyros](#tag_df_gyros) and the tensors per
-axis state) joins its electron in every cluster the defect is in, so a cluster of one P1 is its electron and its
-<sup>14</sup>N. With 0 the nucleus enters only through the electron's [detuning](#tag_df_detuning); write the on-site
-spins when its own dynamics matters (`example/tutorial/03_P1/cCCE2_Hahn_onsite14N/` against `cCCE2_Hahn_states/`). <br>
+Each on-site spin (with its [types](#tag_df_types), [spins](#tag_df_spins), [gyros](#tag_df_gyros) and the tensors
+per axis state) joins its electron in every cluster the defect is in. A cluster of one P1 is then its electron and its
+<sup>14</sup>N. <br>
+With 0 the nucleus enters only through the electron's [detuning](#tag_df_detuning). Write the on-site spins when the
+nucleus' own dynamics matters (compare `example/tutorial/03_P1/cCCE2_Hahn_onsite14N/` with `cCCE2_Hahn_states/`). <br>
 <b>Data Type:</b> Int
 
 <b>Default:</b> 0
@@ -147,14 +157,14 @@ spins when its own dynamics matters (`example/tutorial/03_P1/cCCE2_Hahn_onsite14
 <a id="tag_df_n_axis_states"></a>
 ## n_axis_states
 <b>Description:</b><br>
-Number of indexed axis states available for the paramagnetic defect: an index can be a principal axis, or a
-frozen nuclear state (for example three m<sub>I</sub> detunings). A shared object-form zfs is broadcast to indices 1
-through n_axis_states. <br>
+Number of indexed axis states of the paramagnetic defect. An index can be a principal axis or a frozen nuclear
+state (for example three m<sub>I</sub> detunings). <br>
 
-The indexed entries of [nuclear_positions](#tag_df_nuclear_positions), [hyperfine](#tag_df_hyperfine),
-[efg](#tag_df_efg), zfs and [detuning](#tag_df_detuning) must address an
-axis state in <b>1 .. n_axis_states</b>; index 0 is reserved for the main spin and is
-written by CCEX itself. An index above n_axis_states is refused. <br>
+- The indexed entries of [nuclear_positions](#tag_df_nuclear_positions), [hyperfine](#tag_df_hyperfine),
+  [efg](#tag_df_efg), zfs and [detuning](#tag_df_detuning) must address an axis state in
+  <b>1 .. n_axis_states</b>. An index above n_axis_states is refused.
+- Index 0 is reserved for the main spin; CCEX writes it itself.
+- A shared object-form zfs is broadcast to indices 1 through n_axis_states. <br>
 
 <b>Data Type:</b> Int
 
@@ -167,10 +177,11 @@ written by CCEX itself. An index above n_axis_states is refused. <br>
 <a id="tag_df_axis"></a>
 ## axis (zfs.axis)
 <b>Description:</b><br>
-The symmetry axis of the D form of [zfs](#tag_df_zfs), written inside it: `"zfs": {"D": ..., "axis": [x, y, z], "unit":
-...}`, in the species' [frame](#tag_df_frame), normalized when read. Before 2.0.0 it was a key of the species,
-`Defect.species[].axis`, which only the D form used; that key is refused with the new place (the converter moves it into
-a D-form zfs, and drops it elsewhere). <br>
+The symmetry axis of the D form of [zfs](#tag_df_zfs), written inside it:
+`"zfs": {"D": ..., "axis": [x, y, z], "unit": ...}`. It is in the species' [frame](#tag_df_frame) and is normalized
+when read. <br>
+The old species key `Defect.species[].axis`, which only the D form used, is refused with the new place. The converter
+moves it into a D-form zfs and drops it elsewhere. <br>
 
 <b>Data Type:</b> Double List(3)
 
@@ -183,12 +194,14 @@ a D-form zfs, and drops it elsewhere). <br>
 <a id="tag_df_frame"></a>
 ## Defect frame
 <b>Description:</b><br>
-The frame this species' nuclear_positions displacement vectors, hyperfine / efg / zfs tensor components and zfs axis
-are written in (`coordinate_frame` before 2.0.0, with `"bath"` for `"file"`). Read with
-[frame.rotation](InputFile_General.md#tag_frame_rotation) on, where a species that writes `nuclear_positions`,
-`hyperfine`, `efg` or `zfs` needs it (before 2.0.0 every species did, also a P1 of detunings alone, which has no
-direction; before 2.0.0 an absent one meant `"qubit"`); otherwise, and with the rotation off, it is not used (reported).
-Detuning is a scalar frequency and is unaffected. <br>
+The frame in which this species writes its nuclear_positions displacement vectors, its hyperfine, efg and zfs tensor
+components and its zfs axis. <br>
+- It is read with [frame.rotation](InputFile_General.md#tag_frame_rotation) on. Then a species that writes
+  `nuclear_positions`, `hyperfine`, `efg` or `zfs` needs it.
+- Otherwise, and with the rotation off, it is not used (reported).
+- Detuning is a scalar frequency and does not depend on the frame.
+
+In old inputs the key was `coordinate_frame`, with `"bath"` for `"file"`, and an absent one meant `"qubit"`. <br>
 
 | Option | Description |
 |---|---|
@@ -206,8 +219,8 @@ Detuning is a scalar frequency and is unaffected. <br>
 <a id="tag_df_types"></a>
 ## types
 <b>Description:</b><br>
-Name of on-site nuclear spins of the paramagnetic defect. <br>
-The number of types should be the same as [n_onsite_spins](#tag_df_n_onsite_spins). <br>
+Names of the on-site nuclear spins of the paramagnetic defect, one per on-site spin
+([n_onsite_spins](#tag_df_n_onsite_spins)). <br>
 <b>Data Type:</b> String List
 
 <b>Default:</b> -
@@ -219,8 +232,8 @@ The number of types should be the same as [n_onsite_spins](#tag_df_n_onsite_spin
 <a id="tag_df_spins"></a>
 ## spins
 <b>Description:</b><br>
-Spin numbers of the on-site nuclear spins of the paramagnetic defect. <br>
-The number of spins should be the same as [n_onsite_spins](#tag_df_n_onsite_spins). <br>
+Spin numbers of the on-site nuclear spins of the paramagnetic defect, one per on-site spin
+([n_onsite_spins](#tag_df_n_onsite_spins)). <br>
 <b>Data Type:</b> Float List
 
 <b>Default:</b> -
@@ -232,14 +245,14 @@ The number of spins should be the same as [n_onsite_spins](#tag_df_n_onsite_spin
 <a id="tag_df_gyros"></a>
 ## gyros
 <b>Description:</b><br>
-Gyromagnetic ratio of the on-site nuclear spins of the paramagnetic defect. <br>
-The number of gyros should be the same as [n_onsite_spins](#tag_df_n_onsite_spins). <br>
-The unit-aware form is
+Gyromagnetic ratios of the on-site nuclear spins of the paramagnetic defect, one per on-site spin
+([n_onsite_spins](#tag_df_n_onsite_spins)). <br>
+The form with a unit is
 ``` "gyros" : {"values" : [3.0777051853], "unit" : "MHz/T"} ```
-Plain frequency units such as MHz/T and kHz/G mean γ/2π; units beginning
-with <tt>rad</tt> are angular gyromagnetic ratios. Values are normalized internally to
-rad kHz/G, numerically the same as rad/ms/G. The original bare list remains supported
-in that internal unit. <br>
+- Plain frequency units such as MHz/T and kHz/G mean γ/2π. Units beginning with <tt>rad</tt> are angular
+  gyromagnetic ratios.
+- Values are converted to rad kHz/G, numerically the same as rad/ms/G.
+- A bare list is still read, in that internal unit. <br>
 <b>Data Type:</b> Object {values (or value), unit}, or legacy Double List
 
 <b>Units:</b> radkHz/G (default), rad/ms/G, kHz/G, MHz/G, MHz/T, Hz/T,
@@ -254,13 +267,11 @@ radMHz/T, rad/us/T, or rad/s/T
 <a id="tag_df_quadrupole_moments"></a>
 ## quadrupole_moments
 <b>Description:</b><br>
-Quadrupole moment \(eQ\) values of the on-site nuclear spins of the paramagnetic defect. <br>
-The number of eQ values should be the same as [n_onsite_spins](#tag_df_n_onsite_spins). <br>
-The stored quantity follows the existing area convention: one internal unit is
-10<sup>−30</sup> m² = 1 fm² = 10 mbarn. The unit-aware form is
+Quadrupole moments (eQ) of the on-site nuclear spins of the paramagnetic defect, one per on-site spin
+([n_onsite_spins](#tag_df_n_onsite_spins)). <br>
+The internal unit is 10<sup>−30</sup> m² = 1 fm² = 10 mbarn. The form with a unit,
 ``` "quadrupole_moments" : {"values" : [20.44], "unit" : "mbarn"} ```
-and is normalized to that internal unit. The original bare list remains supported in
-10<sup>−30</sup> m². <br>
+is converted to that unit. A bare list is still read, in 10<sup>−30</sup> m². <br>
 <b>Data Type:</b> Object {values (or value), unit}, or legacy Double List
 
 <b>Units:</b> 1e-30 m^2 (default), fm^2, m^2, cm^2, barn, or mbarn
@@ -274,8 +285,8 @@ and is normalized to that internal unit. The original bare list remains supporte
 <a id="tag_df_nuclear_positions"></a>
 ## nuclear_positions
 <b>Description:</b><br>
-Relative x,y,z position of on-site nuclear spins of the paramagnetic defect over the electron spin position. <br>
-The number of `nuclear_positions` should be the same as [n_onsite_spins](#tag_df_n_onsite_spins) × [n_axis_states](#tag_df_n_axis_states) <br>
+Position x, y, z of each on-site nuclear spin of the paramagnetic defect, relative to the electron spin. <br>
+The number of `nuclear_positions` should be [n_onsite_spins](#tag_df_n_onsite_spins) × [n_axis_states](#tag_df_n_axis_states). <br>
 <b>Data Type:</b> 2D List
 
 <b>Unit:</b> angstrom
@@ -290,19 +301,18 @@ The number of `nuclear_positions` should be the same as [n_onsite_spins](#tag_df
 <a id="tag_df_hyperfine"></a>
 ## hyperfine
 <b>Description:</b><br>
-The hyperfine interaction between on-site nuclear spins and the electron spin associated with a paramagnetic defect. <br>
-The number of `hyperfine` should be the same as [n_onsite_spins](#tag_df_n_onsite_spins) × [n_axis_states](#tag_df_n_axis_states) <br>
-The unit-aware form wraps the same indexed entries in <tt>values</tt>. Each tensor may
-be a flat row-major 9-number array or a nested 3x3 array:
+The hyperfine interaction between the on-site nuclear spins and the electron spin of the paramagnetic defect. <br>
+The number of `hyperfine` entries should be [n_onsite_spins](#tag_df_n_onsite_spins) × [n_axis_states](#tag_df_n_axis_states). <br>
+Each tensor is a flat row-major array of 9 numbers or a nested 3x3 array. The form with a unit wraps the same indexed
+entries in <tt>values</tt>:
 ```
 "hyperfine" : {
     "values" : [[1, "14N", [[81.312,0,0], [0,81.312,0], [0,0,114.0264]]]],
     "unit" : "MHz"
 }
 ```
-With the rotation on, the species' [frame](#tag_df_frame) says its
-Cartesian tensor basis. Object values are normalized to MHz. The
-original bare indexed list remains supported and is interpreted as MHz. <br>
+- Object values are converted to MHz. A bare indexed list is still read, in MHz.
+- With the rotation on, the species' [frame](#tag_df_frame) gives the Cartesian tensor basis. <br>
 <b>Data Type:</b> Object {values (or value), unit}, or legacy 2D List
 
 <b>Units:</b> Hz, kHz, MHz (default), or GHz
@@ -318,17 +328,17 @@ original bare indexed list remains supported and is interpreted as MHz. <br>
 ## efg
 <b>Description:</b><br>
 The electric field gradient tensors of the paramagnetic defect. <br>
-The number of `efg` should be the same as [n_onsite_spins](#tag_df_n_onsite_spins) × [n_axis_states](#tag_df_n_axis_states) <br>
-The unit-aware form follows the same indexed tensor syntax as hyperfine:
+The number of `efg` entries should be [n_onsite_spins](#tag_df_n_onsite_spins) × [n_axis_states](#tag_df_n_axis_states). <br>
+The form with a unit uses the same indexed tensors as hyperfine:
 ```
 "efg" : {
     "values" : [[1, "14N", [[0.521910,0,0], [0,0.522771,-0.000086], [0,-0.000086,-1.044681]]]],
     "unit" : "Hartree/Bohr^2"
 }
 ```
-With the rotation on, the species' [frame](#tag_df_frame) says its basis. Object
-values are normalized to Hartree/Bohr^2 before the existing eQ–EFG quadrupole conversion.
-The original bare indexed list remains supported in Hartree/Bohr^2. <br>
+- Object values are converted to `Hartree/Bohr^2` before the eQ–EFG quadrupole conversion. A bare indexed list is still
+  read, in `Hartree/Bohr^2`.
+- With the rotation on, the species' [frame](#tag_df_frame) gives the basis. <br>
 <b>Data Type:</b> Object {values (or value), unit}, or legacy 2D List
 
 <b>Units:</b> Hartree/Bohr^2 (default; aliases Ha/Bohr^2, Ha/a0^2, a.u.),
@@ -344,20 +354,19 @@ V/m^2, or V/angstrom^2
 <a id="tag_df_zfs"></a>
 ## zfs
 <b>Description:</b><br>
-The zero-field splitting of the electron spin associated with a paramagnetic defect.
-Three input forms are accepted. <br>
+The zero-field splitting of the electron spin of the paramagnetic defect, in one of three forms. <br>
 
-The compact axial form constructs one Cartesian tensor from its normalized [axis](#tag_df_axis) n̂:
+The axial form builds one Cartesian tensor from its normalized [axis](#tag_df_axis) n̂:
 <p align="center">T = D (n̂ n̂<sup>T</sup> − I/3).</p>
 It is broadcast to every axis state. It has no E: an axis fixes z but not the transverse x/y basis, so an E other than
-0 needs the explicit tensor (`E`, which took 0 only, is refused, and so is a species `axis` beside the zfs).
+0 needs the explicit tensor. `E` (which took 0 only) is refused, and so is a species `axis` beside the zfs.
 ```
 "frame" : "file",
 "zfs" : { "D" : 2870.0, "axis" : [1.0, 1.0, 1.0], "unit" : "MHz" }
 ```
 
-The shared tensor form accepts either a nested 3x3 matrix or a flat row-major 9-number
-array, and also broadcasts it to every axis state:
+The shared tensor form takes a nested 3x3 matrix or a flat row-major array of 9 numbers. It is also broadcast to every
+axis state:
 ```
 "frame" : "file",
 "zfs" : {
@@ -368,7 +377,7 @@ array, and also broadcasts it to every axis state:
 }
 ```
 
-The per-index list form is in MHz. Here a separate 3x3 tensor may be supplied for every axis state:
+The indexed list form gives a 3x3 tensor for each axis state, in MHz:
 ```
 "zfs" : [[1, "e", [0.0, 956.6667, 956.6667, 956.6667, 0.0, 956.6667, 956.6667, 956.6667, 0.0]],
          [2, "e", [0.0, 956.6667, 956.6667, 956.6667, 0.0, 956.6667, 956.6667, 956.6667, 0.0]]]
@@ -383,9 +392,8 @@ The per-index list form is in MHz. Here a separate 3x3 tensor may be supplied fo
     "zfs" : [[1, "e", [0.0, 956.6667, 956.6667, 956.6667, 0.0, 956.6667, 956.6667, 956.6667, 0.0]]]
     ```
 
-<b>Unit:</b> Object forms accept Hz, kHz, MHz (default), or GHz and are converted to
-MHz while parsing. The legacy indexed form is MHz. The Hamiltonian later converts the
-stored MHz values to angular kHz (rad/ms).
+<b>Unit:</b> The object forms take Hz, kHz, MHz (default) or GHz and are converted to MHz when read. The indexed list
+form is MHz. The Hamiltonian converts the stored MHz values to angular kHz (rad/ms).
 
 <b>Default:</b> zero tensor
 
@@ -394,24 +402,22 @@ stored MHz values to angular kHz (rad/ms).
 <a id="tag_df_detuning"></a>
 ## detuning
 <b>Description:</b><br>
-Detuning frequencies that will be applied to the electron spin associated with the paramagnetic defect. <br>
-The number of `detuning` should be the same as [n_axis_states](#tag_df_n_axis_states) <br>
-This tag is used to approximate the spin interaction tensors related to the paramagnetic defect, <br>
-e.g., <b>S</b> · <b>A</b> · <b>I</b> ≈ Δ m<sub>I</sub> S<sub>z</sub>. <br>
-The unit-aware form wraps the same indexed values in an object:
+Detuning frequencies applied to the electron spin of the paramagnetic defect, one per axis state
+([n_axis_states](#tag_df_n_axis_states)). <br>
+They approximate the spin interaction tensors of the defect, e.g. <b>S</b> · <b>A</b> · <b>I</b> ≈ Δ m<sub>I</sub> S<sub>z</sub>. <br>
+The form with a unit wraps the same indexed values in an object:
 ```
 "detuning" : {
     "values" : [[1, "e", -2.14], [2, "e", 0.0], [3, "e", 2.14]],
     "unit" : "MHz"
 }
 ```
-The original bare indexed list remains supported and is interpreted as MHz (a qubit's
-[detuning](InputFile_Qubit.md#tag_detuning) is kHz). Missing axis states retain the zero default. <br>
+A bare indexed list is still read, in MHz (a qubit's [detuning](InputFile_Qubit.md#tag_detuning) is kHz). Axis states
+that are not given keep the default 0. <br>
 <b>Data Type:</b> Object {values (or value), unit}, or legacy 2D List
 
-<b>Unit:</b> The object form accepts Hz, kHz, MHz (default), or GHz and converts to
-MHz while parsing. The legacy indexed form is MHz. The Hamiltonian later converts the
-stored MHz values to angular kHz (rad/ms).
+<b>Unit:</b> The object form takes Hz, kHz, MHz (default) or GHz and is converted to MHz when read. The indexed list
+form is MHz. The Hamiltonian converts the stored MHz values to angular kHz (rad/ms).
 
 <b>Default:</b> zero for every unspecified axis state
 

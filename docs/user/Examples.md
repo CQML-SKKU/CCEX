@@ -1,12 +1,15 @@
 # Examples
 
-Thirteen worked examples live in `example/tutorial/`, in the order to learn them; each has a page here with its text,
-its input files and its expected figures. Each topic folder holds one folder per calculation, named
-`<method><order>_<pulse>_<approach>` (`cCCE2_Hahn_ensemble`: cCCE to order 2, Hahn echo, the bath ensemble; the
-approach is `ensemble`, `states` or what the calculation compares). A calculation folder has its inputs
-(`ccein*.jsonc`, JSON with `//` comments, only the keys that matter; `main.out -e` writes every key), a `run.sh` and the
-`expected.png` a rerun is compared with. Each page says, for every calculation, what it shows, the keys that matter,
-how to run it (time, ranks, memory), the expected result and what to change next.
+`example/tutorial/` holds thirteen worked examples, in the order to learn them. Each has a page here with its text,
+its input files and its expected figures.
+
+- Each topic folder holds one folder per calculation, named `<method><order>_<pulse>_<approach>`. For example,
+  `cCCE2_Hahn_ensemble` is cCCE to order 2, Hahn echo, the bath ensemble. The approach is `ensemble`, `states` or what
+  the calculation compares.
+- A calculation folder has its inputs, a `run.sh` and the `expected.png` a rerun is compared with. The inputs
+  (`ccein*.jsonc`) are JSON with `//` comments and hold only the keys that matter; `main.out -e` writes every key.
+- For every calculation, the page says what it shows, the keys that matter, how to run it (time, ranks, memory), the
+  expected result and what to change next.
 
 | Page | Topic |
 |---|---|
@@ -33,19 +36,27 @@ cd example/tutorial/00_quickstart
 NP=4 bash run.sh                               # results/; needs python3 with numpy and matplotlib for the plot
 ```
 
-`run.sh` finds the binary through `git rev-parse --show-toplevel` (`CCEX_BIN` names another one, e.g. a CMake build's
-`build/bin/main.out`; `CCEX_GPU_BIN` the GPU binary of `08_GPU`), runs every input with `mpirun -n $NP ... -o results`
-(the outputs are named after the input: `ccein_wiDiv`, `ccein_k1_state3_wiDiv`, ...; see [Output files](OutputFiles.md))
-and then `example/tutorial/plot_coherence.py`, which writes `results/coherence.png` and prints one number per curve
-(T2 = the last time |L| ≥ 1/e). A few `run.sh` also run a variant of the input written by
-`example/tools/InputKeys/set_input_keys.py` into `results/`. Inputs name their files relative to the calculation
-folder (`../bath/`, `../../00_quickstart/bath/`), so `run.sh` is run from there. Git ignores `results/`.
+`run.sh` does three things:
 
-Shared by the tutorials: `example/tutorial/plot_coherence.py` (the figures and numbers) and
-`example/tutorial/make_natab_baths.sh` (natural-abundance ¹³C configurations made with `example/tools/BathGenerator`,
-for `01` and `09`). Each `expected.png` was made by that folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks);
-those of `08_GPU` were made on a GPU server node (idm4-gpu).
-Times and memory on the pages are from the same workstation.
+1. It finds the binary through `git rev-parse --show-toplevel`. `CCEX_BIN` names another one, e.g. a CMake build's
+   `build/bin/main.out`; `CCEX_GPU_BIN` names the GPU binary of `08_GPU`.
+2. It runs every input with `mpirun -n $NP ... -o results`. The outputs are named after the input: `ccein_wiDiv`,
+   `ccein_k1_state3_wiDiv`, ... (see [Output files](OutputFiles.md)).
+3. It runs `example/tutorial/plot_coherence.py`, which writes `results/coherence.png` and prints one number per curve:
+   T2, the last time $|L| \ge 1/e$.
+
+A few `run.sh` also run a variant of the input, written into `results/` by
+`example/tools/InputKeys/set_input_keys.py`. Inputs name their files relative to the calculation folder (`../bath/`,
+`../../00_quickstart/bath/`), so run `run.sh` from there. Git ignores `results/`.
+
+Two files are shared by the tutorials:
+
+- `example/tutorial/plot_coherence.py` makes the figures and numbers.
+- `example/tutorial/make_natab_baths.sh` makes the natural-abundance ¹³C configurations of `01` and `09` with
+  `example/tools/BathGenerator`.
+
+Each `expected.png` was made by that folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks). Those of `08_GPU`
+were made on a GPU server node (idm4-gpu). Times and memory on the pages are from the same workstation.
 
 <a id="WhatToUse"></a>
 ## What should I use for my case?
@@ -68,5 +79,5 @@ Times and memory on the pages are from the same workstation.
 | a decay from many weak noise sources, a noise spectrum S(f), or a model noise without a bath | `method` noise, `hamiltonian.noise` (`spectrum`, `compute`) | [11_noise](../../example/tutorial/11_noise/README.md) |
 | which nuclear pairs drive a decay (any nuclear spin, with quadrupoles) | `method` pseudospin, its channel table | [12_pseudospin](../../example/tutorial/12_pseudospin/README.md) |
 
-Which combinations of method, cluster mode and backend run at all is the table
-[What runs where](Overview.md#WhatRunsWhere).
+The table [What runs where](Overview.md#WhatRunsWhere) shows which combinations of method, cluster mode and backend
+run at all.

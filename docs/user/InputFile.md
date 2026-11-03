@@ -1,17 +1,17 @@
 # Input file
 <a id="InputFile"></a>
 
-Every key of the input file, in eight groups. Each group is a page of its own, and
-every key in the lists below links to its entry there. Inputs written for an earlier version use other key names and
-places: the table of [old names](#OldNames) is at the end of this page, and
-`example/tools/InputKeys/convert_input_keys.py` rewrites an old input. `main.out -e` writes an input template
-(`ccex_example.jsonc`) with every key ([Getting started](GettingStarted.md)).
+Every key of the input file, in eight groups. Each group has a page of its own, and every key in the lists below links
+to its entry there.
+
+- `main.out -e` writes an input template (`ccex_example.jsonc`) with every key ([Getting started](GettingStarted.md)).
+- Inputs written for an earlier version use other key names and places. The table of [old names](#OldNames) at the
+  end of this page lists them, and `example/tools/InputKeys/convert_input_keys.py` rewrites an old input.
 
 <a id="HowToWrite"></a>
 ## How to write the input file
 
-The input file consists of key-value pairs where each key represents a specific setting.
-Each parameter should be written in the following format:
+The input file is a set of key-value pairs. Each key is one setting:
 
 ```
 {
@@ -22,10 +22,12 @@ Each parameter should be written in the following format:
 }
 ```
 
-A `//`, `#` or `!` outside a JSON string starts a comment that runs to the end of the line, so a whole line or the rest
-of a line after a value can be a comment. Inside a string (`"#note"`, `"file": "run#1"`, `"http://x"`, `"a//b"`) they
-are ordinary characters. An input written with `//` comments can be named `.jsonc` (JSON with comments), which vim and
-VS Code colour as JSON with comments; the default output name drops `.jsonc` as it drops `.json`.
+A `//`, `#` or `!` outside a JSON string starts a comment that runs to the end of the line. A comment can fill a whole
+line or follow a value. Inside a string these characters are ordinary (`"#note"`, `"file": "run#1"`, `"http://x"`,
+`"a//b"`).
+
+An input with `//` comments can be named `.jsonc` (JSON with comments), which vim and VS Code colour as JSON with
+comments. The default output name drops `.jsonc` as it drops `.json`.
 
 ```
 // a comment line
@@ -37,19 +39,22 @@ VS Code colour as JSON with comments; the default output name drops `.jsonc` as 
 }
 ```
 
-A key that is left out takes its default. A key that is present has to have the type its
-entry gives: `"knight": "true"`, a quoted number, `"nstep": 10.5` or a string inside a
-number array stops the run with the key named (with its path in a block, e.g. `pulse.count`). A switch is `true` or `false` (the 0 and 1 the old
-keys took are not read by the new ones). Keys are read without regard to case.
+A key that is left out takes its default. Keys are read without regard to case.
 
-A key that no part of the run reads is reported (`Warning: input key ... is not read`), and
-when it is one or two letters away from a key that was looked up and is absent from the same
-block, the run stops: `"s_rang"` would leave `s_range` out (the ensemble), `"alpha_stat"` in the `Qubit` block its `alpha_state`.
-A key the run reads but does not use is reported with one line for every such key,
-`Warning: input key "..." is not used by this run: <why>` ([the cases](InputFile_General.md#tag_not_used)), and a file
-the input names that does not open stops the run ([files](InputFile_General.md#tag_configuration_missing)).
-A key of an old name is refused with its current name (`Error: input key "npulse" is now "pulse.count"`) and
-a pointer to the converter ([old names](#OldNames)).
+A key that is present must have the type its entry gives. A wrong type stops the run and names the key (with its path
+in a block, e.g. `pulse.count`). Examples of wrong types: `"knight": "true"`, a quoted number, `"nstep": 10.5`, a string
+inside a number array. A switch is `true` or `false`; the new keys do not read the 0 and 1 that the old keys took.
+
+What the run reports about keys:
+
+- A key that no part of the run reads is reported (`Warning: input key ... is not read`). When it is one or two letters
+  away from a key that was looked up and is absent from the same block, the run stops. Examples: `"s_rang"` would leave
+  `s_range` out (the ensemble), and `"alpha_stat"` in the `Qubit` block would leave out its `alpha_state`.
+- A key the run reads but does not use gets one line, `Warning: input key "..." is not used by this run: <why>`
+  ([the cases](InputFile_General.md#tag_not_used)).
+- A file the input names that does not open stops the run ([files](InputFile_General.md#tag_configuration_missing)).
+- A key of an old name is refused with its current name (`Error: input key "npulse" is now "pulse.count"`) and a
+  pointer to the converter ([old names](#OldNames)).
 
 A whole input in the new keys:
 
@@ -75,9 +80,9 @@ A whole input in the new keys:
 <a id="Units"></a>
 ### Units
 
-A number is in the unit its key names (the table). The keys of the table also take `{"value": ..., "unit": "..."}`,
-the value being what the plain form takes (a number, or a list for `bfield`, `rbath`, `rdip`, `bath_shift`, `xyz`,
-`energy_shift`):
+A plain number is in the unit its key names (the table below). The keys of the table also take
+`{"value": ..., "unit": "..."}`. The value is what the plain form takes: a number, or a list for `bfield`, `rbath`,
+`rdip`, `bath_shift`, `xyz` and `energy_shift`.
 
 | Key | Unit of a plain number | Units of `{"value", "unit"}` |
 |---|---|---|
@@ -97,29 +102,47 @@ the value being what the plain form takes (a number, or a list for `bfield`, `rb
 "rdip":   {"value": [0.1, 1.0], "unit": "nm"}      # = "rdip": [1, 10]
 ```
 
-The object is turned into the plain number before any reader sees it, by one exact operation: a multiplication by a power
-of ten going to a smaller unit (`nm` to Å: × 10), a division by one going to a larger (`us` to ms: / 1000; 0.001 has no
-exact binary form, x / 1000 is the double nearest the decimal value). So `{"value": 5, "unit": "us"}` is the number
-`0.005` bit for bit, and a plain number is read as it is. An object with other keys, a unit not in its row, or a value
-that is not a number or a list of numbers is refused with the units of the key. The units are written as in the table
-(case counts: `mT`, not `MT`), and so are the units of the Defect block and `Qubit.intmap` (they were compared
-without regard to case: `"mhz"` is refused with `"MHz"`, and the converter writes the table's spelling). The keys that
-take `{"values": ..., "unit": ...}` (the Defect `gyros`, `quadrupole_moments`, `hyperfine`, `efg`, `detuning`; `"value"`
-is taken there too, the word of the other keys, one of the two) and the Defect `zfs` (`{"D", "axis", "unit"}` or
-`{"tensor", "unit"}`) and a `Qubit.intmap` entry (its own `unit`) keep that form. The units do not apply to the numbers inside the bath, state
-and tensor files (Å), the gyromagnetic ratios, and the time column of the output files (ms). In
-`auto_convergence.time_window`, `"value"` is a number of ms or `{"value": ..., "unit": ...}` (`time_window.unit` beside it was
-removed and is refused).
+The object is turned into the plain number before any reader sees it, by one exact operation:
+
+- to a smaller unit, a multiplication by a power of ten (`nm` to Å: × 10);
+- to a larger unit, a division (`us` to ms: / 1000). 0.001 has no exact binary form, and x / 1000 is the double
+  nearest the decimal value.
+
+So `{"value": 5, "unit": "us"}` is the number `0.005` bit for bit. A plain number is read as it is.
+
+Refused, with the units of the key: an object with other keys, a unit not in its row, and a value that is not a number
+or a list of numbers.
+
+Units are case-sensitive and written as in the table (`mT`, not `MT`). The same holds for the units of the Defect block
+and of `Qubit.intmap`: `"mhz"` is refused with `"MHz"`. Older versions compared these without regard to case; the
+converter writes the table's spelling.
+
+Some keys keep a form of their own:
+
+- the Defect `gyros`, `quadrupole_moments`, `hyperfine`, `efg` and `detuning`: `{"values": ..., "unit": ...}`.
+  `"value"`, the word of the other keys, is taken there too; write one of the two.
+- the Defect `zfs`: `{"D", "axis", "unit"}` or `{"tensor", "unit"}`;
+- a `Qubit.intmap` entry: its own `unit`.
+
+The units do not apply to the numbers inside the bath, state and tensor files (Å), to the gyromagnetic ratios, or to
+the time column of the output files (ms).
+
+In `auto_convergence.time_window`, `"value"` is a number of ms or `{"value": ..., "unit": ...}`. A `time_window.unit`
+beside it was removed and is refused.
 
 <a id="FixedUnits"></a>
 #### Keys without a unit object
 
-Every other number has one fixed unit (or its own `unit` sub-key, as the table says). The same zero-field splitting is
-**kHz** in the `Qubit` block (without the intmap entry's `unit`) and **MHz** in the `Defect` block: a `Qubit.intmap` self
-entry with the tensor [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]] and a Defect `zfs` {"D": 2880, "unit": "MHz"}
-describe the same D = 2.88 GHz. The same holds for a detuning: `Qubit.qubit[].detuning` is kHz, `Defect.species[].detuning`
-MHz. A plain number other than 0 in `Qubit.qubit[].detuning`, and a nonzero `Qubit.intmap` tensor without `unit`, are noted
-in the log as read in kHz.
+Every other number has one fixed unit, or its own `unit` sub-key, as the table says.
+
+The zero-field splitting and the detuning have different units in the two blocks:
+
+- in the `Qubit` block, **kHz**: a `Qubit.intmap` tensor without the entry's `unit`, and `Qubit.qubit[].detuning`;
+- in the `Defect` block, **MHz**: `zfs` and `Defect.species[].detuning`.
+
+For example, a `Qubit.intmap` self entry with the tensor [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]] and a
+Defect `zfs` {"D": 2880, "unit": "MHz"} describe the same D = 2.88 GHz. The log notes as read in kHz a plain number
+other than 0 in `Qubit.qubit[].detuning` and a nonzero `Qubit.intmap` tensor without `unit`.
 
 | Key or file | Unit | Other units |
 |---|---|---|
@@ -159,8 +182,8 @@ The method, the numbers of the calculation, the files of the bath, the frame, an
       [defect_state_file](InputFile_General.md#tag_defect_state_file) (one per bath file)
     - [s_range](InputFile_General.md#tag_s_range) (absent: the ensemble), [seed](InputFile_General.md#tag_seed)
 - [frame](InputFile_General.md#tag_frame): [rotation](InputFile_General.md#tag_frame_rotation),
-  the qubit-aligned frame, on when the block is given (`enabled`, `qubit_axis`); each set of directional numbers says
-  its frame with a key `frame` (`"file"` or `"qubit"`) beside it
+  the qubit-aligned frame, on when the block is given (`enabled`, `qubit_axis`). Each set of directional numbers names
+  its frame with a key `frame` (`"file"` or `"qubit"`) beside it.
 - [hamiltonian](InputFile_General.md#tag_hamiltonian)
     - common: [qubit_bath_mean_field](InputFile_General.md#tag_qubit_bath_mean_field),
       [bath_bath_mean_field](InputFile_General.md#tag_bath_bath_mean_field),
@@ -180,7 +203,7 @@ The method, the numbers of the calculation, the files of the bath, the frame, an
 The keys of this group are described in [InputFile_Qubit.md](InputFile_Qubit.md).
 
 The `Qubit` block: [qubit](InputFile_Qubit.md#tag_qubit), one entry per qubit, with its position written out (`xyz`) or
-read from a file (`file`), and `intmap`, `alpha_state`, `beta_state` and `psi0` beside the list.
+read from a file (`file`). Beside the list: `intmap`, `alpha_state`, `beta_state` and `psi0`.
 <b>Example:</b> ``` "Qubit" : {"qubit": [{"file": "file-path"}], "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]}} ```
 The full example is on the [Qubit page](InputFile_Qubit.md).
 
@@ -257,7 +280,7 @@ The keys of this group are described in [InputFile_Pulse.md](InputFile_Pulse.md)
 The keys of this group are described in [InputFile_Defect.md](InputFile_Defect.md).
 
 The `Defect` block of a paramagnetic defect bath: `species`, the list of the defect species (the model). Their axis and
-state files are the configuration's
+state files are keys of the configuration
 ([configuration.defect_axis_file](InputFile_General.md#tag_defect_axis_file),
 [configuration.defect_state_file](InputFile_General.md#tag_defect_state_file)). The full example is on the
 [Defect page](InputFile_Defect.md).
@@ -292,19 +315,20 @@ The `output` block:
 
 <a id="AutoConvergenceTags"></a>
 ## Automatic convergence tags
-The `auto_convergence` block (its sections `time_window`, `rdip`, `rbath`, `t2_fit` and
-`sampling`; the bath configurations are the `configuration` block's) is described in
-[InputFile_AutoConvergence.md](InputFile_AutoConvergence.md). `rdip_ladder` is an internal key it writes into its runs'
-inputs ([rdip_ladder](InputFile_General.md#tag_rdip_ladder)).
+The `auto_convergence` block is described in [InputFile_AutoConvergence.md](InputFile_AutoConvergence.md). Its
+sections are `time_window`, `rdip`, `rbath`, `t2_fit` and `sampling`; the bath configurations come from the
+`configuration` block. `rdip_ladder` is an internal key it writes into its runs' inputs
+([rdip_ladder](InputFile_General.md#tag_rdip_ladder)).
 
 <a id="OldNames"></a>
 ## Old names
 
 Inputs written for an earlier version (v1.2.2 and before, or the adding_DEER / adding_MECCE branches) use other names
-and places for many keys. An old name, value, form or place is refused with its current one
-(`Error: input key "npulse" is now "pulse.count"`, `Error: input key "bathfile" is now "configuration.bathfile" ...`),
-except where the table says otherwise. The converter rewrites old inputs, keeping their comments, and lists what it
-changed:
+and places for many keys. An old name, value, form or place is refused with its current one, except where the table
+says otherwise:
+`Error: input key "npulse" is now "pulse.count"`, `Error: input key "bathfile" is now "configuration.bathfile" ...`.
+
+The converter rewrites old inputs, keeps their comments, and lists what it changed:
 
 ```
 python3 example/tools/InputKeys/convert_input_keys.py FILE...           # rewrite in place
@@ -312,15 +336,21 @@ python3 example/tools/InputKeys/convert_input_keys.py --check FILE...   # list o
 python3 example/tools/InputKeys/convert_input_keys.py --stdout FILE     # print the new text
 ```
 
-It drops keys the run did not read (e.g. `qd_tensorfile` with `qd_readmode` 0) and the defaults `hf_readmode` 0 and
-`qd_readmode` 0, and refuses an input it cannot express (a `CorrTotSpin` other than 0). An old key whose new name is
-already in the input (`npulse` beside `pulse.count`; case not read) is kept once when the two values are the same, and
-stops the file, before it is written, when they differ. Its tests are `example/tools/InputKeys/tests` (`python3 -m
-unittest discover -s example/tools/InputKeys/tests`). The results do not change: rewritten in the current keys, the
-inputs of the standing checks (check_numerics, check_input_forms, check_rotation) give the same output bytes.
-`order`, `rbath`, `rdip`, `quantity`, `bfield`, `deltat`, `nstep` and `rdip_ladder` (an internal key of the automatic
-convergence) are at the top level, and so are the keys of `Qubit.qubit` and `Qubit.intmap` entries and the
-Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
+What else the converter does:
+
+- It drops keys the run did not read (e.g. `qd_tensorfile` with `qd_readmode` 0) and the defaults `hf_readmode` 0 and
+  `qd_readmode` 0.
+- It refuses an input it cannot express (a `CorrTotSpin` other than 0).
+- An old key whose new name is already in the input (`npulse` beside `pulse.count`; case not read) is kept once when the
+  two values are the same. When they differ, the file stops before it is written.
+- The results do not change: rewritten in the current keys, the inputs of the standing checks (check_numerics,
+  check_input_forms, check_rotation) give the same output bytes.
+- Its tests are `example/tools/InputKeys/tests` (`python3 -m unittest discover -s example/tools/InputKeys/tests`).
+
+These keys kept their names and places, so the table leaves them out: `order`, `rbath`, `rdip`, `quantity`, `bfield`,
+`deltat`, `nstep` and `rdip_ladder` (an internal key of the automatic convergence) at the top level; the keys of the
+`Qubit.qubit` and `Qubit.intmap` entries; and the Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and
+`detuning`.
 
 | Old | Now |
 |---|---|
