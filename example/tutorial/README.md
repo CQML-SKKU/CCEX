@@ -14,8 +14,8 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 | `01_ensemble_and_states/` | averaging over bath configurations (`k_range`) and over sampled bath states (`s_range`) | `cCCE2_Hahn_ensemble`, `cCCE2_Hahn_states`, `cCCE2_Hahn_builtinIsotopes` |
 | `02_pulses/` | Hahn echo, CPMG, a sequence written out (`Manual`) | `cCCE2_CPMG_ensemble`, `cCCE2_Manual_ensemble` |
 | `03_P1/` | an electron-spin bath: P1 at 1 and 10 ppm, Vp | `cCCE2_Hahn_states`, `cCCE4_Hahn_states`, `cCCE2_Hahn_onsite14N`, `gCCE2_Hahn_zfs`, `gCCE2_Ramsey_population`, `cCCE2_Hahn_VpBath`, `gCCE2_Hahn_DEER`, `cCCE2_Hahn_meanField` |
-| `04_hBN/` | V_B⁻ in h-BN with DFT hyperfine and quadrupole tensors | `cCCE2_Hahn_ensemble`, `cCCE2_Hahn_hfMediated`, `gCCE2_Hahn_states`, `gCCE2_Hahn_OH` |
-| `05_multiNV/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV6` |
+| `04_hBN/` | V_B⁻ in h-BN with DFT hyperfine and quadrupole tensors | `cCCE2_Hahn_ensemble`, `cCCE2_Hahn_hfMediated`, `gCCE2_Hahn_states`, `gCCE2_Hahn_Overhauser` |
+| `05_multiNV/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV3` |
 | `06_cCCE_vs_gCCE/` | the two methods, and the options of cCCE | `gCCE2_Hahn_vsCCE`, `cCCE2_Hahn_dsj`, `cCCE2_Hahn_knightShift`, `gCCE1_Hahn_handwritten`, `meCCE2_Hahn_bathRelaxation` |
 | `07_pCCE_and_bundle/` | clusters of groups: partitions (pCCE), bundles, adaptive refinement | `pCCE2_Hahn_states`, `cCCE2_Hahn_bundle`, `cCCE2_Hahn_adaptive`, `cCCE2_Hahn_regroup`, `cCCE2_Hahn_clusterReport` |
 | `08_GPU/` | the CUDA backend against the CPU, and the automatic GPU options | `cCCE5_Hahn_backends`, `cCCE5_Hahn_autoOptions`, `gCCE4_Hahn_backends`, `pCCE2_Hahn_backends` |
@@ -42,7 +42,7 @@ Inputs name their files relative to the calculation folder, so run `run.sh` from
 Two scripts here are shared: `plot_coherence.py` (the figures and numbers) and `make_natab_baths.sh`
 (natural-abundance ¹³C configurations made with `tools/BathGenerator`, for `01` and `09`). Each `expected.png` was
 made by its folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks), except those of `08_GPU`, made on a GPU
-server; `05_multiNV/gCCE2_HahnRamsey_NV6` has none yet.
+server node.
 
 ## Folders before 2.0.0
 

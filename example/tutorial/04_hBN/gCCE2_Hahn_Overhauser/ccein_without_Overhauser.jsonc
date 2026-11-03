@@ -1,17 +1,17 @@
 {
     // V_B- in h-BN at zero field, gCCE2 Hahn echo between the ms = +-1 superposition and ms = 0, one sampled bath
-    // state, with the Overhauser field of the bath on the qubit (qubit_bath_mean_field).
+    // state, without the Overhauser field of the bath on the qubit: the reference for ccein_with_Overhauser.jsonc.
     //
     // The physics: in a sampled bath state every nucleus has a definite m, so together they put a static hyperfine
-    // (Overhauser) field on the qubit. A cluster's own nuclei act on the qubit through their coupling anyway;
-    // qubit_bath_mean_field true adds the field of all the other nuclei, which shifts the qubit levels. On this short
-    // window (0.49 ns) both curves dip to |L| 0.966 near 0.28 ns (about 1/D) and differ by 9e-5 (README).
+    // (Overhauser) field on the qubit. Here the qubit feels only the nuclei of each cluster (through their coupling),
+    // not the static field of the others. On this short window (0.49 ns) both curves dip to |L| 0.966 near 0.28 ns
+    // (about 1/D) and differ by 9e-5 (README).
     //
-    // Writes results/ccein_wi_OH_state1_wiDiv and _noDiv. The sibling ccein_wo_OH.jsonc has qubit_bath_mean_field
-    // false; nothing else differs.
+    // Writes results/ccein_without_Overhauser_state1_wiDiv and _noDiv. The sibling ccein_with_Overhauser.jsonc has qubit_bath_mean_field
+    // true; nothing else differs.
     // Sampled bath states: configuration.s_range [1, 1], each state s its own output _state<s>.
-    "method"        : "gCCE",         // generalized CCE: the qubit is in every cluster's Hamiltonian (the mean field
-                                      // on the qubit needs it: cCCE does not read qubit_bath_mean_field)
+    "method"        : "gCCE",         // generalized CCE: the qubit is in every cluster's Hamiltonian (as in
+                                      // ccein_with_Overhauser.jsonc, where the mean field on the qubit needs it)
     "Qubit"         : {"qubit"      : [{"name": "VB", "xyz": [33.94003, 45.72817, 7.50000]}],
                        "intmap"     : [{"between": ["VB", "VB"],
                                         "tensor": [[-1080, 0, 0], [0, -1180, 0], [0, 0, 2320]], "unit": "MHz"}],
@@ -32,7 +32,7 @@
                        "seed"    : 8805},
                                       // gyrofile: name, spin, gyromagnetic ratio (rad kHz/G) of 10B, 11B, 14N, 15N.
                                       // bathfile: one isotope draw of the layer. s_range [1, 1]: one sampled bath
-                                      // state (the mean field needs one: in the ensemble it is zero), its m drawn
+                                      // state (as in ccein_with_Overhauser, whose mean field needs one), its m drawn
                                       // from seed. seed 8805: the same state in both inputs and on every run
     "order"         : 2,              // the largest cluster: single nuclei and pairs (gCCE2)
     "bfield"        : 0,              // no magnetic field (0 is required to be written)
@@ -42,12 +42,10 @@
     "nstep"         : 50,             // 50 time points: t = 0 .. 0.49 ns. README: nstep 1000 to see the two separate
     "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
     "hamiltonian"   : {"common": {
-            "qubit_bath_mean_field" : true,                               // true: the static (Overhauser) field of the
-                                                                          // sampled nuclei outside each cluster acts on
-                                                                          // the qubit. Default false: the qubit feels
-                                                                          // only the nuclei of its cluster. Read by
-                                                                          // gCCE and megCCE with s_range only (reported
-                                                                          // as not used otherwise)
+            "qubit_bath_mean_field" : false,                              // false (the default): the qubit feels only
+                                                                          // the nuclei of its cluster, not the static
+                                                                          // (Overhauser) field of the other sampled
+                                                                          // nuclei. ccein_with_Overhauser.jsonc has true
             "hyperfine"             : {"dipole": "dft", "contact": true,  // the DFT hyperfine (dipolar and contact)
                                        "file": "../bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
                                                                           // dipole dft: the anisotropic part from the

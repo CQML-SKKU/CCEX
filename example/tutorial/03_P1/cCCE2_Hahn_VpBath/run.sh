@@ -9,5 +9,5 @@ mkdir -p results
 for ppm in 10 12 50; do
   mpirun -n $NP $CCEX -f ccein_${ppm}ppm.jsonc -o results > results/ccein_${ppm}ppm.log
 done
-python3 $PLOT results/coherence.png --unit us "10 ppm=results/ccein_10ppm_state1_wiDiv" "12 ppm=results/ccein_12ppm_state1_wiDiv" \
+python3 $PLOT results/coherence.png --unit us --log-time "10 ppm=results/ccein_10ppm_state1_wiDiv" "12 ppm=results/ccein_12ppm_state1_wiDiv" \
   "50 ppm=results/ccein_50ppm_state1_wiDiv"

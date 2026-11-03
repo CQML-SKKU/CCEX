@@ -44,7 +44,7 @@ folder (`../bath/`, `../../00_quickstart/bath/`), so `run.sh` is run from there.
 Shared by the tutorials: `example/tutorial/plot_coherence.py` (the figures and numbers) and
 `example/tutorial/make_natab_baths.sh` (natural-abundance ¹³C configurations made with `example/tools/BathGenerator`,
 for `01` and `09`). Each `expected.png` was made by that folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks);
-those of `08_GPU` were made on a GPU server (idm4-gpu), and `05_multiNV/gCCE2_HahnRamsey_NV6` has none yet.
+those of `08_GPU` were made on a GPU server node (idm4-gpu).
 Times and memory on the pages are from the same workstation.
 
 <a id="WhatToUse"></a>

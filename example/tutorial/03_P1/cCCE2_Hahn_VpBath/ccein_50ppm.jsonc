@@ -29,8 +29,7 @@
     "rbath"         : 240,            // Angstrom: the Vp within 240 A of the NV are kept (50 ppm is denser:
                                       // a smaller radius)
     "rdip"          : 220,            // Angstrom: two Vp closer than 220 A form a pair cluster
-    "deltat"        : 0.0002,         // ms: the time step, 0.2 us. t is the whole echo time 2 tau
-    "nstep"         : 300,            // 300 points: t = 0 .. 59.8 us, T2 1.4 us: the decay falls in the first
-                                      // points; a smaller deltat resolves it
+    "deltat"        : 0.00001,        // ms: the time step, 10 ns. t is the whole echo time 2 tau
+    "nstep"         : 300,            // 300 points: t = 0 .. 2.99 us, about twice T2
     "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
 }

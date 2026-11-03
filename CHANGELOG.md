@@ -108,6 +108,24 @@
   the architecture is not known at configure time). Whether 12.x compiles `applyPulse` right for such a card is not
   known: `make gpu-test` (`test_gcce_cuda`'s q = 9 case) on that card checks it.
 
+### Tutorials, documentation and checks
+
+- **Tutorials.** Every tutorial input explains each key in a comment (its meaning, unit and why this value); the JSON
+  of the inputs did not change except where noted here. New: `12_pseudospin/pseudospin2_Hahn_vsCCE`,
+  `11_noise/noiseSpectrum_13C` (`compute` spectrum: C(t), S(f)) and `08_GPU/cCCE5_Hahn_autoOptions` (the automatic
+  `gpu_options`). `04_hBN/gCCE2_Hahn_states` has the V_B⁻ zero-field splitting it lacked (T2 0.25 µs, with a 1 ns step;
+  0.44 µs before), `04_hBN/gCCE2_Hahn_OH` is `gCCE2_Hahn_Overhauser`, `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job
+  with nothing visible in its 4.9 ns) is `gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs), and the 50 ppm input of
+  `03_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `08_GPU` has its `expected.png`, made on idm4-gpu; `plot_coherence.py --log-time` draws a log time axis.
+- **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`.
+  The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
+  plain-text formulas are TeX. The automatic convergence has one reference, `docs/user/InputFile_AutoConvergence.md`.
+  The READMEs are shorter, without the history of their changes.
+- **Checks.** `test/code_verification/run.sh` runs its checks at once (about 8 minutes instead of 21). New:
+  `check_tutorials`, every tutorial input run with `nstep` 3. `check_numerics` compares with v2.0.1 too (no
+  difference in the 25 cases it runs), and a case added after a reference is reported as new instead of failing. CI
+  runs check_deer, check_master_equation, check_noise, check_pseudospin, check_tutorials and every input-form stage.
+
 ## 2.0.1 — 2026-10-22 (changes since 2.0.0)
 
 ### Fixed
@@ -650,7 +668,7 @@ against the CPU path (relative 1.3e-6, 1.6e-5 on the diverging CR60 curve).
   CCEX reads × 1 (nearest ¹⁴N A_zz 97.3 MHz against 47 measured; the hyperfine-mediated term 4×). It is replaced by
   `hBN_VB_flat_ATensor_HSE_CellPBE_v3` (format v3, A_zz 48.6 MHz); the h-BN test cases change by up to 0.88, and the tutorial was rerun. SpinTensorReader example 03
   (MoS2) had the same mistake.
-- **The h-BN `gCCE2_Hahn_OH` tutorial** wrote the qubit ZFS without a unit, so it was read in kHz (D 3.48 MHz instead
+- **The h-BN `gCCE2_Hahn_OH` tutorial** (`gCCE2_Hahn_Overhauser` since 2.1.0) wrote the qubit ZFS without a unit, so it was read in kHz (D 3.48 MHz instead
   of 3.48 GHz); it now says `"unit": "MHz"`, and its results changed.
 - **pCCE with a bath not divisible by `partition_size`**: after pCCE dropped the last `nspin mod partition_size` spins,
   reading a bath-state file still wrote the states of the dropped spins past the end of the shortened bath (memory

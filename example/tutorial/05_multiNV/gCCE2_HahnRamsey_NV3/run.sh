@@ -1,5 +1,5 @@
 #!/bin/sh
-# 05_multiNV/gCCE2_HahnRamsey_NV6: 6 NV centres and a 13C pair, gCCE2 density matrix, Hahn echo and Ramsey
+# 05_multiNV/gCCE2_HahnRamsey_NV3: 3 NV centres and a 13C pair, gCCE2 density matrix, Hahn echo and Ramsey
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

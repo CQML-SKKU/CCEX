@@ -177,4 +177,4 @@ running it, and undone if the check fails. Other statuses: `no_positive_culprit`
 the culprit values and the whole curves are obtained (the second needs a build whose long double is the x87 80-bit
 type).
 
-References: to be added by the CCEX authors.
+Bundle clustering and the adaptive refinement were developed for CCEX and have not been published yet.

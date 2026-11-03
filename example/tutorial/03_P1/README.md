@@ -91,8 +91,8 @@ Input: [`ccein.jsonc`](gCCE2_Ramsey_population/ccein.jsonc)
 - **Keys that matter:** `configuration.gyrofile` (`Vp/DiaVp_gyro`), `bathfile`, `s_range` [1, 1], `seed`, `rbath`, `rdip`
   and `deltat` per concentration.
 - **How to run:** `NP=4 bash run.sh`: 1.7 s, 0.06 GB per rank.
-- **Expected result:** `expected.png`; T2 4.8 µs (10 ppm), 15.6 µs (12 ppm, a longer window), 1.4 µs (50 ppm) for this
-  one state.
+- **Expected result:** `expected.png`, the time axis on a log scale (`plot_coherence.py --log-time`) since the T2
+  differ tenfold: 4.8 µs (10 ppm), 15.6 µs (12 ppm, a longer window), 1.4 µs (50 ppm, a 10 ns step) for this one state.
 - **What to change next:** more states (`s_range` [1, 20]) before comparing concentrations.
 
 ![cCCE2_Hahn_VpBath: expected result](cCCE2_Hahn_VpBath/expected.png)

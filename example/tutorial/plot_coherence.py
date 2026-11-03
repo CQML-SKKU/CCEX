@@ -1,6 +1,6 @@
 """plot_coherence.py: the |L(t)| of CCEX's _wiDiv files in one figure, and one number per curve (the tutorials' expected.png).
 
-    python3 plot_coherence.py OUT.png [--unit ms|us|ns] [--title TEXT] [--free-y] LABEL=GLOB [LABEL=GLOB ...]
+    python3 plot_coherence.py OUT.png [--unit ms|us|ns] [--title TEXT] [--free-y] [--log-time] LABEL=GLOB [LABEL=GLOB ...]
 
 Each LABEL=GLOB is one curve: the files GLOB matches (several bath configurations or sampled states) are averaged as
 complex numbers, then |.| is plotted. A density-matrix file (quantity dm) gives the off-diagonal element that is largest
@@ -10,6 +10,7 @@ Printed per curve: the number of files; T2 as the last time |L| is at or above 1
 point; the fast ESEEM dips of a 13C bath do not cut it short), or |L| at the last time when the curve never falls below
 1/e; from the second curve on, the largest |L| difference from the first. Points that are not finite are left out of
 the average and counted; a curve above 1.2 (a diverged division) is reported and the plot cut at 1.2.
+--log-time draws the time axis on a log scale (t = 0 left out), for curves whose decay times differ tenfold.
 Needs numpy and matplotlib.
 """
 import glob
@@ -45,13 +46,15 @@ def read(path):
 
 
 def main(argv):
-    out, unit, title, series, free_y = None, 'ms', None, [], False
+    out, unit, title, series, free_y, log_time = None, 'ms', None, [], False, False
     it = iter(argv)
     for a in it:
         if a == '--unit':
             unit = next(it)
         elif a == '--free-y':          # the y range from the data (a population near 1), not from 0
             free_y = True
+        elif a == '--log-time':        # the time axis on a log scale; t = 0 cannot be drawn there
+            log_time = True
         elif a == '--title':
             title = next(it)
         elif out is None:
@@ -94,7 +97,10 @@ def main(argv):
         elif len(t) == len(first[1]):
             diff = f', max |L - L({first[0]})| = {np.nanmax(np.abs(mean - first[2])):.3e}'
         print(f'{label}: {len(files)} file(s), {number}{diff}{note}')
-        ax.plot(t * scale, mean, lw=0.7, label=f'{label} ({len(files)})' if len(files) > 1 else label)
+        keep = t > 0 if log_time else slice(None)
+        ax.plot((t * scale)[keep], mean[keep], lw=0.7, label=f'{label} ({len(files)})' if len(files) > 1 else label)
+    if log_time:
+        ax.set_xscale('log')
     ax.set_xlabel(f'time ({unit})')
     ax.set_ylabel('|L(t)|')
     if clip:

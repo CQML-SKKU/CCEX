@@ -42,18 +42,21 @@ Inputs: [`ccein_wi_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wi_hfmedi.jsonc), 
 
 ## gCCE2_Hahn_states
 
-- **What it shows:** gCCE2 of one sampled bath state, the qubit density matrix (`quantity` dm) over 1 µs in a small
+- **What it shows:** gCCE2 of one sampled bath state, the qubit density matrix (`quantity` dm) over 0.5 µs in a small
   bath (`rbath` 5 Å); the plot shows the element between ms +1 and 0, divided by its value at t = 0.
-- **Keys that matter:** `method` gCCE, `quantity` dm, `s_range` [1, 1], `seed` 1, the two tensor files.
+- **Keys that matter:** `method` gCCE, `quantity` dm, `s_range` [1, 1], `seed` 1, the two tensor files, the
+  zero-field splitting as a `Qubit.intmap` self term (D = 3.48 GHz, E = 50 MHz, as in `gCCE2_Hahn_Overhauser`).
 - **How to run:** `NP=4 bash run.sh`: 0.6 s, 0.05 GB per rank.
-- **Expected result:** `expected.png`; T2 0.44 µs.
+- **Expected result:** `expected.png`; T2 0.25 µs, with the oscillation of the nearest ¹⁴N's hyperfine resolved by
+  the 1 ns step (before 2.1.0 the input had no zero-field splitting and 10 points of 0.1 µs, and gave 0.44 µs). Over
+  a longer window this one state diverges (|L| > 1 from about 0.85 µs).
 - **What to change next:** `rbath` 10 and `s_range` [1, 10].
 
 ![gCCE2_Hahn_states: expected result](gCCE2_Hahn_states/expected.png)
 
 Input: [`ccein.jsonc`](gCCE2_Hahn_states/ccein.jsonc)
 
-## gCCE2_Hahn_OH
+## gCCE2_Hahn_Overhauser
 
 - **What it shows:** the Overhauser field of the bath on the qubit (`hamiltonian.common.qubit_bath_mean_field`) at
   zero field, between the ms ±1 superposition (`alpha_state` vector [1, 0, 1]) and ms 0.
@@ -64,6 +67,6 @@ Input: [`ccein.jsonc`](gCCE2_Hahn_states/ccein.jsonc)
   at 0.49 ns; they differ by 9e-5 in this short window.
 - **What to change next:** a longer window (`nstep` 1000) to see where the two separate.
 
-![gCCE2_Hahn_OH: expected result](gCCE2_Hahn_OH/expected.png)
+![gCCE2_Hahn_Overhauser: expected result](gCCE2_Hahn_Overhauser/expected.png)
 
-Inputs: [`ccein_wi_OH.jsonc`](gCCE2_Hahn_OH/ccein_wi_OH.jsonc), [`ccein_wo_OH.jsonc`](gCCE2_Hahn_OH/ccein_wo_OH.jsonc)
+Inputs: [`ccein_with_Overhauser.jsonc`](gCCE2_Hahn_Overhauser/ccein_with_Overhauser.jsonc), [`ccein_without_Overhauser.jsonc`](gCCE2_Hahn_Overhauser/ccein_without_Overhauser.jsonc)

@@ -10,7 +10,7 @@
     // Writes results/ccein_hahn_state1_wiDiv and _noDiv: per time step a block of the 9 x 9 density matrix, basis
     // kron(q1, q2), each qubit ms +1, 0, -1 (q2 the fast index; docs/user/OutputFiles.md). run.sh plots the element
     // between |+1,+1> and |0,0> divided by its value at t = 0. The sibling ccein_ramsey.jsonc is the same with
-    // pulse.count 0; ../gCCE2_HahnRamsey_NV6 is the same with six NVs.
+    // pulse.count 0; ../gCCE2_HahnRamsey_NV3 is the same with three NVs.
     // Sampled bath states: configuration.s_range [1, 1], each state s its own output _state<s>.
     "method"        : "gCCE",         // generalized CCE: the qubits are in every cluster's Hamiltonian (quantity dm
                                       // needs it)

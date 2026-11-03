@@ -22,6 +22,8 @@ Version 2.1.0, released 2026-11-03: what changed since 2.0.1 (2.0.1, 2026-10-22,
 - **Builds.** An nvcc older than 13.2 is accepted for cards below compute capability 12.0 (CUDA 12.8 with MPS on a
   GH200).
 - **Fixed.** The MKL builds write the same last digits from run to run.
+- **Tutorials and documentation.** Every tutorial input explains its keys in comments; three new tutorials
+  (`12_pseudospin`, the noise spectrum, the automatic GPU options); method pages for noise and pseudospin.
 - **Inputs.** No key of 2.0.1 was renamed or removed: a 2.0.1 input runs as it is. In `bin/main_gpu.out` with
   `backend` `auto` the automatic `gpu_options` change which clusters go to the card, so the outputs move within
   rounding.

@@ -37,16 +37,19 @@ Inputs: [`ccein_multi2.jsonc`](gCCE2_Hahn_oneVsTwoNV/ccein_multi2.jsonc), [`ccei
 
 Inputs: [`ccein_hahn.jsonc`](gCCE2_HahnRamsey_NV2/ccein_hahn.jsonc), [`ccein_ramsey.jsonc`](gCCE2_HahnRamsey_NV2/ccein_ramsey.jsonc)
 
-## gCCE2_HahnRamsey_NV6
+## gCCE2_HahnRamsey_NV3
 
-- **What it shows:** the same with six NVs (a register of dimension 3⁶ = 729; with the two ¹³C, clusters of dimension
-  2916), reading `../gCCE2_HahnRamsey_NV2/`'s bath, gyro and state files.
-- **Keys that matter:** six `Qubit.qubit` entries and six `intmap` tensors; `nstep` 50 (at 300 the density
-  matrices, 8.5 MB per time step, ran out of memory at 32 ranks on a GPU server node).
-- **How to run:** a server node, not a laptop: `NP=8 bash run.sh` (each output file holds nstep × 729² complex numbers).
-- **Expected result:** no `expected.png` yet. On a GPU server node (32 ranks, job 18184) both runs took 123 s, and in
-  the 4.9 ns window neither curve decays visibly (Ramsey moves by 1.2e-4 from the Hahn echo), so there is nothing to
-  plot yet.
-- **What to change next:** fewer qubits first (`gCCE2_HahnRamsey_NV2`).
+- **What it shows:** the calculation of `gCCE2_HahnRamsey_NV2` with a third NV (a register of dimension 3³ = 27; with
+  the two ¹³C, clusters of dimension 108), on a window 100 times longer: the qubits' dipolar coupling (50 Å apart)
+  makes L oscillate. It reads `../gCCE2_HahnRamsey_NV2/`'s bath, gyro and state files.
+- **Keys that matter:** three `Qubit.qubit` entries and three `intmap` self tensors (the zero-field splittings);
+  `deltat` 10 ns × `nstep` 300.
+- **How to run:** `NP=4 bash run.sh`: 1.2 s, 30 MB of output (each file holds nstep × 27² complex numbers).
+- **Expected result:** `expected.png`; the Ramsey curve falls to 0.41 at 0.46 µs and comes back to 1.0 at 0.92 µs,
+  about three periods in the window; the Hahn echo removes the first oscillation and then follows it, ending at 0.85.
+- **What to change next:** a fourth qubit (one more `qubit` and `intmap` entry): the qubit space grows threefold with
+  every NV, the output ninefold.
 
-Inputs: [`ccein_hahn.jsonc`](gCCE2_HahnRamsey_NV6/ccein_hahn.jsonc), [`ccein_ramsey.jsonc`](gCCE2_HahnRamsey_NV6/ccein_ramsey.jsonc)
+![gCCE2_HahnRamsey_NV3: expected result](gCCE2_HahnRamsey_NV3/expected.png)
+
+Inputs: [`ccein_hahn.jsonc`](gCCE2_HahnRamsey_NV3/ccein_hahn.jsonc), [`ccein_ramsey.jsonc`](gCCE2_HahnRamsey_NV3/ccein_ramsey.jsonc)
