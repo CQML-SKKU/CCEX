@@ -7,7 +7,7 @@ an input has its default (`main.out -e`). Times: i7-14700K, WSL, 4 ranks.
 
 `bath/flat/` holds 50 bath configurations of a flat layer, the defect position (`bath_hBN_VB_flat_Defect`) and the
 tensor files the inputs read: `hBN_VB_flat_ATensor_HSE_CellPBE_v3` (hyperfine of the S = 1 defect, tensor format v3;
-nearest ¹⁴N A_zz 48.6 MHz) and `hBN_VB_flat_QTensor_HSE_CellPBE` (EFG), made with `tools/SpinTensorReader`; the
+nearest ¹⁴N $A_{zz}$ 48.6 MHz) and `hBN_VB_flat_QTensor_HSE_CellPBE` (EFG), made with `tools/SpinTensorReader`; the
 gyromagnetic ratios are `bath/hBN_natab_gyro`, beside the `do_*` scripts that show how the tensors were prepared.
 
 ## cCCE2_Hahn_ensemble

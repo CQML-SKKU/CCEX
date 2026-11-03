@@ -855,7 +855,7 @@ rotation on and a quadrupole structure; with the rotation off a written frame is
 `hamiltonian.cCCE`. Add the hyperfine-mediated interaction between bath spins, the second-order
 coupling through the qubit (N. Zhao et al., Nature Nanotechnology 6, 242 (2011), Supplementary, Eq. 9).
 CCEX adds the full second-order correction, for each qubit branch α on its own:
-H_med^(α) = Σ_{β≠α} E_αβ E_αβ† / (ω_α − ω_β), E_αβ = Σ_i ⟨α|S|β⟩·A_i·I_i, where α is the eigenstate of the
+$H_\text{med}^{(\alpha)} = \sum_{\beta\neq\alpha} E_{\alpha\beta} E_{\alpha\beta}^\dagger / (\omega_\alpha - \omega_\beta)$ with $E_{\alpha\beta} = \sum_i \langle\alpha|\mathbf{S}|\beta\rangle\cdot\mathsf{A}_i\cdot\mathbf{I}_i$, where α is the eigenstate of the
 qubit Hamiltonian closest to the branch state and β runs over every other eigenstate (every intermediate state).
 Expanded, it holds both orders of every pair (i, j) and the i = j terms of each bath spin; it is Hermitian.
 (Before 2.0.0 it held one pair order and the other qubit level only.)
@@ -1015,25 +1015,29 @@ runs S₋ and S₊ on the ¹³C against cCCE. <br>
 ## spectrum
 <b>Description:</b><br>
 `hamiltonian.noise`, method `noise` only. Where the noise of the qubit transition frequency comes from. The coherence is
-W(T) = exp(−χ(T)), χ = ⟨φ²⟩/2 of the phase φ = ∫ f(t) δω(t) dt, f = ±1 flipped by each (ideal π) pulse of the sequence:
-the Gaussian approximation, which needs many weakly coupled noise sources (no backaction of the qubit on the bath, no
-non-Gaussian part; strongly coupled spins need cCCE or gCCE).
+$W(T) = e^{-\chi(T)}$ with $\chi = \langle\varphi^2\rangle/2$, where $\varphi = \int f(t)\,\delta\omega(t)\,dt$ is the
+qubit's phase and $f = \pm 1$ flips at each ideal π pulse of the sequence. This is the Gaussian approximation, which
+needs many weakly coupled noise sources: it has no back-action of the qubit on the bath and no non-Gaussian part, so
+strongly coupled spins need cCCE or gCCE.
 
 - `"bath"` (the default): the bath of the run. Each cCCE cluster gives
-  χ_C = (1/2D) Σ_ab |⟨a|δω|b⟩|² |Y(ω_ab)|², Y(ω) = ∫ f(t) e^{iωt} dt, over the eigenstates of
-  H_bath + p Σ_i A_z,i·I_i with p = (|m_α| + |m_β|)/2, at infinite temperature, with δω = (m_α − m_β) Σ_i A_zz,i I_z,i;
-  the χ_C add over the CCE terms (the cCCE product of the exp(−χ_C)). With `s_range` a bath state enters only through
-  the mean field of the other bath spins ([bath_bath_mean_field](#tag_bath_bath_mean_field)). For a Hahn echo this is
-  `semi-cce`'s `mode_sum`; p and the A_zz-only δω are its conventions ([pseudo_secular](#tag_noise_pseudo_secular)
-  adds A_zx I_x + A_zy I_y to δω).
-- `{"model": "OU", "sigma": σ, "tau_c": τ_c}`: Ornstein–Uhlenbeck noise of the frequency, ⟨δν(t)δν(0)⟩ = σ² e^{−|t|/τ_c}
-  (σ in kHz, τ_c in ms; both take a unit). χ is exact for any ideal π sequence.
-- `{"model": "power", "amplitude": A, "beta": β, "f_min": f_min, "f_max": f_max}`: S(f) = A (f / 1 kHz)^{−β}
-  (kHz²/kHz, two-sided) on [f_min, f_max] (kHz, both take a unit), χ = 4π² ∫ S(f) |Y(2πf)|² df by Gauss–Legendre;
-  the work grows as f_max T.
+  $\chi_C = \frac{1}{2D}\sum_{ab} |\langle a|\delta\omega|b\rangle|^2\, |Y(\omega_{ab})|^2$ with
+  $Y(\omega) = \int f(t)\, e^{i\omega t}\, dt$, over the eigenstates of
+  $H_\text{bath} + p \sum_i \mathbf{A}_{z,i}\cdot\mathbf{I}_i$, $p = (|m_\alpha| + |m_\beta|)/2$, at infinite temperature, and
+  $\delta\omega = (m_\alpha - m_\beta) \sum_i A_{zz,i} I_{z,i}$. The $\chi_C$ add over the CCE terms (the cCCE product of
+  the $e^{-\chi_C}$). With `s_range` a bath state enters only through the mean field of the other bath spins
+  ([bath_bath_mean_field](#tag_bath_bath_mean_field)). For a Hahn echo this is `semi-cce`'s `mode_sum`; $p$ and the
+  $\delta\omega$ with $A_{zz}$ alone are its conventions ([pseudo_secular](#tag_noise_pseudo_secular) adds
+  $A_{zx} I_x + A_{zy} I_y$ to $\delta\omega$).
+- `{"model": "OU", "sigma": σ, "tau_c": τ_c}`: Ornstein–Uhlenbeck noise of the frequency,
+  $\langle\delta\nu(t)\delta\nu(0)\rangle = \sigma^2 e^{-|t|/\tau_c}$ (σ in kHz, τ_c in ms; both take a unit). χ is
+  exact for any ideal π sequence.
+- `{"model": "power", "amplitude": A, "beta": β, "f_min": f_min, "f_max": f_max}`:
+  $S(f) = A\,(f/1\,\text{kHz})^{-\beta}$ (kHz²/kHz, two-sided) on [f_min, f_max] (kHz, both take a unit), and
+  $\chi = 4\pi^2 \int S(f)\, |Y(2\pi f)|^2\, df$ by Gauss–Legendre; the work grows as $f_\text{max} T$.
 
-With `"bath"` the clusters' values (−χ_C, or their correlations with [compute](#tag_noise_compute)) are summed over the
-CCE terms, not multiplied as cCCE's coherences (no exp(−χ_C) of one cluster can underflow): `output.savemode`
+With `"bath"` the clusters' values ($-\chi_C$, or their correlations with [compute](#tag_noise_compute)) are summed over
+the CCE terms, not multiplied as cCCE's coherences (no $e^{-\chi_C}$ of one cluster can underflow): `output.savemode`
 `cluster_coherence` and `cluster_density_matrix`, `rdip_ladder` and `output.cluster_contributions` are refused with
 method `noise`.
 
@@ -1055,10 +1059,10 @@ origin, which it does not use; given, they are not used either, and the log warn
 ## pseudo_secular
 <b>Description:</b><br>
 `hamiltonian.noise`, with [spectrum](#tag_noise_spectrum) `"bath"`. Which terms of the hyperfine coupling between the
-qubit and a bath spin, m_s (A_zx I_x + A_zy I_y + A_zz I_z), count as the qubit's frequency noise:
-`false`, the secular term alone, δω = (m_α − m_β) Σ_i A_zz,i I_z,i (`semi-cce`'s); `true`, also the pseudo-secular
-terms, δω = (m_α − m_β) Σ_i (A_zx,i I_x,i + A_zy,i I_y,i + A_zz,i I_z,i), the coupling cCCE puts into its two
-Hamiltonians. The bath Hamiltonian is the same either way. In `semi-cce`'s 13C example (500 G, Hahn echo) the two
+qubit and a bath spin, $m_s (A_{zx} I_x + A_{zy} I_y + A_{zz} I_z)$, count as the qubit's frequency noise.
+`false`: the secular term alone, $\delta\omega = (m_\alpha - m_\beta) \sum_i A_{zz,i} I_{z,i}$ (`semi-cce`'s). `true`:
+also the pseudo-secular terms,
+$\delta\omega = (m_\alpha - m_\beta) \sum_i (A_{zx,i} I_{x,i} + A_{zy,i} I_{y,i} + A_{zz,i} I_{z,i})$, the coupling cCCE puts into its two Hamiltonians. The bath Hamiltonian is the same either way. In `semi-cce`'s 13C example (500 G, Hahn echo) the two
 differ by up to 0.04 in W, in its P1 example by 1e-3; which of them is the better approximation has not been settled
 (both are far from cCCE there). With a model spectrum the key is not used (the run says so). <br>
 
@@ -1072,15 +1076,16 @@ differ by up to 0.04 in W, in its P1 example by 1e-3; which of them is the bette
 ## compute
 <b>Description:</b><br>
 `hamiltonian.noise`, with [spectrum](#tag_noise_spectrum) `"bath"`. What the run computes from the bath's noise
-B = Σ_i A_zz,i I_z,i (A_z,i·I_i with [pseudo_secular](#tag_noise_pseudo_secular)), and which files it writes:
+$B = \sum_i A_{zz,i} I_{z,i}$ ($\mathbf{A}_{z,i}\cdot\mathbf{I}_i$ with [pseudo_secular](#tag_noise_pseudo_secular)), and which
+files it writes:
 
 | Value | Computes | Writes |
 |---|---|---|
-| `"coherence"` (default) | χ_C of each cluster from its eigenmodes, the coherence exp(−χ) at the run's times; no time grid of the noise, exact for ideal π pulses | `_wiDiv` (and `_noDiv`) |
-| `"spectrum"` | `semi-cce`'s `psd`: the correlation C(t) on the grid of [fft](#tag_noise_fft), its spectrum S(f) by FFT, and χ = (m_α − m_β)² 2 ∫ S(f) F(2πfT)/f² df by the trapezoid rule | `_noise_correlation`, `_noise_spectrum`, `_wiDiv` |
+| `"coherence"` (default) | $\chi_C$ of each cluster from its eigenmodes, the coherence exp(−χ) at the run's times; no time grid of the noise, exact for ideal π pulses | `_wiDiv` (and `_noDiv`) |
+| `"spectrum"` | `semi-cce`'s `psd`: the correlation C(t) on the grid of [fft](#tag_noise_fft), its spectrum S(f) by FFT, and $\chi = 2 (m_\alpha - m_\beta)^2 \int S(f)\, F(2\pi f T)/f^2\, df$ by the trapezoid rule | `_noise_correlation`, `_noise_spectrum`, `_wiDiv` |
 | `"correlation"` | PyCCE's noise (`CCENoise`): C(t) at the run's times (`deltat`, `nstep`) | `_noise_correlation` |
 
-C(t) = Re Tr[ρ {B(t), B}]/2 in kHz², summed over the CCE terms (`<outfile>[_state<s>]_noise_correlation`: t in ms, C);
+$C(t) = \operatorname{Re}\operatorname{Tr}[\rho\,\{B(t), B\}]/2$ in kHz², summed over the CCE terms (`<outfile>[_state<s>]_noise_correlation`: t in ms, C);
 S(f) is two-sided, kHz²/kHz (`_noise_spectrum`: f in kHz, S). ρ is 1/D (infinite temperature) for `"coherence"` and
 `"spectrum"`, where a sampled state (`s_range`) enters through the mean field alone, as in `semi-cce`; for
 `"correlation"` it is the cluster's pure state with `s_range`, with the mean field of the other spins, as in PyCCE

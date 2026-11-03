@@ -28,7 +28,7 @@ megCCE need `per_qubit` false, `detuning_factor` 1 and `duration` 0, and meCCE t
 keys were ignored there without a word). <br>
 <b>Data Type:</b> Object
 
-<b>Example:</b> ``` "pulse" : {"count": 2, "name": "Manual", "sequence": [["1/4", "I", 0], ["1/2", "X", 180], ["1/4", "X", 180]]} ```
+<b>Example:</b> ``` "pulse" : {"count": 2, "name": "Manual", "sequence": [["1/4", "X", 180], ["1/2", "X", 180], ["1/4", "I", 0]]} ``` (CPMG-2: wait t/4, π about X, wait t/2, π about X, wait t/4)
 
 <a id="tag_pulse_count"></a>
 ## pulse.count

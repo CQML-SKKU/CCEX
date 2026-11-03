@@ -43,7 +43,7 @@ Version 2.0.0, released 2026-10-17: what changed since v1.2.2, in the current ke
 - **New methods and options.** ME-CCE and ME-gCCE (Lindblad dissipation), DEER pulses on bath spins, pCCE with gCCE and
   the master-equation methods, bundle clustering with an adaptive refinement, the automatic convergence of rbath, rdip,
   the time window and the number of configurations, several bath configurations from one input.
-- **Physics fixes that change results**: `hfmedi` (complete second-order term), `knight` (nuclear Zeeman vector, |m_s|
+- **Physics fixes that change results**: `hfmedi` (complete second-order term), `knight` (nuclear Zeeman vector, $|m_s|$
   of each branch), the static Overhauser field of gCCE with sampled states, the h-BN tutorial hyperfine tensors (read
   twice too large), and a memory corruption of pCCE with state files.
 - **Safer inputs.** A misspelt key, a file that does not open, a combination a method cannot do or a run that does not
@@ -81,7 +81,7 @@ with more detail.
 | **Qubit** | |
 | `qubitfile`, `Qubit.file`, `Qubit.spin`, `Qubit.name`, `qspin` | an entry of `Qubit.qubit`: `[{"file": ..., "spin": ..., "name": ...}]` (`file` in place of `xyz`) |
 | `Qubit.nqubit` | removed: the length of `Qubit.qubit` |
-| `qalphams`/`qbetams`, `Qubit.alphams`/`betams`, `Qubit.qubit[].alphams`/`betams` | `Qubit.alpha_state: {"ms": [m_1, m_2, ...]}`, `Qubit.beta_state: {"ms": [...]}` (one m_s per qubit) |
+| `qalphams`/`qbetams`, `Qubit.alphams`/`betams`, `Qubit.qubit[].alphams`/`betams` | `Qubit.alpha_state: {"ms": [m_1, m_2, ...]}`, `Qubit.beta_state: {"ms": [...]}` (one $m_s$ per qubit) |
 | `Qubit.alphaidx`, `Qubit.betaidx` | `Qubit.alpha_state: {"index": n}`, `Qubit.beta_state: {"index": n}` |
 | `Qubit.psia`, `Qubit.psib` | `Qubit.alpha_state: {"vector": [...]}`, `Qubit.beta_state: {"vector": [...]}` |
 | `qzfs`, `Qubit.zfs` (kHz) and its `Qubit.frame` | a `Qubit.intmap` self entry `{"between": ["q0", "q0"], "tensor": ..., "unit": "kHz", "frame": ...}` |

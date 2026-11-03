@@ -1,7 +1,8 @@
 # 11_noise
 
-Method `noise`: the coherence as the Gaussian decay W(T) = exp(−χ(T)) of the qubit's phase noise, χ = ⟨φ²⟩/2 of the
-phase φ = ∫ f(t) δω(t) dt (f = ±1, flipped by each ideal π pulse). The noise δω comes from the bath, each cCCE
+Method `noise`: the coherence as the Gaussian decay $W(T) = e^{-\chi(T)}$ of the qubit's phase noise, with
+$\chi = \langle\varphi^2\rangle/2$ of the phase $\varphi = \int f(t)\,\delta\omega(t)\,dt$ ($f = \pm 1$, flipped by each
+ideal π pulse). The noise δω comes from the bath, each cCCE
 cluster giving its share of χ from its eigenmodes (`hamiltonian.noise.spectrum` `"bath"`, the default; semi-cce's
 semi-classical CCE), or from a model of the frequency noise without a bath (`{"model": "OU", ...}` or
 `{"model": "power", ...}`). The Gaussian approximation leaves out the qubit's back-action on the bath and the
@@ -20,8 +21,8 @@ non-Gaussian part of the noise; it is meant for many weakly coupled noise source
   `03_P1/cCCE2_Hahn_states` (`ccein_cce.jsonc` is the same input with `method` `cCCE`).
 - **How to run:** `NP=4 bash run.sh`: 8 s for both, 0.05 GB per rank.
 - **Expected result:** `expected.png`; T2 of the mean of 10 states 56 µs by `noise`, 148 µs by cCCE2.
-- **What to change next:** `"pseudo_secular": true` in `hamiltonian.noise` (the noise of a bath spin with A_zx I_x +
-  A_zy I_y as well as A_zz I_z); `pulse.count` 0 or 4.
+- **What to change next:** `"pseudo_secular": true` in `hamiltonian.noise` (the noise of a bath spin with
+  $A_{zx} I_x + A_{zy} I_y$ as well as $A_{zz} I_z$); `pulse.count` 0 or 4.
 
 ![noise2_Hahn_vsCCE: expected result](noise2_Hahn_vsCCE/expected.png)
 
@@ -29,7 +30,7 @@ Inputs: [`ccein_noise.jsonc`](noise2_Hahn_vsCCE/ccein_noise.jsonc), [`ccein_cce.
 
 ## noiseModel_OU
 
-- **What it shows:** Ornstein–Uhlenbeck frequency noise, ⟨δν(t)δν(0)⟩ = σ² exp(−|t|/τ_c) with σ = 10 kHz and
+- **What it shows:** Ornstein–Uhlenbeck frequency noise, $\langle\delta\nu(t)\delta\nu(0)\rangle = \sigma^2 e^{-|t|/\tau_c}$ with σ = 10 kHz and
   τ_c = 50 µs, under a Ramsey sequence, a Hahn echo and CPMG-4: the echo and the decoupling sequence filter the slow
   noise out. χ is computed exactly for ideal π pulses. No bath is read, so `order`, `bfield`, `rbath`, `rdip` and
   `Qubit` are left out of the input.
@@ -38,7 +39,8 @@ Inputs: [`ccein_noise.jsonc`](noise2_Hahn_vsCCE/ccein_noise.jsonc), [`ccein_cce.
 - **How to run:** `bash run.sh`: 1 s (one rank: a model run has no clusters to share).
 - **Expected result:** `expected.png`; T2 24 µs (Ramsey), 62 µs (Hahn echo), 138 µs (CPMG-4).
 - **What to change next:** `{"model": "power", "amplitude": 50, "beta": 1, "f_min": 0.01, "f_max": 200}`, 1/f noise
-  between f_min and f_max (kHz); a longer τ_c (the quasi-static limit, χ ≈ (2πσ)² T³ / (12 τ_c) for the Hahn echo).
+  between f_min and f_max (kHz); a longer τ_c (the quasi-static limit, $\chi \approx (2\pi\sigma)^2 T^3 / (12 \tau_c)$ for the
+  Hahn echo).
 
 ![noiseModel_OU: expected result](noiseModel_OU/expected.png)
 

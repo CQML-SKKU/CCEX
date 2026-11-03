@@ -40,6 +40,8 @@
       <tab type="user" url="@ref md_docs_2methods_2coordinate-frame-rotation" title="Coordinate frame rotation"/>
       <tab type="user" url="@ref md_docs_2methods_2deer" title="DEER bath pulses"/>
       <tab type="user" url="@ref md_docs_2methods_2master-equation" title="Master-equation CCE"/>
+      <tab type="user" url="@ref md_docs_2methods_2noise" title="Gaussian phase noise"/>
+      <tab type="user" url="@ref md_docs_2methods_2pseudospin" title="Pseudospin model"/>
       <tab type="user" url="@ref md_docs_2methods_2gpu" title="GPU execution"/>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Changes" title="Changes"/>

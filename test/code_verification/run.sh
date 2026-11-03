@@ -4,7 +4,7 @@
 # the order below, each framed as before. Exit status is the first failure's, in that order.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"; status=0
 CHECKS=(check_analytic check_deer check_master_equation check_numerics check_rotation check_refusals check_input_forms
-        check_mean_field check_rdip_ladder check_noise check_pseudospin)
+        check_mean_field check_rdip_ladder check_noise check_pseudospin check_tutorials)
 # check_input_forms/lib.sh's lock (D29) keeps a second run of this checkout out of check_input_forms/_work. The checks
 # that source lib.sh take it too, so it is taken here once and handed down (CCEX_RUN_LOCK), as check_input_forms/run.sh
 # hands it to its stages; within this run, the order of check_refusals and check_input_forms keeps them apart.
@@ -16,6 +16,10 @@ if [ "${CCEX_RUN_LOCK:-}" != "$LOCKDIR" ]; then
     fi
     CCEX_RUN_LOCK="$LOCKDIR"; export CCEX_RUN_LOCK
 fi
+# check_rotation, check_deer and check_master_equation bring the build up to date before they compile their unit tests
+# (test/unit_build_env.sh); a relink while the other checks run bin/main.out makes them fail ("Permission denied"), so
+# it is done here once, first
+bash "$HERE/../unit_build_env.sh" > /dev/null || { echo "ERROR: the build could not be brought up to date" >&2; exit 1; }
 LOGS="$(mktemp -d)"; trap 'rm -rf "$LOGS"' EXIT
 one(){ bash "$HERE/$1/run.sh" > "$LOGS/$1.log" 2>&1; echo $? > "$LOGS/$1.rc"; }
 t0=$SECONDS

@@ -81,7 +81,7 @@ the last ten of them), and `k_range`
 With [quantity](InputFile_General.md#tag_quantity) `dm` (gCCE) the same files hold, per time step, the reduced density
 matrix of the qubits, D × D with D the qubit dimension (3 for one NV, 3ⁿ for n spin-1 qubits). One block per time step:
 its first line starts with the time, the elements follow row by row (ρ₀₀, ρ₀₁, ..., ρ₀,D−1, ρ₁₀, ...), three to a line,
-and each continuation line starts with an empty time field (15 spaces) and a tab. The basis is the S_z basis of each
+and each continuation line starts with an empty time field (15 spaces) and a tab. The basis is the $S_z$ basis of each
 qubit, m = +S first down to −S (for an NV: ms +1, 0, −1), and for several qubits their product with the first qubit the
 slowest index (kron(q₀, q₁, ...), the last qubit varies fastest).
 
@@ -102,7 +102,7 @@ decimals) and the name of the first bath file. They tell the results of many bat
 ## One file per cluster (`cluster_coherence`, `cluster_density_matrix`)
 
 `cluster_coherence` writes the result as `coherence` does and, for every cluster and state, that cluster's own coherence
-L_C (not the divided L̃_C): `<file>_<cluster>[_state<s>]_wiDiv` and `_noDiv`, where `<cluster>` is the cluster's bath
+$L_C$ (not the divided $\tilde L_C$): `<file>_<cluster>[_state<s>]_wiDiv` and `_noDiv`, where `<cluster>` is the cluster's bath
 indices joined by `_` (`ccein_curves_519_557_wiDiv`); the two files of one cluster hold the same curve.
 `cluster_density_matrix` writes all of that and, with gCCE, for every cluster the density matrix of the whole qubit +
 cluster space at every time step, as blocks of rows like [the density matrix](#out_dm) with the full dimension, to

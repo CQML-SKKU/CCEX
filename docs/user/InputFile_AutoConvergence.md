@@ -65,7 +65,7 @@ is now refused with this rule):
 
 | Section with | used | effect |
 |---|---|---|
-| `time_window.value` | a number of ms, or `{"value": ..., "unit": ...}` ([Units](InputFile.md#Units)) | the window is used as it is; T_d is only measured |
+| `time_window.value` | a number of ms, or `{"value": ..., "unit": ...}` ([Units](InputFile.md#Units)) | the window is used as it is; $T_d$ is only measured |
 | `rdip.value` | Å | the rdip step and its check at the final rbath are skipped (`candidates`, `num_candidates` are then refused) |
 | `rbath.value` | Å | the rbath step is skipped; a plateau stops instead of raising rbath |
 | `sampling.configurations` | that many configurations (and `sampling.states` states each with `s_range`) | the sampling step is skipped; the production uses exactly that many |
@@ -81,9 +81,9 @@ All four given is refused (run CCEX itself).
 | | `resume` | `continue`: reuse what the workdir holds; `fresh`: move it to `<workdir>.old<n>` and start over | `continue` |
 | | `workdir` | folder for the runs (`runs/`), the decisions (`decisions.jsonl`) and the results (`result/`) | required |
 | `time_window` | `value` | see above: a number of ms or `{"value": ..., "unit": ...}` (`s`, `ms`, `us`, `ns`; [Units](InputFile.md#Units)) | found |
-| | `decay_level` | T_d is where the T2 fit reaches this \|L\| level | 0.01 |
-| | `revival_check_factor` | the test runs go to this × T_d to see a revival | 2.5 |
-| | `production_factor` | production window = this × T_d | 1.5 |
+| | `decay_level` | $T_d$ is where the T2 fit reaches this \|L\| level | 0.01 |
+| | `revival_check_factor` | the test runs go to this × $T_d$ to see a revival | 2.5 |
+| | `production_factor` | production window = this × $T_d$ | 1.5 |
 | `rdip` | `value` | see above | found |
 | | `candidates` | rdip candidates (Å); the largest is the reference | found |
 | | `num_candidates` | how many to start with when found | 7 |
@@ -212,7 +212,7 @@ python3 -m autoconv judge --setting RUN_DIR ... --reference RUN_DIR ... [--repor
 ```
 
 `analyze` judges existing runs: one `RUN_DIR` per bath configuration, each with the CCEX outputs
-`out_state<s>_wiDiv`. It reports, as JSON on standard output, the decay time T_d and whether the window is long enough
+`out_state<s>_wiDiv`. It reports, as JSON on standard output, the decay time $T_d$ and whether the window is long enough
 (`resolved`, `needs-extension`, `window-unresolved`, or `numerical-failure` for a non-finite state or an overflow), and the
 sampling verdict (`t2-met` or `sampling-unresolved`: the standard error of the fitted area against its target) with the
 cheapest allocation of configurations and states. `--report-dir DIR` also writes figures and text summaries. The same

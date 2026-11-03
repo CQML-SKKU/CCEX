@@ -1,18 +1,15 @@
 # check_bundle/ — the bundle clustering against complete calculations
 
-**These two scripts are historical (2026-09-12..16) and do not run with the current build.** They
-set the option names of that time (`adaptive_cluster_max_dim`, `adaptive_group_max_dim`,
-`adaptive_connections`, ...; since D24 an unread key near a known one stops the run), run the
-binaries `bin/main.cpu.out` / `bin/main.cuda.out` the build no longer writes, and
-`check_auto_groups.py` calls the removed oracle `check_adaptive/oracle/adaptive_refine.py`. They are kept
-because they are the scripts behind the records listed below and cited in
-(internal notes). The current checks of the bundle and adaptive code are
+The records of the 2026-09-12..16 experiments. The current checks of the bundle and adaptive code are
 `../check_adaptive/verify.sh` (`unit`, `regress`, `inprocess`) and the unit tests of `../check_pcce/`.
 
-| script (historical) | checked then | needed then |
-|---|---|---|
-| `check_auto_groups.py` | the automatic connection choice (`bundle.connections=auto`, omitted `rdip`) against the full graph and independent subsets | a baseline run; MPI and CUDA variants |
-| `check_baths.py --fixtures DIR --output DIR` | bundles on the full NV and PL6 baths across MPI ranks and backends | `../../code_verification/bath_data/ensemble_data` |
+Removed on 2026-11-03 (last in commit 5583a8067: `git show 5583a8067:test/cluster_verification/check_bundle/<name>`), the two
+scripts behind the records below: `check_auto_groups.py` (the automatic connection choice, `bundle.connections=auto`
+with `rdip` omitted, against the full graph and independent subsets) and `check_baths.py` (bundles on the full NV and
+PL6 baths across MPI ranks and backends). They set the option names of that time (`adaptive_cluster_max_dim`, ...;
+since D24 an unread key near a known one stops the run), ran the binaries `bin/main.cpu.out` / `bin/main.cuda.out` the
+build no longer writes, and `check_auto_groups.py` called the removed oracle `check_adaptive/oracle/adaptive_refine.py`:
+neither ran with the current build.
 
 Removed on 2026-10-17 (A96; last in commit 8d656004d: `git show 8d656004d:test/cluster_verification/check_bundle/<name>`):
 `check_adaptive.py` (adaptive CCE/gCCE against a baseline of full-bath and subset runs),

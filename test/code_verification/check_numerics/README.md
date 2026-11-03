@@ -112,7 +112,7 @@ are the bits of the path before.
 | folder | what | how it was made |
 |---|---|---|
 | `head-<date>-<commit>/`, since 2026-10-13 21:30 `head-<date><time>-<commit>/` | this branch at that commit, on WSL, 2 ranks, MKL off (`CCEX_BLAS=off`) | `bash make_reference.sh current` |
-| `v1.1.0/`, `v1.2.2/` | the tagged releases, built from the tag on the same WSL | `bash make_reference.sh v1.2.2` (a worktree of the tag under /tmp, `do_compile.sh wsl-gnu`, removed afterwards) |
+| `v1.1.0/`, `v1.2.2/`, `v2.0.1/` | the tagged releases, built from the tag on the same WSL | `bash make_reference.sh v2.0.1` (a worktree of the tag under /tmp or `CCEX_WORKTREE_DIR`, `do_compile.sh wsl-gnu`, removed afterwards; a case the tag cannot run, such as method noise before 2.1.0, is left out) |
 
 v1.0.0 does not build with the current compiler (`src/bath.cpp: taking address
 of temporary array`) and has no reference. The two tags give the same numbers
@@ -131,7 +131,9 @@ did not write, fails whatever `expected.json` says.
 When a change is meant to move a number, make the new head reference after it
 (`bash make_reference.sh current`) and say why in the commit. `run.sh` prints a table for every
 folder under `reference/`, but only the newest `head-*` by name decides the exit status; the earlier
-`head-*` folders are kept. `run.sh` writes to `_work/`, which is ignored.
+`head-*` folders are kept. Against every other reference a case it does not have (added after it) is "new", not a
+failure; against the deciding one it fails. v2.0.1 (2026-11-03) gives this branch's numbers exactly in all 25 cases it
+runs. `run.sh` writes to `_work/`, which is ignored.
 
 **2026-10-02: eight cases re-recorded in the three folders of that date** (`p1_cce2_ensemble`, `p1_cce2_single`,
 `p1_cce2e2n`, `p1_cce4`, `p1_cpmg8_manual`, `p1_manual_hahn`, `p1_pcce2_sk2`, `vp_cce2`). Their inputs

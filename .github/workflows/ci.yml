@@ -3,7 +3,8 @@
 # 2026-10-13: one job took over 40 minutes): unit (a CMake build of the CPU binary, a second build whose defect warnings stop
 # it, the numeric and CPU regression unit tests with the bundle unit tests, the refinement driver's unit tests, the pCCE
 # partition unit tests), python (the Python unit tests; no build), checks (the closed-form coherence of one 13C, the
-# coordinate-rotation suite, the vector mean field), refusals (the refusals, about 7 minutes, alone so no job waits
+# coordinate-rotation suite, the vector mean field, DEER, the master-equation methods, methods noise and pseudospin, the
+# tutorial inputs), refusals (the refusals, about 7 minutes, alone so no job waits
 # for them; user 2026-10-16), forms (the input-form stages in three parts) and ladder (the
 # rdip ladder check in two parts). The CMake builds keep their objects in ccache between runs. Not here, because they need
 # a particular machine or a long run: check_numerics (exact against references recorded on one machine), the adaptive
@@ -106,7 +107,7 @@ jobs:
       - name: Packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake g++ ccache libopenmpi-dev openmpi-bin python3-numpy
+          sudo apt-get install -y --no-install-recommends cmake g++ ccache libopenmpi-dev openmpi-bin python3-numpy python3-scipy
 
       - uses: actions/cache@v4
         with:
@@ -128,6 +129,21 @@ jobs:
 
       - name: Vector mean field (same binary, z vs vector curve)
         run: bash test/code_verification/check_mean_field/run.sh
+
+      - name: DEER bath pulses (closed form, identities)
+        run: bash test/code_verification/check_deer/run.sh
+
+      - name: Master-equation CCE (rate 0 against cCCE/gCCE, recorded PyCCE curves, closed forms)
+        run: bash test/code_verification/check_master_equation/run.sh
+
+      - name: Method noise (closed forms and quadrature; the semi-cce and PyCCE parts are skipped here)
+        run: bash test/code_verification/check_noise/run.sh
+
+      - name: Method pseudospin (exact cases, Seo eq. 23, refusals)
+        run: bash test/code_verification/check_pseudospin/run.sh
+
+      - name: Every tutorial input still runs (nstep 3)
+        run: bash test/code_verification/check_tutorials/run.sh
 
   # The refusals (about 7 minutes on a runner) in a job of their own, so that no job waits for them after another check.
   refusals:

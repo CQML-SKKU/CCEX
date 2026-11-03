@@ -190,4 +190,13 @@ equals standard CCE2. At higher order a group is computed whole, but between gro
 CCE-`order`. dsj keeps the strongest couplings inside clusters with far fewer clusters than standard CCE; compare it with
 `standard` at the same `order` and `rdip` (`example/tutorial/06_cCCE_vs_gCCE/cCCE2_Hahn_dsj/`).
 
-References: to be added by the CCEX authors.
+References:
+
+- W. Yang and R.-B. Liu, Quantum many-body theory of qubit decoherence in a finite-size spin bath, Phys. Rev. B 78,
+  085315 (2008), doi:10.1103/PhysRevB.78.085315 (the CCE).
+- W. Yang and R.-B. Liu, Quantum many-body theory of qubit decoherence in a finite-size spin bath. II. Ensemble
+  dynamics, Phys. Rev. B 79, 115320 (2009), doi:10.1103/PhysRevB.79.115320 (the ensemble CCE).
+- M. Onizhuk et al., Probing the coherence of solid-state qubits at avoided crossings, PRX Quantum 2, 010311 (2021),
+  doi:10.1103/PRXQuantum.2.010311, and M. Onizhuk and G. Galli, PyCCE: A Python package for cluster correlation
+  expansion simulations of spin qubit dynamics, Adv. Theory Simul. 4, 2100254 (2021), doi:10.1002/adts.202100254
+  (the generalized CCE).

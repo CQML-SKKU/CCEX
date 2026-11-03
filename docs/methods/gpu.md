@@ -260,9 +260,9 @@ that path:
 
 - **one thread per cluster** (`src/calculation/gpu/small_cluster_gpu.cu`, arithmetic in
   `include/calculation/gpu/small_cluster_math.h`): cyclic complex Jacobi for both conditional Hamiltonians (lower
-  triangle, as Eigen reads it), M = V_up^† V_down, then for every time point the chain of `evolveSingleState` - the
+  triangle, as Eigen reads it), $M = V_\uparrow^\dagger V_\downarrow$, then for every time point the chain of `evolveSingleState` - the
   ensemble as the average of that chain over the basis states, the Hahn ensemble by the CPU's identity
-  Σ |X_ab|² conj(Du_a) Du_b / D with X = M Dd M^†. Pulse plans with at most 64 pulses (`maxIntervals` = `pulse.count` + 1 = 65)
+  $\sum_{ab} |X_{ab}|^2\, \overline{D_{\uparrow,a}}\, D_{\uparrow,b} / D$ with $X = M D_\downarrow M^\dagger$. Pulse plans with at most 64 pulses (`maxIntervals` = `pulse.count` + 1 = 65)
   and at most four distinct interval lengths, chosen after the general input checks (an ensemble `Manual` sequence is
   refused with `backend=cuda` and switched to `cpu` with `auto` before this); phases
   `exact` or `recursive`, as the run's `evolution_update`. The Jacobi rotations run on the Hamiltonian scaled by a
@@ -312,8 +312,8 @@ dimension up to it to
   rotation, threshold, 20-sweep limit, convergence test, power-of-two scaling and finiteness checks of the packed kernel;
   a cluster whose eigensystem or coherence is not finite goes back to the CPU); then lane l computes the time points
   l, l + 32, ..., each the whole interval chain of `propagateStateGcce` (gCCE) or of `evolveSingleState` (cCCE) with the
-  eigenvectors read from shared memory. gCCE ensemble (`evolution=matrix`, ρ0 = ρq ⊗ 1/d_bath) is the same chain averaged
-  over the d_bath starts ψq ⊗ e_m; a single state with `evolution=matrix` uses the pure start ψq ⊗ ψbath. Quantity
+  eigenvectors read from shared memory. gCCE ensemble (`evolution=matrix`, $\rho_0 = \rho_q \otimes 1/d_\text{bath}$) is the same chain averaged
+  over the $d_\text{bath}$ starts $\psi_q \otimes e_m$; a single state with `evolution=matrix` uses the pure start $\psi_q \otimes \psi_\text{bath}$. Quantity
   coherence or dm (the qdim × qdim reduced density matrix). cCCE ensemble Hahn by the CPU's identity, as the packed
   kernel. Phases exact (with the tail of `refinedPhases` for gCCE). Compiled: gCCE qubit dimension 3 × bath 2, 3, 4, 6, 7,
   8, 9; cCCE bath 8 and 16. The step-0 prototype ((internal notes)) of this scheme ran
