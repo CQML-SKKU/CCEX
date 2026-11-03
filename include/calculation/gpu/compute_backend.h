@@ -8,6 +8,10 @@
 #include "../../input/general.h"
 #include "../../physical/pulse.h"
 #include "../../physical/qubit.h"
+#include "../../physical/bath.h"
+#include "../../physical/defect.h"
+#include <set>
+#include <vector>
 
 // Called after all JSON/CLI overrides, before reading bath/tensor files. qa, pls, savemode (optional): for the early start
 // of the small-cluster batch (smallClusterWarmUp, review 20261013-221715 X7).
@@ -38,5 +42,22 @@ void computeProfileFlush();
 void computeProfile(const Config* config, const char* method, const char* backend,
                     int dimension, double build, double setup, double evolution);
 void computeClusterBatch(const Config* config, int dimension, int count);
+
+// A98: execution.gpu_options.ranks_per_gpu = k > 0 (backend auto, cCCE). computeGpuSplitSetup, collective, before the
+// clusters are made: on every node the first k x (visible GPUs) ranks are the GPU ranks, and the others never open the
+// GPU (computeUseCuda says no), so a node without MPS runs every core and only k contexts per GPU. rankClusterRows then
+// gives a cluster of gpu_options.min_dim and above to a GPU rank, weighted by the time its dimension took a GPU rank over
+// the time on the CPU, both as loaded as in the run (a made-up cluster of that dimension, computeGpuSplitCalibrate), or
+// to a CPU rank when that one would finish it first; a dimension as slow or slower on a GPU rank stays on the CPU of
+// every rank.
+void computeGpuSplitSetup(Config* config, QubitArray* qa, BathArray* ba, DefectArray* dfa, Pulse* pls);
+bool computeGpuSplitOn();
+const std::vector<int>& computeGpuSplitRanks();   // the GPU ranks, ascending
+// the dimension of a cluster of n spins (row[1..n]) when it goes to the GPU and is not measured yet, else 0
+int computeGpuSplitPending(int n, const int* row);
+// collective, the same dimensions on every rank: the pending ones, timed on the GPU ranks
+void computeGpuSplitCalibrate(const std::set<int>& dimensions);
+// GPU-rank time / CPU time of the cluster's dimension when a GPU rank may take it (that time < 1), else 0
+double computeGpuSplitWeight(int n, const int* row);
 
 #endif

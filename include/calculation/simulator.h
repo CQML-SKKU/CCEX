@@ -57,6 +57,8 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls,
  *  eigensystems, M, the eigenvalues and, for one state (psi, d x 1, else nullptr), rowStart, colStart and Madj; cceEvolve
  *  is the time evolution from these into result[0..nstep). The batched small-cluster path (cce_batch.h) shares cceSetup. */
 void cceSetup(CceWorkspace& ws, const MatrixXcd* psi);
+/** A98: the seconds of one made-up cCCE cluster of dimension d on the CPU or (gpu: the card already started) the GPU; < 0 out of GPU memory. */
+double cceTimeMadeUp(Config* cnf, Pulse* pls, int d, bool gpu);
 void cceEvolve(Config* cnf, Pulse* pls, MatrixXcd* result, CceWorkspace& ws);
 /** (simulator_cce_columns.cpp) The one-state time evolution of cceEvolve with
  *  the time points of a block of `columns` steps as matrix columns, so that each interval is one matrix-matrix product

@@ -110,8 +110,9 @@ Every output file and its columns: [Output files](docs/user/OutputFiles.md); wha
 - Needs: a C++17 compiler behind an MPI wrapper; Eigen, uthash and SQLite are bundled in `external/`.
 - MKL: used for the large clusters when the build finds it (on macOS Apple's Accelerate in its place); `CCEX_BLAS=off`
   (CMake `-DCCEX_BLAS=OFF`) leaves it out.
-- CUDA: requires CUDA 13.2 or newer (12.8 miscompiles a kernel for the RTX PRO 6000, see `CHANGELOG.md`;
-  `do_compile.sh` and CMake refuse an older nvcc). The `gpu` preset, `generic` with `CUDA_HOME`, or CMake when it finds nvcc (`-DCCEX_CUDA=OFF`
+- CUDA: requires CUDA 13.2 or newer for compute capability 12.0 and above (12.8 miscompiles a kernel for the RTX PRO
+  6000, see `CHANGELOG.md`; `do_compile.sh` and CMake refuse an older nvcc there); below 12.0 (`CUDA_ARCH`, CMake
+  `-DCMAKE_CUDA_ARCHITECTURES`) an older one is taken, and `make gpu-test` checks it. The `gpu` preset, `generic` with `CUDA_HOME`, or CMake when it finds nvcc (`-DCCEX_CUDA=OFF`
   to skip).
 
 Every option, environment variable and the MKL details: [Getting started](docs/user/GettingStarted.md#Building).

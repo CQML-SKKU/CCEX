@@ -475,9 +475,12 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
                                         // time points one GPU evolution takes together, default 64
 //          "cluster_batch_mb"      : 64,
                                         // MiB per rank for the clusters of one GPU batch, default 64
-//          "cache_mb"              : 64
+//          "cache_mb"              : 64,
                                         // nonnegative, MiB per rank of GPU memory kept for reuse, 0 disables, default
                                         // 64
+//          "ranks_per_gpu"         : 0
+                                        // auto and cCCE: only this many ranks per GPU open it and take the clusters
+                                        // of min_dim and above; the other ranks stay on the CPU. 0 (default): every rank
 //      },
 //      "propagator"       : "eigen",   // eigen (default, one diagonalization per cluster), sparse (Krylov, for
                                         // clusters too large to diagonalize: one state, cCCE, gCCE vector), expm

@@ -11,7 +11,7 @@ their place), except `probe_memory_gb` (in `cluster.adaptive`); `output.cluster_
 ```
 
 - [execution.backend](#tag_backend)
-- [execution.gpu_options](#tag_gpu_options) (min_dim, packed_max_dim, evolution_batch_size, evolution_batch_steps, cluster_batch_mb, cache_mb, warp_max_dim)
+- [execution.gpu_options](#tag_gpu_options) (min_dim, packed_max_dim, evolution_batch_size, evolution_batch_steps, cluster_batch_mb, cache_mb, warp_max_dim, ranks_per_gpu)
 - [execution.propagator](#tag_propagator)
 - [execution.evolution](#tag_evolution)
 - [execution.evolution_update](#tag_evolution_update)
@@ -103,6 +103,7 @@ below). <br>
 | `cluster_batch_mb` | positive integer, `64` (MiB per rank) | the evolution-buffer budget that limits how many clusters one GPU batch may hold |
 | `cache_mb` | nonnegative integer, `64` (MiB per rank) | GPU memory that freed allocations are kept in for reuse; `0` disables the cache |
 | `warp_max_dim` | `0` to `32`; `27` in `bin/main_gpu.out` with `backend` `cuda` or `auto` and `method` cCCE or gCCE, else `0` | the warp kernel (below): gCCE and cCCE clusters of a compiled total dimension up to this value on the GPU, one per warp. `0` is off |
+| `ranks_per_gpu` | nonnegative integer, `0` | with `backend` = `auto` and `method` cCCE (`cluster.mode` standard), only this many ranks per GPU open it, and the clusters of `min_dim` and above go to them (below). `0`: every rank may open the GPU |
 
 <b>The packed kernel (`packed_max_dim`).</b> The `cuda`/`auto` backends send a cluster to the GPU on its own, which
 for the dimension-2 and 4 clusters of a P1 bath costs far more than the CPU (about 400 times slower).
@@ -200,7 +201,28 @@ between), which the acceptance leaves out. Measured on a GPU node (32 ranks + on
 the warp kernel off, AB BA AB): P1 CR0 gCCE2 14.2 → 9.8 s (0.69), CR60 σ4 60.0 → 36.0 s (0.60),
 h-BN gCCE2 10.9 → 9.3 s (0.86); (internal notes). <br>
 
-<b>Example:</b> ``` "execution" : {"gpu_options": {"min_dim": 256, "packed_max_dim": 4}} ```, ``` "execution" : {"gpu_options": {"warp_max_dim": 12}} ```
+<b>GPU ranks (`ranks_per_gpu`).</b> Under `backend` = `auto` every rank that meets a cluster of `min_dim` or above opens a
+CUDA context of its own. Without MPS the ranks on a GPU take turns on it, and a node may admit only a few contexts per GPU
+(16 on a GH200 node with four GPUs), which held a 288-core node to 64 ranks. With `ranks_per_gpu` = k, on every node
+the first k × (visible GPUs) ranks are GPU ranks (node rank r on GPU r mod GPUs, k per GPU) and the others never start
+CUDA, so the run keeps every core. Before the clusters are split over the ranks, each dimension of `min_dim` and above is
+timed on a made-up cluster of that dimension (a random Hermitian pair and state through the run's own CPU and GPU
+paths, the run's settings and pulses), as loaded as in the run: on the CPU by every rank at once (on a GH200 node a
+D = 900 cluster took 1.9 s on an idle node and 5.8 s with 288 ranks), and on the GPU one dimension at a time, every
+GPU rank on it at once from a barrier, k on a card - without MPS they take turns on it and each waits about k times as long, with MPS they run together - so the time
+is what such a cluster holds a GPU rank in the run, with or without MPS (the log prints
+`[gpu-split] dim=... cpu=... s gpu=... s gpu/cpu=...`). Then, largest first, such a cluster goes to the least-loaded GPU
+rank, counted at its cost times GPU/CPU time, or to the least-loaded CPU rank at its cost, whichever would finish it
+first; every other
+cluster goes to the least-loaded rank of all, GPU ranks included. The timings differ from run to run, so the split does
+and the product of the clusters is formed in another order: the outputs agree within rounding, not bit for bit. A
+dimension that was as slow or slower on a GPU rank, or that the GPU could not take in the timing (out of its memory),
+stays with every rank on the CPU, GPU ranks included. The timing adds about the time of the largest such cluster on a loaded
+CPU to the run. The packed and warp kernels already use one
+context per node (node rank 0, a GPU rank) and are unchanged. Needs `bin/main_gpu.out`, `backend` = `auto` and `method`
+cCCE with `cluster.mode` standard (refused otherwise; bundle and pCCE split their work themselves). <br>
+
+<b>Example:</b> ``` "execution" : {"gpu_options": {"min_dim": 256, "packed_max_dim": 4}} ```, ``` "execution" : {"gpu_options": {"warp_max_dim": 12}} ```, ``` "execution" : {"backend": "auto", "gpu_options": {"min_dim": 256, "ranks_per_gpu": 4}} ```
 
 <a id="tag_propagator"></a>
 ## execution.propagator

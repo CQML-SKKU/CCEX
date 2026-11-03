@@ -521,6 +521,12 @@ void gpuBuildDescription(char* out, int capacity){
 #endif
     snprintf(out, capacity, "CUDA %d.%d, sm_%s", CUDART_VERSION/1000, CUDART_VERSION%1000/10, arch.c_str());
 }
+int gpuVisibleDevices(){
+    const char* visible=std::getenv("CUDA_VISIBLE_DEVICES");   // the guard of gpuInitialize
+    if (visible && (!*visible || !std::strcmp(visible,"-1"))) return 0;
+    int count=0;
+    return cudaGetDeviceCount(&count)==cudaSuccess ? count : 0;
+}
 std::size_t gpuDeviceMemorySmallest(){
     // the same guard as gpuInitialize: an empty CUDA_VISIBLE_DEVICES aborts inside cudaGetDeviceCount (review 5f7834 R4)
     const char* visible=std::getenv("CUDA_VISIBLE_DEVICES");

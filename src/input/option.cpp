@@ -1454,7 +1454,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printf("      - General option-related keys :\n");
         printf("        [ method, quantity, order, bfield, rbath, rdip, deltat, nstep ]\n");
         printf("        execution : [ backend, propagator, evolution, evolution_update, profile,\n");
-        printf("          gpu_options { min_dim, packed_max_dim, warp_max_dim, evolution_batch_size, evolution_batch_steps, cluster_batch_mb, cache_mb },\n");
+        printf("          gpu_options { min_dim, packed_max_dim, warp_max_dim, evolution_batch_size, evolution_batch_steps, cluster_batch_mb, cache_mb,\n");
+        printf("            ranks_per_gpu },\n");
         printf("          gcce_refinement { enabled, max_sweeps }, column_evolution { enabled, min_dim, columns } ]\n");
         printf("        cluster : [ mode, pcce { partition, connections, print_trials, cache { mode, file } },\n");
         printf("          bundle { max_dim, merge_cutoff, connections, connection_budget, max_clusters, max_work }, adaptive { probe_memory_gb } ]\n");
@@ -1548,9 +1549,9 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     // refused with the form that replaces them.
     const char* oldGpuKeys[] = {"gpu_min_dim", "gpu_batch_steps", "gpu_cache_mb", "gpu_batch_clusters", "gpu_cluster_batch_mb"};
     const char* gpuKeys[] = {"min_dim", "evolution_batch_steps", "cache_mb", "evolution_batch_size", "cluster_batch_mb", "packed_max_dim",
-                             "warp_max_dim"};
+                             "warp_max_dim", "ranks_per_gpu"};
     int* gpuValues[] = {&cnf->gpu_min_dim, &cnf->gpu_batch_steps, &cnf->gpu_cache_mb, &cnf->gpu_batch_clusters, &cnf->gpu_cluster_batch_mb,
-                        &cnf->gpu_packed_max_dim, &cnf->gpu_warp_max_dim};
+                        &cnf->gpu_packed_max_dim, &cnf->gpu_warp_max_dim, &cnf->gpu_ranks_per_gpu};
     for (int k=0; k<5; ++k)
         if (untrackedItem(root,oldGpuKeys[k]) || untrackedItem(execution,oldGpuKeys[k])){
             ccexRefusalPrint(stderr,"Error: %s is now execution.gpu_options.%s (\"execution\": {\"gpu_options\": {\"%s\": ...}})\n",oldGpuKeys[k],gpuKeys[k],gpuKeys[k]);
@@ -1567,14 +1568,14 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         }
         for (cJSON* item = block->child; item; item = item->next){
             int k = 0;
-            while (k<7 && strcasecmp(item->string,gpuKeys[k])) ++k;
-            if (k==7){
+            while (k<8 && strcasecmp(item->string,gpuKeys[k])) ++k;
+            if (k==8){
                 ccexRefusalPrint(stderr,"Error: unknown key execution.gpu_options.%s (min_dim, packed_max_dim, warp_max_dim, evolution_batch_size, "
-                               "evolution_batch_steps, cluster_batch_mb, cache_mb)\n",item->string);
+                               "evolution_batch_steps, cluster_batch_mb, cache_mb, ranks_per_gpu)\n",item->string);
                 ccexRefuse();
             }
         }
-        for (int k=0; k<7; ++k){
+        for (int k=0; k<8; ++k){
             cJSON* item = cJSON_GetObjectItem(block,gpuKeys[k]);   // recorded as read (cJSON_checkInputKeys)
             if (!item) continue;
             char name[64];
@@ -1592,8 +1593,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
                     ccexRefusalPrint(stderr,"Error: execution.gpu_options.packed_max_dim must be 0 (off), 2 or 4\n");
                     ccexRefuse();
                 }
-            } else if (value < (k==2 ? 0 : 1) || value > 2147483647.0 || std::floor(value) != value){
-                ccexRefusalPrint(stderr,"Error: %s must be a %s 32-bit integer\n",name,k==2 ? "nonnegative" : "positive");
+            } else if (value < (k==2 || k==7 ? 0 : 1) || value > 2147483647.0 || std::floor(value) != value){
+                ccexRefusalPrint(stderr,"Error: %s must be a %s 32-bit integer\n",name,k==2 || k==7 ? "nonnegative" : "positive");
                 ccexRefuse();
             }
             *gpuValues[k] = (int)value;
