@@ -86,7 +86,7 @@ typedef struct {
     bool noise_pseudo_secular;            /**< hamiltonian.noise.pseudo_secular: the noise is Delta m_s sum (A_zx I_x + A_zy I_y + A_zz I_z); false (default, semi-cce's): A_zz I_z only */
     double noise_amplitude, noise_beta, noise_f_min, noise_f_max;   /**< power: S(f) = amplitude (f / 1 kHz)^-beta (kHz^2/kHz, two-sided) on [f_min, f_max] (kHz) */
     bool pseudospin;                      /**< method pseudospin: the cCCE with its pair clusters in the pseudospin model (pseudospin.cpp) */
-    bool pseudospin_block;                /**< hamiltonian.pseudospin.pair "block" (the cut pair exactly); false: "channel" */
+    bool pseudospin_grouped;              /**< hamiltonian.pseudospin.channels "grouped" (default: the states joined by channels as one block); false: "pairwise" (every channel alone) */
     int pcce_detail_limit;                /**< rank-zero trial details, 0 disables */
     int gpu_cache_mb;                      /**< reusable device-buffer cache per rank; 0 disables */
     double probe_memory_gb;                /**< node budget for the probes running at once; 0: 80 % of RAM (and of the GPU) */

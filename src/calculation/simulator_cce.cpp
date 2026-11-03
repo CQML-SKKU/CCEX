@@ -248,8 +248,9 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* puls
         exit(1);
     }
 
-    if (cnf->pseudospin && BathArray_getNspin(ba)==2){   // method pseudospin: a pair in the pseudospin model (pseudospin.cpp)
-        calCoherencePseudospinInto(qa,ba,cnf,pulse,result);
+    if (cnf->pseudospin){   // method pseudospin (pseudospin.cpp): a pair in the pseudospin model, a single spin 1 (the pairs alone)
+        if (BathArray_getNspin(ba)==2) calCoherencePseudospinInto(qa,ba,cnf,pulse,result);
+        else for (int i=0; i<Config_getNstep(cnf); ++i) result[i] = MatrixXcd::Ones(1,1);
         return;
     }
 

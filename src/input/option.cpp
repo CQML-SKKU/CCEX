@@ -69,9 +69,16 @@ static void addNoiseModelDefaults(cJSON* root){
     for (const char* key : {"configuration", "Defect"})
         if (untrackedItem(root,key)){ warnNotUsed(key,why); cJSON_DeleteItemFromObject(root,key); }
 }
+// method pseudospin is a pair model: a missing order is 2 (another order is refused in main.cpp)
+static void addPseudospinDefaults(cJSON* root){
+    cJSON* method = untrackedItem(root,"method");
+    if (cJSON_IsString(method) && !strcasecmp(method->valuestring,"pseudospin") && !untrackedItem(root,"order"))
+        cJSON_AddNumberToObject(root,"order",2);
+}
 static cJSON* trackedParse(const char* text){
     cJSON* root = cJSON_Parse(text);
     if (root) addNoiseModelDefaults(root);
+    if (root) addPseudospinDefaults(root);
     if (root) applyInputUnits(root);    // A67: {"value", "unit"} to the plain number in the key's own unit, before any reader
     if (root) recordPaths(root, "", "");
     return root;
@@ -2191,7 +2198,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n");
         printf("        hamiltonian.noise : [ spectrum (\"bath\" or { model OU: sigma, tau_c; model power: amplitude, beta, f_min, f_max }), pseudo_secular, compute (coherence, spectrum, correlation),\n"
                "          fft { time_max, nstep, window, pad_factor, subtract_mean, clamp_negative } ]\n");
-        printf("        hamiltonian.pseudospin : [ pair (\"channel\" or \"block\") ]\n\n");
+        printf("        hamiltonian.pseudospin : [ channels (\"grouped\" or \"pairwise\") ]\n\n");
     }
     cJSON* hamiltonian = readBlock(root,"hamiltonian");
     // A94 (G1) named the sections by role, corrections and dissipation; reverted 2026-10-17, the sections stay by method
@@ -2214,18 +2221,18 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
             ccexRefuse();
         }
     if (cJSON* section = hamiltonian ? readBlock(hamiltonian,"noise") : NULL) readNoiseSpectrum(cnf,section);
-    // method pseudospin: pair "channel" (default, every flip-flop channel alone) or "block" (the cut pair exactly)
+    // method pseudospin: channels "grouped" (default, the states joined by channels as one block) or "pairwise" (every channel alone)
     if (cJSON* section = hamiltonian ? readBlock(hamiltonian,"pseudospin") : NULL){
         if (!cnf->pseudospin && section->child){
             ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin belongs to method pseudospin, this run is not\n");
             ccexRefuse();
         }
-        const char* pair = cJSON_ReadString(section,(char*)"pair",true,(char*)"channel");
-        if (strcasecmp(pair,"channel") && strcasecmp(pair,"block")){
-            ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin.pair must be \"channel\" or \"block\", not \"%s\"\n",pair);
+        const char* channels = cJSON_ReadString(section,(char*)"channels",true,(char*)"grouped");
+        if (strcasecmp(channels,"grouped") && strcasecmp(channels,"pairwise")){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin.channels must be \"grouped\" or \"pairwise\", not \"%s\"\n",channels);
             ccexRefuse();
         }
-        cnf->pseudospin_block = !strcasecmp(pair,"block");
+        cnf->pseudospin_grouped = !strcasecmp(channels,"grouped");
     }
     // the master-equation methods: jump_operators only; which method the section belongs to is checked once every
     // reader has run (main.cpp, validateHamiltonianForMethod)

@@ -288,8 +288,8 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc - an input templa
 //            "clamp_negative" : false  // S(f) < 0 set to 0
 //          }
 //      },
-//                                      // method pseudospin: "pseudospin": {"pair": "channel"} (every flip-flop
-//                                      // channel alone, the default) or "block" (the cut pair exactly)
+//                                      // method pseudospin: "pseudospin": {"channels": "grouped"} (the states
+//                                      // joined by channels as one block, the default) or "pairwise" (every channel alone)
 //      "meCCE"  : {                    // or "megCCE": master-equation dissipators (docs/methods/master-equation.md)
 //          "jump_operators" : [
 //              {"bath_name": "13C", "operator": "z", "rate": 0.001}

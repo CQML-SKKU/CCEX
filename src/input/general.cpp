@@ -55,7 +55,8 @@ Config* Config_init(){
     cnf->noise_fft_subtract_mean=cnf->noise_fft_clamp_negative=false;
     cnf->noise_sigma=cnf->noise_tau_c=0;
     cnf->noise_amplitude=cnf->noise_beta=cnf->noise_f_min=cnf->noise_f_max=0;
-    cnf->pseudospin=cnf->pseudospin_block=false;
+    cnf->pseudospin=false;
+    cnf->pseudospin_grouped=true;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
     cnf->gpu_batch_clusters = 8;
     cnf->gpu_cluster_batch_mb = 64;
@@ -1026,7 +1027,7 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
             printStructElementChar("hamiltonian.noise.fft.clamp_negative",(char*)(cnf->noise_fft_clamp_negative ? "true" : "false"));
         }
     }
-    if (cnf->pseudospin) printStructElementChar("hamiltonian.pseudospin.pair",(char*)(cnf->pseudospin_block ? "block" : "channel"));
+    if (cnf->pseudospin) printStructElementChar("hamiltonian.pseudospin.channels",(char*)(cnf->pseudospin_grouped ? "grouped" : "pairwise"));
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

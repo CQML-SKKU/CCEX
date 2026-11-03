@@ -9,17 +9,20 @@
  * differ in both spins, whatever the Hamiltonian gives there (the flip-flops |m1,m2> <-> |m1-1,m2+1>, the flip-flips
  * |m1,m2> <-> |m1+1,m2+1> of the non-secular dipolar coupling, and with a quadrupole that mixes the |m> the double-quantum
  * ones such as |m1,m2> <-> |m1-2,m2+2>). Dropped are the elements of the spins' coupling that change one spin only in that
- * basis; the single spins themselves are exact (their own Hamiltonians are diagonal there).
- *  - pair "block": the cut Hamiltonians, back in the |m> basis, evolved exactly: L_cut.
- *    The cluster's value is L_cut (the single spins under the same cut are exact, P = L_cut / (L_1 L_2)).
- *  - pair "channel", the pseudospin model: the alpha and beta product states of one index are taken as one state (their
- *    overlap, the pair's share of the ESEEM, left out), so that every channel c (two product states that differ in both
- *    spins, its element not zero in alpha or beta) is a two-level system with its Omega and Delta_alpha, Delta_beta:
- *    l_c, and l_c,diag without its element. Then L_ps = L_diag + (2/d) sum_c (l_c - l_c,diag), d = (2I_1+1)(2I_2+1),
- *    L_diag from the diagonals, P = L_ps / (L_1,ps L_2,ps) with L_k,ps spin k from its eigenvalues alone, and the
- *    cluster's value P L_1 L_2, L_k the exact single-spin coherence. Exact for two spins 1/2 with one basis in alpha and
- *    beta; it misses what couples the channels sharing a state (a chain).
- * The run's coherence is prod_k L_k prod_pairs P.
+ * basis.
+ * The pseudospin model: the alpha and beta product states of one index are taken as one state (their overlap, the pair's
+ * share of the ESEEM, left out). A channel c is two product states that differ in both spins, its element not zero in
+ * alpha or beta. hamiltonian.pseudospin.channels:
+ *  - "grouped" (default): the channels join the product states into blocks B (a state shared by two channels joins them,
+ *    a chain); every block evolves whole, l_B, and l_B,diag without its channels' elements, and
+ *    L_ps = L_diag + sum_B (k_B/d)(l_B - l_B,diag), k_B its states;
+ *  - "pairwise": every channel alone a two-level system of its Omega and Delta_alpha, Delta_beta, and
+ *    L_ps = L_diag + (2/d) sum_c (l_c - l_c,diag), which misses what couples the channels of a chain.
+ * d = (2I_1+1)(2I_2+1), L_diag from the diagonals; the two agree when no two channels share a state. The cluster's value
+ * P = L_ps / (L_1,ps L_2,ps), L_k,ps spin k from its eigenvalues alone (1 under a Hahn echo or CPMG).
+ * Two spins 1/2 with the secular hyperfine and the flip-flop alone give Seo's eq. 23.
+ * A single spin's cluster is 1 (simulator_cce.cpp), so the run's coherence is prod_pairs P: the pairs alone, without the
+ * single spins' ESEEM (as Seo's Supplementary Fig. 8).
  */
 #include "../../include/calculation/pseudospin.h"
 #include "../../include/calculation/small_hamiltonian.h"
@@ -83,10 +86,10 @@ MatrixXcd nuclearBasis(const MatrixXcd& H){
 // the |m> of a basis column's largest weight, for the channel file
 double label(const MatrixXcd& W, int c){ int k; W.col(c).cwiseAbs().maxCoeff(&k); return 0.5*(W.rows()-1) - k; }
 
-// spin k of the pair alone: its eigenbases in the qubit's alpha and beta states; with pseudo, its full coherence and its
-// coherence from its eigenvalues alone, the alpha and beta eigenstates of one index taken as one state (the channel's)
-void bases(QubitArray* qa, BathArray* ba, int k, Config* cnf, MatrixXcd& Wa, MatrixXcd& Wb, Pulse* pls = nullptr,
-           std::vector<doublec>* full = nullptr, std::vector<doublec>* pseudo = nullptr){
+// spin k of the pair alone: its eigenbases in the qubit's alpha and beta states, and its coherence from its eigenvalues
+// alone, the alpha and beta eigenstates of one index taken as one state (the channel's)
+void bases(QubitArray* qa, BathArray* ba, int k, Config* cnf, Pulse* pls, MatrixXcd& Wa, MatrixXcd& Wb,
+           std::vector<doublec>& pseudo){
     BathArray* one = BathArray_init();
     BathArray_setNspin(one,1);
     BathArray_allocBath(one,QubitArray_getNqubit(qa));
@@ -96,10 +99,7 @@ void bases(QubitArray* qa, BathArray* ba, int k, Config* cnf, MatrixXcd& Wa, Mat
     BathArray_freeAll(one);
     Wa = nuclearBasis(Ha);
     Wb = nuclearBasis(Hb);
-    if (pls){
-        *full = evolve(Ha,Hb,cnf,pls);
-        *pseudo = evolve(diagonalOf(Wa.adjoint()*Ha*Wa),diagonalOf(Wb.adjoint()*Hb*Wb),cnf,pls);
-    }
+    pseudo = evolve(diagonalOf(Wa.adjoint()*Ha*Wa),diagonalOf(Wb.adjoint()*Hb*Wb),cnf,pls);
 }
 
 // W1 (x) W2: spin 0 the slow index, row a d2 + b (Pauli_matrix_Z, addExpandedHamiltonian)
@@ -113,9 +113,9 @@ MatrixXcd product(const MatrixXcd& W1, const MatrixXcd& W2){
 
 void calCoherencePseudospinInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, MatrixXcd* result){
     MatrixXcd W1a, W1b, W2a, W2b;
-    std::vector<doublec> full1, pseudo1, full2, pseudo2;
-    bases(qa,ba,0,cnf,W1a,W1b,pls,&full1,&pseudo1);
-    bases(qa,ba,1,cnf,W2a,W2b,pls,&full2,&pseudo2);
+    std::vector<doublec> pseudo1, pseudo2;
+    bases(qa,ba,0,cnf,pls,W1a,W1b,pseudo1);
+    bases(qa,ba,1,cnf,pls,W2a,W2b,pseudo2);
     MatrixXcd Ha, Hb;
     cceClusterHamiltonians(qa,ba,cnf,Ha,Hb);
     const int d2 = int(W2a.rows()), d = int(Ha.rows());
@@ -127,28 +127,34 @@ void calCoherencePseudospinInto(QubitArray* qa, BathArray* ba, Config* cnf, Puls
     std::vector<std::pair<int,int>> channels;
     for (int r=0; r<d; ++r) for (int s=r+1; s<d; ++s)
         if (r/d2 != s/d2 && r%d2 != s%d2 && (std::abs(Ta(r,s)) > zero || std::abs(Tb(r,s)) > zero)) channels.push_back({r,s});
-    auto with = [](MatrixXcd C, const MatrixXcd& T, int r, int s){ C(r,s) = T(r,s); C(s,r) = T(s,r); return C; };
-    auto lab = [](const MatrixXcd& V, const MatrixXcd& C){ return MatrixXcd(V*C*V.adjoint()); };   // back in the |m> basis
-
-    if (cnf->pseudospin_block){
+    // the pair from the diagonals and the changes of the channels: grouped, every block of states joined by channels evolved
+    // whole (weight k/d, k its states); pairwise, every channel alone a two-level system of its Omega and Delta (weight 2/d)
+    std::vector<doublec> pair = evolve(Da,Db,cnf,pls);
+    if (cnf->pseudospin_grouped){
+        std::vector<int> root(d);
+        for (int i=0; i<d; ++i) root[i] = i;
+        auto find = [&](int i){ while (root[i] != i) i = root[i] = root[root[i]]; return i; };
+        for (auto [r,s] : channels) root[find(r)] = find(s);
+        std::vector<std::vector<int>> blocks(d);
+        for (int i=0; i<d; ++i) blocks[find(i)].push_back(i);
         MatrixXcd Ca = Da, Cb = Db;
-        for (auto [r,s] : channels){ Ca = with(Ca,Ta,r,s); Cb = with(Cb,Tb,r,s); }
-        const std::vector<doublec> pair = evolve(lab(Va,Ca),lab(Vb,Cb),cnf,pls);
-        for (size_t i=0; i<pair.size(); ++i) result[i] = MatrixXcd::Constant(1,1,pair[i]);
-    } else {
-        // the pseudospin model: the alpha and beta product states of one index taken as one state, so every channel is a
-        // two-level system of its Omega and Delta_alpha, Delta_beta; the pair from the diagonals and the channels' changes
-        std::vector<doublec> pair = evolve(Da,Db,cnf,pls);
-        for (auto [r,s] : channels){
-            const int idx[2] = {r,s};
-            MatrixXcd ca(2,2), cb(2,2);
-            for (int i=0; i<2; ++i) for (int j=0; j<2; ++j){ ca(i,j) = Ta(idx[i],idx[j]); cb(i,j) = Tb(idx[i],idx[j]); }
+        for (auto [r,s] : channels){ Ca(r,s) = Ta(r,s); Ca(s,r) = Ta(s,r); Cb(r,s) = Tb(r,s); Cb(s,r) = Tb(s,r); }
+        for (const auto& B : blocks){
+            const int k = int(B.size());
+            if (k < 2) continue;
+            MatrixXcd ca(k,k), cb(k,k);
+            for (int i=0; i<k; ++i) for (int j=0; j<k; ++j){ ca(i,j) = Ca(B[i],B[j]); cb(i,j) = Cb(B[i],B[j]); }
             const std::vector<doublec> l = evolve(ca,cb,cnf,pls), l0 = evolve(diagonalOf(ca),diagonalOf(cb),cnf,pls);
-            for (size_t i=0; i<pair.size(); ++i) pair[i] += 2.0/d*(l[i]-l0[i]);
+            for (size_t i=0; i<pair.size(); ++i) pair[i] += double(k)/d*(l[i]-l0[i]);
         }
-        for (size_t i=0; i<pair.size(); ++i)
-            result[i] = MatrixXcd::Constant(1,1,pair[i]/(pseudo1[i]*pseudo2[i])*full1[i]*full2[i]);
+    } else for (auto [r,s] : channels){
+        const int idx[2] = {r,s};
+        MatrixXcd ca(2,2), cb(2,2);
+        for (int i=0; i<2; ++i) for (int j=0; j<2; ++j){ ca(i,j) = Ta(idx[i],idx[j]); cb(i,j) = Tb(idx[i],idx[j]); }
+        const std::vector<doublec> l = evolve(ca,cb,cnf,pls), l0 = evolve(diagonalOf(ca),diagonalOf(cb),cnf,pls);
+        for (size_t i=0; i<pair.size(); ++i) pair[i] += 2.0/d*(l[i]-l0[i]);
     }
+    for (size_t i=0; i<pair.size(); ++i) result[i] = MatrixXcd::Constant(1,1,pair[i]/(pseudo1[i]*pseudo2[i]));
 
     if (channelOn){   // kHz: the Hamiltonians are in rad/ms
         const double* x1 = BathArray_getBath_i_xyz(ba,0);

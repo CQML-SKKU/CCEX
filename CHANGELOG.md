@@ -9,7 +9,7 @@
   semi-cce's `mode_sum`; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
   only); a model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath (`order`, `bfield`,
   `rbath`, `rdip` and `Qubit` may be left out then). cluster.mode
-  standard, CPU, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence` and
+  standard, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence` and
   `cluster_density_matrix`, `rdip_ladder`, `cluster_contributions` and `gpu_options.ranks_per_gpu` are
   refused with it. `hamiltonian.noise.pseudo_secular` (default false, semi-cce's: the noise
   is the secular A_zz I_z) adds the pseudo-secular A_zx I_x + A_zy I_y to the noise. `hamiltonian.noise.compute` chooses what is computed
@@ -21,18 +21,21 @@
   `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and semi-cce
   (P1 and 13C baths, FID, Hahn and CPMG).
   `noise` was a reserved name refused as not implemented (A49).
-- **method `pseudospin`**: the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al. 2016;
-  Lee, Park, Seo 2022), for any nuclear spin. The single spins are the cCCE's. A pair's Hamiltonian in each qubit state
-  is written in the basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and
-  cut there to the diagonal and every nonzero element between product states that differ in both spins: the flip-flops
+- **method `pseudospin`**: the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops, alone (Seo et
+  al. 2016, Supplementary eqs. 20-24; Lee, Park, Seo 2022), for any nuclear spin: the output is the product of the pairs'
+  terms, without the single spins' ESEEM (cCCE order 1). A pair's Hamiltonian in each qubit state is written in the
+  basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and cut there to the
+  diagonal and every nonzero element between product states that differ in both spins, the channels: the flip-flops
   |m1,m2> <-> |m1-1,m2+1>, the flip-flips |m1,m2> <-> |m1+1,m2+1>, and with a quadrupole that mixes the |m> the
-  double-quantum ones such as |m1,m2> <-> |m1-2,m2+2>. `hamiltonian.pseudospin.pair` `"channel"` (default) is the
-  pseudospin model, every channel a two-level system of its Omega and Delta_alpha, Delta_beta, and `"block"` evolves the
-  cut pair exactly. Each channel's Omega_alpha, Omega_beta, Delta_alpha, Delta_beta go to
-  `{output.file}_pseudospin_channels`. Checked by `test/code_verification/check_pseudospin` (exact cases, 1e-9; the
-  flip-flips of two spins in the qubit's plane, the double-quantum channels of an asymmetric quadrupole). On the h-BN
-  case of check_numerics (DFT hyperfine and quadrupole, Hahn, 200 points), block is within 1.3e-6, 2.7e-4 and 2.1e-3 of
-  cCCE order 2 at 3, 0.3 and 0.03 T, and channel within 2.0e-3, 2.2e-2 and 4.2e-2.
+  double-quantum ones such as |m1,m2> <-> |m1-2,m2+2>. `hamiltonian.pseudospin.channels` "grouped" (default) evolves
+  every block of states joined by channels (a chain) whole, with weight k/d; "pairwise" every channel alone as a
+  two-level system of its Omega and Delta_alpha, Delta_beta, with weight 2/d, missing the coupling of a chain (both
+  CCEX's generalization of the papers' single flip-flop, equal when no two channels share a state). The channels'
+  Omega_alpha, Omega_beta, Delta_alpha, Delta_beta go to `{output.file}_pseudospin_channels`. Order 2 only (the default
+  for this method). Checked by `test/code_verification/check_pseudospin` (exact cases, 1e-9: the pair's cCCE term
+  cCCE2 / cCCE1 for spins 1/2 and, grouped, 3/2, Seo's eq. 23 from the positions, the flip-flips of two spins in the qubit's plane, the double-quantum
+  channels of an asymmetric quadrupole). On the h-BN case of check_numerics (DFT hyperfine and quadrupole, Hahn, 200
+  points), the pairs' product times cCCE order 1 is within 2.0e-3, 2.2e-2 and 4.2e-2 of cCCE order 2 at 3, 0.3 and 0.03 T.
 
 - **`execution.gpu_options.ranks_per_gpu`: GPU ranks under `backend` = `auto` (cCCE, `cluster.mode` standard).** Every rank
   that meets a cluster of `min_dim` or above opened a CUDA context of its own; without MPS a GH200 node admitted 16 per

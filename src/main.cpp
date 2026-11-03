@@ -270,7 +270,7 @@ void validatePseudospin(Config* cnf, Pulse* pls, QubitArray* qa, Cluster* cls) {
     if (QubitArray_getNqubit(qa) != 1)         refuseRun("method pseudospin supports one qubit");
     if (strcasecmp(cnf->quantity,"coherence")) refuseRun("method pseudospin computes quantity coherence only");
     if (Config_getNstate(cnf) != 0)            refuseRun("method pseudospin takes the ensemble only (leave configuration.s_range out)");
-    if (Cluster_getOrder(cls) > 2)             refuseRun("method pseudospin is a pair model, order 1 or 2");
+    if (Cluster_getOrder(cls) != 2)            refuseRun("method pseudospin is a pair model, order 2");
     if (Pulse_getPulseiter(pls))               refuseRun("method pseudospin needs pulse.per_qubit = false");
     if (strcasecmp(cnf->propagator,"eigen"))   refuseRun("method pseudospin needs execution.propagator eigen");
     if (Config_getKnight(cnf) || Config_getHfmedi(cnf) || cnf->delta_A)

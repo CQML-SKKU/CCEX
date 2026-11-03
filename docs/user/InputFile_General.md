@@ -30,7 +30,7 @@ Tags in this section are about the simulation parameters: the method, the number
     - gCCE: no settings yet
     - noise: [spectrum](#tag_noise_spectrum), [pseudo_secular](#tag_noise_pseudo_secular), [compute](#tag_noise_compute),
       [fft](#tag_noise_fft)
-    - pseudospin: [pair](#tag_pseudospin_pair)
+    - pseudospin: [channels](#tag_pseudospin_channels)
 - [keys read and not used](#tag_not_used), [turning a part off](#tag_turn_off)
 
 The qubit's position file (`Qubit.qubit[].file`) is on the [Qubit page](InputFile_Qubit.md#tag_Qubit_file); the files of the defect bath
@@ -58,7 +58,7 @@ and gCCE; `dsj`, `itb` and `dsjitb` run with cCCE only: gCCE, meCCE and megCCE w
 | `meCCE` | ME-CCE: the cCCE with Lindblad jump operators on the bath spins (PRL 132, 250401 (2024)); qubit jumps are refused (use megCCE). CPU, one qubit, ideal π pulses from `pulse.count` |
 | `megCCE` | ME-gCCE: the gCCE with Lindblad jump operators on the bath spins and on the qubit (C<sub>q</sub> ⊗ 1, in every cluster and the 0th). CPU; the qubit sequence as given (Manual and any rotation included) with `pulse.per_qubit` false and `pulse.detuning_factor` 1 (others refused); DEER bath pulses (`pulse.bath`) run with it |
 | `noise` | the Gaussian (second-cumulant) coherence exp(−χ) of the qubit's phase noise, from a model spectrum or from the bath (the semi-classical CCE of `semi-cce`, [spectrum](#tag_noise_spectrum)). cCCE clusters (`cluster.mode` standard only), one qubit, ideal π pulses, quantity `coherence`. `execution.backend` `cuda` (`bin/main_gpu.out`) computes the sums over the bath's modes on the card, the eigensystems stay on the CPU; `auto` and a model spectrum run on the CPU |
-| `pseudospin` | the cCCE with its pair clusters in the pseudospin model of nuclear flip-flops (Seo et al., Nat. Commun. 7, 12935 (2016); Lee, Park, Seo, npj 2D Mater. Appl. 6, 60 (2022)), for reading a decay rather than for the best curve: the single spins are the cCCE's (exact, ESEEM included), each pair's Hamiltonian in each qubit state is written in the product basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and cut there to its diagonal and every nonzero element between product states that differ in both spins (the flip-flops \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−1, m<sub>2</sub>+1⟩, the flip-flips \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>+1, m<sub>2</sub>+1⟩, and with a quadrupole that mixes the \|m⟩ the double-quantum ones such as \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−2, m<sub>2</sub>+2⟩), any nuclear spin, and the pair is evolved as [pair](#tag_pseudospin_pair) says. Writes every channel's Ω<sub>α</sub>, Ω<sub>β</sub> and level gaps Δ<sub>α</sub>, Δ<sub>β</sub> (kHz) to `{output.file}_pseudospin_channels`. One qubit, ensemble, order 1 or 2, `cluster.mode` standard, the field along the qubit axis, ideal π pulses from `pulse.count`, CPU |
+| `pseudospin` | the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops, alone (Seo et al., Nat. Commun. 7, 12935 (2016), Supplementary eqs. 20-24 and Fig. 8; Lee, Park, Seo, npj 2D Mater. Appl. 6, 60 (2022); the treatment of several channels is CCEX's own), for reading a decay rather than for the best curve. The output is Π<sub>pairs</sub> P, the pairs' terms ([the pseudospin model](#tag_pseudospin_model)) without the single spins (their ESEEM, which cCCE order 1 gives). Each pair's Hamiltonian in each qubit state is written in the product basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and cut there to its diagonal and every nonzero element between product states that differ in both spins, the channels (the flip-flops \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−1, m<sub>2</sub>+1⟩, the flip-flips \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>+1, m<sub>2</sub>+1⟩, and with a quadrupole that mixes the \|m⟩ the double-quantum ones such as \|m<sub>1</sub>, m<sub>2</sub>⟩ ↔ \|m<sub>1</sub>−2, m<sub>2</sub>+2⟩), any nuclear spin. Writes every channel's Ω<sub>α</sub>, Ω<sub>β</sub> and level gaps Δ<sub>α</sub>, Δ<sub>β</sub> (kHz) to `{output.file}_pseudospin_channels`. One qubit, ensemble, order 2 (the default here; another order is refused), [channels](#tag_pseudospin_channels) grouped or pairwise, `cluster.mode` standard, the field along the qubit axis, ideal π pulses from `pulse.count`, CPU |
 
 Old values are refused with their current form ([old names](InputFile.md#OldNames)).
 
@@ -936,34 +936,49 @@ cluster's spins by their mean; that comparison is gone.) <br>
 
 <b>Example:</b> ``` "hamiltonian" : {"cCCE": {"delta_A": true}} ```
 
-<a id="tag_pseudospin_pair"></a>
-## pseudospin.pair
+<a id="tag_pseudospin_model"></a>
+<a id="tag_pseudospin_channels"></a>
+## channels (the pseudospin model of a pair)
 <b>Description:</b><br>
-How [method](#tag_method) pseudospin evolves a pair under its cut Hamiltonians (each qubit state in its own basis,
-[method](#tag_method)). A channel is a nonzero element of the cut between two product states that differ in both spins.
-`"channel"` is the pseudospin model: the α and β product states of one index are taken as one state (their overlap, the
-pair's share of the ESEEM, is left out), every channel alone is a two-level system with the fields (Ω<sub>α,β</sub>, 0,
-Δ<sub>α,β</sub>), and the pair
-L<sub>pair</sub> = L<sub>diag</sub> + (2/d) Σ<sub>c</sub> (l<sub>c</sub> − l<sub>c,diag</sub>), d = (2I<sub>1</sub>+1)(2I<sub>2</sub>+1),
-L<sub>diag</sub> and l<sub>c,diag</sub> without the channels; for a Hahn echo with Ω<sub>α</sub> = Ω<sub>β</sub>
-l<sub>c</sub> = 1 − 2 \|n̂<sub>α</sub> × n̂<sub>β</sub>\|² sin²(ω<sub>α</sub>t/4) sin²(ω<sub>β</sub>t/4). The pair's term is
-P = L<sub>pair</sub> / (L<sub>1</sub> L<sub>2</sub>) with the single spins from their eigenvalues alone, and the cluster's value
-P times the exact single-spin coherences. It is exact for two spins 1/2 whose α and β bases agree; it misses the α-β
-overlap and what couples the channels of a chain (a state in two channels). `"block"` evolves the cut pair exactly
-(both qubit states with their own bases, back in the \|m⟩ basis); the single spins are exact under the cut, so its value
-is the cut pair's coherence. The run's coherence is Π<sub>k</sub> L<sub>k</sub> Π<sub>pairs</sub> P in both. Running both and
-cCCE order 2 separates the approximations: the cut (cCCE against block) and the pseudospin model (block against
-channel). On the h-BN case of check_numerics (DFT hyperfine and quadrupole, Hahn, 200 points) block was within
-1.3e-6, 2.7e-4 and 2.1e-3 of cCCE order 2 at 3, 0.3 and 0.03 T, channel within 2.0e-3, 2.2e-2 and 4.2e-2. Channel divides
-by the single spins' coherences from their eigenvalues: under a Hahn echo or CPMG they are 1, without a pulse
-(`pulse.count` 0) they oscillate and can pass through zero, and a time point where one is zero is reported as
-`[numerical-invalid]`, as cCCE's own division by a zero single coherence is. <br>
+How [method](#tag_method) pseudospin gives a pair's term P. The α and β product states of one index are taken as one
+state (their overlap, the pair's share of the ESEEM, is left out). With the nuclear state I/d each of the d product
+states weighs 1/d, d = (2I<sub>1</sub>+1)(2I<sub>2</sub>+1), and the channels replace the diagonal values of their
+states by a coherence that includes the channels' elements. A state can sit in two channels (spins 1, no quadrupole:
+\|1,−1⟩ ↔ \|0,0⟩ ↔ \|−1,1⟩), and the channels then form a chain. `channels` says how they are evolved:
 
-<b>Data Type:</b> String
+- `"grouped"` (default): the channels join the product states into blocks (a chain is one block), every block of k
+  states evolves whole, and
+  L<sub>pair</sub> = L<sub>diag</sub> + Σ<sub>B</sub> (k<sub>B</sub>/d) (l<sub>B</sub> − l<sub>B,diag</sub>).
+  Within the cut Hamiltonian this is exact; what it leaves out is the α-β overlap.
+- `"pairwise"`: every channel alone is a two-level system with the fields (Ω<sub>α,β</sub>, 0, Δ<sub>α,β</sub>), and
+  L<sub>pair</sub> = L<sub>diag</sub> + (2/d) Σ<sub>c</sub> (l<sub>c</sub> − l<sub>c,diag</sub>); for a Hahn echo with
+  Ω<sub>α</sub> = Ω<sub>β</sub>
+  l<sub>c</sub> = 1 − 2 \|n̂<sub>α</sub> × n̂<sub>β</sub>\|² sin²(ω<sub>α</sub>t/4) sin²(ω<sub>β</sub>t/4). It misses what
+  couples the channels of a chain, and is kept to compare with that independent-channel picture.
 
-<b>Default:</b> `"channel"`
+L<sub>diag</sub>, l<sub>B,diag</sub> and l<sub>c,diag</sub> are without the channels' elements. The two agree when no two
+channels share a state. Both are CCEX's own generalization of the papers' single flip-flop to any spins and several
+channels, not a formula of either paper. Then P = L<sub>pair</sub> / (L<sub>1</sub> L<sub>2</sub>) with the single
+spins from their eigenvalues alone. For two spins 1/2 of one species with the secular hyperfine and the flip-flop alone
+both are Seo's eq. 23, P = 1 − K sin²(√(ΔA² + D²) t/4) sin²(D t/4), K = ΔA²/(ΔA² + D²).
 
-<b>Example:</b> ``` "method" : "pseudospin", "hamiltonian" : {"pseudospin": {"pair": "block"}} ```
+The comparisons below use the inputs of `test/code_verification/check_pseudospin` (two spins on the qubit axis, Hahn,
+200 points); the check itself covers spins 3/2 grouped, the other cases were run once each. Without a quadrupole, P
+times cCCE order 1 was within 1e-10 of cCCE order 2 with `"grouped"` for spins 1, 3/2 and 3, and 0.43, 0.71 and 0.65
+off with `"pairwise"`. An axial quadrupole (spins 1) splits the chain's levels, and pairwise was then 2.9e-6 off. A
+quadrupole that mixes the \|m⟩ (spins 1, η = 0.5) left both 0.74 off; the likely cause is that the α and β bases
+differ there, which was not tested separately.
+On the h-BN case of check_numerics (DFT hyperfine and quadrupole, Hahn, 200 points) both gave P times cCCE order 1
+within 2.0e-3, 2.2e-2 and 4.2e-2 of cCCE order 2 at 3, 0.3 and 0.03 T. The division by the single spins from their
+eigenvalues is 1 under a Hahn echo or CPMG; without a pulse (`pulse.count` 0) they oscillate and can pass through zero,
+and a time point where one is zero is reported as `[numerical-invalid]`, as cCCE's own division by a zero single
+coherence is. <br>
+
+<b>Data Type:</b> String (`"grouped"` or `"pairwise"`)
+
+<b>Default:</b> `"grouped"`
+
+<b>Example:</b> ``` "method" : "pseudospin", "hamiltonian" : {"pseudospin": {"channels": "pairwise"}} ```
 
 <a id="tag_jump_operators"></a>
 ## jump_operators
