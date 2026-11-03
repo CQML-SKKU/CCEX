@@ -94,6 +94,20 @@ jobs:
           python3 -m unittest discover -s example/tools/InputKeys/tests   # the input-key converter (review 20261013-180049 C1)
           python3 -m unittest discover -s example/tools/StateFiles/tests  # the state and axis file writer (A94; its CCEX run is skipped without a build)
 
+      - name: The forms job runs every stage of check_input_forms once
+        run: |
+          python3 - <<'PY'
+          import re
+          stages = re.search(r'^STAGES=\((.*)\)', open('test/code_verification/check_input_forms/run.sh').read(), re.M).group(1).split()
+          ci = open('.github/workflows/ci.yml').read()
+          parts = re.findall(r'"([a-z0-9_ ]+)"', re.search(r'stages: \[(.*?)\]', ci, re.S).group(1))
+          given = [x for p in parts for x in p.split()]
+          missing, twice = sorted(set(stages) - set(given)), sorted({x for x in given if given.count(x) > 1})
+          unknown = sorted(set(given) - set(stages))
+          print(f"{len(stages)} stages, {len(parts)} parts; missing {missing}, twice {twice}, unknown {unknown}")
+          assert not (missing or twice or unknown)
+          PY
+
   checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -176,7 +190,8 @@ jobs:
       - name: Refusals
         run: bash test/code_verification/check_refusals/run.sh
 
-  # The input-form stages in three parts (check_input_forms/run.sh takes the stages to run).
+  # The input-form stages in four parts (check_input_forms/run.sh takes the stages to run); the python job checks that
+  # the four hold every stage of its STAGES list once.
   forms:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -185,7 +200,8 @@ jobs:
       matrix:
         stages: ["legacy axis2 errcorr",
                  "gyro comments nodiv allfull evolution_update",
-                 "gpu_options propagator tensor_format cli autoconv"]
+                 "column_evolution gpu_options propagator tensor_format cli",
+                 "configuration autoconv units pcce_rest"]
     env:
       CCEX_BIN: ${{ github.workspace }}/build/bin/main.out
       CCEX_BUILD_DIR: ${{ github.workspace }}/build
