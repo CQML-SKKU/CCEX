@@ -41,8 +41,8 @@ Inputs name their files relative to the calculation folder, so run `run.sh` from
 
 Two scripts here are shared: `plot_coherence.py` (the figures and numbers) and `make_natab_baths.sh`
 (natural-abundance ¹³C configurations made with `tools/BathGenerator`, for `01` and `09`). Each `expected.png` was
-made by its folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks), except those of `08_GPU` and
-`05_multiNV/gCCE2_HahnRamsey_NV6`, which need a server.
+made by its folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks), except those of `08_GPU`, made on a GPU
+server; `05_multiNV/gCCE2_HahnRamsey_NV6` has none yet.
 
 ## Folders before 2.0.0
 

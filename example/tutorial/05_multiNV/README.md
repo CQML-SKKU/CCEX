@@ -44,7 +44,9 @@ Inputs: [`ccein_hahn.jsonc`](gCCE2_HahnRamsey_NV2/ccein_hahn.jsonc), [`ccein_ram
 - **Keys that matter:** six `Qubit.qubit` entries and six `intmap` tensors; `nstep` 50 (at 300 the density
   matrices, 8.5 MB per time step, ran out of memory at 32 ranks on a GPU server node).
 - **How to run:** a server node, not a laptop: `NP=8 bash run.sh` (each output file holds nstep × 729² complex numbers).
-- **Expected result:** no `expected.png` yet: the run needs a server node.
+- **Expected result:** no `expected.png` yet. On a GPU server node (32 ranks, job 18184) both runs took 123 s, and in
+  the 4.9 ns window neither curve decays visibly (Ramsey moves by 1.2e-4 from the Hahn echo), so there is nothing to
+  plot yet.
 - **What to change next:** fewer qubits first (`gCCE2_HahnRamsey_NV2`).
 
 Inputs: [`ccein_hahn.jsonc`](gCCE2_HahnRamsey_NV6/ccein_hahn.jsonc), [`ccein_ramsey.jsonc`](gCCE2_HahnRamsey_NV6/ccein_ramsey.jsonc)

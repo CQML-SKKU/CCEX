@@ -21,8 +21,11 @@ last four of them (`bath_p1_4`), the NV position (`qubit_p1`) and the P1 gyromag
 - **Keys that matter:** `execution.backend`, `execution.gpu_options.min_dim` 256, `execution.profile` true, `order` 5,
   the `Defect` block (¹⁵N, four Jahn-Teller axes).
 - **How to run:** on a GPU node, `NP=32 bash run.sh` (CPU part alone: 24 s on 4 ranks, WSL).
-- **Expected result:** no `expected.png` yet (the run needs a GPU node); the backends agree to about 1e-10.
+- **Expected result:** `expected.png` (idm4-gpu: RTX PRO 6000, 32 ranks, MPS, `do_compile.sh gpu`; job 18184, 2026-11-03); `auto` and `cuda` within 1.0e-10 of `cpu`. The three runs and the plot took
+  200 s.
 - **What to change next:** `gpu_options.min_dim` (which clusters go to the GPU).
+
+![cCCE5_Hahn_backends: expected result](cCCE5_Hahn_backends/expected.png)
 
 Input: [`ccein.jsonc`](cCCE5_Hahn_backends/ccein.jsonc)
 
@@ -38,8 +41,12 @@ Input: [`ccein.jsonc`](cCCE5_Hahn_backends/ccein.jsonc)
 - **Keys that matter:** `execution.backend` `auto`, `execution.gpu_options` left out (write a key to fix it).
 - **How to run:** on a GPU node, `NP=32 bash run.sh`; without `bin/main_gpu.out` it runs `auto` on the CPU and
   says so.
-- **Expected result:** no `expected.png` yet (the run needs a GPU node); `auto` within about 1e-10 of `cpu`.
+- **Expected result:** `expected.png` (idm4-gpu: RTX PRO 6000, 32 ranks, MPS, `do_compile.sh gpu`; job 18184, 2026-11-03); the log line
+  `[gpu-auto] ranks_per_gpu=4 min_dim=256 evolution_batch_size=32 cluster_batch_mb=16208`, and `auto` within 1.0e-10
+  of `cpu` (82 s for both runs).
 - **What to change next:** `"gpu_options": {"ranks_per_gpu": 0}` (every rank may open the GPU) to compare.
+
+![cCCE5_Hahn_autoOptions: expected result](cCCE5_Hahn_autoOptions/expected.png)
 
 Input: [`ccein.jsonc`](cCCE5_Hahn_autoOptions/ccein.jsonc)
 
@@ -51,9 +58,11 @@ Input: [`ccein.jsonc`](cCCE5_Hahn_autoOptions/ccein.jsonc)
   4 ranks + RTX 3050: 40.9 / 16.8 / 16.8 s.
 - **Keys that matter:** `method` gCCE, `execution.backend`, `gpu_options.min_dim` 256, `evolution_batch_steps` 64.
 - **How to run:** on a GPU node, `NP=32 bash run.sh` (CPU part alone: 85 s on 4 ranks, WSL).
-- **Expected result:** no `expected.png` yet (the run needs a GPU node).
+- **Expected result:** `expected.png` (idm4-gpu: RTX PRO 6000, 32 ranks, MPS, `do_compile.sh gpu`; job 18184, 2026-11-03); `auto` and `cuda` within 1.0e-10 of `cpu` (45 s for the three).
 - **What to change next:** `cuda` sends every cluster, the qubit alone included, to the GPU and was slower than `auto`
   here (4.7 s against 2.1 s).
+
+![gCCE4_Hahn_backends: expected result](gCCE4_Hahn_backends/expected.png)
 
 Input: [`ccein.jsonc`](gCCE4_Hahn_backends/ccein.jsonc)
 
@@ -64,7 +73,9 @@ Input: [`ccein.jsonc`](gCCE4_Hahn_backends/ccein.jsonc)
   auto 0.29 s, cuda 2.8 s (3.8 s without MPS), difference 0.
 - **Keys that matter:** `cluster.mode` pcce, `cluster.pcce.partition_size` 2, `execution.backend`.
 - **How to run:** on a GPU node, `NP=32 bash run.sh` (CPU part alone: 1 s on 4 ranks, WSL).
-- **Expected result:** no `expected.png` yet (the run needs a GPU node).
+- **Expected result:** `expected.png` (idm4-gpu: RTX PRO 6000, 32 ranks, MPS, `do_compile.sh gpu`; job 18184, 2026-11-03); `auto` and `cuda` give `cpu`'s curve exactly (17 s for the three).
 - **What to change next:** `partition_size` 3 (larger clusters, more of them on the GPU).
+
+![pCCE2_Hahn_backends: expected result](pCCE2_Hahn_backends/expected.png)
 
 Input: [`ccein.jsonc`](pCCE2_Hahn_backends/ccein.jsonc)

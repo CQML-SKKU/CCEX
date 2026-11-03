@@ -1,18 +1,18 @@
-# check_deer/ — DEER bath pulses (`pulse.bath`)
+# check_deer/: DEER bath pulses (`pulse.bath`)
 
     bash test/code_verification/check_deer/run.sh     # bin/main.out, or CCEX_BIN; CCEX_MPI as for the others
 
-What `pulse.bath` (docs/methods/deer.md) must do, checked against answers that are known rather than a recorded run,
-plus the paths a bath pulse has to reach. One run of the suite is a unit test and 34 CCEX runs on 1 rank (two on
+What `pulse.bath` (docs/methods/deer.md) must do, checked against known answers rather than a recorded run, plus
+the paths a bath pulse has to reach. One run of the suite is a unit test and 34 CCEX runs on 1 rank: two on
 `check_numerics/cases/p1_manual_hahn`, twenty on 12 spins at order 1 with 41 points, seven at order 2 or 3, five that
-must stop before any cluster; about 90 s on WSL); it decides with the exit status (0 = every check passed).
+must stop before any cluster. It takes about 90 s on WSL. The exit status is 0 only when every check passed.
 
 ## What runs
 
 1. `test_merge_unit.cpp`: the qubit/bath sequence merge (`src/physical/pulse_bath.cpp`), each pulse on exactly one edge.
 2. `pulse.bath: {"count": 0}` on `check_numerics/cases/p1_manual_hahn` gives the output bytes of the input without the
    block.
-3. The six cases of the adding_MECCE branch (`example/z.Tests/DEER`, tip 2c63eac52) and five pure-state cases,
+3. The six cases of the adding_MECCE branch's DEER test (`example/z.Tests/DEER`, tip 2c63eac52) and five pure-state cases,
    written by `run.sh` from one template (the branch input in the current keys) and the differences below, then judged
    by `check_deer.py`:
 
@@ -47,9 +47,8 @@ must stop before any cluster; about 90 s on WSL); it decides with the exit statu
 | `onres_expm` | `onres` | `propagator` expm (the log: evolution matrix, `evolution_update` exact) |
 | `pg_o2` | `o2` | `cluster_mode` pcce, `pcce.partition_size` 1 (pcce clusters of two spins with the pump) |
 
-   The pure-state runs pass the state file as the `configuration.bath_state_file` key (a list since A64) with `nstate` 1 (also as `-s <prefix> -N 1` until
-   the options were removed, A63), and `run.sh` checks
-   that the log names the file read (`Read StateFile : <prefix>1`).
+   The pure-state runs pass the state file as the `configuration.bath_state_file` key (a list) with `nstate` 1, and
+   `run.sh` checks that the log names the file read (`Read StateFile : <prefix>1`).
 4. Refusals (exit status and message) and warnings:
 
 | case | input | expected |
@@ -61,7 +60,7 @@ must stop before any cluster; about 90 s on WSL); it decides with the exit statu
 | `offres`, `multi_miss` | tones that reach no P1 line | run, with `Warning: pulse.bath drives no spin` |
 | `bad_bw` | `onres` with `pulse.bath.bandwidth` 0 | `pulse.bath.bandwidth must be a positive number` |
 
-5. `pulse.bath.bandwidth` and the unit form (A67, 2026-10-16), byte for byte against `onres`: `units_onres` (the tone as
+5. `pulse.bath.bandwidth` and the unit form, byte for byte against `onres`: `units_onres` (the tone as
    `{"value": [79975.539], "unit": "kHz"}` and the default bandwidth written out, `0.0015915494309189536` MHz) and `bw_wide`
    (tone 79.98 MHz, 28 rad·kHz = 4.5 kHz off the line, with a bandwidth of `{"value": 5, "unit": "kHz"}`); `bw_default`, the
    same tone with the default window, drives nothing and warns.
@@ -82,7 +81,7 @@ on the pumped line (configuration 1 of `inputs/avaax_DEERtest`).
 | `multi_hit` = `onres` | 0 | branch (`TOL_EXACT`): the same merged sequence and the same driven spins |
 | `onres` vs closed form at f = 0.5, `nearpulse` at f = 0.505 (real part) | 2e-4 | branch (`TOL_CLOSED`) |
 | `nearpulse` ≠ `nopulse` | > 1e-3 | branch: a pump applied twice cancels and would fall onto `nopulse` |
-| `_wiDiv` = `_noDiv` (the six ensemble cases, bytes) | — | branch: at order 1 there is no division |
+| `_wiDiv` = `_noDiv` (the six ensemble cases) | 0 (bytes) | branch: at order 1 there is no division |
 | vector = matrix (exact), recursive = exact (vector and matrix), complex | 1e-9 | `evolution_update` bound of CHANGELOG 2.0.0 |
 | `path_vector` ≠ `path_nopump` | > 1e-3 | the pump acts on the vector path (its block product assumes kron(U, 1)) |
 | `meg_onres` = `onres`, `meg_nearpulse` = `nearpulse`; `meg_o2` = `o2` (`_noDiv`, `_wiDiv`) | 1e-6 | megCCE at rate 0 is the gCCE: the bound of `check_master_equation` (megCCE r0 vs gCCE) |
@@ -97,25 +96,24 @@ Everything is judged on `_noDiv` (`<case>_noDiv`, `<case>_state1_noDiv` for the 
 except where the closed form (real) is the reference; the order-2 and order-3 comparisons also on `_wiDiv`.
 
 Why both reorderings: the spins of a cluster (`cluster_mode` standard) are kept in the order of their index in the bath
-file. Reversing the file
-reverses every pair, so a $U_b$ that puts a spin's rotation on the other spin of the pair (only the first spin driven,
+file. Reversing the file reverses every pair, so a $U_b$ that puts a spin's rotation on the other spin of the pair (only the first spin driven,
 say) changes the curve; but a $U_b$ built in reverse kron order gives the same wrong operator in both runs (in each
 run spin $a$'s rotation lands on $b$ and $b$'s on $a$). A rotation of the file turns some triples (those that wrap
 around) into rotated, not reversed, order, and that $U_b$ then moves the curve. Measured with mutants of
 `bathPulseOperator`: reverse kron order → only `o3_rot` fails (2.0); first spin of a cluster only → `o2_rev`,
 `meg_o2_rev` (1.0) and `o3_rot` (2.9) fail; megCCE without $U_b$ → `meg_onres` (1.3) and `meg_o2` (2.0) fail.
 
-## Changes from the branch test
+## Differences from the branch test
 
-- One merge tolerance, 1e-9 (the branch matched qubit edges to 1e-12 and bath pulses to 0.01; `nearpulse` exists for
-  that bug), and a pulse is never placed twice (`test_merge_unit.cpp`, Task A1).
+- One merge tolerance, 1e-9 (the branch matched qubit edges to 1e-12 and bath pulses to 0.01; `nearpulse` tests
+  that), and a pulse is never placed twice (`test_merge_unit.cpp`).
 - `_noDiv` is judged (the branch read `_wiDiv`); the two are compared byte for byte separately.
-- The pure-state path checks, the refusals and the off-resonant warning are new.
+- The pure-state path checks, the refusals and the off-resonant warning are not in the branch.
 - Merged against unmerged runs are compared within 1e-12 instead of bit for bit (see above); the measured
   difference is 0.
-- `multi_hit` uses the branch's tone 79.975539 MHz. The plan's 79.98 MHz is 28.0 rad·kHz from the P1 line, outside the
+- `multi_hit` uses the branch's tone 79.975539 MHz. 79.98 MHz is 28.0 rad·kHz from the P1 line, outside the
   10 rad·kHz window: the pump drove nothing and `multi_hit` came out byte-identical to `nopulse` (measured, 2026-10-13).
-  `offres` keeps the plan's 84.98 MHz (the branch had 84.975539; both are 5 MHz off every line).
+  `offres` uses 84.98 MHz (the branch had 84.975539; both are 5 MHz off every line).
 - The input in the current keys (`-I`, `-a`, `-N 0` of the branch `run_test.sh` written into the input):
 
 | branch `ccein.js` | here |
@@ -129,7 +127,7 @@ around) into rotated, not reversed, order, and that $U_b$ then moves the curve. 
 | `npulse` | `pulse.count` |
 | `addsubclus` 0 | `add_subclusters` false |
 | `bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams` | `pulse.bath.count`, `.sequence`, `.defect`, `.energy_shift`, `.spin`, `.alphams`, `.betams` |
-| top-level `alphams`, `betams` | removed (the same values were in the `Qubit.qubit` entry; `Qubit.alpha_state`/`beta_state` `{"ms": [-1]}`/`{"ms": [0]}` since A93) |
+| top-level `alphams`, `betams` | `Qubit.alpha_state`/`beta_state` `{"ms": [-1]}`/`{"ms": [0]}` |
 | `nk` [0, 0], `hf_readmode` 0, `savemode` normal | left out (the defaults) |
 | `-I bath_DEERtest_12spin.txt`, `-N 0`, `-S Random` | `configuration.bathfile`, `configuration.nstate` 0, `configuration.seed` 3528 (the input's) |
 
@@ -142,7 +140,7 @@ No key of the template is reported as not read.
 | `inputs/bath_DEERtest_12spin.txt` | 58cc77aaba9e91da23b9db04832a6d30 | `origin/adding_MECCE:example/z.Tests/DEER/` (same) |
 | `inputs/avaax_DEERtest` | 4dca4e0bc9eeafc1681042ff4cc5fb44 | same (same) |
 | `../bath_data/single_data/DiaP1_gyro` | 1132615a81ffc6c7e56c4093be91de01 | = `example/Diamond_NV_P1Bath/bath/DiaP1_gyro` of 503fe203a and of the branch tip |
-| `inputs/state_1` | e636e210df8e06b8f439c3c4d512fc1d | written here (plan Task A3 Step 1): 12 spins, m = ±1/2, one fixed pure state for the path cases |
+| `inputs/state_1` | e636e210df8e06b8f439c3c4d512fc1d | written here: 12 spins, m = ±1/2, one fixed pure state for the path cases |
 
 ## Measured (WSL, MKL build, 1 rank, 2026-10-13)
 

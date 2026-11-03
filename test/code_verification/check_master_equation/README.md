@@ -1,11 +1,10 @@
-# check_master_equation/ — ME-CCE and ME-gCCE (`method` meCCE, megCCE)
+# check_master_equation/: ME-CCE and ME-gCCE (`method` meCCE, megCCE)
 
     bash test/code_verification/check_master_equation/run.sh     # bin/main.out, or CCEX_BIN; CCEX_MPI as for the others
 
-What the master-equation methods (docs/methods/master-equation.md) must give: their limits at rate 0, an external
-reference (PyCCE) and closed forms. One run of the suite is a unit test and 32 CCEX runs on 1 rank (about 85 s on WSL, 50 s
-of it the pure-state meCCE run);
-it decides with the exit status (0 = every check passed).
+Checks that the master-equation methods (docs/methods/master-equation.md) give their limits at rate 0, an external
+reference (PyCCE) and closed forms. One run is a unit test and 32 CCEX runs on 1 rank (about 85 s on WSL, 50 s of it
+the pure-state meCCE run). It decides with the exit status (0 = every check passed).
 
 ## What runs
 
@@ -17,7 +16,7 @@ it decides with the exit status (0 = every check passed).
 3. `cce_knight`, `me_r0_knight`: `check_numerics/cases/natab_knight_shift` as it is and with method meCCE.
 4. `bath_1e_z`: one electron at (0, 0, 500 Å), on the qubit's z axis, for PRL 132, 250401 Eq. 6.
 5. `cce_single`, `me_r0_single`: `check_numerics/cases/p1_cce2_single` (NV, P1 1 ppm, CCE2, Hahn) as cCCE and as
-   meCCE on its first pure bath state (`configuration.bath_state_file` key and `nstate` 1, also `-s <prefix> -N 1` until A63; the log must read `<prefix>1`).
+   meCCE on its first pure bath state (`configuration.bath_state_file` key and `nstate` 1; the log must read `<prefix>1`).
 6. `gcce_2nv`, `meg_r0_2nv`: `check_refusals`' S5 system (two NV with their ZFS as `intmap` tensors, two 13C,
    `example/tutorial/05_multiNV/gCCE2_HahnRamsey_NV2` (`ccein_hahn.jsonc`), order 1, one state, the state file as in 5) as gCCE and as
    megCCE, quantity coherence, deltat 1e-4 ms × 20 (S5's 1e-7 keeps the curve within 7e-7 of 1; here |L| reaches 0.43).
@@ -46,7 +45,7 @@ says otherwise.
 
 | check | tol | measured max \|diff\| | to compare with |
 |---|---|---|---|
-| superoperator unit | — | FAIL=0 | |
+| superoperator unit | none | FAIL=0 | |
 | meCCE rate 0 == CCE (Hahn, noDiv) | 1e-6 | 7.000e-10 | branch summary 5.2e-9 (`test/verification/summary.txt`) |
 | meCCE rate 0 == CCE (Hahn, wiDiv) | 1e-6 | 7.000e-10 | |
 | meCCE rate 0 == CCE (Ramsey, complex) | 1e-8 | 8.062e-10 | |
@@ -66,14 +65,13 @@ says otherwise.
 | megCCE order 0, qubit `z` == exp(−g t/2) | 1e-9 | 2.654e-10 | |
 | megCCE order 0, qubit `-` == exp(−g t/2) | 1e-9 | 2.654e-10 | |
 
-Measured on WSL (g++ `wsl-gnu`, `CCEX_BLAS=mkl`), 2026-10-13 (the CPMG, pure-state and two-qubit rows 2026-10-14). Where the checks can tell a wrong answer apart:
+Measured on WSL (g++ `wsl-gnu`, `CCEX_BLAS=mkl`), 2026-10-13 (the CPMG, pure-state and two-qubit rows 2026-10-14).
+Why the tolerances are what they are, and what each check can tell apart:
 
-- The four PyCCE checks use 1e-7 (2026-10-15; 1e-6 before): about five times the 1.9e-8 floor that the bath coordinates and
-  `H_BAR` below set.
-- `gCCE == conj(PyCCE)` is the first comparison of the existing gCCE with an outside code. Without the conjugation the
-  difference is 1.66 (max |Im| of the gCCE curve 0.83); for megCCE 0.38. PyCCE measures ⟨Rα|ρ|Rβ⟩ and CCEX ⟨α|ρ|β⟩,
+- The four PyCCE checks use 1e-7: about five times the 1.9e-8 floor that the bath coordinates and `H_BAR` below set.
+- `gCCE == conj(PyCCE)` compares gCCE with an outside code. Without the conjugation the difference is 1.66 (max |Im| of the gCCE curve 0.83); for megCCE 0.38. PyCCE measures ⟨Rα|ρ|Rβ⟩ and CCEX ⟨α|ρ|β⟩,
   complex conjugates after an odd number of π pulses (`reference/pycce/README.md`).
-  What is left with it, 1.886e-08, is the input and not the compiler or data type (numpy model of this row, 2026-10-14):
+  What is left with it, 1.886e-08, comes from the input, not the compiler or data type (numpy model of this row):
   `inputs/bath_espin` keeps PyCCE's `random_bath(seed=2)` coordinates to 5 decimals (2.2e-8 from the bath PyCCE used),
   and `H_BAR` is 1.054571729 (`include/common/utilities.h:72`) against PyCCE's `HBAR_MU0_O4PI` 1.05457172 (1.5e-8);
   both: 1.85e-8.
@@ -81,16 +79,16 @@ Measured on WSL (g++ `wsl-gnu`, `CCEX_BLAS=mkl`), 2026-10-13 (the CPMG, pure-sta
   the floor between two double-precision codes on this system.
 - `megCCE bath jumps`: the same run without jumps (= gCCE) is 0.69 from conj(PyCCE).
 - `megCCE bath + qubit z jumps`: the qubit jump in the clusters with bath spins, C_q ⊗ 1_B, which order 0 (bath
-  dimension 1) cannot tell from 1_B ⊗ C_q; put the other way round for the test, this check failed with 5.213e-01 while
-  the order-0 checks passed. Without the qubit jump (`meg_bath`) the run is 0.22 from this reference; `meg_bath` times
+  dimension 1) cannot tell from 1_B ⊗ C_q; with the order swapped, this check fails with 5.213e-01 while the
+  order-0 checks pass. Without the qubit jump (`meg_bath`) the run is 0.22 from this reference; `meg_bath` times
   exp(−g t/2) is 0.046 from it (in the gCCE the qubit dephasing does not factor out on this resonant system).
-- order 0: a 0th cluster without the qubit jump (the branch before 6022d7998, a `nspin > 0` condition on the
-  dissipator) gives 1, 0.62 from exp(−g t/2); put back for the test, both checks failed with 6.247e-01. S=1/2 with B ∥ z:
+- order 0: a 0th cluster without the qubit jump (a `nspin > 0` condition on the dissipator, as in the branch before
+  6022d7998) gives 1, 0.62 from exp(−g t/2); with that condition put back, both checks fail with 6.247e-01. S=1/2 with B ∥ z:
   `z` and `-` (amplitude damping) both damp ρ_αβ at g/2 before and after the π pulse, so L = exp(−g t/2), g = 1 rad/ms.
 - tol 1e-9 for order 0: two files of 10 decimals multiplied (the single-file tolerance of `check_analytic` is 2e-10).
 
 Why the branch's own gCCE and ME-gCCE outputs are not references (only its meCCE output is):
-the branch keeps the qubit gyromagnetic ratio and deltat in float (`qubit.cpp:249`, `general.h:42`, fixed in this code),
+the branch keeps the qubit gyromagnetic ratio and deltat in float (`qubit.cpp:249`, `general.h:42`; fixed in this code),
 and this system is resonant (qubit and bath electrons at the same Larmor frequency, so the result depends on ω_L t mod 2π),
 so its gCCE and ME-gCCE curves are 0.28 and 0.052 from this code's; meCCE uses no qubit Zeeman term and agrees.
 

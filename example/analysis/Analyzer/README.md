@@ -35,9 +35,8 @@ tolerance (default 2.0):
 4. Any other divergent point becomes the mean of the previous corrected value and
    the next non-divergent wiDiv value.
 
-This is the group's convention, not a physical law. The tutorial results were
-made with it (`test/code_verification/check_numerics/` compares raw outputs), so it must not
-change; the one implementation is `coherence.error_correct`.
+This is the group's convention, not a physical law. Recorded results were made with it, so it must not change; the one
+implementation is `coherence.error_correct`.
 
 ## Using it from Python
 
@@ -56,7 +55,7 @@ t, L_avg, n = ensemble_average(read_coherence(p) for p in files.values())
 
 ## Using the command line
 
-The tutorials' `run.sh` are the reference for how the CLI is called:
+Two typical calls (`test/code_verification/check_input_forms/errcorr.sh` uses the first):
 
 ```
 run.py -d DIR -fi PATTERN_wiDiv -err_d DIR -err_fi PATTERN_noDiv -vn CONF -v 1 2 3 \
