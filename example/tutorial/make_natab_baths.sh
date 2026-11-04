@@ -1,6 +1,6 @@
 #!/bin/sh
 # make_natab_baths.sh N OUTDIR [SIZE]: N natural-abundance 13C bath configurations around an NV, OUTDIR/config_1 .. config_N
-# and OUTDIR/config_defect (the NV position), made with tools/BathGenerator from 00_quickstart/bath/genbath/ (diamond
+# and OUTDIR/config_defect (the NV position), made with tools/BathGenerator from basic/01_first_run/bath/genbath/ (diamond
 # cells, 1.1 % 13C) in a SIZE A cell (default 110: rbath up to 53 A). Configuration k uses the random seed k, so every
 # call makes the same files; files already there are kept. The configurations are shared over NP MPI ranks (default 4,
 # make_natab_baths.py; without mpirun they are made one after another): about 5 s per configuration (SIZE 110), 40 in
@@ -9,7 +9,7 @@ set -e
 N=$1; OUT=$2; SIZE=${3:-110}
 [ -n "$OUT" ] || { echo "usage: make_natab_baths.sh N OUTDIR [SIZE]"; exit 2; }
 ROOT=$(git rev-parse --show-toplevel)
-GEN=$ROOT/example/tutorial/00_quickstart/bath/genbath
+GEN=$ROOT/example/tutorial/basic/01_first_run/bath/genbath
 mkdir -p $OUT
 python3 -c 'import importlib.util, sys; sys.exit(importlib.util.find_spec("mpi4py") is None)' ||
   { echo "make_natab_baths.sh: BathGenerator.py needs python3 with mpi4py (and numpy, psutil)"; exit 1; }

@@ -931,7 +931,7 @@ static void writeExampleInput(const char* dir){
     }
     if (rank == 0)
         printf("Wrote %s, an input template: name your bath file in its \"bathfile\" before running it\n"
-               "(a ready bath and input: example/tutorial/00_quickstart)\n", path.c_str());
+               "(a ready bath and input: example/tutorial/basic/01_first_run)\n", path.c_str());
 }
 
 static void printUsage(const char* self){

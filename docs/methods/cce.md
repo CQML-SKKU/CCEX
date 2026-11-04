@@ -34,7 +34,7 @@ positive for their sub-clusters. The run computes the clusters and multiplies th
 - The bath is the spins within [rbath](../user/InputFile_General.md#tag_rbath) of the qubit.
 - Clusters of order n are grown from those of order n − 1 by adding a spin connected to any member.
 - Convergence is checked by raising `order`, `rdip` and `rbath` until the curve no longer changes.
-  `example/tutorial/03_P1/cCCE4_Hahn_states/` compares order 2 with order 4.
+  `example/tutorial/advanced/01_P1/cCCE4_Hahn_states/` compares order 2 with order 4.
   [auto_convergence](../user/InputFile_AutoConvergence.md) does the `rdip`, `rbath` and time-window part automatically.
 - For order 3 and up, [cluster.selection.max_per_order](../user/InputFile_Cluster.md#tag_max_clusters_per_order) keeps
   the strongest clusters of each order, and [add_subclusters](../user/InputFile_Cluster.md#tag_add_subclusters) lists
@@ -63,7 +63,7 @@ This happens with strongly coupled spins:
 - a spin-1 qubit without its zero-field splitting in gCCE;
 - cCCE in a tilted field without [knight](../user/InputFile_General.md#tag_knight).
 
-The tutorials `03_P1/gCCE2_Hahn_zfs` and `06_cCCE_vs_gCCE/cCCE2_Hahn_knightShift` show both cases.
+The tutorials `advanced/01_P1/gCCE2_Hahn_zfs` and `basic/04_cCCE_vs_gCCE/cCCE2_Hahn_knightShift` show both cases.
 
 What helps:
 
@@ -121,7 +121,7 @@ gCCE keeps what cCCE drops:
 - several qubits (`Qubit.qubit`, `intmap`);
 - the qubit density matrix (`quantity` dm).
 
-It costs a factor of the qubit dimension in every cluster. `example/tutorial/06_cCCE_vs_gCCE/` compares the two.
+It costs a factor of the qubit dimension in every cluster. `example/tutorial/basic/04_cCCE_vs_gCCE/` compares the two.
 
 <a id="cce_hamiltonian"></a>
 ## The Hamiltonian
@@ -207,7 +207,7 @@ Electron baths are usually run with sampled states (`s_range`):
 - the on-site spins' states come from `seed` or `defect_state_file`;
 - the other bath spins act through the [mean field](#cce_meanfield).
 
-`example/tutorial/03_P1/` runs both forms of the ¹⁴N.
+`example/tutorial/basic/05_defect_bath/` runs both forms of the ¹⁴N.
 
 <a id="cce_dsj"></a>
 ## dsj, itb and dsjitb (cCCE)
@@ -229,7 +229,7 @@ them would exceed `order`, is an *inter-bath* pair.
   equals standard CCE2.
 - At higher order a group is computed whole, but between groups only pairs enter, so `dsjitb` is not CCE-`order`.
 - dsj keeps the strongest couplings inside clusters with far fewer clusters than standard CCE. Compare it with
-  `standard` at the same `order` and `rdip` (`example/tutorial/06_cCCE_vs_gCCE/cCCE2_Hahn_dsj/`).
+  `standard` at the same `order` and `rdip` (`example/tutorial/advanced/06_terms_and_models/cCCE2_Hahn_dsj/`).
 
 References:
 

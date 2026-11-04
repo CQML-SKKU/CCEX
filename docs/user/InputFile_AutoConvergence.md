@@ -23,7 +23,7 @@ two keys of one block that differ only in case.
 
 The outputs and exit codes are [below](#tag_ac_results). What to do when a job is cut or the baths do not suffice is in
 [When a job is cut](#tag_ac_resume) and [When the baths are too small or too few](#tag_ac_baths).
-`example/tutorial/09_auto_convergence/` is a worked input.
+`example/tutorial/advanced/12_auto_convergence/` is a worked input.
 
 <a id="tag_ac_running"></a>
 ## Running it
@@ -430,7 +430,7 @@ Everything is under `workdir`:
 
 While a run is going on it says `running`; a refusal, a stop or an error is written there too. `result/` also holds the
 figures of the steps ([Steps](#tag_ac_steps), last column) and the converged coherence
-(`example/tutorial/09_auto_convergence/` lists them).
+(`example/tutorial/advanced/12_auto_convergence/` lists them).
 
 Decisions belong to one plan: the input, what was found, the source files, the binary and the decision code. When any
 of them changes, the earlier `decisions.jsonl` is moved to `decisions.<n>.jsonl` and the choices are made again (the

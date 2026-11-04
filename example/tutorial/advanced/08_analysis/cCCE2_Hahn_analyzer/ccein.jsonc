@@ -1,0 +1,55 @@
+{
+    // basic/05_defect_bath/cCCE2_Hahn_states as it is (1 ppm P1, cCCE2, 2 configurations x 10 sampled states), run
+    // here to show the analyzer of example/analysis on its 20 curves: run.sh corrects them (-err), averages them (-ea)
+    // and fits T2 (-fit_w). Writes results/ccein_k<k>_state<s>_wiDiv and _noDiv for k = 1, 2 and s = 1 .. 10.
+    // Every key not written here has its default (main.out -e writes them all).
+
+    "Qubit"         : {"qubit": [{"file": "../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [-1]}},
+                                      // the NV. "file": the defect file next to the bath files, its first line the NV
+                                      // position x y z (Angstrom). Spin 1 and the electron gyromagnetic ratio are the
+                                      // defaults. alpha_state ms -1, beta_state the default ms 0: L(t) between ms -1
+                                      // and 0. {"ms": [1]} takes the +1 / 0 transition instead
+    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
+                       "k_range" : [1, 2],
+                       "s_range" : [1, 10],
+                       "seed"    : [1, 1]},
+                                      // the bath. gyrofile: "P1 0.5 -17608.597050", the P1 as a spin 1/2 with the
+                                      // electron's gyromagnetic ratio (rad kHz/G); a P1 is not an isotope, so the
+                                      // built-in table cannot be used. bathfile: x y z name per spin; {k} is replaced
+                                      // by each k of k_range, here bath_DiaP1_1ppm_1 and _2 (469 and 461 P1 within
+                                      // rbath; bath/ has 5 configurations). s_range [1, 10]: ten pure bath states per
+                                      // configuration, each P1 up or down (without s_range: the ensemble, the
+                                      // unpolarised bath; docs/user/InputFile_General.md advises states for P1).
+                                      // seed: one per configuration (both 1 here); it draws the P1 axis states
+                                      // (Defect below) and the bath states. Next (README): k_range [1, 5] and
+                                      // s_range [1, 50]
+    "order"         : 2,              // cCCE2: single P1 and pairs of P1. cCCE4_Hahn_states checks order 4 (the same
+                                      // T2 here)
+    "bfield"        : 500,            // Gauss along z, the NV axis. The P1 precess at about 1.4 GHz here
+    "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV are kept (the bath cells of 14N_1ppm
+                                      // are made for this rbath)
+    "rdip"          : 620,            // Angstrom: two P1 closer than 620 A form a pair cluster (25929 pairs for k = 1).
+                                      // Larger keeps more pairs and costs more; raise it until the curve stops moving
+    "deltat"        : 0.01,           // ms: the time step, 10 us. t is the whole echo time 2 tau
+    "nstep"         : 300,            // 300 points: t = 0 .. 2.99 ms, the decay (T2 of the mean 295 us) and its tail
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo. 2 or more for CPMG (pulse.count 8 is the next
+                                      // step of README)
+
+    // The P1 centre: substitutional N, an electron spin 1/2 on a 14N (I = 1). Defect.species makes every bath spin
+    // named "P1" this defect. The 14N is not a spin of its own here (n_onsite_spins 0, the default): its hyperfine
+    // enters only as a static shift A_zz m_I of the electron, the detuning. A P1 has four Jahn-Teller axes (the four
+    // C-N bond directions) and three m_I: 4 x 3 = 12 axis states, and each P1 is given one of them at random (from
+    // configuration.seed; configuration.defect_axis_file gives them from a file instead).
+    "Defect"        : {"species": [{
+        "name"          : "P1",       // the name in the bath file this species applies to
+        "n_axis_states" : 12,         // the indexed states 1 .. 12 that "detuning" lists
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+                                      // [axis state, "e" (the electron), MHz]. 1-9: the three axes tilted from z,
+                                      // A_zz 84.946496 MHz, m_I +1 (1-3), 0 (4-6), -1 (7-9). 10-12: the axis along z,
+                                      // A_zz = A_par 114.0264 MHz, m_I +1, 0, -1. The full tensors are in
+                                      // cCCE2_Hahn_onsite14N
+}

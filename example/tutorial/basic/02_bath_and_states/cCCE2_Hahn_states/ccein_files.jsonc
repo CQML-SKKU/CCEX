@@ -1,0 +1,35 @@
+{
+    // ccein.jsonc with the 20 bath states read from files instead of drawn by CCEX. Use files when the states come
+    // from somewhere else (a polarised bath, states shared with another code, the same states for two inputs).
+    // run.sh writes them first with example/tools/StateFiles/make_state_files.py, which reads this input:
+    // results/states/state1 ... state20, each m_s drawn uniformly over the 2I+1 levels with numpy
+    // default_rng([seed, k, s]). Writes results/ccein_files_state1_wiDiv ... state20 (and _noDiv), one curve per
+    // state; run.sh plots their mean against the ensemble. Every key not written here has its default.
+
+    "Qubit"         : {"qubit": [{"file": "../../01_first_run/bath/bath_Diamond_NV_natab_defect"}]},
+                                      // the qubit: its position from the first line of this file (x y z, Angstrom).
+                                      // Defaults: spin 1, the electron's gyromagnetic ratio, L between ms +1 and 0
+
+    "configuration" : {"gyrofile": "../../01_first_run/bath/gyro_13C",
+                       "bathfile": ["../../01_first_run/bath/bath_Diamond_NV_natab_1"],
+                       "s_range" : [1, 20],
+                       "bath_state_file": ["results/states/state{s}"],
+                       "seed"    : 1},
+                                      // the bath, as in ccein.jsonc. s_range [1, 20]: the 20 sampled states.
+                                      // bath_state_file: one name per bath file, {s} replaced by the state number, so
+                                      // this reads results/states/state1 ... state20. A file is a count line, then
+                                      // one m_s per line of the bath file (all 6565 spins of the file, not only
+                                      // those within rbath). Every file of s_range has to be there (a missing one
+                                      // stops the run). "" in place of a name draws that bath file's states from
+                                      // seed instead.
+                                      // seed: the states here come from the files; make_state_files.py reads seed
+                                      // to draw them
+
+    "order"         : 2,              // the largest cluster: 2 = single 13C and pairs of 13C (cCCE2)
+    "bfield"        : 500,            // magnetic field in Gauss along z, the NV axis. The 13C precess at 0.54 MHz
+    "rbath"         : 50,             // Angstrom: only the 13C within 50 A of the NV are kept (980 here)
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster (3366 pairs here)
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence (for the Hahn echo 2 tau)
+    "nstep"         : 2000,           // the number of time points: t = 0, 1 us, ..., 1.999 ms
+    "pulse"         : {"count": 1}    // one pi pulse in the middle of t: the Hahn echo
+}

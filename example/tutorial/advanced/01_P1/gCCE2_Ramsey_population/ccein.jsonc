@@ -1,0 +1,61 @@
+{
+    // The NV prepared in ms = 0 (alpha_state = beta_state = {"ms": [0]}) in a 10 ppm P1 bath at 300 G, no pulse: the
+    // qubit density matrix (quantity dm) of gCCE2 over 50 ms, whose ms = 0 population shows the flip-flops with the
+    // bath.
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    //
+    // The physics: a P1 can take energy from the NV only where an NV transition (ms 0 to +1 or -1) matches a P1 line;
+    // there the NV and the P1 flip-flop and the ms = 0 population drops. At 300 G no transition is near the P1 lines,
+    // and the population stays within 0.997 to 1.003 (README). Writes results/ccein_wiDiv and _noDiv: the NV density
+    // matrix as blocks of rows, one block per time; run.sh plots its ms = 0 population.
+    //
+    // Unlike the other inputs: quantity dm (the populations, not a coherence), no pulse, the ensemble.
+    // Every key not written here has its default (main.out -e writes them all).
+
+    "method"        : "gCCE",         // the NV (qubit) is in every cluster's Hamiltonian, so NV-P1 flip-flops, which
+                                      // change the NV population, are in the calculation; cCCE has none
+    "quantity"      : "dm",           // the qubit density matrix at every time (gCCE only), in place of the default
+                                      // coherence L(t): for populations
+    "Qubit"         : {"qubit" : [{"name": "NV", "xyz": [523.336, 524.936, 521.003]}],
+                       "alpha_state" : {"ms": [0]},
+                       "beta_state" : {"ms": [0]},
+                       "intmap": [{"between": ["NV", "NV"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]}]},
+                                      // the NV written out. "name" is what intmap refers to; "xyz" the position in
+                                      // Angstrom (the same as bath/14N_10ppm/bath_DiaP1_10ppm_Defect). alpha_state =
+                                      // beta_state = ms 0: the initial state (|alpha> + |beta>, normalized) is ms 0.
+                                      // intmap NV-NV: the zero-field splitting D = 2.88 GHz as diag(-D/3, -D/3, 2D/3)
+                                      // in kHz, which with bfield sets the NV transition frequencies
+    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_10ppm/bath_DiaP1_10ppm_1"],
+                       "seed"    : 8805},
+                                      // the bath. gyrofile: the P1 as a spin 1/2 with the electron's gyromagnetic
+                                      // ratio (rad kHz/G). bathfile: one 10 ppm configuration, 410 P1 within rbath.
+                                      // No s_range: the ensemble, the bath spins unpolarised. seed: here it draws only
+                                      // the P1 axis states (Defect below)
+    "order"         : 2,              // gCCE2: the NV with single P1 and with pairs of P1
+    "bfield"        : 300,            // Gauss along z, the NV axis. README's next step: a scan of bfield. Where an NV
+                                      // transition comes into resonance with the P1 lines the population drops (near
+                                      // 500 G the ms -1 / 0 transition is close to them, see gCCE2_Hahn_DEER)
+    "rbath"         : 370,            // Angstrom: the P1 within 370 A of the NV are kept
+    "rdip"          : 330,            // Angstrom: two P1 closer than 330 A form a pair cluster
+    "deltat"        : 0.01,           // ms: the time step, 10 us. With no pulse t is the free evolution time
+    "nstep"         : 5000,           // 5000 points: t = 0 .. 49.99 ms. The run takes about 76 s on 4 ranks (README)
+    "pulse"         : {"count": 0},   // no pulse: free evolution (Ramsey)
+
+    // The P1 centre: substitutional N, an electron spin 1/2 on a 14N (I = 1). Defect.species makes every bath spin
+    // named "P1" this defect. The 14N is not a spin of its own here (n_onsite_spins 0, the default): its hyperfine
+    // enters only as a static shift A_zz m_I of the electron, the detuning. A P1 has four Jahn-Teller axes (the four
+    // C-N bond directions) and three m_I: 4 x 3 = 12 axis states, and each P1 is given one of them at random (from
+    // configuration.seed; configuration.defect_axis_file gives them from a file instead).
+    "Defect"        : {"species": [{
+        "name"          : "P1",       // the name in the bath file this species applies to
+        "n_axis_states" : 12,         // the indexed states 1 .. 12 that "detuning" lists
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+                                      // [axis state, "e" (the electron), MHz]. 1-9: the three axes tilted from z,
+                                      // A_zz 84.946496 MHz, m_I +1 (1-3), 0 (4-6), -1 (7-9). 10-12: the axis along z,
+                                      // A_zz = A_par 114.0264 MHz, m_I +1, 0, -1
+}

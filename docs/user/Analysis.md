@@ -49,7 +49,7 @@ The file names carry the variables. `-fi` gives the pattern with the variable na
 | `-ntn` | turns a `nan` into 0 |
 | `-fo` | the output name |
 
-A complete call, for the four bath configurations of `example/tutorial/01_ensemble_and_states/cCCE2_Hahn_ensemble`
+A complete call, for the four bath configurations of `example/tutorial/basic/02_bath_and_states/cCCE2_Hahn_ensemble`
 (`configuration.k_range` [1, 4], written as `results/ccein_k<k>_wiDiv` and `_noDiv`):
 
 ```
@@ -63,7 +63,7 @@ python3 $ANALYZER -d results/ -fi ccein_kCONF_ErrCorr -vn "CONF" -v 1 2 3 4 -uc 
 **Sampled bath states.** With `configuration.s_range`, CCEX writes one file per state: `ccein_state<s>_wiDiv` and
 `_noDiv`, for s = first ... last of `s_range`. With `k_range` the names are `ccein_k<k>_state<s>_...`. Average the
 states like the configurations, as complex numbers. For the 20 states of
-`example/tutorial/01_ensemble_and_states/cCCE2_Hahn_states`:
+`example/tutorial/basic/02_bath_and_states/cCCE2_Hahn_states`:
 
 ```
 python3 $ANALYZER -d results/ -fi ccein_stateST_wiDiv -err_d results/ -err_fi ccein_stateST_noDiv -vn "ST" -v $(seq 1 20) -uc "ms" -err -ntn -fo results/ccein_stateST_ErrCorr
@@ -79,7 +79,7 @@ Configurations and states together are therefore one call with two variables, ea
 
 - The `read` function of `example/tutorial/plot_coherence.py`. It returns the element between the two levels that are
   coherent at t = 0, divided by its value there. When the qubit starts in one level, it returns that level's
-  population instead (as in `example/tutorial/03_P1/gCCE2_Ramsey_population`).
+  population instead (as in `example/tutorial/advanced/01_P1/gCCE2_Ramsey_population`).
 - Parse the blocks yourself. The first field of a block's first line is the time. The $D^2$ complex values that follow,
   over the block's lines, are ρ row by row.
 
@@ -125,5 +125,5 @@ t, L = read_coherence('results/ccein_EnsAvg_conv4', time_scale=1e3)  # t in us
 ## The convergence test
 
 There is no separate convergence-test script. The automatic convergence (`auto_convergence` block,
-`example/tutorial/09_auto_convergence/`) chooses the time window, rdip, rbath and the number of configurations. To test
+`example/tutorial/advanced/12_auto_convergence/`) chooses the time window, rdip, rbath and the number of configurations. To test
 one variable by hand, run its values and compare the curves with `read_coherence`.

@@ -40,7 +40,7 @@ mpirun -n 4 python3 BathGenerator.py -o OUT -i POSCAR -p PROB --size 30 --Defect
 The isotopes of one element are drawn together. The element is the name without its digits, and it has to be an atom
 name of the POSCAR. When the abundances of an element add up to less than 100 %, the rest of its sites hold no spin and
 are left out of the bath. More than 100 % is refused. The natural-abundance diamond file of the tutorials
-(`example/tutorial/00_quickstart/bath/genbath/prob_natab`) is
+(`example/tutorial/basic/01_first_run/bath/genbath/prob_natab`) is
 
 ```
 13C
@@ -48,7 +48,7 @@ are left out of the bath. More than 100 % is refused. The natural-abundance diam
 1.1
 ```
 
-so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/04_hBN/bath/prob_hBN`) the file lists ¹⁰B (3,
+so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/advanced/02_hBN/bath/prob_hBN`) the file lists ¹⁰B (3,
 19.9), ¹¹B (3/2, 80.1), ¹⁴N (1, 99.632) and ¹⁵N (1/2, 0.368).
 
 | Option | Meaning |
@@ -113,7 +113,7 @@ be spin polarized.
 
 `spHamilReader/` is the package (`base/`, `vasp/`, `qe/`), and `main.py` the command line (`-h`). `examples/01..05`
 are five worked cases with their inputs and the tensor files they produced, each with a `do` that reproduces it. The
-tensors of the h-BN tutorial (04_hBN) came from this tool.
+tensors of the h-BN tutorial (advanced/02_hBN) came from this tool.
 
 <a id="tag_tool_isotopetable"></a>
 ## IsotopeTable

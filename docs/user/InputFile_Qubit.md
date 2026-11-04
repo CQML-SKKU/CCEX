@@ -201,7 +201,7 @@ x,y,z position of the qubit in cartesian coordinates. <br>
 <b>Description:</b><br>
 Detuning frequency of the qubit. It adds detuning × S<sub>z</sub> to the qubit Hamiltonian and shifts its levels. <br>
 The phase of the coherence turns faster while |L| stays the same. In gCCE the resonances of the qubit with the bath
-spins move. Use it for a static shift of the qubit levels that the other keys do not give. For the NV of 00_quickstart,
+spins move. Use it for a static shift of the qubit levels that the other keys do not give. For the NV of basic/01_first_run,
 |L| with 0 and 1000 kHz differ by 3.5e-6 in a gCCE1 Ramsey run. <br>
 
 <b>A plain number is kHz here, and MHz in [Defect.species[].detuning](InputFile_Defect.md#tag_df_detuning)</b>: the same

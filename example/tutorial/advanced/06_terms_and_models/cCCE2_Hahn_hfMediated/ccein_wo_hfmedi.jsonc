@@ -1,0 +1,45 @@
+{
+    // V_B- in h-BN at 1000 G (spin 1 with its zero-field splitting, kHz), cCCE2 Hahn echo of the ensemble, one
+    // configuration, without the hyperfine-mediated term: the reference for ccein_wi_hfmedi.jsonc.
+    //
+    // The physics: without hamiltonian.cCCE.hfmedi the nuclei couple to each other only by their own dipolar coupling,
+    // and the qubit only sets the field each nucleus feels (pure dephasing). On this short window (245 ns) that gives
+    // little decay: |L| is still 0.66 at 245 ns, against T2 86 ns with the term (README).
+    //
+    // Writes results/ccein_wo_hfmedi_wiDiv and _noDiv. The sibling ccein_wi_hfmedi.jsonc adds "cCCE": {"hfmedi": true}.
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "Qubit"         : {"qubit": [{"file": "../../02_hBN/bath/flat/bath_hBN_VB_flat_Defect"}],
+                       "intmap": [{"between": ["q0", "q0"],
+                                   "tensor": [[-1080000, 0, 0], [0, -1180000, 0], [0, 0, 2320000]], "unit": "kHz"}]},
+                                      // the V_B-: its position from the first line of the file (33.94 45.73 7.50 A),
+                                      // spin 1, alpha ms +1, beta ms 0 (defaults). intmap: one entry with the same
+                                      // qubit twice ("q0", the default name of the first qubit) is its zero-field
+                                      // splitting S.D.S, here diag(-1080, -1180, 2320) MHz written in kHz: D = 3/2 Dzz
+                                      // = 3.48 GHz, E = (Dxx - Dyy)/2 = 50 MHz. Without hfmedi cCCE does not use it
+                                      // (the result is the same without the intmap); kept so that the two inputs
+                                      // differ in hfmedi only
+    "configuration" : {"gyrofile": "../../02_hBN/bath/hBN_natab_gyro",
+                       "bathfile": ["../../02_hBN/bath/flat/bath_hBN_VB_flat_1"]},
+                                      // the bath. gyrofile: name, spin, gyromagnetic ratio (rad kHz/G) of 10B, 11B,
+                                      // 14N, 15N. bathfile: one isotope draw of the layer (bath/flat has 50)
+    "order"         : 2,              // the largest cluster: single nuclei and pairs (cCCE2)
+    "bfield"        : 1000,           // Gauss along z, the V_B- axis. The nuclei precess at 1.37 MHz (11B), 0.46 MHz
+                                      // (10B), 0.31 MHz (14N)
+    "rbath"         : 14,             // Angstrom: the 230 nuclei within 14 A of the V_B- are kept
+    "rdip"          : 8,              // Angstrom: two nuclei closer than 8 A form a pair cluster
+    "deltat"        : 5e-06,          // the time step in ms (5 ns); t is the whole echo (2 tau)
+    "nstep"         : 50,             // 50 time points: t = 0 .. 245 ns
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "hamiltonian"   : {"common": {
+            "hyperfine"  : {"dipole": "dft", "contact": true,         // the DFT hyperfine tensors (dipolar and contact)
+                            "file": "../../02_hBN/bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
+                                                                      // dipole dft: the anisotropic part from the file
+                                                                      // (not the point dipole); contact true adds the
+                                                                      // Fermi contact part; MHz, tensor format v3
+            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients of the 11B,
+                                                                      // 10B, 14N
+                            "file": "../../02_hBN/bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}
+                                                                      // adds I.Q.I of each nucleus with I > 1/2;
+                                                                      // plain: one EFG file computed with the defect
+        }}
+}

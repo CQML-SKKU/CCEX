@@ -130,7 +130,7 @@ it.
 
 **The binary of a CMake build** is in `build/bin/`, so point the tutorials and the checks at it:
 
-- tutorials: `export CCEX_BIN=<repository>/build/bin/main.out`, and `CCEX_GPU_BIN` for `08_GPU`;
+- tutorials: `export CCEX_BIN=<repository>/build/bin/main.out`, and `CCEX_GPU_BIN` for `advanced/11_GPU`;
 - checks: `CCEX_BIN=$PWD/build/bin/main.out CCEX_BUILD_DIR=$PWD/build`. The unit-test drivers take the compiler, flags
   and objects from the `unit-build.env` the build writes (any generator), through `test/unit_build_env.sh`.
 
@@ -149,11 +149,11 @@ it.
 ## First calculation
 
 This example computes the Hahn-echo coherence of an NV centre in natural-abundance ¹³C with cCCE to order 2. It takes
-about a second on four ranks ([00_quickstart](../../example/tutorial/00_quickstart/README.md)).
+about a second on four ranks ([basic/01_first_run](../../example/tutorial/basic/01_first_run/README.md)).
 
 ```
 bash do_compile.sh wsl-gnu                               # 1. build bin/main.out (or another preset, or CMake)
-cd example/tutorial/00_quickstart
+cd example/tutorial/basic/01_first_run
 NP=4 bash run.sh                                         # 2. run: results/ccein_wiDiv, ccein_noDiv, ccein.log, coherence.png
 ```
 
@@ -180,7 +180,7 @@ NP=4 bash run.sh                                         # 2. run: results/ccein
 1. `bin/main.out -e` writes `ccex_example.jsonc`. It holds the setting of this calculation, and every other key as a
    commented line with its allowed values and its default.
 2. Set `configuration.bathfile` to a bath file. The template does not run without one.
-   `example/tutorial/00_quickstart/bath/bath_Diamond_NV_natab_1` is one; [Tools](Tools.md) makes others.
+   `example/tutorial/basic/01_first_run/bath/bath_Diamond_NV_natab_1` is one; [Tools](Tools.md) makes others.
 3. Change the keys you need ([Input file](InputFile.md)).
 4. Run `mpirun -n 4 bin/main.out -f ccex_example.jsonc`.
 
@@ -302,10 +302,10 @@ order is `-o DIR` > `output.path` > the working directory.
 
 `-e` writes `ccex_example.jsonc` in the working directory (in `DIR` with `-o DIR`) and stops.
 
-- Its uncommented part is the setting of `example/tutorial/00_quickstart`: NV-<sup>13</sup>C cCCE2 Hahn echo,
+- Its uncommented part is the setting of `example/tutorial/basic/01_first_run`: NV-<sup>13</sup>C cCCE2 Hahn echo,
   ensemble, rbath 50 Å, 2 ms.
 - It has a `bathfile` for you to fill in. The template does not run until it names a bath file; a ready one is
-  `example/tutorial/00_quickstart/bath/bath_Diamond_NV_natab_1`.
+  `example/tutorial/basic/01_first_run/bath/bath_Diamond_NV_natab_1`.
 - `gyrofile` is commented, so the run uses the built-in isotope table.
 - Every other input key is a commented line with its allowed values and its default. The comments are `//`.
 - An existing file is not overwritten. `-e` with `-f` is refused.

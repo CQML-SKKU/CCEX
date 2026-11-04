@@ -106,7 +106,7 @@ Old values are refused with their current form ([old names](InputFile.md#OldName
 What the run computes.
 - `coherence`: the decay curve L(t) between |α⟩ and |β⟩. This is the usual choice.
 - `dm` (gCCE): the whole qubit density matrix, for populations or several qubit levels
-  (`example/tutorial/03_P1/gCCE2_Ramsey_population/`).
+  (`example/tutorial/advanced/01_P1/gCCE2_Ramsey_population/`).
 
 meCCE and megCCE compute `coherence` only.
 
@@ -743,7 +743,7 @@ divergence of a broken state but was not more accurate in every normal region, s
 The transverse field is added and removed only between main bath spins. Every mean-field term involving a defect
 sub-spin (e.g. a P1's <sup>14</sup>N) stays z only, while the couplings inside a cluster keep their full tensors.
 
-- `example/tutorial/03_P1/cCCE2_Hahn_meanField/` runs `"off"`, `"z"` and `"xyz"` on a P1 bath.
+- `example/tutorial/basic/05_defect_bath/cCCE2_Hahn_meanField/` runs `"off"`, `"z"` and `"xyz"` on a P1 bath.
 - `test/code_verification/check_analytic` checks that with `"off"` two spins at order 1 give the product of each spin
   alone in its bath, which `"z"` does not. <br>
 
@@ -984,7 +984,7 @@ Here α is the eigenstate of the qubit Hamiltonian closest to the branch state, 
 (every intermediate state). Expanded, the sum holds both orders of every pair (i, j) and the i = j terms of each bath
 spin; it is Hermitian.
 
-`example/tutorial/04_hBN/cCCE2_Hahn_hfMediated/` runs with and without it. <br>
+`example/tutorial/advanced/06_terms_and_models/cCCE2_Hahn_hfMediated/` runs with and without it. <br>
 
 <b>Data Type:</b> Boolean
 
@@ -1007,7 +1007,7 @@ $H_K^{(\alpha)} = -\gamma_n \mathbf{B}\cdot(\mathsf{g} - 1)\cdot\mathbf{I} = -(3
 The term is zero when the field is along z. A qubit without a zero-field splitting (Δ = 0) is refused, since the term
 divides by Δ (`Error: hamiltonian.cCCE.knight divides by the zero-field splitting of the qubit ...`).
 
-`example/tutorial/06_cCCE_vs_gCCE/cCCE2_Hahn_knightShift/` runs with and without it in a tilted field. <br>
+`example/tutorial/basic/04_cCCE_vs_gCCE/cCCE2_Hahn_knightShift/` runs with and without it in a tilted field. <br>
 
 <b>Data Type:</b> Boolean
 
@@ -1152,7 +1152,7 @@ Refused:
 
 Without the key, or with an empty list, the run is the rate-0 limit: the cCCE (meCCE) or the gCCE (megCCE). The
 equations, what is supported and the checks are in [master-equation.md](../methods/master-equation.md).
-`example/tutorial/06_cCCE_vs_gCCE/meCCE2_Hahn_bathRelaxation/` runs S₋ and S₊ on the ¹³C against cCCE. <br>
+`example/tutorial/advanced/06_terms_and_models/meCCE2_Hahn_bathRelaxation/` runs S₋ and S₊ on the ¹³C against cCCE. <br>
 
 <b>Data Type:</b> Array of objects `{"bath_name": string, "operator": string, "rate": number}`; `rate` may also be
 `{"value": ..., "unit": ...}` with the unit `Hz`, `kHz`, `MHz` or `GHz` ([Units](InputFile.md#Units))

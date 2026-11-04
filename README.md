@@ -26,7 +26,7 @@ together.
 
 ```
 bash do_compile.sh wsl-gnu                     # build bin/main.out (presets below)
-cd example/tutorial/00_quickstart
+cd example/tutorial/basic/01_first_run
 NP=4 bash run.sh                               # about 1 s: results/ccein_wiDiv and coherence.png (T2 1.068 ms)
 ```
 
@@ -45,9 +45,9 @@ versions and the environment variables.
 
 ## Where to start
 
-- [Tutorials](example/tutorial/README.md): thirteen examples in learning order, from the quickstart to GPU runs, the
-  automatic convergence and the noise and pseudospin models. Each has commented inputs, a `run.sh` and an
-  `expected.png`.
+- [Tutorials](example/tutorial/README.md): `basic/` (five topics, the input itself, seconds each) and `advanced/`
+  (thirteen topics: other baths, DFT tensors, analysis, GPU, automatic convergence, noise, pseudospin, cluster runs).
+  Each has commented inputs, a `run.sh` and an `expected.png`.
 - [Input file](docs/user/InputFile.md): every key by block, with its unit and default.
 - [Output files](docs/user/OutputFiles.md) and the [analyzer](docs/user/Analysis.md).
 - [Methods](docs/methods/Methods.md): cCCE and gCCE, pCCE, bundles, master-equation CCE, DEER, the Gaussian phase

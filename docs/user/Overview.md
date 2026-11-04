@@ -115,9 +115,9 @@ them, averages over the ensemble and plots the result.
   environment variables and the order in which a run reads its input.
 - [Input file](InputFile.md): every key by group, and the unit of every number.
 - [Output files](OutputFiles.md): every file a run writes, with its columns.
-- [Examples](Examples.md): thirteen tutorials in learning order, each with its inputs and expected figures. They start
-  with a quickstart that runs in seconds and go on to the GPU backend, the automatic convergence, the frame rotation
-  and the noise and pseudospin models.
+- [Examples](Examples.md): the tutorials, each with its inputs and expected figures. The five of `basic/` cover the
+  input and run in seconds; the thirteen of `advanced/` go on to other baths, DFT tensors, the analysis, the GPU
+  backend, the automatic convergence, the noise and pseudospin models and runs on a cluster.
 - [Analysis](Analysis.md) and [Tools](Tools.md): the programs that process the output (`example/analysis/`) and that
   prepare the inputs (`example/tools/`).
 - Methods ([overview](../methods/Methods.md)): [cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),

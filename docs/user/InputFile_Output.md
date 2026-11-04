@@ -54,7 +54,7 @@ What is written, and whether `_noDiv` is written beside `_wiDiv`. A string gives
                  `"cluster_coherence"`; the zeroth cluster (the qubits alone) is "file_full_state{state}_...". The
                  `_wiDiv` and `_noDiv` files hold the same matrix. It costs one full-dimension matrix per time step and
                  cluster, in memory and on disk, so it is for small systems
-                 (`example/tutorial/06_cCCE_vs_gCCE/gCCE1_Hahn_handwritten/`). cCCE has no qubit + bath density matrix
+                 (`example/tutorial/basic/04_cCCE_vs_gCCE/gCCE1_Hahn_handwritten/`). cCCE has no qubit + bath density matrix
                  and writes what `"cluster_coherence"` writes. <br>
 
 <b>nodiv:</b> Write `_noDiv` beside `_wiDiv`. `_wiDiv` is the CCE coherence. `_noDiv` is the product of the
@@ -73,7 +73,7 @@ Old values and the old `nodiv` key are refused with a message naming the current
 
 <b>Default:</b> "coherence" (`nodiv` true)
 
-<b>Example:</b> ``` "output" : {"savemode": "cluster_coherence"} ```, ``` "output" : {"savemode": {"mode": "coherence", "nodiv": false}} ``` (both in `example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_clusterReport/`)
+<b>Example:</b> ``` "output" : {"savemode": "cluster_coherence"} ```, ``` "output" : {"savemode": {"mode": "coherence", "nodiv": false}} ``` (both in `example/tutorial/advanced/08_analysis/cCCE2_Hahn_clusterReport/`)
 
 <a id="tag_outfile"></a>
 ## output.file
@@ -99,7 +99,7 @@ output folder).
 <b>Description:</b><br>
 `true` writes the cluster plan to `<file>.clusters.json` and stops before the dynamics; nothing else is computed or
 written. Use it to see how many clusters an `rbath` and `rdip` give before a long run
-(`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_clusterReport/`). <br>
+(`example/tutorial/advanced/08_analysis/cCCE2_Hahn_clusterReport/`). <br>
 Works with method cCCE or gCCE, and with cCCE `cluster.mode` pcce with explicit connections. Refused:
 
 - a `bundle` input whose connections the run checks (no `rdip`);
@@ -118,7 +118,7 @@ Works with method cCCE or gCCE, and with cCCE `cluster.mode` pcce with explicit 
 <b>Description:</b><br>
 Record the contribution of every cluster to the coherence over all time points (cCCE and gCCE, `quantity` =
 `coherence`). A diagnostic, to find the clusters that dominate the decay or diverge
-(`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_clusterReport/`). <br>
+(`example/tutorial/advanced/08_analysis/cCCE2_Hahn_clusterReport/`). <br>
 Files, with columns in [Output files](OutputFiles.md#out_contributions):
 
 - `<output.file>.contributions.state-<s>.tsv` for each bath state: one row per cluster with sites, bundles, production

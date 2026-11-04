@@ -31,7 +31,7 @@ W="$WORK/tensor_format"
 rm -rf "$W"; mkdir -p "$W"
 NUM="$REPO/test/code_verification/check_numerics"
 V3="$NUM/inputs/hbn/hBN_VB_flat_ATensor_HSE_CellPBE_v3"
-V1="$EX/tutorial/04_hBN/bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE"
+V1="$EX/tutorial/advanced/02_hBN/bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE"
 OLDREF="$NUM/reference/head-20261012-aa883d0d4"
 { echo VASP; cat "$V1"; } > "$W/v1_tagged"
 # v3 with every hyperfine number x 2 (exact decimal doubling of the 6-decimal values): the numbers of v1_tagged

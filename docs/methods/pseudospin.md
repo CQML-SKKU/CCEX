@@ -8,7 +8,7 @@ Mater. Appl. 6, 60 (2022) apply it to h-BN. The extension to larger spins and se
 CCEX's own.
 
 The key is [channels](../user/InputFile_General.md#tag_pseudospin_channels); the tutorial is
-`example/tutorial/12_pseudospin/`.
+`example/tutorial/advanced/10_pseudospin/`.
 
 ## The cut Hamiltonian
 

@@ -43,7 +43,7 @@ The first line is t = 0, and the step is `deltat`.
           0.002	  +0.8232539603+0.0000033616j	
 ```
 
-These are the first lines of `ccein_wiDiv` in `example/tutorial/00_quickstart`. A value that is not a number is
+These are the first lines of `ccein_wiDiv` in `example/tutorial/basic/01_first_run`. A value that is not a number is
 written `nan`.
 
 - `_wiDiv` is the CCE result. It is the product of the irreducible cluster contributions, where each cluster's
@@ -228,7 +228,7 @@ The status and the exit code of `main.out`:
 | an error during the refinement | 1 |
 
 Exit code 2 does not mean the run failed. The refinement stopped at that status, and its last step is the result.
-`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_adaptive`, for example, ends with `no_feasible_improving_merge`. The run
+`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive`, for example, ends with `no_feasible_improving_merge`. The run
 prints the status and the path of `summary.json` as its last line before the wall time.
 
 <a id="out_autoconv"></a>

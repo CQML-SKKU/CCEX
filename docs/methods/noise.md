@@ -4,7 +4,7 @@
 coherence in the Gaussian approximation. It is ported from `semi-cce` (its `mode_sum`, `cumulant` and `psd`) and, for
 the correlation function, follows PyCCE's `CCENoise`. The keys are in
 [InputFile_General](../user/InputFile_General.md#tag_noise_spectrum); the tutorial is
-`example/tutorial/11_noise/`.
+`example/tutorial/advanced/09_noise/`.
 
 ## The coherence
 
@@ -58,8 +58,8 @@ Such a run reads no bath, and `order`, `bfield`, `rbath`, `rdip` and `Qubit` may
 - `"correlation"`: $C(t)$ alone at the run's times. With `s_range` the cluster starts in its sampled pure state, as in
   PyCCE, so this is then a different quantity from the other two.
 
-Without `s_range` the three agree. On the ¹³C bath of `00_quickstart` the coherence from `"spectrum"` is within
-2.4e-9 of `"coherence"` (`example/tutorial/11_noise/noiseSpectrum_13C/`).
+Without `s_range` the three agree. On the ¹³C bath of `basic/01_first_run` the coherence from `"spectrum"` is within
+2.4e-9 of `"coherence"` (`example/tutorial/advanced/09_noise/noiseSpectrum_13C/`).
 
 ## Where it runs
 

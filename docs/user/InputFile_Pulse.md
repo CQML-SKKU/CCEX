@@ -92,7 +92,7 @@ The pulse sequence written out, one entry `[fraction, axis, angle]` per pulse:
 Required, with `count` + 1 entries, when [name](#tag_pulse_name) = `Manual`; refused with any other name or none. The
 last entry is the free evolution after the last pulse. <br>
 Without it the run builds the default sequence of `count` equally spaced π pulses (Hahn echo, CPMG).
-`example/tutorial/02_pulses/cCCE2_Manual_ensemble/` writes a CPMG-2 this way and compares it with the built-in one. <br>
+`example/tutorial/basic/03_pulses/cCCE2_Manual_ensemble/` writes a CPMG-2 this way and compares it with the built-in one. <br>
 
 <b>Data Type:</b> List of [String or Double, String, Double]
 
@@ -157,7 +157,7 @@ gCCE only; cCCE, meCCE and megCCE refuse a value other than 1. <br>
 ## pulse.bath
 <b>Description:</b><br>
 DEER bath pulses: pump pulses on the bath spins of one species during the qubit's sequence. Use it to measure the
-coupling of the qubit to one group of bath spins (a pumped line). `example/tutorial/03_P1/gCCE2_Hahn_DEER/` runs a pump
+coupling of the qubit to one group of bath spins (a pumped line). `example/tutorial/advanced/01_P1/gCCE2_Hahn_DEER/` runs a pump
 on the central P1 line against the plain Hahn echo. <br>
 For `method` = `gCCE` or `megCCE` (`cluster.mode` standard or pcce) on the CPU: `execution.backend` `auto` is set to
 `cpu`, and `cuda` is refused. What it does, supports and refuses is in [deer.md](../methods/deer.md). <br>

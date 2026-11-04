@@ -13,10 +13,10 @@ and the builds of 2.0.0.
     clusters or from a model spectrum (Ornstein–Uhlenbeck or a power law). With `hamiltonian.noise.compute` it also
     gives the correlation function C(t) and the spectrum S(f). It was ported from semi-cce, and its mode sums also run
     on the GPU ([method](InputFile_General.md#tag_method), tutorial
-    [11_noise](../../example/tutorial/11_noise/README.md)).
+    [advanced/09_noise](../../example/tutorial/advanced/09_noise/README.md)).
   - `pseudospin` gives the bath's pairs alone, in the pseudospin model of nuclear flip-flops, for any nuclear spin. It
     writes a table of every channel's Ω and Δ ([channels](InputFile_General.md#tag_pseudospin_channels), tutorial
-    [12_pseudospin](../../example/tutorial/12_pseudospin/README.md)).
+    [advanced/10_pseudospin](../../example/tutorial/advanced/10_pseudospin/README.md)).
 - **GPU runs on a full node** ([Execution tags](InputFile_Backend.md#tag_backend)).
   - `execution.gpu_options.ranks_per_gpu` lets only some ranks of a node use the GPU while the others stay on the CPU.
     The clusters are split between them by measured cost.
@@ -26,9 +26,10 @@ and the builds of 2.0.0.
 - **Builds.** An nvcc older than 13.2 is accepted for cards below compute capability 12.0 (CUDA 12.8 with MPS on a
   GH200).
 - **Fixed.** The MKL builds write the same last digits from run to run.
-- **Tutorials and documentation.** Every tutorial input explains its keys in comments. There is a new tutorial,
-  `12_pseudospin`, and two new calculations in existing ones (`11_noise/noiseSpectrum_13C`,
-  `08_GPU/cCCE5_Hahn_autoOptions`); noise and pseudospin have method pages.
+- **Tutorials and documentation.** The tutorials are split into `basic/` (the input itself, five topics to read in
+  order) and `advanced/` (thirteen topics); [Examples](Examples.md) lists both. Every tutorial input explains its keys
+  in comments. New: the pseudospin tutorial, and calculations for the noise spectrum, the automatic GPU options, the
+  tensor files from a VASP run, the analyzer and a run on a Slurm cluster. Noise and pseudospin have method pages.
 - **Inputs.** No key of 2.0.1 was renamed or removed, so a 2.0.1 input runs as it is. In `bin/main_gpu.out` with
   `backend` `auto`, the automatic `gpu_options` change which clusters go to the card. The outputs therefore move
   within rounding.

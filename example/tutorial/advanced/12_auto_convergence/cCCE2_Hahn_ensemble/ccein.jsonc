@@ -1,0 +1,64 @@
+{
+    // The automatic convergence of basic/01_first_run's calculation, the cCCE2 Hahn echo of an NV in natural-abundance
+    // 13C (the ensemble): with the auto_convergence block, "mpirun -n N main.out -f ccein.jsonc" does not run one
+    // calculation; rank 0 starts the runner (example/tools/AutoConvergence), which runs CCEX itself, each run in its
+    // own folder, and chooses the time window, rdip, rbath and how many bath configurations the mean needs, then
+    // computes the production. Expected: window 2.58 ms, rdip 8 A, rbath 35 A, 25 production configurations, T2 0.82
+    // ms. Writes everything under results/auto/ (see auto_convergence below). The sibling
+    // ../cCCE2_Hahn_ensemble_noCandidates is the same without the rdip and rbath candidates (fully automatic).
+    //
+    // Config (General) : the physics only. rbath, rdip and the time window are not given: the
+    //                    auto_convergence block finds them. nstep is the number of time points of
+    //                    every run; deltat only sets the first window ((nstep - 1) x deltat = 1 ms).
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "method"           : "cCCE",            // conventional CCE: the qubit only sets the field each 13C feels
+    "quantity"         : "coherence",       // the qubit coherence L(t), the only quantity the runner converges
+    // Qubit : ms = +1 / 0 of the NV, one pi pulse (Hahn echo)
+    "Qubit"            : {"qubit": [{"file": "results/bath/config_defect"}], "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]}},
+                                            // the NV's position: the first line of results/bath/config_defect,
+                                            // which run.sh makes with the baths. L between ms +1 and 0
+    "configuration"    : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                                            // the 13C line: name, spin, gyromagnetic ratio (rad kHz/G)
+        // no s_range : the ensemble, one curve per bath configuration; only the number of configurations is chosen
+        "seed"     : 1,                     // one integer (1 when absent): fixes how the runner splits the
+                                            // configurations into test and production (a list is refused here)
+        "bathfile" : ["results/bath/config_{k}"]},
+                                            // one name with {k}: every k whose file exists is a configuration
+                                            // (config_1 .. config_40, made by run.sh in 110 A cells: rbath up to
+                                            // 53 A). configuration.k_range would choose them instead
+    "order"            : 2,                 // single 13C and pairs (cCCE2)
+    "bfield"           : 500,               // Gauss along z, the NV axis
+    "deltat"           : 0.01,              // ms: only the first window, (101 - 1) x 0.01 = 1 ms; the runner then
+                                            // sets each run's step from the window it chooses
+    "nstep"            : 101,               // the time points of every run (150 when absent). The runner keeps it:
+                                            // 101 points over 2.58 ms are 26 us apart, coarser than the 13C
+                                            // precession at 500 G, so the ESEEM ripple is aliased; raise it to see it
+    "pulse"            : {"count": 1},      // one pi pulse: the Hahn echo
+
+    // auto_convergence : with this block "mpirun -n N main.out -f ccein.jsonc" runs the automatic convergence
+    //                    (example/tools/AutoConvergence/README.md) instead of one calculation: every CCEX run
+    //                    goes to its own folder under workdir/runs/, the decisions to workdir/decisions.jsonl,
+    //                    the summary and the figures to workdir/result/. Exit status 0 when converged, 3 when
+    //                    unresolved (the summary says what is missing); running it again continues.
+    //   thresholds     : left at their defaults: rdip and rbath agree when the area under the T2 fit differs
+    //                    by at most 2 %; the configurations are enough when SE(A)/A <= 5 %.
+    //   time_window, t2_fit : left out, so found with their defaults: the production window is 1.5 x T_d,
+    //                    T_d where the T2 fit reaches |L| = 0.01.
+    "auto_convergence" : {
+        "workdir"        : "results/auto",  // the folder of the runs, the decisions and the results (required)
+        "sampling"       : {},              // the split of the bath configurations - configuration.bathfile above,
+                                            // whose files (one per k) run.sh makes (40 in results/bath/). Every
+                                            // file of the pattern is found (configuration.k_range would choose
+                                            // them); 10 go to the convergence tests (chosen evenly over the
+                                            // distance of each configuration's nearest 13C to the NV) and the rest
+                                            // to the production, at least 10 of them. {} keeps every default
+        "rdip"           : {"candidates" : [4, 6, 8, 10, 12]},
+                                            // the rdip candidates (A); the largest is the reference. Left out, they
+                                            // are found from the spin density around the qubit (more runs). They
+                                            // are given here only to shorten the run;
+                                            // ../cCCE2_Hahn_ensemble_noCandidates is the fully automatic one
+        "rbath"          : {"candidates" : [30, 35, 40, 45]}
+                                            // the rbath candidates (A), the same way; at most the 53 A the baths
+                                            // of run.sh cover
+    }
+}

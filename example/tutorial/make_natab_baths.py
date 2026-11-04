@@ -7,7 +7,7 @@ from mpi4py import MPI
 
 n, out, size = int(sys.argv[1]), sys.argv[2], sys.argv[3]
 root = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-gen = os.path.join(root, "example/tutorial/00_quickstart/bath/genbath")
+gen = os.path.join(root, "example/tutorial/basic/01_first_run/bath/genbath")
 script = os.path.join(root, "example/tools/BathGenerator/BathGenerator.py")
 comm = MPI.COMM_WORLD
 failed = []

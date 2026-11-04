@@ -3,7 +3,7 @@
  * @brief The example input (ccex_example.jsonc) that main.out -e writes.
  */
 // The input template `main.out -e` writes, the one place it is kept. The active part is the calculation of
-// example/tutorial/00_quickstart (the NV-13C cCCE2 Hahn echo, ensemble, rbath 50 A, 2 ms) without its files: gyrofile is
+// example/tutorial/basic/01_first_run (the NV-13C cCCE2 Hahn echo, ensemble, rbath 50 A, 2 ms) without its files: gyrofile is
 // commented (the built-in isotope table) and bathfile is a name the user replaces, so the template does not run as it
 // is. Every other input key the readers accept (src/input/option.cpp, the adaptive options table, the automatic-
 // convergence runner) is a commented line with its default. Each key has its explanation on the comment lines above it
@@ -16,8 +16,8 @@ const char* const kExampleInputName = "ccex_example.jsonc";
 
 const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input template written by `main.out -e` (CCEX 2.1.0)
 //
-// The active part is the Hahn echo of an NV centre in diamond with 13C (example/tutorial/00_quickstart). It runs once
-// "bathfile" names a real bath file, for example example/tutorial/00_quickstart/bath/bath_Diamond_NV_natab_1:
+// The active part is the Hahn echo of an NV centre in diamond with 13C (example/tutorial/basic/01_first_run). It runs once
+// "bathfile" names a real bath file, for example example/tutorial/basic/01_first_run/bath/bath_Diamond_NV_natab_1:
 //
 //     mpirun -n 4 main.out -f ccex_example.jsonc -o results
 //
@@ -31,7 +31,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 // rad/us. A plain frequency is kHz for the qubit (detuning, intmap) and MHz for a Defect species.
 {
     // ---- method -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_method. Tutorials: 06_cCCE_vs_gCCE, 11_noise, 12_pseudospin.
+    // docs: InputFile_General.md#tag_method. Tutorials: basic/04_cCCE_vs_gCCE, advanced/09_noise, advanced/10_pseudospin.
 
     // cCCE (default): the qubit only sets the field each bath spin feels (pure dephasing).
     // gCCE: the qubit is in every cluster (qubit-bath flip-flops, any spin and field).
@@ -44,7 +44,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     "quantity"         : "coherence",
 
     // ---- the qubit --------------------------------------------------------------------------------------------------
-    // docs: InputFile_Qubit.md. Tutorials: 00_quickstart, 05_multiNV (several qubits).
+    // docs: InputFile_Qubit.md. Tutorials: basic/01_first_run, advanced/03_multiNV (several qubits).
     "Qubit"            : {
         // One entry per qubit.
         "qubit"       : [
@@ -87,7 +87,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     },
 
     // ---- the bath ---------------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_configuration. Tutorials: 01_ensemble_and_states, 03_P1.
+    // docs: InputFile_General.md#tag_configuration. Tutorials: basic/02_bath_and_states, basic/05_defect_bath.
     "configuration"    : {
         // Folder of the file names of this block. Default ".".
 //      "path"              : "data",
@@ -133,7 +133,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     "nstep"            : 2000,
 
     // ---- the pulse sequence -----------------------------------------------------------------------------------------
-    // docs: InputFile_Pulse.md. Tutorials: 02_pulses, 03_P1 (DEER).
+    // docs: InputFile_Pulse.md. Tutorials: basic/03_pulses, basic/05_defect_bath (DEER).
     "pulse"            : {
         // Number of pi pulses: 0 Ramsey, 1 HahnEcho, 2 or more CPMG. Required.
         "count"           : 1
@@ -166,7 +166,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     }
 
     // ---- the Hamiltonian --------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_hamiltonian. Tutorials: 04_hBN, 06_cCCE_vs_gCCE.
+    // docs: InputFile_General.md#tag_hamiltonian. Tutorials: advanced/02_hBN, basic/04_cCCE_vs_gCCE.
     // The last active key is pulse above: a key uncommented below needs a ',' after its '}'.
 //  "hamiltonian"      : {
         // Read by every method.
@@ -262,7 +262,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- the coordinate frame ---------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_frame_rotation. Tutorial: 10_coordinate_rotation.
+    // docs: InputFile_General.md#tag_frame_rotation. Tutorial: advanced/05_coordinate_rotation.
 //  "frame"            : {
         // For a bath file in the crystal frame with the qubit along another axis: qubits and bath are turned so that
         // qubit_axis is the new z. On when the block is given; then every directional input states its "frame".
@@ -275,7 +275,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- paramagnetic defects in the bath ---------------------------------------------------------------------------
-    // docs: InputFile_Defect.md. Tutorial: 03_P1.
+    // docs: InputFile_Defect.md. Tutorial: basic/05_defect_bath.
 //  "Defect"           : {
         // One entry per species. A key in the list form [[axis state, ...], ...] holds a value per axis state.
 //      "species" : [
@@ -313,7 +313,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- the clusters -----------------------------------------------------------------------------------------------
-    // docs: InputFile_Cluster.md. Tutorials: 07_pCCE_and_bundle, 06_cCCE_vs_gCCE (dsj).
+    // docs: InputFile_Cluster.md. Tutorials: advanced/07_pCCE_and_bundle, basic/04_cCCE_vs_gCCE (dsj).
 //  "cluster"          : {
         // standard (default): clusters of up to order bath spins. pcce: of partitions. bundle: of bundles of strongly
         // coupled spins. dsj, itb, dsjitb (cCCE): disjoint and inter-bath variants.
@@ -399,7 +399,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- where and how it runs --------------------------------------------------------------------------------------
-    // docs: InputFile_Backend.md. Tutorial: 08_GPU.
+    // docs: InputFile_Backend.md. Tutorial: advanced/11_GPU.
 //  "execution"        : {
         // cpu (default); cuda (main_gpu.out: every cluster on the GPU); auto (main_gpu.out: the clusters of
         // gpu_options.min_dim and above on the GPU).
@@ -440,7 +440,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- output -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_Output.md. Tutorial: 07_pCCE_and_bundle (cCCE2_Hahn_clusterReport).
+    // docs: InputFile_Output.md. Tutorial: advanced/07_pCCE_and_bundle (cCCE2_Hahn_clusterReport).
 //  "output"           : {
         // Folder of the outputs, made when missing; -o DIR takes its place. Default: the working directory.
 //      "path"                  : "results",
@@ -457,7 +457,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- automatic convergence --------------------------------------------------------------------------------------
-    // docs: InputFile_AutoConvergence.md. Tutorial: 09_auto_convergence.
+    // docs: InputFile_AutoConvergence.md. Tutorial: advanced/12_auto_convergence.
     // With this block main.out -f finds the time window, rdip, rbath and the number of configurations, then runs the
     // production with the mpirun -n N it was started with. A key written twice below is a choice: one line finds the
     // value, the other fixes it.

@@ -35,7 +35,7 @@ same_curves(){ cmp -s "$1_noDiv" "$2_noDiv" && cmp -s "$1_wiDiv" "$2_wiDiv"; }
 
 ( cd "$W/e1" && "$MPIRUN" -n 1 "$BIN_DEV" -e > e.log 2>&1 < /dev/null ) && [ -s "$W/e1/ccex_example.jsonc" ] \
     && [ "$(ls "$W/e1" | tr '\n' ' ')" = "ccex_example.jsonc e.log " ] || no "X1 -e did not write ccex_example.jsonc alone (see $W/e1/e.log)"
-sed 's|"bathfile" *: \["my_bath.txt"\]|"bathfile": ["'"$REPO"'/example/tutorial/00_quickstart/bath//bath_Diamond_NV_natab_1"]|' \
+sed 's|"bathfile" *: \["my_bath.txt"\]|"bathfile": ["'"$REPO"'/example/tutorial/basic/01_first_run/bath//bath_Diamond_NV_natab_1"]|' \
     "$W/e1/ccex_example.jsonc" > "$W/e1/run.jsonc"
 grep -q 'bath//bath_Diamond' "$W/e1/run.jsonc" || no "X1 the example has no \"bathfile\" : [\"my_bath.txt\"] line to point at a bath"
 ( cd "$W/e1" && "$MPIRUN" -n 2 "$BIN_DEV" -f run.jsonc > run.log 2>&1 < /dev/null ); rc=$?

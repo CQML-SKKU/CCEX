@@ -955,19 +955,24 @@ INPUT                  = ../../include \
                          ../../src/auto_convergence \
                          ../user \
                          ../methods \
-                         ../../example/tutorial/00_quickstart/README.md \
-                         ../../example/tutorial/01_ensemble_and_states/README.md \
-                         ../../example/tutorial/02_pulses/README.md \
-                         ../../example/tutorial/03_P1/README.md \
-                         ../../example/tutorial/04_hBN/README.md \
-                         ../../example/tutorial/05_multiNV/README.md \
-                         ../../example/tutorial/06_cCCE_vs_gCCE/README.md \
-                         ../../example/tutorial/07_pCCE_and_bundle/README.md \
-                         ../../example/tutorial/08_GPU/README.md \
-                         ../../example/tutorial/09_auto_convergence/README.md \
-                         ../../example/tutorial/10_coordinate_rotation/README.md \
-                         ../../example/tutorial/11_noise/README.md \
-                         ../../example/tutorial/12_pseudospin/README.md
+                         ../../example/tutorial/basic/01_first_run/README.md \
+                         ../../example/tutorial/basic/02_bath_and_states/README.md \
+                         ../../example/tutorial/basic/03_pulses/README.md \
+                         ../../example/tutorial/basic/04_cCCE_vs_gCCE/README.md \
+                         ../../example/tutorial/basic/05_defect_bath/README.md \
+                         ../../example/tutorial/advanced/01_P1/README.md \
+                         ../../example/tutorial/advanced/02_hBN/README.md \
+                         ../../example/tutorial/advanced/03_multiNV/README.md \
+                         ../../example/tutorial/advanced/04_DFT_tensors/README.md \
+                         ../../example/tutorial/advanced/05_coordinate_rotation/README.md \
+                         ../../example/tutorial/advanced/06_terms_and_models/README.md \
+                         ../../example/tutorial/advanced/07_pCCE_and_bundle/README.md \
+                         ../../example/tutorial/advanced/08_analysis/README.md \
+                         ../../example/tutorial/advanced/09_noise/README.md \
+                         ../../example/tutorial/advanced/10_pseudospin/README.md \
+                         ../../example/tutorial/advanced/11_GPU/README.md \
+                         ../../example/tutorial/advanced/12_auto_convergence/README.md \
+                         ../../example/tutorial/advanced/13_server_runs/README.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

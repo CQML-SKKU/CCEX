@@ -7,15 +7,15 @@ and `tools/` holds the programs that prepare the input.
 
 ```
 bash do_compile.sh wsl-gnu                               # build bin/main.out (other presets: see the top README)
-cd example/tutorial/00_quickstart && NP=4 bash run.sh    # about 1 s; writes results/ and plots results/coherence.png
+cd example/tutorial/basic/01_first_run && NP=4 bash run.sh    # about 1 s; writes results/ and plots results/coherence.png
 ```
 
-Compare `results/coherence.png` with `expected.png` in the same folder (T2 1.068 ms). Then work through the tutorials
-in order; [tutorial/README.md](tutorial/README.md) lists them. Each topic's README says what each calculation shows,
+Compare `results/coherence.png` with `expected.png` in the same folder (T2 1.068 ms). Then work through `basic/`
+in order and pick from `advanced/`; [tutorial/README.md](tutorial/README.md) lists them. Each topic's README says what each calculation shows,
 which keys matter, how long it runs and what to try next.
 
-To start an input of your own, run `bin/main.out -e`. It writes `ccex_example.jsonc`, the quickstart input with every
-other key commented out next to its default. It runs once its `bathfile` names a bath file.
+To start an input of your own, run `bin/main.out -e`. It writes `ccex_example.jsonc`, the first-run input with every
+other key commented out under its explanation and default. It runs once its `bathfile` names a bath file.
 
 To find the method and the tutorial that fit your system, see
 [What should I use for my case?](../docs/user/Examples.md#WhatToUse).

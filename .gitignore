@@ -32,7 +32,7 @@
 /.ccex_makefile.stamp
 
 # NOTE: do NOT add a global `*.out` rule. This repo tracks 60+ legitimate .out
-#       files (DFT outputs under example/tutorial/04_hBN/bath/, QE outputs under
+#       files (DFT outputs under example/tutorial/advanced/02_hBN/bath/, QE outputs under
 #       example/tools/SpinTensorReader/). The only build .out is bin/main.out, which
 #       /bin/ above already covers.
 

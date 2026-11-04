@@ -17,19 +17,28 @@
     </tab>
     <tab type="user" url="@ref md_docs_2user_2OutputFiles" title="Output files"/>
     <tab type="usergroup" url="@ref md_docs_2user_2Examples" title="Examples">
-      <tab type="user" url="@ref tutorial_00" title="00 Quickstart"/>
-      <tab type="user" url="@ref tutorial_01" title="01 Ensemble and states"/>
-      <tab type="user" url="@ref tutorial_02" title="02 Pulses"/>
-      <tab type="user" url="@ref tutorial_03" title="03 P1 electron-spin bath"/>
-      <tab type="user" url="@ref tutorial_04" title="04 hBN with DFT tensors"/>
-      <tab type="user" url="@ref tutorial_05" title="05 Several NV centres"/>
-      <tab type="user" url="@ref tutorial_06" title="06 cCCE against gCCE"/>
-      <tab type="user" url="@ref tutorial_07" title="07 pCCE and bundles"/>
-      <tab type="user" url="@ref tutorial_08" title="08 GPU"/>
-      <tab type="user" url="@ref tutorial_09" title="09 Automatic convergence"/>
-      <tab type="user" url="@ref tutorial_10" title="10 Coordinate rotation"/>
-      <tab type="user" url="@ref tutorial_11" title="11 Phase noise (method noise)"/>
-      <tab type="user" url="@ref tutorial_12" title="12 Pseudospin pairs"/>
+      <tab type="usergroup" url="[none]" title="Basic">
+        <tab type="user" url="@ref tutorial_b01" title="01 First run"/>
+        <tab type="user" url="@ref tutorial_b02" title="02 Bath configurations and states"/>
+        <tab type="user" url="@ref tutorial_b03" title="03 Pulses"/>
+        <tab type="user" url="@ref tutorial_b04" title="04 cCCE against gCCE"/>
+        <tab type="user" url="@ref tutorial_b05" title="05 An electron-spin bath (P1)"/>
+      </tab>
+      <tab type="usergroup" url="[none]" title="Advanced">
+        <tab type="user" url="@ref tutorial_a01" title="01 P1 further"/>
+        <tab type="user" url="@ref tutorial_a02" title="02 hBN"/>
+        <tab type="user" url="@ref tutorial_a03" title="03 Several NV centres"/>
+        <tab type="user" url="@ref tutorial_a04" title="04 DFT tensors"/>
+        <tab type="user" url="@ref tutorial_a05" title="05 Coordinate rotation"/>
+        <tab type="user" url="@ref tutorial_a06" title="06 More terms and models"/>
+        <tab type="user" url="@ref tutorial_a07" title="07 pCCE and bundles"/>
+        <tab type="user" url="@ref tutorial_a08" title="08 Analysis of the output"/>
+        <tab type="user" url="@ref tutorial_a09" title="09 Phase noise (method noise)"/>
+        <tab type="user" url="@ref tutorial_a10" title="10 Pseudospin pairs"/>
+        <tab type="user" url="@ref tutorial_a11" title="11 GPU"/>
+        <tab type="user" url="@ref tutorial_a12" title="12 Automatic convergence"/>
+        <tab type="user" url="@ref tutorial_a13" title="13 Runs on a cluster (Slurm)"/>
+      </tab>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Analysis" title="Analysis"/>
     <tab type="user" url="@ref md_docs_2user_2Tools" title="Tools"/>

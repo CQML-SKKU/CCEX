@@ -158,7 +158,7 @@ Whatever the status, the result is the last run. `summary.json` names its folder
 
 `main.out` exits with the status above, so a script should not treat 2 as a crash. With `configuration.k_range` the
 next configuration is not started after a non-zero status.
-`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/run.sh` shows how to read it.
+`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/run.sh` shows how to read it.
 
 <a id="adaptive_outputs"></a>
 ### What the output folder holds
@@ -190,7 +190,7 @@ Limits of the method:
 - one partition is used for all time points and states.
 
 In the studies made with it so far the refinement changed the curves only a little on the baths tried
-(`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/` is one such case). Check its effect on your system against
+(`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/` is one such case). Check its effect on your system against
 a calculation without it.
 
 Options: `prefer_physical` prefers candidates whose curve stays finite and bounded; `hub_candidates` (with it) also
@@ -211,7 +211,7 @@ tries growing a bundle around a strongly linked hub first.
 Other statuses: `no_positive_culprit`, `no_candidate`, `budget_limited`, `change_limit` (exit 2), `failed` (exit 1).
 `physical` means bounded, not accurate.
 
-`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_regroup/` runs it. `regroup_factors` and `regroup_whole` choose how
+`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_regroup/` runs it. `regroup_factors` and `regroup_whole` choose how
 the culprit values and the whole curves are obtained (the second needs a build whose long double is the x87 80-bit
 type).
 

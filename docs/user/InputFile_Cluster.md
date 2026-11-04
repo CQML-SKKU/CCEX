@@ -129,7 +129,7 @@ see [connections](#tag_pcce_connections)). The strongest `max_per_order[n]` are 
 ## cluster.pcce
 <b>Description:</b><br>
 The settings of `cluster.mode` `pcce`; refused with any other `cluster.mode`. How the partitions are found and
-connected: [pCCE](../methods/pcce.md). `example/tutorial/07_pCCE_and_bundle/pCCE2_Hahn_states/` runs `partition_size`
+connected: [pCCE](../methods/pcce.md). `example/tutorial/advanced/07_pCCE_and_bundle/pCCE2_Hahn_states/` runs `partition_size`
 1 to 3 (4 on request). <br>
 
 <b>Data Type:</b> Object
@@ -240,7 +240,7 @@ With `partition_size` 1 the two rules are the same. Under `centers`, two partiti
 unconnected when their centroids are far apart, more often the larger `partition_size` is; `spins` connects them. The
 rank-0 log says which rule ran and how many partition pairs it connected.
 
-A comparison on the P1 bath of tutorial `03_P1`:
+A comparison on the P1 bath of tutorial `basic/05_defect_bath`:
 
 - at that tutorial's `rdip` (620 Å) the two rules differ less than pCCE2 differs from CCE4, and `spins` costs 27-65 %
   more;
@@ -514,7 +514,7 @@ What a refinement leaves in `workdir`, and how it ends ([details](../methods/bun
 - The local errors are checks of the patches, not error bounds of the whole bath. In the cases studied so far the
   refinement changed the curves only a little; compare with a run without it.
 
-`example/tutorial/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/` (merge; it ends with `no_feasible_improving_merge`, exit 2)
+`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/` (merge; it ends with `no_feasible_improving_merge`, exit 2)
 and `cCCE2_Hahn_regroup/` (regroup) show both. <br>
 
 <a id="tag_adaptive_probe_memory_gb"></a>

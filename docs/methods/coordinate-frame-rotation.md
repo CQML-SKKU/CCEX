@@ -2,7 +2,7 @@
 
 This page describes the `frame.rotation` block of the input file and the `frame` key beside each set of directional
 numbers. The short form is the [frame.rotation](../user/InputFile_General.md#tag_frame_rotation) entry of the
-input-file reference; [tutorial 10](../../example/tutorial/10_coordinate_rotation/README.md) runs it.
+input-file reference; [tutorial 10](../../example/tutorial/advanced/05_coordinate_rotation/README.md) runs it.
 
 ## Two frames
 
