@@ -14,7 +14,7 @@
                                       // 1.1 % 13C, written with the NV axis along z
     "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
     "bfield"        : 500,            // Gauss along z of the frame CCEX works in, here the NV axis
-    "rbath"         : 50,             // Angstrom: the 13C within 50 A of the NV are kept (980 here)
+    "rbath"         : 50,             // Angstrom: the 13C within 50 A of the NV are kept (978 here)
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair (3366 pairs here)
     "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence
     "nstep"         : 2000,           // the number of time points: t = 0 .. 1.999 ms

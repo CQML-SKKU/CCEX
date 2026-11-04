@@ -21,7 +21,7 @@
                                       // basic/01_first_run's bath: a 150 A cube of diamond with 1.1 % 13C
     "order"         : 2,              // the noise of single 13C and of pairs (cCCE clusters)
     "bfield"        : 500,            // Gauss along the NV axis
-    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A
     "rdip"          : 10,             // Angstrom: pairs closer than this
     "deltat"        : 0.001,          // ms: the coherence at t = 0, 1 us, ...
     "nstep"         : 2000,           // up to 1.999 ms; also the default time_max of the C(t) grid

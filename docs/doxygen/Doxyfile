@@ -957,9 +957,10 @@ INPUT                  = ../../include \
                          ../methods \
                          ../../example/tutorial/basic/01_first_run/README.md \
                          ../../example/tutorial/basic/02_bath_and_states/README.md \
-                         ../../example/tutorial/basic/03_pulses/README.md \
-                         ../../example/tutorial/basic/04_cCCE_vs_gCCE/README.md \
-                         ../../example/tutorial/basic/05_defect_bath/README.md \
+                         ../../example/tutorial/basic/03_convergence/README.md \
+                         ../../example/tutorial/basic/04_pulses/README.md \
+                         ../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md \
+                         ../../example/tutorial/basic/06_defect_bath/README.md \
                          ../../example/tutorial/advanced/01_P1/README.md \
                          ../../example/tutorial/advanced/02_hBN/README.md \
                          ../../example/tutorial/advanced/03_multiNV/README.md \
@@ -1389,6 +1390,7 @@ HTML_STYLESHEET        =
 
 HTML_EXTRA_STYLESHEET  = ./doxygen-awesome.css \
                          ./doxygen-awesome-sidebar-only.css \
+                         ./doxygen-awesome-sidebar-only-darkmode-toggle.css \
                          ./ccex.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
@@ -1399,7 +1401,11 @@ HTML_EXTRA_STYLESHEET  = ./doxygen-awesome.css \
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       = ccex.js
+HTML_EXTRA_FILES       = ccex.js \
+                         doxygen-awesome-darkmode-toggle.js \
+                         doxygen-awesome-fragment-copy-button.js \
+                         doxygen-awesome-paragraph-link.js \
+                         doxygen-awesome-interactive-toc.js
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.

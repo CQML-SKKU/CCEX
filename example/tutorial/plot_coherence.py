@@ -1,6 +1,6 @@
 """plot_coherence.py: the |L(t)| of CCEX's _wiDiv files in one figure, and one number per curve (the tutorials' expected.png).
 
-    python3 plot_coherence.py OUT.png [--unit ms|us|ns] [--title TEXT] [--free-y] [--log-time] LABEL=GLOB [LABEL=GLOB ...]
+    python3 plot_coherence.py OUT.png [--unit ms|us|ns] [--title TEXT] [--free-y] [--log-time] [--fit] [--bold-first] [--members] [--dashed] [--spread] LABEL=GLOB ...
 
 Each LABEL=GLOB is one curve: the files GLOB matches (several bath configurations or sampled states) are averaged as
 complex numbers, then |.| is plotted. A density-matrix file (quantity dm) gives the off-diagonal element that is largest
@@ -11,6 +11,15 @@ point; the fast ESEEM dips of a 13C bath do not cut it short), or |L| at the las
 1/e; from the second curve on, the largest |L| difference from the first. Points that are not finite are left out of
 the average and counted; a curve above 1.2 (a diverged division) is reported and the plot cut at 1.2.
 --log-time draws the time axis on a log scale (t = 0 left out), for curves whose decay times differ tenfold.
+--spread prints, for each averaged curve, the T2 of every file it averages: their mean, standard deviation and
+standard error (the deviation / sqrt of the number of files).
+--members draws, under each averaged curve, every file it averages as a thin grey line (one legend entry).
+--dashed draws the first curve thick and the others thin, dashed or dotted on top of it, so that curves that lie on
+top of each other stay visible.
+--bold-first draws the first curve thick and on top, the others thin and faint (a mean against its members).
+--fit fits exp(-(t/T2)^n) to the upper envelope of each curve (the largest |L| in every window of 1/100 of the
+time axis, so the ESEEM dips are passed over; every such point with 0 < |L| < 1), as a straight line of
+log(-log|L|) against log t; it draws the fit (dashed, over the whole time axis) and the fitted points, and prints T2 and n.
 Needs numpy and matplotlib.
 """
 import glob
@@ -45,8 +54,30 @@ def read(path):
     return t, rho[:, i, j] / rho[0, i, j]
 
 
+def t1e_of(t, a):
+    """The last time |L| >= 1/e (linear between points), or None when it never falls below."""
+    above = np.nonzero(a >= 1 / np.e)[0]
+    if not len(above) or above[-1] >= len(t) - 1:
+        return None
+    k = above[-1] + 1
+    return t[k - 1] + (t[k] - t[k - 1]) * (a[k - 1] - 1 / np.e) / (a[k - 1] - a[k])
+
+
+def fit_t2(t, a):
+    """(T2, n, t of the fitted points, |L| there): exp(-(t/T2)^n) through the whole upper envelope."""
+    w = max(1, len(t) // 100)
+    idx = [i + int(np.argmax(a[i:i + w])) for i in range(0, len(t), w)]   # the largest |L| of each window
+    idx = [i for i in idx if t[i] > 0 and 0 < a[i] < 1]                  # log(-log|L|) needs 0 < |L| < 1
+    if len(idx) < 3:
+        return None
+    x, y = np.log(t[idx]), np.log(-np.log(a[idx]))
+    n, c = np.polyfit(x, y, 1)                                           # y = n log t - n log T2
+    return np.exp(-c / n), n, t[idx], a[idx]
+
+
 def main(argv):
-    out, unit, title, series, free_y, log_time = None, 'ms', None, [], False, False
+    out, unit, title, series, free_y, log_time, fit, bold_first, members, dashed, spread = (None, 'ms', None, [], False, False,
+                                                                                         False, False, False, False, False)
     it = iter(argv)
     for a in it:
         if a == '--unit':
@@ -55,6 +86,16 @@ def main(argv):
             free_y = True
         elif a == '--log-time':        # the time axis on a log scale; t = 0 cannot be drawn there
             log_time = True
+        elif a == '--spread':          # the T2 of every averaged file: mean, deviation, standard error
+            spread = True
+        elif a == '--dashed':          # the second curve dashed, the third dotted, ...
+            dashed = True
+        elif a == '--members':         # every averaged file as a thin grey line
+            members = True
+        elif a == '--bold-first':      # the first curve thick, the others thin and faint
+            bold_first = True
+        elif a == '--fit':             # fit exp(-(t/T2)^n) to the upper envelope and draw it
+            fit = True
         elif a == '--title':
             title = next(it)
         elif out is None:
@@ -96,9 +137,36 @@ def main(argv):
             first = (label, t, mean)
         elif len(t) == len(first[1]):
             diff = f', max |L - L({first[0]})| = {np.nanmax(np.abs(mean - first[2])):.3e}'
+        if spread and len(files) > 1:
+            each = [t1e_of(t, np.abs(x)) for x in L]
+            each = np.array([x for x in each if x is not None])
+            if len(each) > 1:
+                sd = each.std(ddof=1)
+                number += (f'; T2 of the {len(each)} files: mean {each.mean() * scale:.4g} {unit}, deviation {sd * scale:.3g},'
+                           f' standard error {sd / np.sqrt(len(each)) * scale:.3g}')
+        f = fit_t2(t, mean) if fit else None
+        if f:
+            number += f'; fit T2 {f[0] * scale:.4g} {unit}, n {f[1]:.3g} ({len(f[2])} envelope points)'
         print(f'{label}: {len(files)} file(s), {number}{diff}{note}')
         keep = t > 0 if log_time else slice(None)
-        ax.plot((t * scale)[keep], mean[keep], lw=0.7, label=f'{label} ({len(files)})' if len(files) > 1 else label)
+        style = dict(lw=0.7)
+        if bold_first:
+            style = dict(lw=1.6, color='k', zorder=3) if first[0] == label and first[1] is t else dict(lw=0.6, alpha=0.45)
+        if members and len(files) > 1:
+            for i, one in enumerate(np.abs(L)):
+                ax.plot((t * scale)[keep], one[keep], color='0.7', lw=0.5, zorder=1,
+                        label=f'each of the {len(files)}' if i == 0 else None)
+            style = dict(lw=1.6, zorder=3)
+        if dashed:
+            n = [s[0] for s in series].index(label)
+            style.update(ls=['-', (0, (5, 3)), (0, (2, 2)), '-.'][n % 4], lw=1.3 if n else 3.0, zorder=2 + n)
+        line, = ax.plot((t * scale)[keep], mean[keep], label=f'{label} ({len(files)})' if len(files) > 1 else label, **style)
+        if f:
+            T2, n, tf, af = f
+            tt = np.linspace(0, t[-1], 400)                           # the fit over the whole axis; the points show where it was fitted
+            ax.plot(tt * scale, np.exp(-(tt / T2) ** n), '--', color='k', lw=1.2,
+                    label=f'fit exp(-(t/T2)^n): T2 {T2 * scale:.3g} {unit}, n {n:.2f}')
+            ax.plot(tf * scale, af, 'o', ms=3, mfc='none', color='k', lw=0, label='fitted points (envelope)')
     if log_time:
         ax.set_xscale('log')
     ax.set_xlabel(f'time ({unit})')

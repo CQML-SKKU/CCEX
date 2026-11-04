@@ -5,7 +5,7 @@
     // bath into groups of at most order (here 2) 13C: the pairs within rdip are taken from the strongest coupling
     // |J_zz| down, and two spins join when the group stays within order spins. Each group is computed once as one
     // cluster and L is the product over the groups, with no other clusters: far fewer clusters than standard, at the
-    // price of the pairs between groups. T2 1.092 ms against 1.068 ms for standard, largest difference 0.064 (README).
+    // price of the pairs between groups. T2 1.158 ms against 1.084 ms for standard, largest difference 0.065 (README).
     //
     // Writes results/ccein_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_standard.jsonc is the same
     // input with the default cluster.mode standard.
@@ -21,7 +21,7 @@
                                       // diamond with 1.1 % 13C
     "order"         : 2,              // with dsj: the largest group, here single 13C and pairs
     "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
-    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
     "rdip"          : 10,             // Angstrom: the pairs closer than 10 A are the edges of the coupling graph that
                                       // dsj groups
     "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)

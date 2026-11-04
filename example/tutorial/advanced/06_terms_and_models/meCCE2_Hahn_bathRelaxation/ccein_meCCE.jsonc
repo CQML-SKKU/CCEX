@@ -5,7 +5,7 @@
     //
     // The physics: in each cluster the bath operator <alpha|rho|beta> evolves under the two cCCE branch Hamiltonians
     // (one on each side) plus the Lindblad dissipators of the jump operators C = sqrt(gamma) S_op. The rates of all
-    // the 13C add up, so even this small rate halves T2: 0.53 ms against 1.068 ms by cCCE (README). See
+    // the 13C add up, so even this small rate halves T2: 0.57 ms against 1.08 ms by cCCE (README). See
     // docs/methods/master-equation.md.
     //
     // Writes results/ccein_meCCE_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_cCCE.jsonc is the same
@@ -23,7 +23,7 @@
                                       // bath_name below picks) and a 150 A cube of diamond with 1.1 % 13C
     "order"         : 2,              // the largest cluster: single 13C and pairs (meCCE2)
     "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
-    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
     "deltat"        : 0.004,          // the time step in ms (4 us; basic/01_first_run has 1 us)
     "nstep"         : 500,            // 500 time points: t = 0 .. 2 ms

@@ -1,5 +1,5 @@
 {
-    // The Hahn echo of an NV (ms -1 / 0) in a 1 ppm P1 electron-spin bath (the bath of basic/05_defect_bath, one configuration) by
+    // The Hahn echo of an NV (ms +1 / 0) in a 1 ppm P1 electron-spin bath (the bath of basic/06_defect_bath, one configuration) by
     // method noise: the Gaussian coherence W(T) = exp(-chi(T)) of the qubit's phase noise, chi = <phi^2>/2, each cCCE
     // cluster giving its share of chi from its eigenmodes (semi-cce's semi-classical CCE). Ten sampled bath states;
     // a state only sets the static field of the other spins (the mean field), the cluster itself is averaged at
@@ -12,16 +12,16 @@
                                       // by cluster (a model such as {"model": "OU", ...} needs no bath, see
                                       // noiseModel_OU). A bath spin's noise is its secular A_zz I_z;
                                       // "pseudo_secular": true in this block adds A_zx I_x + A_zy I_y
-    "Qubit"         : {"qubit": [{"file": "../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}],
-                       "alpha_state": {"ms": [-1]}},
+    "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}],
+                       "alpha_state": {"ms": [1]}},
                                       // the NV's position from the first line of the file (Angstrom), spin 1 by
-                                      // default; alpha_state ms -1 (beta stays ms 0), so L is between -1 and 0
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
+                                      // default; alpha_state ms +1 (beta stays ms 0), so L is between +1 and 0
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
                        "s_range" : [1, 10],
                        "seed"    : 1},
                                       // gyrofile: P1 as spin 1/2 with the electron's gamma (P1 is not an isotope,
-                                      // so it needs the file). bathfile: configuration 1 of basic/05_defect_bath's 1 ppm baths.
+                                      // so it needs the file). bathfile: configuration 1 of basic/06_defect_bath's 1 ppm baths.
                                       // s_range: 10 sampled states, drawn from seed (axes and spin states), each its
                                       // own output _state<s>
     "order"         : 2,              // single P1 and pairs of P1
@@ -44,5 +44,5 @@
                                       // state per Jahn-Teller axis and 14N m_I (+1, 0, -1), each P1 given one at
                                       // random from seed. detuning: [axis state, "e" (the electron), shift in MHz];
                                       // 114.0264 MHz is A_zz of the axis along the NV, 84.946496 MHz that of the
-                                      // other three axes (as in basic/05_defect_bath/cCCE2_Hahn_onsite14N's hyperfine tensors)
+                                      // other three axes (as in basic/06_defect_bath/cCCE2_Hahn_onsite14N's hyperfine tensors)
 }

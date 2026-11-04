@@ -27,7 +27,7 @@ together.
 ```
 bash do_compile.sh wsl-gnu                     # build bin/main.out (presets below)
 cd example/tutorial/basic/01_first_run
-NP=4 bash run.sh                               # about 1 s: results/ccein_wiDiv and coherence.png (T2 1.068 ms)
+NP=4 bash run.sh                               # about 1 s: results/ccein_wiDiv and coherence.png (T2 1.084 ms)
 ```
 
 To run your own input, use `mpirun -n 4 bin/main.out -f ccein.jsonc -o results`. `bin/main.out -e` writes
@@ -40,12 +40,12 @@ To run your own input, use `mpirun -n 4 bin/main.out -f ccein.jsonc -o results`.
 also works: `cmake -B build && cmake --build build -j 8` puts everything in `build/`.
 
 You need a C++17 compiler behind an MPI wrapper. Eigen, uthash and SQLite are included in `external/`, and MKL is used
-when the build finds it. [Getting started](docs/user/GettingStarted.md#Building) covers the build options, the CUDA
+when the build finds it. [Building and running](docs/user/BuildingAndRunning.md#Building) covers the build options, the CUDA
 versions and the environment variables.
 
 ## Where to start
 
-- [Tutorials](example/tutorial/README.md): `basic/` (five topics, the input itself, seconds each) and `advanced/`
+- [Tutorials](example/tutorial/README.md): `basic/` (six topics, the input itself, seconds to a minute each) and `advanced/`
   (thirteen topics: other baths, DFT tensors, analysis, GPU, automatic convergence, noise, pseudospin, cluster runs).
   Each has commented inputs, a `run.sh` and an `expected.png`.
 - [Input file](docs/user/InputFile.md): every key by block, with its unit and default.

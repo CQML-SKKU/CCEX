@@ -3,7 +3,7 @@
     // reference of ccein_meCCE.jsonc.
     //
     // The physics: the 13C evolve coherently under their Hamiltonian (Zeeman, hyperfine, dipolar pairs), the qubit
-    // only sets the field each feels. T2 1.068 ms here, against 0.53 ms with the 13C relaxation of meCCE (README).
+    // only sets the field each feels. T2 1.08 ms here, against 0.57 ms with the 13C relaxation of meCCE (README).
     //
     // Writes results/ccein_cCCE_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_meCCE.jsonc is the same
     // with "method": "meCCE" and the jump operators.
@@ -19,7 +19,7 @@
                                       // diamond with 1.1 % 13C
     "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
     "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
-    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
     "deltat"        : 0.004,          // the time step in ms (4 us; basic/01_first_run has 1 us), the grid of
                                       // ccein_meCCE (the slow run: about 20 s on 4 ranks, this one under 1 s)

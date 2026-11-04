@@ -988,9 +988,9 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
         printf("\n    >> Read %s file successfully\n",fccein);
     }
 
-    // the refinement writes every step into its own folder (cluster.adaptive.output)
+    // the refinement writes every step into its own folder (cluster.adaptive.workdir)
     if (!adaptiveArgs.empty() && (outputFolder || op->outpath[0])){
-        ccexRefusalPrint(stderr, "Error: %s does not apply to the adaptive refinement, its folder is cluster.adaptive.output\n",
+        ccexRefusalPrint(stderr, "Error: %s does not apply to the adaptive refinement, its folder is cluster.adaptive.workdir\n",
                          outputFolder ? "-o" : "output.path");
         ccexRefuse();
     }
@@ -1018,6 +1018,9 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
         refuseRun("method %s runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu",cnf->noise ? "noise" : "pseudospin");
     validateNoise(cnf,pls,qa,op);              // before computeBackendInit: it settles the backend
     validatePseudospin(cnf,pls,qa,cls);        // before computeBackendInit: it settles the backend
+    // the cCCE kernel (every cluster.mode) computes the coherence only; with dm it stopped mid-run (calCoherenceCce)
+    if (!strcmp(methodKernel(cnf->method),"cce") && strcasecmp(cnf->quantity,"coherence"))
+        refuseRun("method cCCE computes quantity coherence only (quantity dm needs method gCCE)");
     validateAdaptiveConfig(cnf,cls);
     Config_validatePcceCache(cnf);
     if (clusterPlanOnly && ((strcasecmp(cnf->method,"cce") &&

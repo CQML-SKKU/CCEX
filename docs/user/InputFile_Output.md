@@ -53,8 +53,7 @@ What is written, and whether `_noDiv` is written beside `_wiDiv`. A string gives
                  dimension), in "file_{cluster}_full_state{state}_wiDiv/noDiv". The cluster's bath indices are as in
                  `"cluster_coherence"`; the zeroth cluster (the qubits alone) is "file_full_state{state}_...". The
                  `_wiDiv` and `_noDiv` files hold the same matrix. It costs one full-dimension matrix per time step and
-                 cluster, in memory and on disk, so it is for small systems
-                 (`example/tutorial/basic/04_cCCE_vs_gCCE/gCCE1_Hahn_handwritten/`). cCCE has no qubit + bath density matrix
+                 cluster, in memory and on disk, so it is for small systems. cCCE has no qubit + bath density matrix
                  and writes what `"cluster_coherence"` writes. <br>
 
 <b>nodiv:</b> Write `_noDiv` beside `_wiDiv`. `_wiDiv` is the CCE coherence. `_noDiv` is the product of the

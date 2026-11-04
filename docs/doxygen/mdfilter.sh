@@ -24,6 +24,7 @@
 #    several). Doxygen reads \f$...\f$ and \f[...\f], so the delimiters are rewritten,
 #    outside code blocks and code spans only. A $ that does not open math (no closing $
 #    on the line, a space after it) is left alone, as GitHub does.
+#  - A [TOC] line goes under the title of every page, for the table of contents beside it.
 nn=""
 case "$1" in
     */example/tutorial/basic/[0-9][0-9]_*/README.md)
@@ -47,7 +48,9 @@ tutorial() {
         cat "$1"
     fi
 }
-tutorial "$1" | sed -E \
+tutorial "$1" | sed -E -e '1{/^# /a\
+[TOC]
+}' \
   -e 's#\[([^]]*)\]\((\.\./)+(docs/)?(validation|development)/([^)]*)\)#\1 (`docs/\4/\5`)#g' \
   -e 's#\]\((\.\./)+example/tutorial/basic/([0-9][0-9])_[A-Za-z0-9_]*/(README\.md)?\)#](@ref tutorial_b\2)#g' \
   -e 's#\]\((\.\./)+example/tutorial/advanced/([0-9][0-9])_[A-Za-z0-9_]*/(README\.md)?\)#](@ref tutorial_a\2)#g' \

@@ -1,39 +1,36 @@
+// Basic 02, cCCE2_Hahn_states: the Hahn echo of Basic 01 (the same bath file) with the bath in 20 sampled pure states
+// instead of the ensemble. Each state gives every 13C a definite m_I (+1/2 or -1/2).
+//
+// Writes results/ccein_state1_wiDiv ... ccein_state20_wiDiv, one curve per state; run.sh plots their mean against the
+// ensemble (this input without s_range).
 {
-    // The Hahn echo of basic/01_first_run's NV (ms +1 / 0, cCCE2, 500 G, the same bath file) with the bath in 20 sampled
-    // product states instead of the ensemble. Every key not written here has its default (`main.out -e` lists them).
-    //
-    // Why: in the ensemble (basic/01_first_run) the bath is unpolarised, the average over all its states. A single NV in
-    // an experiment sees one state of the bath at a time; each sampled state gives every 13C a definite m_I (+1/2 or
-    // -1/2), so the 13C outside a cluster add a static field to the spins inside it. The mean over many states
-    // approaches the ensemble curve; one state alone decays differently. Writes results/ccein_state1_wiDiv ...
-    // ccein_state20_wiDiv (and _noDiv), one curve per state and no average; run.sh plots their mean against the
-    // ensemble (this input without s_range, run as results/ensemble.json).
-    //
-    // Sibling: ccein_files.jsonc reads the 20 states from files instead of drawing them from seed.
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), as in Basic 01.
+                "file" : "../../01_first_run/bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
 
-    "Qubit"         : {"qubit": [{"file": "../../01_first_run/bath/bath_Diamond_NV_natab_defect"}]},
-                                      // the qubit: its position from the first line of this file (x y z, Angstrom).
-                                      // Defaults: spin 1, the electron's gyromagnetic ratio, L between ms +1 and 0
+    // ---- the bath ----
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        "bathfile" : ["../../01_first_run/bath/bath_Diamond_NV_natab_1"],
+        // The sampled states, each its own output _state<s>. Without s_range: the ensemble.
+        "s_range"  : [1, 20],
+        // The random seed the states are drawn from: the same seed, the same states.
+        "seed"     : 1
+    },
 
-    "configuration" : {"gyrofile": "../../01_first_run/bath/gyro_13C",
-                       "bathfile": ["../../01_first_run/bath/bath_Diamond_NV_natab_1"],
-                       "s_range" : [1, 20],
-                       "seed"    : 1},
-                                      // the bath. gyrofile: spin and gyromagnetic ratio (rad kHz/G) of 13C.
-                                      // bathfile: basic/01_first_run's 150 A cube of diamond with 1.1 % 13C.
-                                      // s_range [first, last]: the sampled states, each a pure product state of the
-                                      // bath and its own output _state<s>. Its presence is what turns sampling on;
-                                      // remove the key for the ensemble. [1, 100] for 100 states (the difference
-                                      // from the ensemble shrinks); [21, 40] gives the states 21 ... 40 of a longer
-                                      // run, so a long run can be split.
-                                      // seed: the random seed the states are drawn from. With the same seed the same
-                                      // states come out again; without it a seed is generated and written in the log
-
-    "order"         : 2,              // the largest cluster: 2 = single 13C and pairs of 13C (cCCE2)
-    "bfield"        : 500,            // magnetic field in Gauss along z, the NV axis. The 13C precess at 0.54 MHz
-    "rbath"         : 50,             // Angstrom: only the 13C within 50 A of the NV are kept (980 here)
-    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster (3366 pairs here)
-    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence (for the Hahn echo 2 tau)
-    "nstep"         : 2000,           // the number of time points: t = 0, 1 us, ..., 1.999 ms
-    "pulse"         : {"count": 1}    // one pi pulse in the middle of t: the Hahn echo
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
 }

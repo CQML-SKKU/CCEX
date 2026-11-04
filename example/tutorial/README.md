@@ -17,20 +17,21 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 |---|---|---|
 | `01_first_run/` | NV in natural-abundance ¹³C, cCCE2 Hahn echo, seconds on a laptop | the folder itself |
 | `02_bath_and_states/` | averaging over bath configurations (`k_range`) and over sampled bath states (`s_range`) | `cCCE2_Hahn_ensemble`, `cCCE2_Hahn_states`, `cCCE2_Hahn_builtinIsotopes` |
-| `03_pulses/` | Hahn echo, CPMG, a sequence written out (`Manual`) | `cCCE2_CPMG_ensemble`, `cCCE2_Manual_ensemble` |
-| `04_cCCE_vs_gCCE/` | the two methods; the Knight shift of cCCE | `gCCE2_Hahn_vsCCE`, `cCCE2_Hahn_knightShift`, `gCCE1_Hahn_handwritten` |
-| `05_defect_bath/` | an electron-spin bath: P1 with the `Defect` block, sampled states, the mean field | `cCCE2_Hahn_states`, `cCCE2_Hahn_onsite14N`, `cCCE2_Hahn_meanField` |
+| `03_convergence/` | checking `rbath`, `rdip`, `order`, the number of configurations and the time axis | `cCCE2_Hahn_rbath`, `cCCE2_Hahn_rdip`, `cCCE_Hahn_order`, `cCCE2_Hahn_configurations`, `cCCE2_Hahn_timeAxis` |
+| `04_pulses/` | Hahn echo, CPMG, a sequence written out (`Manual`) | `cCCE2_CPMG_ensemble`, `cCCE2_Manual_ensemble` |
+| `05_cCCE_vs_gCCE/` | the two methods: the same at a high field, different near the level crossing | `gCCE2_Hahn_vsCCE`, `gCCE2_Hahn_levelCrossing` |
+| `06_defect_bath/` | an electron-spin bath: P1 with the `Defect` block, sampled states, the mean field | `cCCE2_Hahn_states`, `cCCE2_Hahn_meanField` |
 
 **advanced/**
 
 | Folder | Topic | Calculations |
 |---|---|---|
-| `01_P1/` | the P1 bath further: order 4, gCCE at zero field, the density matrix, Vp, a DEER pump | `cCCE4_Hahn_states`, `gCCE2_Hahn_zfs`, `gCCE2_Ramsey_population`, `cCCE2_Hahn_VpBath`, `gCCE2_Hahn_DEER` |
+| `01_P1/` | the P1 bath further: the ¹⁴N as a spin, order 4, gCCE at zero field, the density matrix, Vp, a DEER pump | `cCCE2_Hahn_onsite14N`, `cCCE4_Hahn_states`, `gCCE2_Hahn_zfs`, `gCCE2_Ramsey_population`, `cCCE2_Hahn_VpBath`, `gCCE2_Hahn_DEER` |
 | `02_hBN/` | V_B⁻ in h-BN with DFT tensors: sampled states, the Overhauser field | `gCCE2_Hahn_states`, `gCCE2_Hahn_Overhauser` |
 | `03_multiNV/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV3` |
 | `04_DFT_tensors/` | the hyperfine and quadrupole files from a VASP run, and what they change | `makeTensors_hBN`, `cCCE2_Hahn_tensors` |
 | `05_coordinate_rotation/` | a bath written in another frame (`frame.rotation`) | `cCCE2_Hahn_rotation` |
-| `06_terms_and_models/` | disjoint clusters, the hyperfine-mediated term, meCCE | `cCCE2_Hahn_dsj`, `cCCE2_Hahn_hfMediated`, `meCCE2_Hahn_bathRelaxation` |
+| `06_terms_and_models/` | disjoint clusters, the hyperfine-mediated term, meCCE, the Knight shift | `cCCE2_Hahn_dsj`, `cCCE2_Hahn_hfMediated`, `meCCE2_Hahn_bathRelaxation`, `cCCE2_Hahn_knightShift` |
 | `07_pCCE_and_bundle/` | clusters of groups: partitions (pCCE), bundles, adaptive refinement | `pCCE2_Hahn_states`, `cCCE2_Hahn_bundle`, `cCCE2_Hahn_adaptive`, `cCCE2_Hahn_regroup` |
 | `08_analysis/` | the analyzer (error correction, average, T2 fit) and the cluster reports | `cCCE2_Hahn_analyzer`, `cCCE2_Hahn_clusterReport` |
 | `09_noise/` | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum; C(t) and S(f) | `noise2_Hahn_vsCCE`, `noiseModel_OU`, `noiseSpectrum_13C` |

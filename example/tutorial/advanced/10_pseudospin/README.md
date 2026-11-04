@@ -1,4 +1,6 @@
-# advanced/10_pseudospin
+# Advanced 10: Pseudospin pairs
+
+Folder: `example/tutorial/advanced/10_pseudospin/`
 
 Method `pseudospin`: the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops (Seo et al., Nat.
 Commun. 7, 12935 (2016), Supplementary eqs. 20–24; Lee, Park, Seo, npj 2D Mater. Appl. 6, 60 (2022)), for any nuclear

@@ -4,7 +4,7 @@
     //
     // The physics: gCCE puts the NV into every cluster's Hamiltonian, so it needs the NV's own levels: the zero-field
     // splitting D = 2.88 GHz (intmap) and the Zeeman term of bfield. The 13C bath and every other key are those of
-    // basic/01_first_run. T2 1.068 ms here (README).
+    // basic/01_first_run. T2 1.084 ms here (README).
     //
     // Writes results/ccein_single_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_multi2.jsonc adds a
     // second NV 25 A above this one in the same bath.
@@ -25,7 +25,7 @@
                                       // diamond with 1.1 % 13C
     "order"         : 2,              // the largest cluster: single 13C and pairs, each with the NV (gCCE2)
     "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
-    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
     "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
     "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms

@@ -15,7 +15,7 @@
     "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
     "bfield"        : 500,            // Gauss along the new z, which is qubit_axis: 500 G along the NV axis in the
                                       // lab. With the rotation on, a field with a transverse part is refused
-    "rbath"         : 50,             // Angstrom: the 13C within 50 A of the NV are kept (980, as aligned)
+    "rbath"         : 50,             // Angstrom: the 13C within 50 A of the NV are kept (978, as aligned)
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair (distances do not change)
     "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence
     "nstep"         : 2000,           // the number of time points: t = 0 .. 1.999 ms

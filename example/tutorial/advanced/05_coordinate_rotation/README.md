@@ -1,4 +1,6 @@
-# advanced/05_coordinate_rotation
+# Advanced 05: Coordinate rotation
+
+Folder: `example/tutorial/advanced/05_coordinate_rotation/`
 
 The coordinate-frame rotation (`frame.rotation`). CCEX builds the Hamiltonian in a frame whose z is the qubit's axis,
 and reads `bfield` in that frame. Without the rotation that frame is the bath file's own, so a bath written in a frame
@@ -20,8 +22,8 @@ written in the conventional cubic cell would; `bath/make_cubic_frame.py` made it
   and the cubic-frame bath without it (`ccein_cubic_norotation.jsonc`: the field is 54.7° off the NV axis).
 - **Keys that matter:** `frame.rotation.qubit_axis` [1, 1, 1]; `configuration.bathfile` (the cubic-frame file).
 - **How to run:** `cd cCCE2_Hahn_rotation && NP=4 bash run.sh`: 1.8 s, 0.05 GB per rank.
-- **Expected result:** `expected.png`; the rotated run reproduces the aligned one (largest difference 1e-10, T2 1.068
-  ms); without the rotation T2 is 1.117 ms and the curve differs by up to 0.91.
+- **Expected result:** `expected.png`; the rotated run reproduces the aligned one (largest difference 1e-10, T2 1.084
+  ms); without the rotation T2 is 1.154 ms and the curve differs by up to 0.20.
 - **What to change next:** `bfield` as a vector to tilt the field on purpose (without the rotation; with it a
   transverse field is refused); a bath with DFT tensors (`hamiltonian.common.hyperfine.frame`, `quadrupole.frame`).
 

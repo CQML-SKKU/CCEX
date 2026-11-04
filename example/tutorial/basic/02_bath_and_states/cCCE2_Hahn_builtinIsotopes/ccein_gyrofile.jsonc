@@ -1,28 +1,33 @@
+// Basic 02, cCCE2_Hahn_builtinIsotopes, ccein_gyrofile.jsonc: Basic 01's input, the 13C spin and gyromagnetic ratio
+// from the gyro file. ccein_builtin.jsonc is the same without it.
+//
+// Writes results/ccein_gyrofile_wiDiv.
 {
-    // basic/01_first_run's input: the Hahn echo of an NV (ms +1 / 0) in natural-abundance 13C, cCCE2, 500 G, the bath in
-    // its unpolarised (ensemble) state. The spin and gyromagnetic ratio of 13C come from the gyro file
-    // (configuration.gyrofile). Writes results/ccein_gyrofile_wiDiv (and _noDiv).
-    //
-    // Sibling: ccein_builtin.jsonc is the same input without gyrofile, so 13C is taken from the built-in isotope
-    // table. The two values of gamma differ by 2e-7 (relative) and the curves by about 1e-4; the log of each run
-    // says where each species came from. Every key not written here has its default.
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), as in Basic 01.
+                "file" : "../../01_first_run/bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
 
-    "Qubit"         : {"qubit": [{"file": "../../01_first_run/bath/bath_Diamond_NV_natab_defect"}]},
-                                      // the qubit: its position from the first line of this file (x y z, Angstrom).
-                                      // Defaults: spin 1, the electron's gyromagnetic ratio, L between ms +1 and 0
+    // ---- the bath ----
+    "configuration" : {
+        // Name, spin and gyromagnetic ratio (rad kHz/G) per line: "13C 0.5 6.728284". A species written here
+        // overrides the built-in table.
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        "bathfile" : ["../../01_first_run/bath/bath_Diamond_NV_natab_1"]
+    },
 
-    "configuration" : {"gyrofile": "../../01_first_run/bath/gyro_13C",
-                       "bathfile": ["../../01_first_run/bath/bath_Diamond_NV_natab_1"]},
-                                      // gyrofile: one line per species, name, spin, gyromagnetic ratio in rad kHz/G
-                                      // (here "13C 0.5 6.728284"). A species in the file overrides the table; a
-                                      // species that is not an isotope (P1, Vp, ...) must be in it.
-                                      // bathfile: basic/01_first_run's 150 A cube of diamond with 1.1 % 13C
-
-    "order"         : 2,              // the largest cluster: 2 = single 13C and pairs of 13C (cCCE2)
-    "bfield"        : 500,            // magnetic field in Gauss along z, the NV axis. The 13C precess at 0.54 MHz
-    "rbath"         : 50,             // Angstrom: only the 13C within 50 A of the NV are kept (980 here)
-    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster (3366 pairs here)
-    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole sequence (for the Hahn echo 2 tau)
-    "nstep"         : 2000,           // the number of time points: t = 0, 1 us, ..., 1.999 ms
-    "pulse"         : {"count": 1}    // one pi pulse in the middle of t: the Hahn echo
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
 }

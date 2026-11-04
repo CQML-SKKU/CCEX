@@ -474,4 +474,4 @@ These keys kept their names and places, so the table leaves them out: `order`, `
 | `jump_operators` (top level, adding_MECCE) | `hamiltonian.meCCE.jump_operators` or `hamiltonian.megCCE.jump_operators`, the section of the run's method (not rewritten by the converter) |
 | `hamiltonian.corrections`, `hamiltonian.dissipation` (development versions only) | `hamiltonian.cCCE`; `hamiltonian.meCCE` or `hamiltonian.megCCE`, the section of the run's method |
 | jump `operator` `"+-"` / `"-+"` (adding_MECCE) | `"-"` / `"+"` |
-| command-line options `-m`, `-q`, `-B`, `-I`, `-s`, `-a`, `-S`, `-N`, `-P` and the others that set a key | the input keys ([Getting started](GettingStarted.md)); the command line is `-f`, `-o DIR`, `-v`, `-e` and `-h` alone, and `-o` names the output folder, not the output file |
+| command-line options `-m`, `-q`, `-B`, `-I`, `-s`, `-a`, `-S`, `-N`, `-P` and the others that set a key | the input keys ([Building and running](BuildingAndRunning.md#HowToRun)); the command line is `-f`, `-o DIR`, `-v`, `-e` and `-h` alone, and `-o` names the output folder, not the output file |

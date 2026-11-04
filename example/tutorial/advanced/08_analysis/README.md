@@ -1,4 +1,6 @@
-# advanced/08_analysis
+# Advanced 08: Analysis of the output
+
+Folder: `example/tutorial/advanced/08_analysis/`
 
 What to do with the output. `cCCE2_Hahn_analyzer` runs the analyzer of `example/analysis`
 ([Analysis](../../../../docs/user/Analysis.md)) on the curves of a sampled P1 bath: error correction, the average and
@@ -9,7 +11,7 @@ run.sh`, then compare `results/coherence.png` with `expected.png`. Every key not
 ## cCCE2_Hahn_analyzer
 
 - **What it shows:** the three steps of the analyzer on the 20 curves of
-  [basic/05_defect_bath](../../basic/05_defect_bath/README.md)'s `cCCE2_Hahn_states` (the same input, run here).
+  [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md)'s `cCCE2_Hahn_states` (the same input, run here).
   `run.py -err` repairs each `_wiDiv` against its `_noDiv` where the two differ by the tolerance (here no point: no
   division blew up); `-ea` averages the 20 corrected curves as complex numbers (`results/ccein_Avg_conv20`); `-fit_w`
   fits $\exp(-(t/T_2)^n)$ to the average and writes `results/ccein_Avg_params` (number of curves, T2 in ms, n).
@@ -17,7 +19,7 @@ run.sh`, then compare `results/coherence.png` with `expected.png`. Every key not
   one `-v` per variable; `-uc ms` in both calls, because the files the analyzer writes keep their time in the `-uc` unit
   and the next call reads them as ms.
 - **How to run:** `NP=4 bash run.sh`: 3 s, 0.05 GB per rank; needs numpy, scipy and matplotlib.
-- **Expected result:** `expected.png`; the fit gives T2 339 µs and n 0.79. `plot_coherence.py` prints 295 µs for the same
+- **Expected result:** `expected.png`; the fit gives T2 348 µs and n 0.82. `plot_coherence.py` prints 307 µs for the same
   average: its T2 is the last time |L| ≥ 1/e, not a fit.
 - **What to change next:** `-pl -fit` for the analyzer's own figure; `-err_tol` smaller to see the correction act.
 
@@ -33,15 +35,14 @@ Input: [`ccein.jsonc`](cCCE2_Hahn_analyzer/ccein.jsonc)
   `.contributions.sites.tsv` (each site's name, spin, γ and position); `savemode` with `nodiv` false writes `_wiDiv`
   alone. `ccein_plan.jsonc` (`output.cluster_only` true): the cluster list in `results/ccein_plan.clusters.json`, no
   dynamics. `ccein_curves.jsonc` (`output.savemode` `cluster_coherence`, `rbath` 15 Å): beside the result, the
-  coherence of each of its 116 clusters, `results/ccein_curves_<bath indices>_wiDiv` and `_noDiv`.
+  coherence of each of its 97 clusters, `results/ccein_curves_<bath indices>_wiDiv` and `_noDiv`.
 - **Keys that matter:** `output.cluster_contributions` {`enabled` true}, `output.savemode` {`mode`, `nodiv`},
   `output.cluster_only`.
 - **How to run:** `NP=4 bash run.sh`: 1.3 s, 0.05 GB per rank. Sorting the table by its fifth column
-  (`sort -t "$(printf '\t')" -k5 -g -r`) lists the clusters that matter most: here the pair 519,557 (|log L̃| 4.8).
-- **Expected result:** `expected.png`; T2 1.068 ms (rbath 50 Å, the quickstart curve); |L| 0.65 at 2 ms with rbath
-  15 Å.
-- **What to change next:** `savemode` `cluster_density_matrix` with gCCE on a few spins
-  (`basic/04_cCCE_vs_gCCE/gCCE1_Hahn_handwritten`).
+  (`sort -k5 -g -r`; the columns are tab-separated and hold no spaces) lists the clusters that matter most: here the pair 621,655 (|log L̃| 0.58).
+- **Expected result:** `expected.png`; T2 1.084 ms (rbath 50 Å, the curve of basic/01_first_run); |L| 0.73 at 2 ms
+  with rbath 15 Å.
+- **What to change next:** `savemode` `cluster_density_matrix` with gCCE on a few spins.
 
 ![cCCE2_Hahn_clusterReport: expected result](cCCE2_Hahn_clusterReport/expected.png)
 

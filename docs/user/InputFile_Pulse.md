@@ -92,7 +92,7 @@ The pulse sequence written out, one entry `[fraction, axis, angle]` per pulse:
 Required, with `count` + 1 entries, when [name](#tag_pulse_name) = `Manual`; refused with any other name or none. The
 last entry is the free evolution after the last pulse. <br>
 Without it the run builds the default sequence of `count` equally spaced π pulses (Hahn echo, CPMG).
-`example/tutorial/basic/03_pulses/cCCE2_Manual_ensemble/` writes a CPMG-2 this way and compares it with the built-in one. <br>
+`example/tutorial/basic/04_pulses/cCCE2_Manual_ensemble/` writes a CPMG-2 this way and compares it with the built-in one. <br>
 
 <b>Data Type:</b> List of [String or Double, String, Double]
 

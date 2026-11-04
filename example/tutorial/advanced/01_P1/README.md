@@ -1,10 +1,26 @@
-# advanced/01_P1
+# Advanced 01: The P1 bath further
 
-More on the P1 bath of [basic/05_defect_bath](../../basic/05_defect_bath/README.md), whose `bath/` every input here
-reads: the expansion to order 4, gCCE at zero field (where the NV zero-field splitting is needed), the qubit density
+Folder: `example/tutorial/advanced/01_P1/`
+
+More on the P1 bath of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md), whose `bath/` every input here
+reads: the ¹⁴N of each P1 as a nuclear spin, the expansion to order 4, gCCE at zero field (where the NV zero-field splitting is needed), the qubit density
 matrix, a Vp bath at three densities and a DEER pump on the bath. Each folder: `cd <folder> && NP=4 bash run.sh`, then
 compare `results/coherence.png` with `expected.png`. Every key not written in an input has its default (`main.out -e`).
 Times: i7-14700K, WSL, 4 ranks.
+
+## cCCE2_Hahn_onsite14N
+
+- **What it shows:** each P1 written with its ¹⁴N as an on-site nuclear spin (`n_onsite_spins` 1, four Jahn-Teller
+  axes with the ¹⁴N hyperfine and quadrupole tensors), so a cluster of one P1 is its electron and its ¹⁴N.
+- **Keys that matter:** the `Defect` species: `n_onsite_spins`, `types`, `spins`, `gyros`, `quadrupole_moments`,
+  `n_axis_states` 4, `hyperfine`, `efg`.
+- **How to run:** `NP=4 bash run.sh`: 65 s, 0.07 GB per rank.
+- **Expected result:** `expected.png`; T2 of the mean 266 µs (against 307 µs with the detunings of `basic/06_defect_bath/cCCE2_Hahn_states`).
+- **What to change next:** the on-site states from a file (`configuration.defect_state_file`).
+
+![cCCE2_Hahn_onsite14N: expected result](cCCE2_Hahn_onsite14N/expected.png)
+
+Input: [`ccein.jsonc`](cCCE2_Hahn_onsite14N/ccein.jsonc)
 
 ## cCCE4_Hahn_states
 
@@ -12,7 +28,7 @@ Times: i7-14700K, WSL, 4 ranks.
   keeps the 5000 strongest three-spin and 10000 strongest four-spin clusters.
 - **Keys that matter:** `order` 4, `cluster.selection.max_per_order` [0, 0, 0, 5000, 10000].
 - **How to run:** `NP=2 bash run.sh` to stay within 2 GB: 0.84 GB per rank (the cluster list); 34 s on 2 ranks.
-- **Expected result:** `expected.png`; T2 of the mean 295 µs, the same as order 2 (converged at order 2 here).
+- **Expected result:** `expected.png`; T2 of the mean 307 µs, the same as order 2 (converged at order 2 here).
 - **What to change next:** `max_per_order` 0 (all clusters; much more memory).
 
 ![cCCE4_Hahn_states: expected result](cCCE4_Hahn_states/expected.png)
@@ -26,7 +42,7 @@ Input: [`ccein.jsonc`](cCCE4_Hahn_states/ccein.jsonc)
 - **Keys that matter:** `method` gCCE, `bfield` 0, the `Qubit.qubit` entry and its `intmap` self tensor (present in
   `ccein_with_ZFS.jsonc`, absent in `ccein_without_ZFS.jsonc`), `s_range` [1, 1], `seed` 8810, 10 ppm, `deltat` 50 ns.
 - **How to run:** `NP=4 bash run.sh`: 1.5 s, 0.06 GB per rank.
-- **Expected result:** `expected.png`; T2 with the ZFS 2.70 µs; without it |L| reaches 4.6e37 (cut at 1.2 in the
+- **Expected result:** `expected.png`; T2 with the ZFS 3.59 µs; without it |L| reaches 3.8e15 (cut at 1.2 in the
   plot).
 - **What to change next:** a small field (`bfield` 10) without the ZFS; more states.
 
@@ -58,7 +74,7 @@ Input: [`ccein.jsonc`](gCCE2_Ramsey_population/ccein.jsonc)
   and `deltat` per concentration.
 - **How to run:** `NP=4 bash run.sh`: 1.7 s, 0.06 GB per rank.
 - **Expected result:** `expected.png`, the time axis on a log scale (`plot_coherence.py --log-time`) since the T2
-  differ tenfold: 4.8 µs (10 ppm), 15.6 µs (12 ppm, a longer window), 1.4 µs (50 ppm, a 10 ns step) for this one state.
+  differ tenfold: 5.2 µs (10 ppm), 13.5 µs (12 ppm, a longer window), 2.3 µs (50 ppm, a 10 ns step) for this one state.
 - **What to change next:** more states (`s_range` [1, 20]) before comparing concentrations.
 
 ![cCCE2_Hahn_VpBath: expected result](cCCE2_Hahn_VpBath/expected.png)

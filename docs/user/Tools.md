@@ -1,30 +1,26 @@
 # Tools
 
-The tools in `example/tools/` prepare the inputs of CCEX and run the automatic convergence:
+The tools in `example/tools/` prepare the inputs of CCEX and run the automatic convergence. Each section below covers
+one tool.
 
-- BathGenerator and SpinTensorReader make the inputs CCEX reads.
-- IsotopeTable generates the built-in isotope table.
-- InputKeys converts and edits input files.
-- StateFiles writes the state and axis files an input names.
-- AutoConvergence is the runner of the automatic convergence. An input with an `auto_convergence` block, run as
-  `main.out -f input.json`, chooses the time window, rdip, rbath and the configurations itself
-  ([Automatic convergence tags](InputFile_AutoConvergence.md)). With `mpirun -n N main.out -f input.json` every run is
-  on N ranks.
+1. [BathGenerator](#tag_tool_bathgenerator): makes a bath file, the sites and their isotopes, from a POSCAR unit cell.
+   Needs numpy, psutil and mpi4py.
+2. [SpinTensorReader](#tag_tool_spintensorreader): makes the hyperfine (`Afile`) and quadrupole (`Qfile`) tensor files
+   from a VASP OUTCAR or a Quantum ESPRESSO output. Needs numpy, pandas and psutil.
+3. [IsotopeTable](#tag_tool_isotopetable): regenerates the built-in isotope table of CCEX.
+4. [InputKeys](#tag_tool_inputkeys): converts old inputs to the current keys, and writes a copy of an input with some
+   keys changed.
+5. [StateFiles](#tag_tool_statefiles): writes the state and axis files an input names. Needs numpy.
+6. [AutoConvergence](#tag_tool_autoconvergence): the runner of the automatic convergence, which `main.out` starts.
+   Needs Python 3.10 or newer with numpy, scipy and matplotlib.
 
-| Tool | Makes | Needs |
-|---|---|---|
-| `BathGenerator/` | a bath file, site positions and isotopes, from a POSCAR unit cell | numpy, psutil, mpi4py with an MPI |
-| `SpinTensorReader/` | the hyperfine (`Afile`) and quadrupole (`Qfile`) tensor files, from a VASP OUTCAR or a Quantum ESPRESSO output | numpy, pandas, psutil |
-| `IsotopeTable/` | `src/input/isotope_table.cpp`, the isotopes CCEX knows without a gyrofile | python3 |
-| `InputKeys/` | an input in the current keys from an old one; a copy of an input with keys set | python3 |
-| `StateFiles/` | the `bath_state_file`, `defect_axis_file` and `defect_state_file` files an input names, drawn by a fixed rule | python3 with numpy |
-| `AutoConvergence/` | the automatic convergence (started by `main.out`), and the analysis of existing runs | python3 (3.10 or newer) with numpy, scipy, matplotlib |
-
-## BathGenerator
+<a id="tag_tool_bathgenerator"></a>
+## 1. BathGenerator
 
 BathGenerator repeats the unit cell to the requested size and draws the isotope of every site with the probabilities
-in a `prob` file. It has options for a 2D material, a defect, an inserted relaxed cell and a deformation. The isotopes
-are drawn without a fixed seed, so two runs give the same sites with different isotopes.
+in a `prob` file. It has options for a 2D material, a defect, an inserted relaxed cell and a deformation. It sets no
+random seed itself, so two runs give the same sites with different isotopes; `make_natab_baths.sh` (below) fixes the
+seed.
 
 ```
 mpirun -n 4 python3 BathGenerator.py -o OUT -i POSCAR -p PROB --size 30 --Defect B --opt2D
@@ -37,8 +33,8 @@ mpirun -n 4 python3 BathGenerator.py -o OUT -i POSCAR -p PROB --size 30 --Defect
 2. its nuclear spin;
 3. its abundance in %.
 
-The isotopes of one element are drawn together. The element is the name without its digits, and it has to be an atom
-name of the POSCAR. When the abundances of an element add up to less than 100 %, the rest of its sites hold no spin and
+The isotopes of one element are drawn together. The element is the name without its digits. Every atom name of the
+POSCAR except the `--Defect` one must have an isotope in the file. When the abundances of an element add up to less than 100 %, the rest of its sites hold no spin and
 are left out of the bath. More than 100 % is refused. The natural-abundance diamond file of the tutorials
 (`example/tutorial/basic/01_first_run/bath/genbath/prob_natab`) is
 
@@ -67,10 +63,13 @@ so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/advanced/
 
 `-h` lists every option. `do_BathGenerator` has four worked cases: three make a bath, one converts a bath to POSCAR.
 
-The baths of the tutorials were made with this copy. For the 13C baths of 01 and 09,
-`example/tutorial/make_natab_baths.sh` calls it. A newer generator is at <https://github.com/CQML-SKKU/BathGeneratorSpinCluster>.
+The baths of the tutorials were made with this copy. `example/tutorial/make_natab_baths.sh N OUTDIR [SIZE [RMIN]]`
+calls it for natural-abundance ¹³C around an NV. It makes N configurations with the seeds 1 ... N, so the same call
+gives the same files, and with RMIN it leaves out the ¹³C closer than RMIN Å to the NV. The basic tutorials use it.
+A newer generator is at <https://github.com/CQML-SKKU/BathGeneratorSpinCluster>.
 
-## SpinTensorReader
+<a id="tag_tool_spintensorreader"></a>
+## 2. SpinTensorReader
 
 SpinTensorReader reads the hyperfine and electric-field-gradient tensors a DFT code wrote for every nucleus around the
 defect. It writes them in the layout described under [hyperfine.file](InputFile_General.md#tag_hyperfine_file) and
@@ -105,18 +104,16 @@ The two DFT codes differ:
 - Quantum ESPRESSO's GIPAW `hyperfine.out` is the S = 1/2 coupling. `--spin S` is required, and the file holds the
   coupling × 1/(2S).
 
-`--version v1` (the OUTCAR × 2, an older format) is refused, and there is no `--fidentify`.
-
-The quadrupole file (`Qfile`) does not depend on the spin and is unchanged. The spin is read, and `--spin` checked, only
-when an `Afile` is made. `--Q` alone therefore takes an OUTCAR with magnetization 0 or none, since an EFG run need not
-be spin polarized.
+The quadrupole file (`Qfile`) does not depend on the spin. The spin is read, and `--spin` checked, only when an `Afile`
+is made, so `--Q` alone also takes an OUTCAR without magnetization.
 
 `spHamilReader/` is the package (`base/`, `vasp/`, `qe/`), and `main.py` the command line (`-h`). `examples/01..05`
 are five worked cases with their inputs and the tensor files they produced, each with a `do` that reproduces it. The
-tensors of the h-BN tutorial (advanced/02_hBN) came from this tool.
+tensors of the h-BN tutorials came from this tool, and
+[Advanced 04: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/04_DFT_tensors/README.md) runs it.
 
 <a id="tag_tool_isotopetable"></a>
-## IsotopeTable
+## 3. IsotopeTable
 
 `make_isotope_table.py` writes `src/input/isotope_table.cpp`: the nuclear isotopes, with spin and gyromagnetic ratio in
 rad/ms/G. CCEX uses them for a bath species the gyrofile does not name, or for every species when the input has no
@@ -132,7 +129,7 @@ python3 example/tools/IsotopeTable/make_isotope_table.py
 ```
 
 <a id="tag_tool_inputkeys"></a>
-## InputKeys
+## 4. InputKeys
 
 Two scripts for input files:
 
@@ -153,10 +150,11 @@ changed. What it maps is the table of [old names](InputFile.md#OldNames).
 - `null` removes the key (`configuration.s_range=null`: the ensemble).
 - `OUT` is plain JSON; the comments are not kept.
 
-The tutorials' `run.sh` use it to run one input with other values.
+The tutorials use it to run one input with other values, for example in the scans of
+[Basic 03](../../example/tutorial/basic/03_convergence/README.md).
 
 <a id="tag_tool_statefiles"></a>
-## StateFiles
+## 5. StateFiles
 
 `make_state_files.py` writes the state and axis files a CCEX input names. Sampled states and Defect axes then come from
 files made by a fixed rule, in place of CCEX's own random numbers. The files can also serve other codes and other runs.
@@ -165,14 +163,10 @@ files made by a fixed rule, in place of CCEX's own random numbers. The files can
 python3 example/tools/StateFiles/make_state_files.py INPUT [--force]
 ```
 
-It reads from the input:
-
-- the `configuration` block: `bathfile`, `k_range` (every k, `{k}` in the names), `s_range` (the states, `{s}` in a
-  state file name or the number appended), `seed`, `path`, `gyrofile`;
-- `Defect.species`: `name`, `n_axis_states`, `n_onsite_spins`, `spins`.
-
-It writes the files of the three keys that are present ([file formats](InputFile_General.md#tag_configuration_files)),
-for every k, every bath file whose name in the key is not `""`, and every s of `s_range`:
+It reads `bathfile`, `k_range`, `s_range`, `seed`, `path` and `gyrofile` from the `configuration` block, and the
+Defect species from `Defect.species`. For every configuration k and state s it writes the files of the keys below that
+the input names ([file formats](InputFile_General.md#tag_configuration_files)). A bath file whose name in the key is
+`""` is skipped.
 
 | Key | Each line after the first (one per line of the bath file) | Drawn with numpy |
 |---|---|---|
@@ -180,23 +174,17 @@ for every k, every bath file whose name in the key is not `""`, and every s of `
 | `defect_axis_file` | the axis state, uniform over 1..`n_axis_states` of its Defect species; 0 for another species (CCEX reads an axis file only when every spin is a Defect species with axis states) | `default_rng([seed, k, 0])` |
 | `defect_state_file` | the m of each on-site spin of its Defect species (uniform over 2I+1, `spins`), space-separated; 0 for another species | `default_rng([seed, k, s, 1])` |
 
-The first line of each file is the bath file's first line.
+The first line of each file is the first field of its bath file's first line. `seed` is the number given, its entry for k when it
+is a list, or 1 when absent; without `k_range`, k is 0. A file that exists is overwritten only with `--force`.
 
-- `seed` is the number when it is one, its entry for k when it is a list (one per configuration of `k_range`), and 1
-  when absent. Without `k_range`, k is 0.
-- The names are read from the input file's folder (and `configuration.path`).
-- A file that exists is not overwritten without `--force`.
-- A species neither in the gyrofile nor in the built-in table is refused, and so is a file key without the Defect
-  species it needs.
-
-The bath-state and axis rules are those of the automatic convergence, which makes the files it needs with these
-functions. `example/tools/AutoConvergence/examples/nv13c/make_states.py` uses the same rule.
+The automatic convergence makes the files it needs with the same functions, so the two give the same states.
+[Basic 02](../../example/tutorial/basic/02_bath_and_states/README.md) uses this tool in section 2.
 
 Tests: `python3 -m unittest discover -s example/tools/StateFiles/tests`. One test runs `bin/main.out` on the files and
 checks that CCEX reads every one.
 
 <a id="tag_tool_autoconvergence"></a>
-## AutoConvergence
+## 6. AutoConvergence
 
 AutoConvergence is the runner of the automatic convergence. `main.out` starts it when the input has an
 `auto_convergence` block ([Automatic convergence tags](InputFile_AutoConvergence.md)). `CCEX_PYTHON` picks the Python
@@ -209,8 +197,3 @@ Its own commands compute nothing. Run them from `example/tools/AutoConvergence`,
   `--config` is the input with the `auto_convergence` block, read as the runner reads it.
 
 The state and axis files it makes for a run are written by the functions of [StateFiles](#tag_tool_statefiles).
-
-## Many runs
-
-There is no job-folder generator. `configuration.k_range` runs many bath configurations from one input, and the
-automatic convergence chooses the values a convergence study needs.

@@ -31,7 +31,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 // rad/us. A plain frequency is kHz for the qubit (detuning, intmap) and MHz for a Defect species.
 {
     // ---- method -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_method. Tutorials: basic/04_cCCE_vs_gCCE, advanced/09_noise, advanced/10_pseudospin.
+    // docs: InputFile_General.md#tag_method. Tutorials: basic/05_cCCE_vs_gCCE, advanced/09_noise, advanced/10_pseudospin.
 
     // cCCE (default): the qubit only sets the field each bath spin feels (pure dephasing).
     // gCCE: the qubit is in every cluster (qubit-bath flip-flops, any spin and field).
@@ -87,7 +87,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     },
 
     // ---- the bath ---------------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_configuration. Tutorials: basic/02_bath_and_states, basic/05_defect_bath.
+    // docs: InputFile_General.md#tag_configuration. Tutorials: basic/02_bath_and_states, basic/06_defect_bath.
     "configuration"    : {
         // Folder of the file names of this block. Default ".".
 //      "path"              : "data",
@@ -133,7 +133,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     "nstep"            : 2000,
 
     // ---- the pulse sequence -----------------------------------------------------------------------------------------
-    // docs: InputFile_Pulse.md. Tutorials: basic/03_pulses, basic/05_defect_bath (DEER).
+    // docs: InputFile_Pulse.md. Tutorials: basic/04_pulses, basic/06_defect_bath (DEER).
     "pulse"            : {
         // Number of pi pulses: 0 Ramsey, 1 HahnEcho, 2 or more CPMG. Required.
         "count"           : 1
@@ -166,7 +166,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     }
 
     // ---- the Hamiltonian --------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_hamiltonian. Tutorials: advanced/02_hBN, basic/04_cCCE_vs_gCCE.
+    // docs: InputFile_General.md#tag_hamiltonian. Tutorials: advanced/02_hBN, basic/05_cCCE_vs_gCCE.
     // The last active key is pulse above: a key uncommented below needs a ',' after its '}'.
 //  "hamiltonian"      : {
         // Read by every method.
@@ -275,7 +275,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- paramagnetic defects in the bath ---------------------------------------------------------------------------
-    // docs: InputFile_Defect.md. Tutorial: basic/05_defect_bath.
+    // docs: InputFile_Defect.md. Tutorial: basic/06_defect_bath.
 //  "Defect"           : {
         // One entry per species. A key in the list form [[axis state, ...], ...] holds a value per axis state.
 //      "species" : [
@@ -313,7 +313,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- the clusters -----------------------------------------------------------------------------------------------
-    // docs: InputFile_Cluster.md. Tutorials: advanced/07_pCCE_and_bundle, basic/04_cCCE_vs_gCCE (dsj).
+    // docs: InputFile_Cluster.md. Tutorials: advanced/07_pCCE_and_bundle, basic/05_cCCE_vs_gCCE (dsj).
 //  "cluster"          : {
         // standard (default): clusters of up to order bath spins. pcce: of partitions. bundle: of bundles of strongly
         // coupled spins. dsj, itb, dsjitb (cCCE): disjoint and inter-bath variants.

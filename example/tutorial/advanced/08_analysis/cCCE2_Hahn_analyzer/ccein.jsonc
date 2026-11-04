@@ -1,16 +1,16 @@
 {
-    // basic/05_defect_bath/cCCE2_Hahn_states as it is (1 ppm P1, cCCE2, 2 configurations x 10 sampled states), run
+    // basic/06_defect_bath/cCCE2_Hahn_states as it is (1 ppm P1, cCCE2, 2 configurations x 10 sampled states), run
     // here to show the analyzer of example/analysis on its 20 curves: run.sh corrects them (-err), averages them (-ea)
     // and fits T2 (-fit_w). Writes results/ccein_k<k>_state<s>_wiDiv and _noDiv for k = 1, 2 and s = 1 .. 10.
     // Every key not written here has its default (main.out -e writes them all).
 
-    "Qubit"         : {"qubit": [{"file": "../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [-1]}},
+    "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [1]}},
                                       // the NV. "file": the defect file next to the bath files, its first line the NV
                                       // position x y z (Angstrom). Spin 1 and the electron gyromagnetic ratio are the
-                                      // defaults. alpha_state ms -1, beta_state the default ms 0: L(t) between ms -1
-                                      // and 0. {"ms": [1]} takes the +1 / 0 transition instead
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
+                                      // defaults. alpha_state ms +1, beta_state the default ms 0: L(t) between ms +1
+                                      // and 0. {"ms": [-1]} takes the -1 / 0 transition instead
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
                        "k_range" : [1, 2],
                        "s_range" : [1, 10],
                        "seed"    : [1, 1]},
@@ -32,7 +32,7 @@
     "rdip"          : 620,            // Angstrom: two P1 closer than 620 A form a pair cluster (25929 pairs for k = 1).
                                       // Larger keeps more pairs and costs more; raise it until the curve stops moving
     "deltat"        : 0.01,           // ms: the time step, 10 us. t is the whole echo time 2 tau
-    "nstep"         : 300,            // 300 points: t = 0 .. 2.99 ms, the decay (T2 of the mean 295 us) and its tail
+    "nstep"         : 300,            // 300 points: t = 0 .. 2.99 ms, the decay (T2 of the mean 307 us) and its tail
     "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo. 2 or more for CPMG (pulse.count 8 is the next
                                       // step of README)
 

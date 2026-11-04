@@ -15,9 +15,9 @@
                                       //                    for five P1)
                                       //   max_iterations : the most k-means iterations of one trial (default 30000)
                                       // partition_size 3 gives larger clusters, more of them on the GPU
-    "Qubit"         : {"qubit": [{"file": "../bath/qubit_p1"}], "alpha_state": {"ms": [-1]}},
+    "Qubit"         : {"qubit": [{"file": "../bath/qubit_p1"}], "alpha_state": {"ms": [1]}},
                                       // the NV (spin 1, the default) at the position in bath/qubit_p1 (x y z,
-                                      // Angstrom). alpha_state ms -1: L is between ms -1 and 0 (beta_state default)
+                                      // Angstrom). alpha_state ms +1: L is between ms +1 and 0 (beta_state default)
     "configuration" : {"gyrofile": "../bath/gyro_P1", "bathfile": ["../bath/bath_p1_5"], "seed": 1},
                                       // gyrofile: the P1 line (spin 1/2, the electron's -17608.597050 rad kHz/G).
                                       // bathfile: the five P1. seed: the Jahn-Teller axes and the partition search

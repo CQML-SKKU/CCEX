@@ -1,0 +1,35 @@
+// Basic 03, cCCE2_Hahn_timeAxis: the Hahn echo of the NV in 13C every 1 us over 2 ms; run.sh also runs a 10 us step,
+// the 13C revivals and a 0.3 ms window.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position, made by run.sh with the bath files (the NV is at the centre of every cell).
+                "file" : "../results/bath/config_defect"
+            }
+        ]
+    },
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        // Configurations of 150 A cells (seeds 1, 2, ...; no 13C within 5 A of the NV), made by run.sh and shared by
+        // the folders of this tutorial. A 150 A cell holds 13C out to about 73 A from the NV.
+        "bathfile" : ["../results/bath/config_{k}"],
+        "k_range"  : [1, 10]
+    },
+
+    // ---- the cut-offs ----
+    // The largest cluster: 2 = single 13C and pairs.
+    "order"         : 2,
+    // Angstrom: the 13C within this distance of the NV are in the bath.
+    "rbath"         : 50,
+    // Angstrom: two 13C closer than this form a pair cluster; farther pairs are left out.
+    "rdip"          : 10,
+
+    "bfield"        : 500,
+    // ms: 1 us, which resolves the fast 13C ripple (period 3.7 us). t = 0 .. 2 ms.
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

@@ -110,8 +110,8 @@
 
 ### Tutorials, documentation and checks
 
-- **Tutorials.** `example/tutorial/` is split into `basic/` (01 first run, 02 bath and states, 03 pulses, 04 cCCE
-  against gCCE, 05 an electron-spin bath) and `advanced/` (01 P1 further, 02 hBN, 03 several NVs, 04 DFT tensors, 05
+- **Tutorials.** `example/tutorial/` is split into `basic/` (01 first run, 02 bath and states, 03 checking convergence,
+  04 pulses, 05 cCCE against gCCE, 06 an electron-spin bath) and `advanced/` (01 P1 further, 02 hBN, 03 several NVs, 04 DFT tensors, 05
   coordinate rotation, 06 terms and models, 07 pCCE and bundles, 08 analysis, 09 noise, 10 pseudospin, 11 GPU, 12
   automatic convergence, 13 runs on a cluster); `example/tutorial/README.md` lists the calculations of each, and
   `git show v2.0.1:example/tutorial/README.md` the folders of 2.0. Every tutorial input explains each key in a comment

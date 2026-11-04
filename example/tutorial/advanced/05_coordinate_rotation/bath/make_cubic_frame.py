@@ -13,7 +13,7 @@ reproduce the original bath.
 import math, os
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, '..', '..', 'basic/01_first_run', 'bath', 'bath_Diamond_NV_natab_1')
+SRC = os.path.join(HERE, '..', '..', '..', 'basic', '01_first_run', 'bath', 'bath_Diamond_NV_natab_1')
 DST = os.path.join(HERE, 'bath_Diamond_NV_natab_cubic_1')
 R0 = [73.73895, 75.72808, 73.97033]          # the NV site (bath_Diamond_NV_natab_defect)
 

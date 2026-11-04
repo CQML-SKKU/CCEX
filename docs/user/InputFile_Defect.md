@@ -27,7 +27,7 @@ With [configuration.s_range](InputFile_General.md#tag_s_range) the bath is sampl
 - the static field of the spins outside a cluster enters as a mean field
   ([bath_bath_mean_field](InputFile_General.md#tag_bath_bath_mean_field)).
 
-The Hamiltonian and the approximations are in [CCE methods](../methods/cce.md); `example/tutorial/basic/05_defect_bath/` runs the P1
+The Hamiltonian and the approximations are in [CCE methods](../methods/cce.md); `example/tutorial/basic/06_defect_bath/` runs the P1
 bath both ways.
 
 <a id="tag_df_forms"></a>
@@ -145,7 +145,7 @@ Each on-site spin (with its [types](#tag_df_types), [spins](#tag_df_spins), [gyr
 per axis state) joins its electron in every cluster the defect is in. A cluster of one P1 is then its electron and its
 <sup>14</sup>N. <br>
 With 0 the nucleus enters only through the electron's [detuning](#tag_df_detuning). Write the on-site spins when the
-nucleus' own dynamics matters (compare `example/tutorial/basic/05_defect_bath/cCCE2_Hahn_onsite14N/` with `cCCE2_Hahn_states/`). <br>
+nucleus' own dynamics matters (compare `example/tutorial/advanced/01_P1/cCCE2_Hahn_onsite14N/` with `example/tutorial/basic/06_defect_bath/cCCE2_Hahn_states/`). <br>
 <b>Data Type:</b> Int
 
 <b>Default:</b> 0

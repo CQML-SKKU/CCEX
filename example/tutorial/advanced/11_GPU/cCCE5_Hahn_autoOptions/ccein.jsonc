@@ -4,9 +4,9 @@
     // [gpu-auto] line in the log says to what (docs/user/InputFile_Backend.md, "Automatic values"). run.sh runs it
     // with bin/main_gpu.out (and, for the comparison, with backend cpu) and prints that line. Writes
     // results/ccein_wiDiv (auto) and cpu_wiDiv. Without bin/main_gpu.out, auto runs on the CPU and nothing is chosen.
-    "Qubit"         : {"qubit": [{"file": "../bath/qubit_p1"}], "alpha_state": {"ms": [-1]}},
+    "Qubit"         : {"qubit": [{"file": "../bath/qubit_p1"}], "alpha_state": {"ms": [1]}},
                                       // the NV (spin 1, the default) at the position in bath/qubit_p1 (x y z,
-                                      // Angstrom). alpha_state ms -1: L is between ms -1 and 0 (beta_state default)
+                                      // Angstrom). alpha_state ms +1: L is between ms +1 and 0 (beta_state default)
     "configuration" : {"gyrofile": "../bath/gyro_P1", "bathfile": ["../bath/bath_p1_5"], "seed": 1},
                                       // gyrofile: the P1 line (spin 1/2, the electron's -17608.597050 rad kHz/G).
                                       // bathfile: five P1 (x y z P1, Angstrom). seed: draws each P1's Jahn-Teller

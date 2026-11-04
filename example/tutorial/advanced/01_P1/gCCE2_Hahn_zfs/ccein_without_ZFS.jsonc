@@ -7,7 +7,7 @@
     // alone: ms 0 at the bottom and ms +1, -1 together D = 2.88 GHz above. In gCCE the NV is in every cluster's
     // Hamiltonian, so it needs this splitting written (intmap); without it the ms +1 and -1 levels are degenerate
     // and the divided curve (_wiDiv) diverges: |L| reaches 4.6e37 (README, cut at 1.2 in expected.png). T2 with the
-    // splitting 2.70 us. Writes results/ccein_without_ZFS_state1_wiDiv and _noDiv.
+    // splitting 3.59 us. Writes results/ccein_without_ZFS_state1_wiDiv and _noDiv.
     //
     // The two inputs differ only in Qubit.intmap. Against the other inputs: 10 ppm (shorter times, smaller rbath and
     // rdip), bfield 0 and one bath state.
@@ -16,14 +16,14 @@
     "method"        : "gCCE",         // the NV (qubit) is in every cluster's Hamiltonian with its own levels, which
                                       // is where the zero-field splitting would enter
     "Qubit"         : {"qubit": [{"name": "NV", "xyz": [523.336, 524.936, 521.003]}],
-                       "alpha_state": {"ms": [-1]}, "beta_state": {"ms": [0]}},
+                       "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]}},
                                       // the NV, spin 1 (the default), at "xyz" in Angstrom (the same as
-                                      // bath/14N_10ppm/bath_DiaP1_10ppm_Defect). L(t) between ms -1 (alpha_state)
+                                      // bath/14N_10ppm/bath_DiaP1_10ppm_Defect). L(t) between ms +1 (alpha_state)
                                       // and 0 (beta_state). No intmap: no zero-field splitting, so at bfield 0 the
                                       // levels ms +1 and -1 are degenerate and the curve diverges. This is the wrong
                                       // input on purpose; ccein_with_ZFS.jsonc writes the splitting
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_10ppm/bath_DiaP1_10ppm_1"],
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_10ppm/bath_DiaP1_10ppm_1"],
                        "s_range" : [1, 1],
                        "seed"    : 8810},
                                       // the bath. gyrofile: the P1 as a spin 1/2 with the electron's gyromagnetic

@@ -2,7 +2,7 @@
     // cCCE2_Hahn_bundle's bundled calculation (rbath 20, 2 ms, coarser time step) with the adaptive refinement: the
     // bundled calculation is repeated, the error at the bundle boundaries measured (small patches of neighbouring
     // bundles, their expansion against their direct calculation), and bundles merged (policy merge) until every patch
-    // is within atol, or max_rounds. Here it ends after three rounds (28 -> 26 bundles) with "no feasible improving
+    // is within atol, or max_rounds. Here it ends after two rounds (27 -> 26 bundles) with "no feasible improving
     // merge" (exit status 2); the curve hardly moves. Every step goes to results/adaptive/ (one folder per step and
     // summary.json); the result is the last run, named by final_directory in summary.json.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).

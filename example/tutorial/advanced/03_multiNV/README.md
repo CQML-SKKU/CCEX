@@ -1,4 +1,6 @@
-# advanced/03_multiNV
+# Advanced 03: Several NV centres
+
+Folder: `example/tutorial/advanced/03_multiNV/`
 
 Several NV centres as one qubit register in a shared ¹³C bath, with gCCE (every qubit a spin 1 with its zero-field
 splitting, the `intmap` self tensors in kHz; the qubits coupled by their dipolar interaction from the positions). Each
@@ -13,7 +15,7 @@ written in an input has its default (`main.out -e`). Times: i7-14700K, WSL, 4 ra
 - **Keys that matter:** `method` gCCE, `Qubit.qubit` (two entries with `xyz`) and `Qubit.intmap` (one ZFS tensor each),
   or a `Qubit.qubit[].file` entry, with its ZFS as a `Qubit.intmap` self entry.
 - **How to run:** `NP=4 bash run.sh`: 2 min (the two-NV run), 0.07 GB per rank.
-- **Expected result:** `expected.png`; T2 one NV 1.068 ms, two NVs 0.945 ms.
+- **Expected result:** `expected.png`; T2 one NV 1.084 ms, two NVs 0.956 ms.
 - **What to change next:** the second NV further away (`xyz`), or `alpha_state` / `beta_state` for another pair of
   register states.
 

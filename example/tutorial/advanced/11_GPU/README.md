@@ -1,4 +1,6 @@
-# advanced/11_GPU
+# Advanced 11: The GPU backend
+
+Folder: `example/tutorial/advanced/11_GPU/`
 
 The CUDA backend. `execution.backend` chooses it: `cpu` (the default), `auto` (CUDA for every cluster whose Hilbert
 dimension is at least `execution.gpu_options.min_dim`, the CPU for the rest, and the CPU everywhere in a binary built

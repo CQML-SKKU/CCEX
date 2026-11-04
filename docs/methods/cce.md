@@ -63,7 +63,7 @@ This happens with strongly coupled spins:
 - a spin-1 qubit without its zero-field splitting in gCCE;
 - cCCE in a tilted field without [knight](../user/InputFile_General.md#tag_knight).
 
-The tutorials `advanced/01_P1/gCCE2_Hahn_zfs` and `basic/04_cCCE_vs_gCCE/cCCE2_Hahn_knightShift` show both cases.
+The tutorials `advanced/01_P1/gCCE2_Hahn_zfs` and `advanced/06_terms_and_models/cCCE2_Hahn_knightShift` show both cases.
 
 What helps:
 
@@ -121,7 +121,7 @@ gCCE keeps what cCCE drops:
 - several qubits (`Qubit.qubit`, `intmap`);
 - the qubit density matrix (`quantity` dm).
 
-It costs a factor of the qubit dimension in every cluster. `example/tutorial/basic/04_cCCE_vs_gCCE/` compares the two.
+It costs a factor of the qubit dimension in every cluster. `example/tutorial/basic/05_cCCE_vs_gCCE/` compares the two.
 
 <a id="cce_hamiltonian"></a>
 ## The Hamiltonian
@@ -207,7 +207,7 @@ Electron baths are usually run with sampled states (`s_range`):
 - the on-site spins' states come from `seed` or `defect_state_file`;
 - the other bath spins act through the [mean field](#cce_meanfield).
 
-`example/tutorial/basic/05_defect_bath/` runs both forms of the ¹⁴N.
+`example/tutorial/basic/06_defect_bath/` runs both forms of the ¹⁴N.
 
 <a id="cce_dsj"></a>
 ## dsj, itb and dsjitb (cCCE)

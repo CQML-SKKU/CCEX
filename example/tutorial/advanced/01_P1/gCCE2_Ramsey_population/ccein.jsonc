@@ -26,8 +26,8 @@
                                       // beta_state = ms 0: the initial state (|alpha> + |beta>, normalized) is ms 0.
                                       // intmap NV-NV: the zero-field splitting D = 2.88 GHz as diag(-D/3, -D/3, 2D/3)
                                       // in kHz, which with bfield sets the NV transition frequencies
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_10ppm/bath_DiaP1_10ppm_1"],
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_10ppm/bath_DiaP1_10ppm_1"],
                        "seed"    : 8805},
                                       // the bath. gyrofile: the P1 as a spin 1/2 with the electron's gyromagnetic
                                       // ratio (rad kHz/G). bathfile: one 10 ppm configuration, 410 P1 within rbath.

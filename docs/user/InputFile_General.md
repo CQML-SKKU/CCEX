@@ -743,7 +743,7 @@ divergence of a broken state but was not more accurate in every normal region, s
 The transverse field is added and removed only between main bath spins. Every mean-field term involving a defect
 sub-spin (e.g. a P1's <sup>14</sup>N) stays z only, while the couplings inside a cluster keep their full tensors.
 
-- `example/tutorial/basic/05_defect_bath/cCCE2_Hahn_meanField/` runs `"off"`, `"z"` and `"xyz"` on a P1 bath.
+- `example/tutorial/basic/06_defect_bath/cCCE2_Hahn_meanField/` runs `"off"`, `"z"` and `"xyz"` on a P1 bath.
 - `test/code_verification/check_analytic` checks that with `"off"` two spins at order 1 give the product of each spin
   alone in its bath, which `"z"` does not. <br>
 
@@ -1007,7 +1007,7 @@ $H_K^{(\alpha)} = -\gamma_n \mathbf{B}\cdot(\mathsf{g} - 1)\cdot\mathbf{I} = -(3
 The term is zero when the field is along z. A qubit without a zero-field splitting (Δ = 0) is refused, since the term
 divides by Δ (`Error: hamiltonian.cCCE.knight divides by the zero-field splitting of the qubit ...`).
 
-`example/tutorial/basic/04_cCCE_vs_gCCE/cCCE2_Hahn_knightShift/` runs with and without it in a tilted field. <br>
+`example/tutorial/advanced/06_terms_and_models/cCCE2_Hahn_knightShift/` runs with and without it in a tilted field. <br>
 
 <b>Data Type:</b> Boolean
 

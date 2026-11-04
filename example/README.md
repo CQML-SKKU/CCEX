@@ -10,7 +10,7 @@ bash do_compile.sh wsl-gnu                               # build bin/main.out (o
 cd example/tutorial/basic/01_first_run && NP=4 bash run.sh    # about 1 s; writes results/ and plots results/coherence.png
 ```
 
-Compare `results/coherence.png` with `expected.png` in the same folder (T2 1.068 ms). Then work through `basic/`
+Compare `results/coherence.png` with `expected.png` in the same folder (T2 1.084 ms). Then work through `basic/`
 in order and pick from `advanced/`; [tutorial/README.md](tutorial/README.md) lists them. Each topic's README says what each calculation shows,
 which keys matter, how long it runs and what to try next.
 

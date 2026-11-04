@@ -2,7 +2,7 @@
     // basic/01_first_run's input (cluster.mode standard: every pair within rdip): the reference for ccein.jsonc (dsj).
     //
     // The physics: the Hahn echo of an NV in diamond with natural-abundance 13C, conventional CCE to order 2. Standard
-    // clustering takes every 13C alone and every pair of 13C closer than rdip, and multiplies their terms. T2 1.068 ms
+    // clustering takes every 13C alone and every pair of 13C closer than rdip, and multiplies their terms. T2 1.084 ms
     // (README).
     //
     // Writes results/ccein_standard_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein.jsonc adds
@@ -19,7 +19,7 @@
                                       // diamond with 1.1 % 13C
     "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
     "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
-    "rbath"         : 50,             // Angstrom: the 980 13C within 50 A of the NV
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A are coupled and form a pair cluster
     "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
     "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms

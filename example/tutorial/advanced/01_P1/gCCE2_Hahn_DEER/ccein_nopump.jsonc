@@ -25,8 +25,8 @@
                                       // zero-field splitting D = 2.88 GHz as diag(-D/3, -D/3, 2D/3) in kHz (the log
                                       // notes the unit). In gCCE the qubit levels are in the Hamiltonian, so the
                                       // splitting has to be written (gCCE2_Hahn_zfs)
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
                        "s_range" : [1, 10],
                        "seed"    : 1},
                                       // the bath. gyrofile: the P1 as a spin 1/2 with the electron's gyromagnetic

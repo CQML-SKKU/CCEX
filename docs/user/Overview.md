@@ -4,69 +4,77 @@ CCEX computes the coherence of spin qubits in a bath of nuclear and electron spi
 expansion (CCE). It is a C++ and MPI code written by the CQML group at Sungkyunkwan University:
 <https://github.com/CQML-SKKU/CCEX>.
 
-## What it computes
+1. [What it computes](#WhatItComputes): the input, the methods, the pulse sequences and the baths.
+2. [The cluster-correlation expansion in short](#WhatCCEComputes): the formula, the two output files, and when a
+   result can be trusted.
+3. [What runs where](#WhatRunsWhere): which method runs with which clustering, on the CPU or the GPU.
+4. [Where to go next](#WhereNext): the other pages.
+5. [How to cite](#Citing): the papers behind the methods.
 
-The input names one or more qubits, the bath around them and a pulse sequence. From the positions, gyromagnetic ratios
-and interaction tensors, CCEX builds the spin Hamiltonian, divides the bath into clusters and solves each cluster
-exactly. The cluster results are then combined into one quantity as a function of time:
+<a id="WhatItComputes"></a>
+## 1. What it computes
 
-- The quantity is the qubit coherence `L(t)` under the pulse sequence, or the qubit density matrix with gCCE
-  (`quantity`).
-- The method is conventional CCE (cCCE), generalized CCE (gCCE) or one of their master-equation versions, meCCE and
-  megCCE (`method`). The clusters can also be partitions (pCCE), bundles, or the disjoint-cluster and inter-bath
-  variants dsj, itb and dsjitb (`cluster.mode`).
-- Two further methods are models for interpreting a decay. `noise` gives the Gaussian coherence exp(−χ) of the qubit's
-  phase noise, computed from the modes of the bath's clusters or from a model spectrum, and can also write the noise
-  correlation function and spectrum (`hamiltonian.noise`). `pseudospin` keeps only the bath's pairs, in the pseudospin
-  model of nuclear flip-flops, and writes a table of every flip-flop channel (`hamiltonian.pseudospin`).
-- The sequence can be a Hahn echo, a Ramsey experiment, CPMG (`pulse.count`) or any sequence written out pulse by
-  pulse (`pulse.sequence`). DEER pulses can act on the bath (`pulse.bath`).
-- A run covers one bath configuration or several. Electron-spin baths are usually computed with sampled bath states
-  (`configuration.s_range`).
+The input names one or more qubits, the bath around them and a pulse sequence. From the spin positions, gyromagnetic
+ratios and interaction tensors, CCEX builds the spin Hamiltonian, divides the bath into clusters, solves each cluster
+exactly and combines the results into the qubit coherence `L(t)`, or with gCCE the qubit density matrix
+(`quantity`).
 
-A bath can hold nuclear spins with point-dipole or DFT hyperfine and quadrupole tensors, electron-spin defects such as
-P1 centres with their own on-site nuclei and axes, or both. Besides the standard clustering by order and distance,
-CCEX has bundle clustering (`cluster.mode` bundle, `cluster.bundle.max_dim`) and an adaptive refinement of the
-clusters (the `cluster.adaptive` block). The CUDA backend runs the cluster propagation on a GPU
-(`execution.backend`). For cCCE it chooses the `gpu_options` an input leaves out at the start of the run, and some of a
-node's ranks can use the GPU while the rest stay on the CPU. A coordinate frame rotation (`frame.rotation`) lets the
-bath file stay in the crystal frame.
+| Choice | Options | Key |
+|---|---|---|
+| Method | conventional CCE (cCCE), generalized CCE (gCCE), and their master-equation versions meCCE and megCCE | `method` |
+| Clusters | by order and distance; partitions (pCCE); bundles of strongly coupled spins; the variants dsj, itb and dsjitb; an adaptive refinement | `cluster.mode`, `cluster.adaptive` |
+| Sequence | Hahn echo, Ramsey, CPMG, or any sequence written pulse by pulse; DEER pulses on the bath | `pulse` |
+| Bath | nuclear spins with point-dipole or DFT tensors, electron-spin defects such as P1 centres with their own nuclei and axes, or both | `configuration`, `Defect` |
+| Bath state | the unpolarised ensemble, or sampled product states (usual for electron-spin baths) | `configuration.s_range` |
+| Hardware | CPU with MPI; the cluster propagation also on a GPU | `execution.backend` |
+
+Two more methods interpret a decay rather than compute it cluster by cluster. `noise` gives the Gaussian coherence
+exp(−χ) of the qubit's phase noise, and can write the noise spectrum. `pseudospin` keeps only the pairs of bath
+spins, in the pseudospin model of nuclear flip-flops, and lists every flip-flop channel.
+
+A coordinate frame rotation (`frame.rotation`) lets the bath file stay in the crystal frame.
+
+A run reads the input and the files it names, finds the clusters and spreads them over the MPI ranks. It then
+computes and saves each bath state in turn:
+
+![The steps of a CCEX run](../images/CCEX_workflow.png)
 
 <a id="WhatCCEComputes"></a>
-## The cluster-correlation expansion in short
+## 2. The cluster-correlation expansion in short
 
-The qubit coherence in the whole bath is written as a product over clusters $C$ of bath spins. The clusters are all
-those of up to `order` spins that the clustering keeps, and each contributes its irreducible part $\tilde L_C$:
+CCE writes the qubit coherence in the whole bath as a product over clusters $C$ of bath spins. The clusters are those
+of up to `order` spins that the clustering keeps, and each contributes its irreducible part $\tilde L_C$:
 
 $$L(t) = \prod_{C} \tilde L_C(t), \qquad \tilde L_C(t) = \frac{L_C(t)}{\prod_{C' \subset C} \tilde L_{C'}(t)},$$
 
 Here $L_C$ is the coherence computed exactly with only the spins of $C$ in the bath, and the product in the denominator
 runs over the proper sub-clusters of $C$. Order 1 keeps single spins, order 2 adds pairs, and so on. A result can be
-trusted once it stops changing when the order, `rbath` or `rdip` is raised (the two radii decide which spins and which
-clusters are included).
+trusted once it stops changing when the order, `rbath` or `rdip` is raised; the two radii decide which spins and which
+pairs are included ([Basic 03](../../example/tutorial/basic/03_convergence/README.md)).
 
-The `_wiDiv` output is this product, the CCE coherence. Written out, it is a product of the cluster coherences $L_C$
-raised to positive and negative integer powers. The `_noDiv` output keeps only the factors with a positive power, so
-it has no division. It never diverges, but it is not a coherence; the analyzer uses it to repair points where a division
-blew up ([Analysis](Analysis.md), [Output files](OutputFiles.md)).
+A run writes two files. `_wiDiv` is this product, the CCE coherence. Written out, it is a product of the cluster
+coherences $L_C$ raised to positive and negative integer powers. `_noDiv` keeps only the factors with a positive power,
+so it has no division and never diverges, but it is not a coherence. The analyzer uses it to repair points where a
+division blew up ([Analysis](Analysis.md), [Output files](OutputFiles.md)).
 
 Without `configuration.s_range`, the bath starts in its unpolarised (ensemble) state. With `s_range` [first, last],
-each state s is a product state of the bath spins, drawn from `configuration.seed` or read from a file, and gets its own
-output. The mean over the states approaches the ensemble result.
+each state s is a product state of the bath spins, drawn from `configuration.seed` or read from a file, with its own
+output. The mean over many states approaches the ensemble result.
 
-A physical coherence has $|L| \le 1$. If a CCE product gives $|L| > 1$ or nan, the expansion did not converge for that
+A physical coherence has $|L| \le 1$. A product with $|L| > 1$ or nan means the expansion did not converge in that
 run: a sub-cluster term in a denominator came close to zero, or a strongly coupled group of spins was split between
-clusters. The usual fixes are a higher order, gCCE, pCCE or bundles, or the analyzer's error correction.
-
-Details are on the methods pages: [cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),
+clusters. A higher order, gCCE, pCCE or bundles usually help, and the analyzer's error correction repairs single
+points. The methods pages have the details: [cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),
 [bundles and the adaptive refinement](../methods/bundle-adaptive.md).
 
 <a id="WhatRunsWhere"></a>
-## What runs where
+## 3. What runs where
 
-The table crosses `method` with `cluster.mode`; each entry says which `execution.backend` works. "CPU, GPU" means
-`cuda` and `auto` may put clusters on the GPU. "CPU" means `cuda` is refused and `auto` runs on the CPU. "refused"
-means the run stops with a message.
+Each entry says where a `method` runs with a `cluster.mode`:
+
+- **CPU, GPU**: `execution.backend` `cuda` and `auto` may put clusters on the GPU.
+- **CPU**: `cuda` stops the run with an error, and `auto` runs on the CPU.
+- **refused**: the run stops with a message.
 
 | method | `standard` | `pcce` | `bundle` | `dsj`, `itb`, `dsjitb` |
 |---|---|---|---|---|
@@ -81,56 +89,37 @@ means the run stops with a message.
 ² With `backend` `cuda`, the sums over the bath's modes run on the GPU and the eigensystems on the CPU; `auto` runs on
 the CPU.
 
-DEER bath pulses (`pulse.bath`, gCCE and megCCE with `standard` or `pcce`) and a `Manual` sequence on the ensemble (no
-`s_range`) also run only on the CPU. `quantity` `dm` is for gCCE; meCCE, megCCE, noise and pseudospin compute
-`coherence` only. GPU runs need the CUDA binary `bin/main_gpu.out`. Details:
-[method](InputFile_General.md#tag_method), [cluster.mode](InputFile_Cluster.md#tag_cluster_mode),
-[backend](InputFile_Backend.md#tag_backend), [GPU execution](../methods/gpu.md),
-[master-equation CCE](../methods/master-equation.md).
+Further limits:
 
-To find the method and example that fit your system, see "What should I use for my case?" on the
-[Examples](Examples.md#WhatToUse) page.
+- DEER bath pulses (`pulse.bath`, gCCE and megCCE with `standard` or `pcce`) run only on the CPU, and so does a
+  `Manual` sequence on the ensemble (no `s_range`) with cCCE or meCCE.
+- `quantity` `dm` is for gCCE with `cluster.mode` `standard` or `pcce`. meCCE, megCCE, noise and pseudospin compute
+  the coherence only.
+- GPU runs need the CUDA binary `bin/main_gpu.out` ([GPU execution](../methods/gpu.md)).
 
-## Building
+The keys are described under [method](InputFile_General.md#tag_method),
+[cluster.mode](InputFile_Cluster.md#tag_cluster_mode) and [backend](InputFile_Backend.md#tag_backend). To choose a
+method and an example for your system, see [What should I use for my case?](Examples.md#WhatToUse).
 
-Build with `bash do_compile.sh <preset>` or `cmake -B build && cmake --build build -j 8`. The presets, the
-requirements and the options are in [Getting started](GettingStarted.md#Building).
+<a id="WhereNext"></a>
+## 4. Where to go next
 
-## Running
-
-```
-mpirun -n 4 bin/main.out -f ccein.jsonc
-```
-
-The input file is JSON (`.json` or `.jsonc`) and may contain `//`, `#` and `!` comments. Its keys are described in
-[Input file](InputFile.md). Every setting of a run is an input key. The command line only names the input (`-f`), the
-output folder (`-o`, which replaces `output.path`), a longer log (`-v`), the input template (`-e`) and the usage
-(`-h`); see [Getting started](GettingStarted.md#HowToRun). A run writes the coherence or density matrix of each bath
-configuration to text files ([Output files](OutputFiles.md)). The analyzer in `example/analysis/` corrects errors in
-them, averages over the ensemble and plots the result.
-
-## Where to go next
-
-- [Getting started](GettingStarted.md): building, the first calculation, the command-line options, the run log, the
-  environment variables and the order in which a run reads its input.
+- [Getting started](GettingStarted.md): what to install, how to build, and a first calculation. Start here.
+- [Building and running](BuildingAndRunning.md): the build options, the command-line options, the exit codes, the run
+  log, the environment variables and troubleshooting.
 - [Input file](InputFile.md): every key by group, and the unit of every number.
 - [Output files](OutputFiles.md): every file a run writes, with its columns.
-- [Examples](Examples.md): the tutorials, each with its inputs and expected figures. The five of `basic/` cover the
-  input and run in seconds; the thirteen of `advanced/` go on to other baths, DFT tensors, the analysis, the GPU
-  backend, the automatic convergence, the noise and pseudospin models and runs on a cluster.
-- [Analysis](Analysis.md) and [Tools](Tools.md): the programs that process the output (`example/analysis/`) and that
-  prepare the inputs (`example/tools/`).
-- Methods ([overview](../methods/Methods.md)): [cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),
-  [bundles and the adaptive refinement](../methods/bundle-adaptive.md),
-  [the coordinate frame rotation](../methods/coordinate-frame-rotation.md),
-  [DEER bath pulses](../methods/deer.md), [master-equation CCE](../methods/master-equation.md),
-  [Gaussian phase noise](../methods/noise.md), [the pseudospin model](../methods/pseudospin.md) and
-  [GPU execution](../methods/gpu.md).
+- [Examples](Examples.md): the tutorials, with their inputs and expected figures. The six basic ones run in seconds;
+  the thirteen advanced ones cover other baths, DFT tensors, the analysis, the GPU, the automatic convergence, the
+  noise and pseudospin models and runs on a cluster.
+- [Analysis](Analysis.md): the scripts that average, fit and plot the output.
+- [Tools](Tools.md): the programs that prepare the inputs.
+- [Methods](../methods/Methods.md): how each method works.
 - [Changes](Changes.md): what changed in 2.1.0 and in 2.0.0.
 - Data structures and Source files: the code documentation, for developers.
 
 <a id="Citing"></a>
-## How to cite / references
+## 5. How to cite
 
 `CITATION.cff` at the repository root lists the authors and the version of the code.
 
@@ -144,5 +133,4 @@ The methods CCEX implements are described in:
 - H. Seo et al., Nat. Commun. 7, 12935 (2016), and J. Lee, H. Park, H. Seo, npj 2D Mater. Appl. 6, 60 (2022): the
   pseudospin model of nuclear pairs.
 
-[cCCE and gCCE](../methods/cce.md) lists them with their DOIs. A paper describing CCEX itself is to be added by the
-CCEX authors.
+[cCCE and gCCE](../methods/cce.md) lists them with their DOIs. A paper on CCEX itself will be added here.

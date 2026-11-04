@@ -1,25 +1,25 @@
 {
-    // basic/05_defect_bath/cCCE2_Hahn_states with partition CCE (cluster.mode pcce): the Hahn echo of an NV in 1 ppm P1 (one bath
+    // basic/06_defect_bath/cCCE2_Hahn_states with partition CCE (cluster.mode pcce): the Hahn echo of an NV in 1 ppm P1 (one bath
     // configuration, four sampled bath states). The P1 are grouped into partitions of partition_size spins (k-means
     // on the positions, the best of trials), and the CCE runs over partitions: order 2 is single partitions and pairs
     // of partitions, so a cluster holds up to 2 x partition_size P1. run.sh runs this input with partition_size 1
     // (ordinary CCE2 over single P1), 2 and 3, and writes results/sK<size>_state<s>_wiDiv and _noDiv.
     // Sampled bath states: configuration.s_range [1, 4], each state s its own output _state<s>.
-    "Qubit"         : {"qubit": [{"file": "../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [-1]}},
-                                      // the NV (spin 1, the default) at the position of basic/05_defect_bath's defect file.
-                                      // alpha_state ms -1: L is between ms -1 and 0 (beta_state default)
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
+    "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [1]}},
+                                      // the NV (spin 1, the default) at the position of basic/06_defect_bath's defect file.
+                                      // alpha_state ms +1: L is between ms +1 and 0 (beta_state default)
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
                        "s_range" : [1, 4],
                        "seed"    : 1},
                                       // gyrofile: the P1 line (spin 1/2, the electron's gyromagnetic ratio).
-                                      // bathfile: basic/05_defect_bath's first 1 ppm configuration. s_range [1, 4]: four pure bath
+                                      // bathfile: basic/06_defect_bath's first 1 ppm configuration. s_range [1, 4]: four pure bath
                                       // states drawn from seed, each its own output; average them (more states
                                       // before reading the differences between partition sizes). seed: the states,
                                       // each P1's axis state and the partition search follow it
     "order"         : 2,              // with pcce the order counts partitions: 2 = single partitions and their pairs
     "bfield"        : 500,            // Gauss along z, the NV axis
-    "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV (basic/05_defect_bath's value; its 1 ppm cells are
+    "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV (basic/06_defect_bath's value; its 1 ppm cells are
                                       // made for it)
     "rdip"          : 620,            // Angstrom: two partitions are connected when their centres (the k-means
                                       // centroids) are within 620 A (pcce.connections centers, the default)

@@ -1,5 +1,5 @@
 {
-    // The production run of basic/05_defect_bath/cCCE2_Hahn_states: the Hahn echo of an NV in 1 ppm P1, cCCE2, over
+    // The production run of basic/06_defect_bath/cCCE2_Hahn_states: the Hahn echo of an NV in 1 ppm P1, cCCE2, over
     // the five bath configurations of that folder's bath/ (k_range [1, 5]) with fifty sampled bath states each
     // (s_range [1, 50]): 250 curves, too many for a laptop to be convenient, a few minutes on one node.
     // Writes results/ccein_k<k>_state<s>_wiDiv and _noDiv (t in ms, L(t) complex) for k = 1 .. 5, s = 1 .. 50.
@@ -8,11 +8,11 @@
     // files; estimate.sh runs one state of one configuration to read the memory and the time per state first.
     // Every key not written here has its default (main.out -e writes them all).
 
-    "Qubit"         : {"qubit": [{"file": "../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}],
-                       "alpha_state": {"ms": [-1]}},
-                                      // the NV at the position of the defect file; L(t) between ms -1 and 0
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/DiaP1_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
+    "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}],
+                       "alpha_state": {"ms": [1]}},
+                                      // the NV at the position of the defect file; L(t) between ms +1 and 0
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
                        "k_range" : [1, 5],
                        "s_range" : [1, 50],
                        "seed"    : [1, 2, 3, 4, 5]},
@@ -30,7 +30,7 @@
                                       // the output name; job_array.sbatch writes its inputs under other names and
                                       // keeps this one, so all its files are ccein_k<k>_state<s>_...
 
-    // The P1 centre as in basic/05_defect_bath/cCCE2_Hahn_states: 12 axis states, the 14N hyperfine as a detuning (MHz).
+    // The P1 centre as in basic/06_defect_bath/cCCE2_Hahn_states: 12 axis states, the 14N hyperfine as a detuning (MHz).
     "Defect"        : {"species": [{
         "name"          : "P1",
         "n_axis_states" : 12,

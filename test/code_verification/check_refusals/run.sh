@@ -778,6 +778,9 @@ reject_case natab_cce2_hahn rj_noise_cluster_coherence "method noise does not wr
   "d['method'] = 'noise'; d['savemode'] = 'cluster_coherence'"
 reject_case natab_cce2_hahn rj_noise_cluster_dm "method noise does not write output.savemode cluster_density_matrix" \
   "d['method'] = 'noise'; d['savemode'] = 'cluster_density_matrix'"
+# cCCE computes the coherence only; with quantity dm its kernel stopped mid-run (exit 1 after the clusters were built)
+reject_case natab_cce2_hahn rj_cce_dm "method cCCE computes quantity coherence only (quantity dm needs method gCCE)" \
+  "d['quantity'] = 'dm'"
 # method noise turns backend auto into cpu; with GPU ranks asked for, the message names the method (A98)
 reject_case natab_cce2_hahn rj_noise_ranks_per_gpu "method noise runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu" \
   "d['method'] = 'noise'; d['backend'] = 'auto'; d['gpu_options'] = {'ranks_per_gpu': 4}"
@@ -1162,6 +1165,8 @@ reject_case p1_cce2_single rj_hamiltonian_dissipation_section 'hamiltonian.dissi
 ADB="d['cluster_mode'] = 'bundle'; d['bundle'] = {'max_dim': 8}; d.pop('rdip')"
 reject_case natab_cce2_hahn rj_adaptive_output 'cluster.adaptive.output is now cluster.adaptive.workdir' \
   "$ADB; d['adaptive'] = {'output': 'x', 'atol': 1e-3, 'rtol': 0}"
+reject_case natab_cce2_hahn rj_adaptive_output_path 'output.path does not apply to the adaptive refinement, its folder is cluster.adaptive.workdir' \
+  "$ADB; d['adaptive'] = {'workdir': 'x', 'atol': 1e-3, 'rtol': 0}; d['outfile'] = 'z'; d['output'] = {'path': 'y'}"
 reject_case natab_cce2_hahn rj_adaptive_dash_key 'cluster.adaptive.max-rounds is spelled "max_rounds" in the input' \
   "$ADB; d['adaptive'] = {'workdir': 'x', 'atol': 1e-3, 'rtol': 0, 'max-rounds': 2}"
 

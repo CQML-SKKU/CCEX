@@ -240,7 +240,7 @@ With `partition_size` 1 the two rules are the same. Under `centers`, two partiti
 unconnected when their centroids are far apart, more often the larger `partition_size` is; `spins` connects them. The
 rank-0 log says which rule ran and how many partition pairs it connected.
 
-A comparison on the P1 bath of tutorial `basic/05_defect_bath`:
+A comparison on the P1 bath of tutorial `basic/06_defect_bath`:
 
 - at that tutorial's `rdip` (620 Å) the two rules differ less than pCCE2 differs from CCE4, and `spins` costs 27-65 %
   more;

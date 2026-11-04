@@ -4,8 +4,8 @@
     // by their dipolar coupling (set from the positions).
     //
     // The physics: the two NVs are one register of dimension 9 in every cluster, in a bath of the 13C around both;
-    // they are coupled by the point dipole, about 3.3 MHz at 25 A (52 MHz nm^3 / r^3). T2 0.945 ms here against
-    // 1.068 ms for one NV (README). About 2 min on 4 ranks.
+    // they are coupled by the point dipole, about 3.3 MHz at 25 A (52 MHz nm^3 / r^3). T2 0.956 ms here against
+    // 1.084 ms for one NV (README). About 2 min on 4 ranks.
     //
     // Writes results/ccein_multi2_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_single.jsonc is the
     // first NV alone (its position from a file in place of xyz).
@@ -32,7 +32,7 @@
                                       // diamond with 1.1 % 13C
     "order"         : 2,              // the largest cluster: single 13C and pairs, each with both NVs (gCCE2)
     "bfield"        : 500,            // Gauss along z, the axis of both NVs (the 13C precess at 535 kHz)
-    "rbath"         : 50,             // Angstrom: the 13C within 50 A of either NV, 1343 here (980 for one NV)
+    "rbath"         : 50,             // Angstrom: the 13C within 50 A of either NV, 1341 here (978 for one NV)
     "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
     "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
     "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms

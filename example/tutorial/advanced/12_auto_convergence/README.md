@@ -1,4 +1,6 @@
-# advanced/12_auto_convergence
+# Advanced 12: Automatic convergence
+
+Folder: `example/tutorial/advanced/12_auto_convergence/`
 
 The automatic convergence (the `auto_convergence` block). With the block, `mpirun -n N main.out -f ccein.jsonc` does not
 run one calculation: rank 0 starts the runner (`example/tools/AutoConvergence/`, Python with numpy, scipy and

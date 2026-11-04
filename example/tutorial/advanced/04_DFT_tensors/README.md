@@ -1,4 +1,6 @@
-# advanced/04_DFT_tensors
+# Advanced 04: DFT hyperfine and quadrupole tensors
+
+Folder: `example/tutorial/advanced/04_DFT_tensors/`
 
 Hyperfine and quadrupole tensors from DFT instead of the point dipole of the positions. `example/tools/SpinTensorReader`
 reads a VASP OUTCAR (or a Quantum ESPRESSO output) and writes two files: `Afile`, the hyperfine tensor of each atom of
@@ -9,7 +11,7 @@ names them in `hamiltonian.common.hyperfine` (`dipole` dft, `contact` true, `fil
 The rows are matched to the bath spins by position from the defect, so the bath has to be built on the lattice of the
 DFT cell; a bath spin inside the cell without a row stops the run, and spins outside the cell take the point dipole
 (`missing_row` point_dipole extends that to every missing row). The cell of `makeTensors_hBN` is not the one of the
-tutorial bath, so `cCCE2_Hahn_tensors` uses the files kept with [advanced/02_hBN](../02_hBN/README.md). Each folder: `cd
+tutorial bath, so `cCCE2_Hahn_tensors` uses the files kept with [Advanced 02: V_B⁻ in hexagonal BN](../02_hBN/README.md). Each folder: `cd
 <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every key not written in an
 input has its default (`main.out -e`). Times: i7-14700K, WSL, 4 ranks.
 

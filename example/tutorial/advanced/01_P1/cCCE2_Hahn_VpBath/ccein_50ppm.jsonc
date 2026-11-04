@@ -5,19 +5,19 @@
     //
     // The physics: like the P1 bath, an electron-spin bath coupled by the magnetic dipole interaction, but every Vp has
     // the same Zeeman frequency (no 14N detunings), so every pair is on resonance apart from its neighbours' fields.
-    // T2 1.4 us for this one state (README). Writes results/ccein_50ppm_state1_wiDiv and _noDiv.
+    // T2 2.3 us for this one state (README). Writes results/ccein_50ppm_state1_wiDiv and _noDiv.
     //
     // The three inputs ccein_10ppm, _12ppm, _50ppm differ in the bath files, rbath, rdip and deltat. One state per
     // concentration is not enough to compare them: README suggests s_range [1, 20] first.
     // Every key not written here has its default (main.out -e writes them all).
 
-    "Qubit"         : {"qubit": [{"file": "../../../basic/05_defect_bath/bath/Vp/50ppm/bath_DiaVp_50ppm_Defect"}], "alpha_state": {"ms": [-1]}},
+    "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/Vp/50ppm/bath_DiaVp_50ppm_Defect"}], "alpha_state": {"ms": [1]}},
                                       // the NV. "file": the defect file next to the bath file, its first line the NV
                                       // position x y z (Angstrom). Spin 1 and the electron gyromagnetic ratio are the
-                                      // defaults. alpha_state ms -1, beta_state the default ms 0: L(t) between ms -1
+                                      // defaults. alpha_state ms +1, beta_state the default ms 0: L(t) between ms +1
                                       // and 0
-    "configuration" : {"gyrofile": "../../../basic/05_defect_bath/bath/Vp/DiaVp_gyro",
-                       "bathfile": ["../../../basic/05_defect_bath/bath/Vp/50ppm/bath_DiaVp_50ppm_1"],
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/Vp/DiaVp_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/Vp/50ppm/bath_DiaVp_50ppm_1"],
                        "s_range" : [1, 1],
                        "seed"    : 1},
                                       // the bath. gyrofile: "Vp 0.5 -17608.597050", a spin 1/2 with the electron's

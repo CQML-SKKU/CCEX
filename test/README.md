@@ -23,6 +23,17 @@ matplotlib (`pip install -r test/requirements.txt`). Environment variables:
   `unit_build_env.sh` brings that build up to date first.
 - `CCEX_MPI`: the `mpirun` to use. Without it, the Intel MPI of the loaded module, else the one on `PATH`.
 
+Some variables of `main.out` turn an optimisation off for a comparison, or serve only the checks:
+
+| Variable | Effect |
+|---|---|
+| `CCEX_CPU_BATCH=0` | computes the small cCCE clusters (bath dimension 2 and 4) one by one instead of in batches; both give the same bits, and where they would not, the batch turns itself off at start |
+| `CCEX_SMALL_EIG=0` | lets Eigen diagonalise the same small clusters instead of the fixed-sweep Jacobi solver |
+| `CCEX_CHECK_DISORDER=1` | with sampled states, also builds the static mean field of the bath the old way on one rank and stops on any bit that differs |
+| `CCEX_SMALL_CLUSTER_DUMP=FILE`, `CCEX_SMALL_CLUSTER_DUMP_N=N` | cCCE: writes the first N (400) small clusters with their CPU result to FILE |
+| `CCEX_WARP_CLUSTER_DUMP=FILE`, `CCEX_WARP_CLUSTER_DUMP_N=N` | gCCE: the same for the clusters of the GPU warp kernel |
+| `CCEX_TEST_GPU_OOM_BYTES=N` | GPU build: every GPU allocation of N bytes or more fails, to test the fall-back to the CPU |
+
 What a check writes goes to its `_work/` (or `cpp/out/`) folder, which git ignores and the check wipes. The reference
 outputs under `code_verification/check_numerics/reference/` and the adaptive golden answers are committed on purpose
 and change only in the commit that is meant to change them.
@@ -30,6 +41,11 @@ and change only in the commit that is meant to change them.
 A build with MKL changes the last digits of large clusters. The checks read the `MKL for large clusters : on` line of
 the run log and then compare relatively: `check_numerics` within 1e-12, `check_adaptive`'s `regress` within 1e-5 for
 floating-point values (every decision stays exact).
+
+On macOS the checks run with the system's bash 3.2, and use perl where `timeout` is missing. `check_numerics` compares
+with references recorded on x86, and a Mac build differs from them in the last digits (below 1e-8 in noDiv), since
+`long double` is `double` on arm64. Record a reference on the Mac (`make_reference.sh current`) and compare later Mac
+builds with it, but do not commit it: the newest `head-*` folder is the reference for everyone.
 
 `.github/workflows/ci.yml` runs the fast, machine-independent checks on every push: the unit tests, `check_analytic`,
 `check_rotation`, `check_mean_field`, `check_deer`, `check_master_equation`, `check_noise` (without semi-cce and

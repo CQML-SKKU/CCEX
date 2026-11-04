@@ -9,12 +9,12 @@
     "method"        : "gCCE",         // gCCE: the qubit is in every cluster (qubit-bath flip-flops, the qubit's own
                                       // Hamiltonian); cCCE (the default) would leave it out
     "Qubit"         : {"qubit" : [{"name": "NV", "xyz": [523.336, 524.936, 521.003]}],
-                       "alpha_state" : {"ms": [-1]},
+                       "alpha_state" : {"ms": [1]},
                        "beta_state" : {"ms": [0]},
                        "intmap": [{"between": ["NV", "NV"],
                                    "tensor" : [[-956666.6666666666, 0.0, 0.0], [0.0, -956666.6666666666, 0.0], [0.0, 0.0, 1913333.3333333333]]}]},
                                       // qubit: the NV (spin 1, the default) by name and position (Angstrom, that of
-                                      // bath/qubit_p1). alpha_state ms -1, beta_state ms 0: L is between them.
+                                      // bath/qubit_p1). alpha_state ms +1, beta_state ms 0: L is between them.
                                       // intmap: a qubit-qubit tensor; between the NV and itself, a self term: the
                                       // zero-field splitting diag(-D/3, -D/3, 2D/3) in kHz, D = 2.87 GHz
     "configuration" : {"gyrofile": "../bath/gyro_P1", "bathfile": ["../bath/bath_p1_4"], "seed": 1},

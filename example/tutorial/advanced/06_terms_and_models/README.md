@@ -1,9 +1,11 @@
-# advanced/06_terms_and_models
+# Advanced 06: More terms and models
 
-Options of cCCE beyond [basic/04_cCCE_vs_gCCE](../../basic/04_cCCE_vs_gCCE/README.md): disjoint clusters (`cluster.mode`
+Folder: `example/tutorial/advanced/06_terms_and_models/`
+
+Options of cCCE beyond [Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md): disjoint clusters (`cluster.mode`
 dsj), the hyperfine-mediated coupling of two nuclei through the defect (`hamiltonian.cCCE.hfmedi`, on the h-BN bath of
-[advanced/02_hBN](../02_hBN/README.md)), and the master-equation CCE (meCCE), which adds Lindblad relaxation of the bath
-spins. Each folder: `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
+[Advanced 02: V_B⁻ in hexagonal BN](../02_hBN/README.md)), the master-equation CCE (meCCE), which adds Lindblad relaxation of the bath
+spins, and the Knight shift of cCCE in a tilted field (`hamiltonian.cCCE.knight`). Each folder: `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times: i7-14700K, WSL, 4 ranks.
 
 ## cCCE2_Hahn_dsj
@@ -12,7 +14,7 @@ key not written in an input has its default (`main.out -e`). Times: i7-14700K, W
   against the standard pairs (`ccein_standard.jsonc`).
 - **Keys that matter:** `cluster.mode` dsj.
 - **How to run:** `NP=4 bash run.sh`: 1.1 s, 0.05 GB per rank.
-- **Expected result:** `expected.png`; T2 1.092 ms (dsj) against 1.068 ms; largest difference 0.064.
+- **Expected result:** `expected.png`; T2 1.158 ms (dsj) against 1.084 ms; largest difference 0.065.
 - **What to change next:** `cluster.mode` itb or dsjitb (cCCE only).
 
 ![cCCE2_Hahn_dsj: expected result](cCCE2_Hahn_dsj/expected.png)
@@ -29,7 +31,7 @@ Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_standard.jsonc`](cC
 - **Keys that matter:** `method` meCCE, `hamiltonian.meCCE.jump_operators` [{`bath_name` "13C", `operator` "-" or
   "+", `rate` (MHz)}].
 - **How to run:** `NP=4 bash run.sh`: 18-20 s (nearly all meCCE), 0.06 GB per rank.
-- **Expected result:** `expected.png`; T2 1.068 ms (cCCE) and 0.53 ms (meCCE).
+- **Expected result:** `expected.png`; T2 1.08 ms (cCCE) and 0.57 ms (meCCE).
 - **What to change next:** `operator` "z" (pure dephasing of the ¹³C); `method` megCCE with a qubit jump
   (`bath_name` "qubit", in `hamiltonian.megCCE`); see [master-equation CCE](../../../../docs/methods/master-equation.md).
 
@@ -51,3 +53,17 @@ Inputs: [`ccein_cCCE.jsonc`](meCCE2_Hahn_bathRelaxation/ccein_cCCE.jsonc), [`cce
 
 Inputs: [`ccein_wi_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wi_hfmedi.jsonc), [`ccein_wo_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wo_hfmedi.jsonc)
 
+## cCCE2_Hahn_knightShift
+
+- **What it shows:** in a field tilted from the NV axis ([50, 0, 100] G) the qubit's transverse field shifts the ¹³C
+  precession; `hamiltonian.cCCE.knight` adds that shift to cCCE (`ccein_wi_knight.jsonc`) against without
+  (`ccein_wo_knight.jsonc`).
+- **Keys that matter:** `hamiltonian.cCCE.knight` true, `bfield` [50, 0, 100], the ZFS (`Qubit.intmap` self entry).
+- **How to run:** `NP=4 bash run.sh`: 1.2 s, 0.05 GB per rank.
+- **Expected result:** `expected.png`; T2 1.082 ms with the Knight shift; without it the divided curve (`_wiDiv`)
+  diverges (|L| up to 16, cut at 1.2 in the plot) - the analyzer's error correction
+  (`example/analysis/Analyzer`, `-err`) repairs such curves against `_noDiv`.
+
+![cCCE2_Hahn_knightShift: expected result](cCCE2_Hahn_knightShift/expected.png)
+
+Inputs: [`ccein_wi_knight.jsonc`](cCCE2_Hahn_knightShift/ccein_wi_knight.jsonc), [`ccein_wo_knight.jsonc`](cCCE2_Hahn_knightShift/ccein_wo_knight.jsonc)

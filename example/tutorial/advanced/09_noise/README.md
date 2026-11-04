@@ -1,4 +1,6 @@
-# advanced/09_noise
+# Advanced 09: Phase noise (method noise)
+
+Folder: `example/tutorial/advanced/09_noise/`
 
 Method `noise`: the coherence as the Gaussian decay $W(T) = e^{-\chi(T)}$ of the qubit's phase noise, with
 $\chi = \langle\varphi^2\rangle/2$ of the phase $\varphi = \int f(t)\,\delta\omega(t)\,dt$ ($f = \pm 1$, flipped by each
@@ -12,15 +14,15 @@ non-Gaussian part of the noise; it is meant for many weakly coupled noise source
 
 ## noise2_Hahn_vsCCE
 
-- **What it shows:** the Hahn echo of the NV (ms −1 / 0) in 1 ppm P1 (the bath of `basic/05_defect_bath`, one configuration, 10
+- **What it shows:** the Hahn echo of the NV (ms +1 / 0) in 1 ppm P1 (the bath of `basic/06_defect_bath`, one configuration, 10
   sampled states) by method `noise` and by cCCE2. They are not the same quantity: in `noise` a sampled state only sets
   the static field of the other spins and every cluster is averaged at infinite temperature, with one bath
   Hamiltonian for both branches of the qubit; cCCE2 evolves each state as a pure initial state under the two
   branches' Hamiltonians. Here the Gaussian curve decays faster than the cCCE2 mean.
 - **Keys that matter:** `method` `noise`, `hamiltonian.noise.spectrum` `"bath"`; the rest as in
-  `basic/05_defect_bath/cCCE2_Hahn_states` (`ccein_cce.jsonc` is the same input with `method` `cCCE`).
+  `basic/06_defect_bath/cCCE2_Hahn_states` (`ccein_cce.jsonc` is the same input with `method` `cCCE`).
 - **How to run:** `NP=4 bash run.sh`: 8 s for both, 0.05 GB per rank.
-- **Expected result:** `expected.png`; T2 of the mean of 10 states 56 µs by `noise`, 148 µs by cCCE2.
+- **Expected result:** `expected.png`; T2 of the mean of 10 states 56 µs by `noise`, 150 µs by cCCE2.
 - **What to change next:** `"pseudo_secular": true` in `hamiltonian.noise` (the noise of a bath spin with
   $A_{zx} I_x + A_{zy} I_y$ as well as $A_{zz} I_z$); `pulse.count` 0 or 4.
 
@@ -49,17 +51,17 @@ Input: [`ccein.jsonc`](noiseModel_OU/ccein.jsonc)
 ## noiseSpectrum_13C
 
 - **What it shows:** the noise itself, as a noise-spectroscopy experiment sees it: the NV of `basic/01_first_run` in its
-  natural-abundance ¹³C (980 ¹³C within 50 Å, 500 G, Hahn echo) by method `noise` with
+  natural-abundance ¹³C (978 ¹³C within 50 Å, 500 G, Hahn echo) by method `noise` with
   `hamiltonian.noise.compute` `"spectrum"`, which writes the correlation C(t) of the qubit's frequency noise, its
   spectrum S(f) by FFT and the coherence from S(f). `ccein_coherence.jsonc` is the same run with `compute`
   `"coherence"` (χ straight from the clusters' eigenmodes): the two coherences agree, which checks the FFT grid.
   The figure shows the two coherences, C(t) over its first 10 µs and |S(f)| up to 1.5 MHz.
 - **Keys that matter:** `hamiltonian.noise.compute`; `hamiltonian.noise.fft` is left out, so its defaults hold:
-  `time_max` the run's last time (1.999 ms) and 32,156 intervals from the bath's fastest mode (the log line
+  `time_max` the run's last time (1.999 ms) and 9,560 intervals from the bath's fastest mode (the log line
   `hamiltonian.noise.fft:` says so). `"correlation"` would write C(t) alone, at the run's times.
-- **How to run:** `NP=4 bash run.sh`: 7 s for both, 0.05 GB per rank. Writes `results/ccein_spectrum_noise_correlation`
-  (t in ms, C in kHz²) and `results/ccein_spectrum_noise_spectrum` (f in kHz, S in kHz²/kHz, two-sided), 1.3 MB each.
-- **Expected result:** `expected.png`; T2 0.972 ms from both, the coherences within 2.4e-9 of each other.
+- **How to run:** `NP=4 bash run.sh`: 4 s for both, 0.05 GB per rank. Writes `results/ccein_spectrum_noise_correlation`
+  (t in ms, C in kHz²) and `results/ccein_spectrum_noise_spectrum` (f in kHz, S in kHz²/kHz, two-sided), 0.4 MB each.
+- **Expected result:** `expected.png`; T2 0.973 ms from both, the coherences within 1e-10 of each other.
 - **What to change next:** `"fft": {"window": "hann"}` in `hamiltonian.noise` (a window on C(t) before the FFT;
   [fft](../../../../docs/user/InputFile_General.md#tag_noise_fft)); `pulse.count` 4 (another filter on the same S(f)).
 
