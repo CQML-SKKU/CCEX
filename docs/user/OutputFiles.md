@@ -164,15 +164,16 @@ them first (the columns are tab-separated and hold no spaces).
 
 With a [cluster.adaptive](InputFile_Cluster.md#tag_adaptive) block, every step of the refinement is an ordinary run in
 its own folder under `workdir`. The folders are numbered in order and named by their kind: `0001-run`, `0002-probe`,
-and so on. Each holds the step's input (`input.json`), its log (`run.log`) and its coherence (`coherence_wiDiv`).
+and so on. Each holds the step's input (`input.json`, the user's input with the step's request in place of the refinement
+options), the request (`request.json`), its log (`run.log`) and its coherence (`coherence_wiDiv`).
 
 `workdir` itself holds:
 
 | File | Content |
 |---|---|
-| `summary.json` | the report, rewritten after every step: the status, one record per step and per round, and `final_directory` |
+| `summary.json` | the report, rewritten after every step: the status, the input and the settings, one record per step and per round, `final_directory`, `final_bundles`, the probe cache counts, the checksums of the input files and `limitations` |
 | `final-bundles.json` | the bundles of the final step |
-| `final-input.json` | an input that reruns the final bundles as one calculation |
+| `final-input.json`, `final-request.json` | an input and its request that rerun the final bundles as one calculation |
 
 The final curve is `<final_directory>/coherence_wiDiv`. The last line of the run log, before the wall time, prints the
 status and the path of `summary.json`. The status sets the exit code of `main.out`:

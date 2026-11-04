@@ -169,7 +169,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 |---|---|
 | `coordinate_frame_rotation`, `bath_coordinate_rotation` | `frame.rotation`, on when the block is given (`enabled` defaults to true). The old key defaulted to false, and the converter removes an old block that was off. |
 | `defect_axis_reference` | Removed (it only named the rotation's qubit axis in the log). |
-| `frame.rotation.bath_axis` | Removed. The computational x is now `qubit_axis` × [0, 0, 1], the old default. |
+| `frame.rotation.bath_axis` | Removed. The computational x is now `qubit_axis` × [0, 0, 1], the old default. An input with another `bath_axis` gets this x axis, and with gCCE and a qubit ZFS that is not symmetric about `qubit_axis` its result can change. |
 | `frame.rotation.reference_qubit` | Removed. It only chose the rotation origin (a translation). The origin is the first qubit. |
 | `frame.rotation.qubit_position_frame` | Removed. Its one value was `"bath"`. Qubit positions are always in the bath file's frame. |
 | `frame.rotation.hf_tensor_frame` / `qd_tensor_frame` | `hamiltonian.common.hyperfine.frame` / `hamiltonian.common.quadrupole.frame` |

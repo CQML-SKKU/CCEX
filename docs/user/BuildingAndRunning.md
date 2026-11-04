@@ -4,7 +4,7 @@
 This page lists the options and rules of building and running CCEX, to look up when needed. To build and run CCEX
 for the first time, follow [Getting started](GettingStarted.md).
 
-1. [Building](#Building): the presets, CMake, MKL, CUDA and macOS.
+1. [Building](#Building): the libraries, the presets, CMake, MKL, CUDA and macOS.
 2. [Command line](#HowToRun): the options, where the outputs go, and the other run modes.
 3. [Exit codes](#ExitCodes): what `main.out` returns, in each run mode.
 4. [The run log](#RunLog): the short log part by part, the long log, and the tagged lines.
@@ -13,6 +13,26 @@ for the first time, follow [Getting started](GettingStarted.md).
 
 <a id="Building"></a>
 ## 1. Building
+
+<a id="BuildLibraries"></a>
+### Libraries
+
+These third-party libraries come with the code, so `bin/main.out` needs nothing installed beyond the compiler and MPI.
+Their licenses are in their folders.
+
+| Library | Version | Where | Used for |
+|---|---|---|---|
+| Eigen | 3.4.1 | `external/eigen/` | The linear algebra of the Hamiltonians and the propagation, also in the GPU code. |
+| uthash | 2.3.0 | `external/uthash/` | The hash table of the cluster list. |
+| SQLite | 3.53.4 | `external/sqlite/` | The probe cache of the adaptive refinement. |
+| cJSON | 1.7.17 | `src/input/json.cpp`, `include/input/json.h` | Reading the input file. |
+
+Optional libraries:
+
+| Library | Used for |
+|---|---|
+| Intel MKL, or Apple's Accelerate on macOS | The large clusters ([below](#BuildBlas)). |
+| CUDA (cuSOLVER, cuBLAS, cudart) | The GPU binary `bin/main_gpu.out` ([below](#BuildCuda)). |
 
 ### Presets
 
@@ -59,6 +79,7 @@ clusters. On macOS, Apple's Accelerate takes its place; the `mac` preset and CMa
 change only in the last digits. The build says which one it linked, and so does the header of every run log.
 `CCEX_BLAS=off` (CMake `-DCCEX_BLAS=OFF`) builds without either.
 
+<a id="BuildCuda"></a>
 ### CUDA
 
 The GPU binary `bin/main_gpu.out` needs nvcc, cuSOLVER, cuBLAS and cudart. Set the compute capability with `CUDA_ARCH`

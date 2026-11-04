@@ -20,10 +20,10 @@ runs the production. Every calculation it makes is an ordinary CCEX run in its o
 |---|---|---|
 | 0. start | Splits the configurations into test and production, and estimates first values. | |
 | 1. time window | Finds the decay time from a T2 fit of the test runs. | `1_window.png` |
-| 2. rdip | Takes the smallest rdip from which every larger one agrees with the largest. When the two largest do not agree, the largest is raised first. | `2_rdip.png` |
+| 2. rdip | Takes the smallest rdip from which every larger one agrees with the largest. When the two largest do not agree, the largest is raised by a factor 1.25 until they do. Reaching the upper limit first gives `truncation-unresolved`. | `2_rdip.png` |
 | 3. rbath | Does the same for rbath, then checks rdip again. | `3_rbath.png` |
 | 4. sampling | Chooses the number of configurations for the target error. With sampled states it also checks whether `test_states` states are enough, and warns when they are not. The production keeps `test_states` states. | `4_states.png` |
-| 5. production | Runs the chosen setting on the production configurations, and compares the chosen rbath and rdip with the largest on 3 of them. | `5_configurations.png`, `6_converged_coherence.png` |
+| 5. production | Runs the chosen setting on the production configurations, and compares the chosen rbath and rdip with the largest on 3 of them. A difference there is a warning in the summary, not a failure. | `5_configurations.png`, `6_converged_coherence.png` |
 
 <a id="tag_ac_fixed"></a>
 A section whose value is given is not searched. These values are `time_window.value`, `rdip.value`, `rbath.value` and
@@ -32,8 +32,11 @@ A section whose value is given is not searched. These values are `time_window.va
 <a id="tag_ac_fits"></a>
 ## 2. When two settings agree
 
-Two settings agree when the areas under their T2 fits, $A = T_2 \Gamma(1+1/n)$, differ by at most the section's
-`threshold`. When a fit fails, the raw areas under the curves are compared instead. The T2 is a measure to compare
+Two settings are compared on the same configurations. For each setting the curve is the mean, over those
+configurations, of $|L|$, and a stretched exponential is fitted to it. The two settings agree when the areas under
+their fits, $A = T_2 \Gamma(1+1/n)$, differ by at most the section's `threshold` in relative terms. When a fit fails,
+the raw areas under the two mean curves from 0 to the decay time $T_d$ are compared instead, with the same
+`threshold`. The T2 is a measure to compare
 settings, not the exact T2 of the system.
 
 <a id="tag_ac_results"></a>

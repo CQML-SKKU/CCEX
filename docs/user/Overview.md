@@ -107,6 +107,7 @@ method and an example for your system, see [What should I use for my case?](Exam
 - [Getting started](GettingStarted.md): what to install, how to build, and a first calculation. Start here.
 - [Building and running](BuildingAndRunning.md): the build options, the command-line options, the exit codes, the run
   log, the environment variables and troubleshooting.
+- [Theory and implementation](../methods/Methods.md): what each method computes and how CCEX does it.
 - [Input file](InputFile.md): every key by group, and the unit of every number.
 - [Output files](OutputFiles.md): every file a run writes, with its columns.
 - [Examples](Examples.md): the tutorials, with their inputs and expected figures. The six basic ones run in seconds;
@@ -114,7 +115,6 @@ method and an example for your system, see [What should I use for my case?](Exam
   noise and pseudospin models and runs on a cluster.
 - [Analysis](Analysis.md): the scripts that average, fit and plot the output.
 - [Tools](Tools.md): the programs that prepare the inputs.
-- [Theory and implementation](../methods/Methods.md): what each method computes and how CCEX does it.
 - [Changes](Changes.md): what changed in 2.1.0 and in 2.0.0.
 - Data structures and Source files: the code documentation, for developers.
 

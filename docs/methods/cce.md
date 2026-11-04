@@ -5,7 +5,7 @@ standard, dsj, itb, dsjitb). Partitions and bundles are in [pCCE](pcce.md) and
 [Bundle clustering and adaptive refinement](bundle-adaptive.md), the master-equation forms in
 [Master-equation CCE](master-equation.md), and the keys in the [input reference](../user/InputFile.md).
 
-1. [The expansion](#cce_expansion): the product over clusters, wiDiv and noDiv, and |L| > 1.
+1. [The expansion](#cce_expansion): the product over clusters, wiDiv and noDiv, and a diverging product.
 2. [Ensemble and sampled bath states](#cce_states): the two starting states of the bath.
 3. [cCCE and gCCE](#cce_ccce): the two ways of putting the qubit into a cluster.
 4. [The Hamiltonian](#cce_hamiltonian): its terms and units, the mean fields and the corrections of cCCE.
@@ -44,39 +44,28 @@ A result has converged when raising `order`, `rdip` and `rbath` no longer change
 [auto_convergence](../user/InputFile_AutoConvergence.md) finds `rdip`, `rbath` and the time window by itself.
 
 <a id="cce_wiDiv"></a>
-### 1.1 wiDiv and noDiv
+<a id="cce_divergence"></a>
+### 1.1 wiDiv, noDiv and a diverging product
 
 A run writes two curves per bath configuration and state (`output.savemode` `nodiv`, on by default):
 
 - `_wiDiv` ("with division") is $L(t)$, the product above with every power. This is the coherence.
 - `_noDiv` ("no division") is the product of the clusters with positive power only. A small denominator cannot make it
-  unbounded, but it is not a coherence. The analyzer's error correction (`example/analysis/Analyzer`) compares the two
-  curves to find the points where `_wiDiv` diverged ([Analysis](../user/Analysis.md)).
-
-<a id="cce_divergence"></a>
-### 1.2 |L| > 1
+  unbounded, but it is not a coherence.
 
 A coherence cannot exceed 1 in magnitude. When `_wiDiv` does, or turns into `nan`/`inf`, the truncated expansion has
-not converged at those times. A sub-cluster coherence close to zero sits in a denominator, and the division amplifies
-what the larger cluster does not cancel.
+not converged at those times. A sub-cluster coherence close to zero sits in a denominator. The analyzer's error
+correction (`example/analysis/Analyzer`, [Analysis](../user/Analysis.md)) compares the two curves to find these points.
 
-This happens with strongly coupled spins:
-
-- Close pairs of electron spins.
-- A spin-1 qubit without its zero-field splitting in gCCE (tutorial `advanced/01_P1/gCCE2_Hahn_zfs`).
-- cCCE in a tilted field without [knight](../user/InputFile_General.md#tag_knight) (tutorial
-  `advanced/06_terms_and_models/cCCE2_Hahn_knightShift`).
-
+It happens with strongly coupled spins, for example close pairs of electron spins, a spin-1 qubit without its
+zero-field splitting in gCCE (tutorial `advanced/01_P1/gCCE2_Hahn_zfs`), or cCCE in a tilted field without
+[knight](../user/InputFile_General.md#tag_knight) (tutorial `advanced/06_terms_and_models/cCCE2_Hahn_knightShift`).
 What helps:
 
 - Adding the missing physics, the zero-field splitting or the Knight term.
 - A higher `order`.
 - Keeping the strongly coupled spins in one cluster ([pCCE](pcce.md), [bundles](bundle-adaptive.md)).
 - Another [mean-field](#cce_meanfield) choice.
-- The analyzer's error correction of the points where `_wiDiv` and `_noDiv` part.
-
-A large intermediate value of the product does not overflow when the final one can be represented, but the expansion
-still has not converged there.
 
 <a id="cce_states"></a>
 ## 2. Ensemble and sampled bath states
@@ -188,24 +177,10 @@ can be added to cCCE (`hamiltonian.cCCE`):
 - The exact reference for all three is gCCE, which keeps the transverse coupling in the cluster Hamiltonian.
 
 <a id="cce_delta_A"></a>
-### 4.3 Where delta_A comes from
-
-For a spin-1 qubit, $H = \Delta S_z^2 + \mathbf{S}\cdot\mathsf{A}\cdot\mathbf{I}$. The transverse part
-$S_x a_x + S_y a_y$ ($a_k = \mathbf{A}_k\cdot\mathbf{I}$) changes $m_s$ by ±1. To second order the branch
-$m_s = \pm 1$ gets $(1/2\Delta) V_\pm V_\mp$ with $V_\pm = a_x \mp i a_y$, and $m_s = 0$ gets
-$-(1/2\Delta)(V_+V_- + V_-V_+)$. Since $[a_x, a_y] = i(\mathbf{A}_x\times\mathbf{A}_y)\cdot\mathbf{I}$,
-$V_\pm V_\mp = a_x^2 + a_y^2 \mp (\mathbf{A}_x\times\mathbf{A}_y)\cdot\mathbf{I}$. The part linear in $\mathbf{I}$ is
-$\mp(\mathbf{A}_x\times\mathbf{A}_y)\cdot\mathbf{I}/(2\Delta)$ for $m_s = \pm 1$ and cancels for $m_s = 0$, that is
-$-m_s(\mathbf{A}_x\times\mathbf{A}_y)/(2\Delta)$. The $a_x^2 + a_y^2$ part is a constant for a spin 1/2 and a
-quadrupole-like term otherwise, and it is not added. The term has to be odd in $m_s$, since $\mathbf{S}$ and
-$\mathbf{I}$ both change sign under time reversal, which takes $m_s$ to $-m_s$.
-
-The coefficient $-m_s$ agrees with the coefficient $(2 - 3|m_s|)$ of Maze, PRB 78, 094303 (2008), Eq. (A4), only for
-$m_s = +1$.
-
-The derivation takes the qubit levels as the $|m_s\rangle$ states, with a field along the qubit axis and
-$\gamma_e B \ll \Delta$. The qubit Zeeman energy is left out of the denominators, as in knight, so the next correction
-is of relative size $\gamma_e B_z/\Delta$ (0.5 % at 5 G, 10 % at 100 G).
+delta_A is the part of the second-order transverse hyperfine term that is linear in $\mathbf{I}_n$. Its coefficient
+$-m_s$ agrees with the coefficient $(2 - 3|m_s|)$ of Maze et al., Eq. (A4), only for $m_s = +1$. It holds with the field
+along the qubit axis and $\gamma_e B \ll \Delta$. The qubit Zeeman energy is left out of the denominators, as in knight,
+so its relative error is about $\gamma_e B_z/\Delta$ (0.5 % at 5 G, 10 % at 100 G).
 
 <a id="cce_defect"></a>
 ## 5. The defect bath (P1 and other electron spins)

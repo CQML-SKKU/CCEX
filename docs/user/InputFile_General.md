@@ -541,8 +541,8 @@ The terms are in [cCCE and gCCE](../methods/cce.md), and
 
 Adds the second-order hyperfine correction of each bath spin, δA<sub>n</sub> = −m<sub>s</sub>(A<sub>x</sub> × A<sub>y</sub>)/(2Δ)
 (J. R. Maze et al., PRB 78, 094303 (2008)). It matters for nuclei close to the defect at low field, needs a single
-spin-1 qubit with a zero-field splitting, and does not go with [hfmedi](#tag_hfmedi), which already contains it. The
-derivation is in [cCCE and gCCE](../methods/cce.md#cce_delta_A).
+spin-1 qubit with a zero-field splitting, and does not go with [hfmedi](#tag_hfmedi), which already contains it. Its
+conditions are in [cCCE and gCCE](../methods/cce.md#cce_delta_A).
 
 ```json
 "hamiltonian": {"cCCE": {"delta_A": true}}
