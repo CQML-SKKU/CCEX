@@ -32,7 +32,7 @@ Outputs are compared on the raw `_noDiv` and `_wiDiv`, never on the error-correc
 | | `sparse` with `min_dim` 1 against eigen `exact` | 1e-8, `_wiDiv` at \|L\| ≤ 1 |
 | `tensor_format` | v3 hyperfine file (x 1) against the untagged v1 file (x 0.5), five h-BN cases | same bytes |
 | | the VASP-tagged v1 file against `head-20261012-aa883d0d4` (skipped on CI) | 1e-12 relative |
-| `cli` | `-e` template, its keys against the readers (`example_keys.py`, `example_autoconv.py`), comments at column 41, the `-o` and `output.*` rules | as stated |
+| `cli` | `-e` template, its keys against the readers (`example_keys.py`, `example_autoconv.py`), no trailing comments and aligned `:`, the `-o` and `output.*` rules | as stated |
 | `configuration` | each `k_range` configuration against its files alone; two bath files against the merged file; bad forms refused | same bytes |
 | `autoconv` | `enabled` false against no block; enabled starts the runner once under `mpirun -n 2`; bad values refused | same bytes |
 | `pcce_rest` | pCCE with left-over spins against files without them; with a `CCEX_SANITIZE=1` build in `CCEX_BIN`, a write into deleted spins stops the run | same bytes |

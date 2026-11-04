@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0 — 2026-11-03 (changes since 2.0.1)
+## 2.1.0 — 2026-11-04 (changes since 2.0.1)
 
 ### Summary
 
@@ -117,7 +117,7 @@
   0.44 µs before), `04_hBN/gCCE2_Hahn_OH` is `gCCE2_Hahn_Overhauser`, `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job
   with nothing visible in its 4.9 ns) is `gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs), and the 50 ppm input of
   `03_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `08_GPU` has its `expected.png`, made on idm4-gpu; `plot_coherence.py --log-time` draws a log time axis.
-- **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`.
+- **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`, with each key's explanation on the lines above it.
   The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
   plain-text formulas are TeX. The automatic convergence has one reference, `docs/user/InputFile_AutoConvergence.md`.
   The READMEs are shorter, without the history of their changes.

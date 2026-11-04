@@ -5,7 +5,7 @@ the CCEX repository lists every change, with its details and measurements.
 
 ## 2.1.0
 
-This section lists what changed in 2.1.0 (released 2026-11-03) since 2.0.1. Version 2.0.1 (2026-10-22) fixed GPU gCCE
+This section lists what changed in 2.1.0 (released 2026-11-04) since 2.0.1. Version 2.0.1 (2026-10-22) fixed GPU gCCE
 and the builds of 2.0.0.
 
 - **Two new methods.**
