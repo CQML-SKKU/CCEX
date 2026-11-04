@@ -1,18 +1,18 @@
 /**
  * @file noise.cpp
- * @brief method noise: the Gaussian coherence W(T) = exp(-chi(T)) of the qubit's phase noise (semi-cce, ported).
+ * @brief method noise: the Gaussian coherence W(T) = exp(-chi(T)) of the qubit's phase noise, the semi-classical CCE.
  *
  * The phase is phi = int_0^T f(t) dw(t) dt, f = +-1 flipped by every ideal pi pulse, dw the qubit frequency noise (rad/ms),
  * and chi = <phi^2> / 2. With Y(w) = int_0^T f(t) exp(i w t) dt:
  *  - a model spectrum S(f) of the frequency noise (kHz^2/kHz, two-sided): chi = 4 pi^2 int_0^inf S(f) |Y(2 pi f)|^2 df;
- *  - a cluster: dw = Delta m_s sum_i A_zz,i I_z,i, the secular hyperfine term (semi-cce's), with
+ *  - a cluster: dw = Delta m_s sum_i A_zz,i I_z,i, the secular hyperfine term, with
  *    hamiltonian.noise.pseudo_secular also A_zx,i I_x,i + A_zy,i I_y,i; the bath under H = H_bath + p sum_i (A_z,i . I_i) with
- *    p = (|m_alpha| + |m_beta|) / 2 (semi-cce's projection; user decision 2026-10-28), infinite temperature:
- *    chi_C = (1 / 2D) sum_ab |<a|dw|b>|^2 |Y(E_a - E_b)|^2. For a Hahn echo this is semi-cce's mode_sum.
+ *    p = (|m_alpha| + |m_beta|) / 2 (the projection of the semi-classical CCE; user decision 2026-10-28), infinite temperature:
+ *    chi_C = (1 / 2D) sum_ab |<a|dw|b>|^2 |Y(E_a - E_b)|^2. For a Hahn echo this is the mode sum of the semi-classical CCE.
  * hamiltonian.noise.compute chooses what a cluster gives (noiseCluster) and what the run writes (noiseFinish):
  *  - "coherence": -chi_C at the run's times; the coherence exp(-chi).
- *  - "spectrum" (semi-cce's psd): the correlation C_C(t) of B = sum_i A_zz,i I_z,i (kHz) at infinite temperature on the
- *    grid of hamiltonian.noise.fft, C = (1/D) sum_ab |<a|B|b>|^2 cos(w_ab t); then S(f) by FFT of C (semi-cce's
+ *  - "spectrum" (the spectral route): the correlation C_C(t) of B = sum_i A_zz,i I_z,i (kHz) at infinite temperature on the
+ *    grid of hamiltonian.noise.fft, C = (1/D) sum_ab |<a|B|b>|^2 cos(w_ab t); then S(f) by FFT of C (the reference code's
  *    psd_from_corr, its window, pad_factor, subtract_mean) and chi = Delta m_s^2 2 int S(f) 2 pi^2 |Y(2 pi f)|^2 df by the
  *    trapezoid rule (coherence_from_psd, clamp_negative): C(t), S(f) and the coherence are written.
  *  - "correlation" (PyCCE's CCENoise): C_C(t) = Re Tr[rho {B(t), B} / 2] at the run's times, rho the cluster's pure
@@ -149,7 +149,7 @@ void writeColumns(const std::string& name, const char* header, const std::vector
     if (fclose(fp)){ fprintf(stderr,"Error: cannot write file %s\n",name.c_str()); ccexFatal(1); }
 }
 
-// semi-cce psd_from_corr: S(f) = dt Re FFT of C made even (length M = 2N - 1, or pad_factor times that, odd), the
+// as the reference code's psd_from_corr: S(f) = dt Re FFT of C made even (length M = 2N - 1, or pad_factor times that, odd), the
 // padding at C's tail mean (0 with subtract_mean); f = k / (M dt), k = 0 .. M/2
 void spectrumOf(std::vector<double> C, double dt, Config* cnf, std::vector<double>& f, std::vector<double>& S){
     const int N = int(C.size());

@@ -15,7 +15,7 @@
       <tab type="user" url="@ref md_docs_2user_2InputFile__Defect" title="Defect tags"/>
       <tab type="user" url="@ref md_docs_2user_2InputFile__Output" title="Output tags"/>
       <tab type="user" url="@ref md_docs_2user_2InputFile__AutoConvergence" title="Automatic convergence tags"/>
-      <tab type="user" url="@ref md_docs_2user_2InputFile__OldNames" title="Old names"/>
+      <tab type="user" url="@ref md_docs_2user_2InputFile__OldNames" title="Upgrading old inputs"/>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2OutputFiles" title="Output files"/>
     <tab type="usergroup" url="@ref md_docs_2user_2Examples" title="Examples">
@@ -45,7 +45,7 @@
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Analysis" title="Analysis"/>
     <tab type="user" url="@ref md_docs_2user_2Tools" title="Tools"/>
-    <tab type="usergroup" url="@ref md_docs_2methods_2Methods" title="Methods">
+    <tab type="usergroup" url="@ref md_docs_2methods_2Methods" title="Theory and implementation">
       <tab type="user" url="@ref md_docs_2methods_2cce" title="cCCE and gCCE"/>
       <tab type="user" url="@ref md_docs_2methods_2pcce" title="Partition CCE (pCCE)"/>
       <tab type="user" url="@ref md_docs_2methods_2bundle-adaptive" title="Bundles and adaptive refinement"/>
@@ -54,6 +54,7 @@
       <tab type="user" url="@ref md_docs_2methods_2master-equation" title="Master-equation CCE"/>
       <tab type="user" url="@ref md_docs_2methods_2noise" title="Gaussian phase noise"/>
       <tab type="user" url="@ref md_docs_2methods_2pseudospin" title="Pseudospin model"/>
+      <tab type="user" url="@ref md_docs_2methods_2auto-convergence" title="Automatic convergence"/>
       <tab type="user" url="@ref md_docs_2methods_2gpu" title="GPU execution"/>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Changes" title="Changes"/>

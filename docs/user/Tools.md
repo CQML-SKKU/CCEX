@@ -187,13 +187,23 @@ checks that CCEX reads every one.
 ## 6. AutoConvergence
 
 AutoConvergence is the runner of the automatic convergence. `main.out` starts it when the input has an
-`auto_convergence` block ([Automatic convergence tags](InputFile_AutoConvergence.md)). `CCEX_PYTHON` picks the Python
+`auto_convergence` block ([Automatic convergence tags](InputFile_AutoConvergence.md), [how it works](../methods/auto-convergence.md)). `CCEX_PYTHON` picks the Python
 interpreter.
 
 Its own commands compute nothing. Run them from `example/tools/AutoConvergence`, or with it on `PYTHONPATH`:
 
-- `python3 -m autoconv status INPUT.json` says where a run is.
-- `analyze` and `judge` judge existing runs ([Commands](InputFile_AutoConvergence.md#tag_ac_commands)). Their
-  `--config` is the input with the `auto_convergence` block, read as the runner reads it.
+<a id="tag_ac_commands"></a>
+
+```sh
+python3 -m autoconv status INPUT.json                       # where a run is
+python3 -m autoconv analyze RUN_DIR [RUN_DIR ...] [--config INPUT] [--report-dir DIR]
+python3 -m autoconv judge --setting RUN_DIR ... --reference RUN_DIR ... [--report-dir DIR]
+```
+
+- `status` prints how the run stands, then `progress.txt`.
+- `analyze` judges existing runs (one `RUN_DIR` per configuration) and gives the decay time and the sampling verdict.
+- `judge` compares runs of one setting with reference runs of the same configurations, as the rdip and rbath steps
+  do, with the default threshold 0.02.
+- The `--config` of `analyze` is the input with the `auto_convergence` block, read as the runner reads it.
 
 The state and axis files it makes for a run are written by the functions of [StateFiles](#tag_tool_statefiles).

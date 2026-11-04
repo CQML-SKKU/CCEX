@@ -123,7 +123,7 @@ A refusal is decided on every rank before anything is calculated, so all ranks s
 or a card that cannot be opened stops the run differently: every rank prints `Error: GPU backend: ...` and aborts, so
 the code comes from `mpirun`. An error during the calculation, such as a file that cannot be written, aborts
 every rank through MPI, and `mpirun` returns a nonzero code of its own. The statuses are explained in
-[Adaptive refinement](OutputFiles.md#out_adaptive) and in [Automatic convergence](InputFile_AutoConvergence.md#tag_ac_results).
+[Adaptive refinement](OutputFiles.md#out_adaptive) and in [Automatic convergence](../methods/auto-convergence.md#tag_ac_results).
 
 <a id="RunLog"></a>
 ## 4. The run log

@@ -1,6 +1,6 @@
-# Methods
+# Theory and implementation
 
-Each page explains how one method works. The input keys are in the
+Each page explains what one method or part of CCEX computes and how CCEX does it. The input keys are in the
 [input reference](../user/InputFile.md).
 
 | Page | What it describes |
@@ -13,4 +13,5 @@ Each page explains how one method works. The input keys are in the
 | [Pseudospin model of nuclear pairs](pseudospin.md) | method pseudospin: the cut pair Hamiltonian, channels grouped or pairwise, its accuracy, the channel table |
 | [DEER bath pulses](deer.md) | pump pulses on bath spins (`pulse.bath`) |
 | [Coordinate frame rotation](coordinate-frame-rotation.md) | a bath file in another frame (`frame.rotation`) |
+| [Automatic convergence](auto-convergence.md) | the runner of the `auto_convergence` block: its steps, when two settings agree, its results and exit codes |
 | [GPU execution](gpu.md) | the CUDA backend: what runs on the GPU, its options and the memory |

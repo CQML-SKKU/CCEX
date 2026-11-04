@@ -510,7 +510,7 @@ static void refuseOldInputKeys(cJSON* root){
     if (found.empty()) return;
     if (rank==0){
         for (const std::string& f : found) ccexRefusalPrint(stderr,"Error: %s\n",f.c_str());
-        ccexRefusalPrint(stderr,"%s (docs/user/InputFile.md has the table of old and new names)\n",kConvertHint);
+        ccexRefusalPrint(stderr,"%s (docs/user/InputFile_OldNames.md has the table of old and new names)\n",kConvertHint);
     }
     ccexRefuse();
 }
@@ -791,11 +791,11 @@ static void readNoiseSpectrum(Config* cnf, cJSON* section){
         ccexRefusalPrint(stderr,"Error: hamiltonian.noise belongs to method noise, this run is not\n");
         ccexRefuse();
     }
-    // pseudo_secular: the noise of a bath spin is its secular hyperfine term A_zz I_z (false, semi-cce's), or with the
+    // pseudo_secular: the noise of a bath spin is its secular hyperfine term A_zz I_z (false), or with the
     // pseudo-secular A_zx I_x + A_zy I_y too (true)
     const bool pseudoSecularGiven = cJSON_GetObjectItem(section,"pseudo_secular") != NULL;
     cnf->noise_pseudo_secular = cJSON_ReadBool(section,(char*)"pseudo_secular",true,false);
-    // compute: what the run gives (noise.cpp); fft: the grid and the FFT of compute spectrum (semi-cce's psd keys)
+    // compute: what the run gives (noise.cpp); fft: the grid and the FFT of compute spectrum (the keys of the spectral route)
     const bool computeGiven = cJSON_GetObjectItem(section,"compute") != NULL;
     const char* compute = cJSON_ReadString(section,(char*)"compute",true,(char*)"coherence");
     if (strcasecmp(compute,"coherence") && strcasecmp(compute,"spectrum") && strcasecmp(compute,"correlation")){

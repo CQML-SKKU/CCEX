@@ -204,7 +204,7 @@ With an [auto_convergence](InputFile_AutoConvergence.md) block, everything goes 
 | `lock` | held while a runner works in the folder |
 
 The exit code says how the run ended ([Exit codes](BuildingAndRunning.md#ExitCodes)).
-[Results and exit codes](InputFile_AutoConvergence.md#tag_ac_results) explains each status and how to continue a
+[Results and exit codes](../methods/auto-convergence.md#tag_ac_results) explains each status and how to continue a
 stopped job.
 
 <a id="out_analyzer"></a>

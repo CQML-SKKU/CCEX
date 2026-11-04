@@ -48,7 +48,7 @@ with references recorded on x86, and a Mac build differs from them in the last d
 builds with it, but do not commit it: the newest `head-*` folder is the reference for everyone.
 
 `.github/workflows/ci.yml` runs the fast, machine-independent checks on every push: the unit tests, `check_analytic`,
-`check_rotation`, `check_mean_field`, `check_deer`, `check_master_equation`, `check_noise` (without semi-cce and
+`check_rotation`, `check_mean_field`, `check_deer`, `check_master_equation`, `check_noise` (without the reference code and
 PyCCE), `check_pseudospin`, `check_tutorials`, `check_refusals`, `check_input_forms` and `check_rdip_ladder` (quick
 sizes). `check_numerics`, the long adaptive suites and the GPU checks are run by hand.
 
@@ -69,7 +69,7 @@ the order below. `check_refusals` and `check_input_forms` run one after the othe
 | `check_input_forms/` | Do the input forms of the current and older layouts give the same physics, and do the template (`-e`), the command line, units, comments and the other input stages work? |
 | `check_mean_field/` | Does the vector mean field give the z mean field's curve where the two must agree? |
 | `check_rdip_ladder/` | Does each `rdip_ladder` rung equal a separate run at that rdip? |
-| `check_noise/` | Does method noise match the OU closed forms, quadrature, semi-cce and PyCCE? |
+| `check_noise/` | Does method noise match the OU closed forms, quadrature, an independent semi-classical CCE code and PyCCE? |
 | `check_pseudospin/` | Is method pseudospin exact where it has to be (two spins on the qubit axis, Seo's eq. 23)? |
 | `check_tutorials/` | Does every tutorial input still run (with `nstep` cut to 3)? |
 | `bath_data/` | not a check: the frozen baths, tensors and state files the checks read |

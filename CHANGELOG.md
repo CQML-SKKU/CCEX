@@ -5,7 +5,7 @@
 ### Summary
 
 - **Two new methods.** `noise` gives the Gaussian phase-noise coherence from the modes of the bath's clusters or from a
-  model spectrum (ported from semi-cce; its mode sums also run on the GPU). `pseudospin` gives the pair clusters in the
+  model spectrum, the semi-classical CCE (its mode sums also run on the GPU). `pseudospin` gives the pair clusters in the
   pseudospin model of nuclear flip-flops, for reading a decay rather than for the best curve.
 - **GPU runs on a full node.** `gpu_options.ranks_per_gpu` lets some of a node's ranks use the GPU and the others the
   CPU; a GPU batch of cCCE clusters is diagonalized in one call; with `backend` `auto` or `cuda` the `gpu_options` an
@@ -18,22 +18,22 @@
 
 ### Added
 
-- **method `noise`**: the Gaussian coherence exp(−χ) of the qubit's phase noise (`src/calculation/noise.cpp`, from
-  semi-cce). `hamiltonian.noise.spectrum` `"bath"` (the default) sums each cCCE cluster's eigenmodes (for a Hahn echo
-  semi-cce's `mode_sum`; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
+- **method `noise`**: the Gaussian coherence exp(−χ) of the qubit's phase noise (`src/calculation/noise.cpp`, the
+  semi-classical CCE). `hamiltonian.noise.spectrum` `"bath"` (the default) sums each cCCE cluster's eigenmodes (for a Hahn echo
+  the mode sum; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
   only); a model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath (`order`, `bfield`,
   `rbath`, `rdip` and `Qubit` may be left out then; given, they and `configuration` and `Defect` are reported as not
   used, and no file they name is opened). cluster.mode
   standard, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence` and
   `cluster_density_matrix`, `rdip_ladder`, `cluster_contributions` and `gpu_options.ranks_per_gpu` are
-  refused with it. `hamiltonian.noise.pseudo_secular` (default false, semi-cce's: the noise
+  refused with it. `hamiltonian.noise.pseudo_secular` (default false: the noise
   is the secular A_zz I_z) adds the pseudo-secular A_zx I_x + A_zy I_y to the noise. `hamiltonian.noise.compute` chooses what is computed
-  from the bath: `"coherence"` (default; χ from the clusters' eigenmodes, no time grid), `"spectrum"` (semi-cce's `psd`:
-  C(t) on the grid of `hamiltonian.noise.fft`, S(f) by FFT with its `window`, `pad_factor`, `subtract_mean`,
+  from the bath: `"coherence"` (default; χ from the clusters' eigenmodes, no time grid), `"spectrum"` (C(t)
+  on the grid of `hamiltonian.noise.fft`, S(f) by FFT with its `window`, `pad_factor`, `subtract_mean`,
   `clamp_negative`, and the coherence; writes `_noise_correlation` and `_noise_spectrum`) or `"correlation"` (PyCCE's
   `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
   computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `hamiltonian.noise.fft` is optional:
-  `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and semi-cce
+  `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and an independent semi-classical CCE code
   (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/09_noise`: method noise against cCCE2 for a
   1 ppm P1 bath, and an OU model spectrum without the bath keys.
   `noise` was a reserved name refused as not implemented (A49).
@@ -96,6 +96,18 @@
   the written values (`check_input_forms` column_evolution C1-C3: `{"enabled": false}` against a `min_dim` no cluster
   reaches). The MKL builds now set `MKL_CBWR_AUTO | MKL_CBWR_STRICT` at start (the CPU's fastest code path, independent
   of the alignment); an `MKL_CBWR` in the environment is left to MKL.
+- **`hamiltonian.common.quadrupole.structure` `"strained"` took the wrong tensor for a far spin.** A spin outside the
+  defect file's range, folded back by the cell, was looked up in the defect file again instead of in
+  `file_without_defect`. It now takes the tensor of `file_without_defect`, as `"bubble"` does.
+- **`"strained"` and `"bubble"` with a vertex-format `file_without_defect` never ended.** The fold used a box of zero
+  size. It now uses the box of the file's eight vertices. `check_rotation` folds a far spin for both structures and both
+  range forms.
+- **cCCE with `quantity` dm stopped in the middle of the run.** It is now refused at input (dm needs gCCE).
+- **The adaptive refinement's message for `-o` and `output.path`** named `cluster.adaptive.output`, the old name. It
+  names `cluster.adaptive.workdir`.
+- **BathGenerator** exits with 1 on its errors (0 before, for 21 of them).
+- **The message of a refused old key** pointed to `docs/user/InputFile.md` for the table of old names. It points to
+  `docs/user/InputFile_OldNames.md`.
 
 ### Builds
 
@@ -127,7 +139,10 @@
   `advanced/01_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `advanced/11_GPU` has its `expected.png`, made on idm4-gpu; `plot_coherence.py --log-time` draws a log time axis.
 - **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`, with each key's explanation on the lines above it.
   The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
-  plain-text formulas are TeX. The automatic convergence has one reference, `docs/user/InputFile_AutoConvergence.md`.
+  plain-text formulas are TeX. The automatic convergence has a key page, `docs/user/InputFile_AutoConvergence.md`, and a method page,
+  `docs/methods/auto-convergence.md` (its steps, results and exit codes). The input pages describe each key in a
+  type/default table with an example, the old names have their own page (`docs/user/InputFile_OldNames.md`), and the
+  Defect page shows a defect with several orientations (NV).
   The READMEs are shorter, without the history of their changes.
 - **Checks.** `test/code_verification/run.sh` runs its checks at once (about 8 minutes instead of 21). New:
   `check_tutorials`, every tutorial input run with `nstep` 3. `check_numerics` compares with v2.0.1 too (no
@@ -247,8 +262,8 @@
 
 `python3 example/tools/InputKeys/convert_input_keys.py FILE...` rewrites inputs in place, keeping their comments and
 listing what it changed (`--check` lists only, `--stdout` prints the new text). A rewritten input gives the same results
-as before. The table below lists every renamed or removed key; `docs/user/InputFile.md` (section "Old names") has the
-same table with more detail.
+as before. The table below lists every renamed or removed key; `docs/user/InputFile_OldNames.md` has the same names, by
+block, with more detail.
 
 | Old | New |
 |---|---|

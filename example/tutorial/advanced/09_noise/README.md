@@ -5,7 +5,7 @@ Folder: `example/tutorial/advanced/09_noise/`
 Method `noise`: the coherence as the Gaussian decay $W(T) = e^{-\chi(T)}$ of the qubit's phase noise, with
 $\chi = \langle\varphi^2\rangle/2$ of the phase $\varphi = \int f(t)\,\delta\omega(t)\,dt$ ($f = \pm 1$, flipped by each
 ideal π pulse). The noise δω comes from the bath, each cCCE
-cluster giving its share of χ from its eigenmodes (`hamiltonian.noise.spectrum` `"bath"`, the default; semi-cce's
+cluster giving its share of χ from its eigenmodes (`hamiltonian.noise.spectrum` `"bath"`, the default; the
 semi-classical CCE), or from a model of the frequency noise without a bath (`{"model": "OU", ...}` or
 `{"model": "power", ...}`). The Gaussian approximation leaves out the qubit's back-action on the bath and the
 non-Gaussian part of the noise; it is meant for many weakly coupled noise sources. The keys are in

@@ -1,7 +1,7 @@
 {
     // The Hahn echo of an NV (ms +1 / 0) in a 1 ppm P1 electron-spin bath (the bath of basic/06_defect_bath, one configuration) by
     // method noise: the Gaussian coherence W(T) = exp(-chi(T)) of the qubit's phase noise, chi = <phi^2>/2, each cCCE
-    // cluster giving its share of chi from its eigenmodes (semi-cce's semi-classical CCE). Ten sampled bath states;
+    // cluster giving its share of chi from its eigenmodes (the semi-classical CCE). Ten sampled bath states;
     // a state only sets the static field of the other spins (the mean field), the cluster itself is averaged at
     // infinite temperature, with one bath Hamiltonian for both qubit states. The Gaussian approximation leaves out
     // the qubit's back-action and the non-Gaussian part of the noise. Writes results/ccein_noise_state1_wiDiv ...

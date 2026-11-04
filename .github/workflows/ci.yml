@@ -150,7 +150,7 @@ jobs:
       - name: Master-equation CCE (rate 0 against cCCE/gCCE, recorded PyCCE curves, closed forms)
         run: bash test/code_verification/check_master_equation/run.sh
 
-      - name: Method noise (closed forms and quadrature; the semi-cce and PyCCE parts are skipped here)
+      - name: Method noise (closed forms and quadrature; the reference-code and PyCCE parts are skipped here)
         run: bash test/code_verification/check_noise/run.sh
 
       - name: Method pseudospin (exact cases, Seo eq. 23, refusals)

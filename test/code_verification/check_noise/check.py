@@ -1,22 +1,22 @@
 """method noise (src/calculation/noise.cpp) against references that do not share its code.
 
-model  OU and power-law spectra: chi from the OU closed forms (FID, Hahn; semi-cce classical-bath-noise atten_*) and
+model  OU and power-law spectra: chi from the OU closed forms (FID, Hahn; the reference code classical-bath-noise atten_*) and
        from scipy quadrature of 4 pi^2 int S(f) |Y(2 pi f)|^2 df (CPMG, power law), Y written here anew.
-semi   against semi-cce's quantum-bath-noise (order 2): a P1 bath by mode_sum (Hahn echo) with the bath mean field,
-       without it, a rotated frame and a second state, and by cumulant (exp(-kappa2/2)) for a FID; semi-cce's 13C
-       example (DFT hyperfine near the NV) by mode_sum and by cumulant for a FID and CPMG-2, -4. semi-cce's
-       hbar*mu0/4pi (1.05457172) is set to CCEX's H_BAR (1.054571729); the self-test keeps semi-cce's own value and has
+reference against the reference's quantum-bath-noise (order 2): a P1 bath by mode_sum (Hahn echo) with the bath mean field,
+       without it, a rotated frame and a second state, and by cumulant (exp(-kappa2/2)) for a FID; the reference's 13C
+       example (DFT hyperfine near the NV) by mode_sum and by cumulant for a FID and CPMG-2, -4. the reference's
+       hbar*mu0/4pi (1.05457172) is set to CCEX's H_BAR (1.054571729); the self-test keeps the reference's own value and has
        to fail (the two constants alone differ by up to 6e-8 in W). hamiltonian.noise.pseudo_secular against mode_sum
-       with its noise operator A_zz I_z made A_z . I in the run. Needs semi-cce 2851449 or later: before it, cumulant's
+       with its noise operator A_zz I_z made A_z . I in the run. Needs the reference code 2851449 or later: before it, cumulant's
        CPMG with N >= 2 was wrong (|h|^2 off by up to 0.4) and npulse 0 was not a FID.
 
 compute the three values of hamiltonian.noise.compute on one 13C bath agree (C(t) of correlation and spectrum; the
        coherence of spectrum, by FFT, and of coherence).
 pycce  compute correlation against PyCCE's noise (CCENoise): the ensemble and a sampled state.
 gpu    execution.backend cuda against the CPU for every compute value.
-semi   also compute spectrum against semi-cce's psd (C(t), S(f), the coherence; two sets of its options).
+reference also compute spectrum against the reference's psd (C(t), S(f), the coherence; two sets of its options).
 
-Usage: python3 check.py model|compute|pycce|gpu|semi WORKDIR BIN MPIRUN [SEMI_CCE or GPU binary]; exit 0 pass, 1 fail.
+Usage: python3 check.py model|compute|pycce|gpu|reference WORKDIR BIN MPIRUN [NOISE_REFERENCE_DIR or GPU binary]; exit 0 pass, 1 fail.
 CCEX writes W with 10 decimals, so W is compared to TOL = 2e-10.
 """
 import json, os, re, subprocess, sys
@@ -98,19 +98,19 @@ def model():
     return ok
 
 
-def semi(SEMI):
-    if 'seq = "FID" if npulse == 0' not in open(f"{SEMI}/quantum-bath-noise/src/quantum_bath_noise/runner.py").read():
-        print(f"  FAIL  semi-cce at {SEMI} is older than 2851449 (wrong CPMG filter, no FID): update it")
+def reference(REF):
+    if 'seq = "FID" if npulse == 0' not in open(f"{REF}/quantum-bath-noise/src/quantum_bath_noise/runner.py").read():
+        print(f"  FAIL  the reference code at {REF} is older than 2851449 (wrong CPMG filter, no FID): update it")
         return False
-    data = f"{SEMI}/quantum-bath-noise/examples/data"
+    data = f"{REF}/quantum-bath-noise/examples/data"
     n = 18325   # the bath file's spins
     rng = np.random.default_rng(42)
     np.savetxt(f"{work}/avaax.dat", np.r_[n, rng.integers(1, 13, size=n)], fmt="%g")
     for s in (1, 2):
         np.savetxt(f"{work}/state{s}.dat", np.r_[n, rng.choice([-0.5, 0.5], size=n)], fmt="%g")
-    driver = f"{work}/semi_driver.py"   # semi-cce's CLI, with hbar*mu0/4pi set (or not) before it runs
+    driver = f"{work}/ref_driver.py"   # the reference's CLI, with hbar*mu0/4pi set (or not) before it runs
     open(driver, "w").write("""import sys, importlib
-sys.path.insert(0, SEMI_SRC)
+sys.path.insert(0, REF_SRC)
 hbar = float(sys.argv.pop(1))
 if hbar:
     for m in ['constants', 'hamiltonian', 'bath.p1', 'bath.nuclear', 'methods.mode_sum']:
@@ -126,10 +126,10 @@ if os.environ.get("NOISE_PSEUDO_SECULAR"):   # CCEX's hamiltonian.noise.pseudo_s
     exec(compile(src, mode_sum.__file__, "exec"), mode_sum.__dict__)
 from quantum_bath_noise.cli import main   # imports the runner, which then takes the mode_sum above
 main()
-""".replace("SEMI_SRC", repr(SEMI + "/quantum-bath-noise/src")))
-    template = open(f"{SEMI}/quantum-bath-noise/examples/config_p1_mode_sum.txt").read().replace("examples/data", data)
+""".replace("REF_SRC", repr(REF + "/quantum-bath-noise/src")))
+    template = open(f"{REF}/quantum-bath-noise/examples/config_p1_mode_sum.txt").read().replace("examples/data", data)
 
-    def semi_run(name, s, mf=True, rot=False, hbar=1.054571729, base=None, result="Coh_mode_sum.dat", pseudo_secular=False,
+    def ref_run(name, s, mf=True, rot=False, hbar=1.054571729, base=None, result="Coh_mode_sum.dat", pseudo_secular=False,
                  **keys):
         c = re.sub(r"^approach\s*=.*$", "approach = single_sample", base or template, flags=re.M)
         for k, v in keys.items():
@@ -143,7 +143,7 @@ main()
         r = subprocess.run([sys.executable, driver, str(hbar), "--input", f"{name}.txt", "--outdir", name], cwd=work,
                            capture_output=True, text=True, env=dict(os.environ, NOISE_PSEUDO_SECULAR="1" if pseudo_secular else ""))
         if r.returncode:
-            raise SystemExit(f"  FAIL  semi-cce {name}: {r.stderr[-400:]}")
+            raise SystemExit(f"  FAIL  the reference code {name}: {r.stderr[-400:]}")
         return np.loadtxt(f"{work}/{name}/{result}")
 
     det = [84.946496] * 3 + [0.0] * 3 + [-84.946496] * 3 + [114.0264, 0.0, -114.0264]
@@ -166,7 +166,7 @@ main()
         ccex(name, d, 4)
         for s in ((1, 2) if name == "p1" else (1,)):
             _, W = coherence(f"{work}/out/{name}_state{s}_wiDiv")
-            ref = semi_run(f"semi_{name}_s{s}", s, mf, rot)
+            ref = ref_run(f"ref_{name}_s{s}", s, mf, rot)
             ok &= report(f"P1 mode_sum, {name}, state {s}", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
     # a FID: every single cluster's chi passes 745 within the first microseconds (exp(-chi) underflows there)
     d = json.loads(json.dumps(base))
@@ -175,12 +175,12 @@ main()
     d.update(pulse={"count": 0}, deltat=0.0001, nstep=31)
     ccex("p1_fid", d, 4)
     _, W = coherence(f"{work}/out/p1_fid_state1_wiDiv")
-    ref = semi_run("semi_p1_fid", 1, result="Coh_gauss.dat", method="cumulant", npulse=0, tau_max=0.003, tau_nstep=30)
+    ref = ref_run("ref_p1_fid", 1, result="Coh_gauss.dat", method="cumulant", npulse=0, tau_max=0.003, tau_nstep=30)
     ok &= report("P1 cumulant, FID, state 1", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
 
-    # semi-cce's 13C example, its DFT hyperfine file (no provenance line: x 0.5/S, as semi-cce reads it)
-    open(f"{work}/gyro_13C", "w").write("13C 0.5 6.728284\n")   # semi-cce's isotope file value
-    nuclear = open(f"{SEMI}/quantum-bath-noise/examples/config_nuclear.txt").read().replace("examples/data", data)
+    # the reference's 13C example, its DFT hyperfine file (no provenance line: x 0.5/S, as the reference code reads it)
+    open(f"{work}/gyro_13C", "w").write("13C 0.5 6.728284\n")   # the reference's isotope file value
+    nuclear = open(f"{REF}/quantum-bath-noise/examples/config_nuclear.txt").read().replace("examples/data", data)
     c13 = {"method": "noise",
            "Qubit": {"qubit": [{"file": f"{data}/nuclear_defect.dat"}], "alpha_state": {"ms": [-1]}},
            "configuration": {"gyrofile": f"{work}/gyro_13C", "bathfile": [f"{data}/nuclear_bath.dat"]},
@@ -192,21 +192,21 @@ main()
         name = f"c13_n{N}"
         ccex(name, dict(c13, pulse={"count": N}, deltat=tmax / 100, nstep=101), 4)
         _, W = coherence(f"{work}/out/{name}_wiDiv")
-        ref = semi_run(f"semi_{name}", 1, mf=False, base=nuclear, result=result, method=method, npulse=N, tau_max=tmax,
+        ref = ref_run(f"ref_{name}", 1, mf=False, base=nuclear, result=result, method=method, npulse=N, tau_max=tmax,
                        tau_nstep=100)
         ok &= report(f"13C {method}, {N} pulses", np.abs(W - ref[:, 1]).max(), f" (W down to {ref[:, 1].min():.2g})")
-    # hamiltonian.noise.pseudo_secular (A_zx I_x + A_zy I_y + A_zz I_z): the Hahn echo, semi-cce's mode_sum given the same noise
+    # hamiltonian.noise.pseudo_secular (A_zx I_x + A_zy I_y + A_zz I_z): the Hahn echo, the reference's mode_sum given the same noise
     d = dict(c13, pulse={"count": 1}, deltat=0.03, nstep=101)
     d["hamiltonian"] = dict(c13["hamiltonian"], noise={"pseudo_secular": True})
     ccex("c13_az", d, 4)
     _, W = coherence(f"{work}/out/c13_az_wiDiv")
-    ref = semi_run("semi_c13_az", 1, mf=False, base=nuclear, pseudo_secular=True, method="mode_sum", npulse=1, tau_max=3.0,
+    ref = ref_run("ref_c13_az", 1, mf=False, base=nuclear, pseudo_secular=True, method="mode_sum", npulse=1, tau_max=3.0,
                    tau_nstep=100)
     _, Wzz = coherence(f"{work}/out/c13_n1_wiDiv")
     ok &= report("13C mode_sum, pseudo_secular", np.abs(W - ref[:, 1]).max(),
                  f" (it changes W by up to {np.abs(W - Wzz).max():.2g})")
 
-    # hamiltonian.noise.compute "spectrum" against semi-cce's psd (C(t), S(f) and the coherence), two sets of its options
+    # hamiltonian.noise.compute "spectrum" against the reference's psd (C(t), S(f) and the coherence), two sets of its options
     for name, fft in (("plain", {}), ("options", {"window": "tukey", "pad_factor": 2, "subtract_mean": True,
                                                   "clamp_negative": True})):
         d = dict(c13, pulse={"count": 1}, deltat=0.01, nstep=301)
@@ -214,11 +214,11 @@ main()
                                                            "fft": dict({"time_max": 3.0, "nstep": 5000}, **fft)})
         ccex(f"c13_psd_{name}", d, 4)
         keys = {k: (str(v).lower() if isinstance(v, bool) else v) for k, v in fft.items()}
-        semi_run(f"semi_c13_psd_{name}", 1, mf=False, base=nuclear, result="Coh_psd.dat", method="psd", npulse=1,
+        ref_run(f"ref_c13_psd_{name}", 1, mf=False, base=nuclear, result="Coh_psd.dat", method="psd", npulse=1,
                  tau_max=3.0, tau_nstep=300, noise_max=3.0, noise_nstep=5000, **keys)
-        sc = np.loadtxt(f"{work}/semi_c13_psd_{name}/Ct.dat"); cc = np.loadtxt(f"{work}/out/c13_psd_{name}_noise_correlation")
-        sp = np.loadtxt(f"{work}/semi_c13_psd_{name}/PSD.dat"); cp = np.loadtxt(f"{work}/out/c13_psd_{name}_noise_spectrum")
-        sw = np.loadtxt(f"{work}/semi_c13_psd_{name}/Coh_psd.dat")[:, 1]
+        sc = np.loadtxt(f"{work}/ref_c13_psd_{name}/Ct.dat"); cc = np.loadtxt(f"{work}/out/c13_psd_{name}_noise_correlation")
+        sp = np.loadtxt(f"{work}/ref_c13_psd_{name}/PSD.dat"); cp = np.loadtxt(f"{work}/out/c13_psd_{name}_noise_spectrum")
+        sw = np.loadtxt(f"{work}/ref_c13_psd_{name}/Coh_psd.dat")[:, 1]
         _, W = coherence(f"{work}/out/c13_psd_{name}_wiDiv")
         rc = np.abs(sc[:, 1] - cc[:, 1]).max() / np.abs(sc[:, 1]).max()
         rs = np.abs(sp[:, 1] - cp[:, 1]).max() / np.abs(sp[:, 1]).max() if len(sp) == len(cp) else np.inf
@@ -228,12 +228,12 @@ main()
         ok &= report(f"13C spectrum vs psd ({name}), coherence", np.abs(sw - np.clip(W, 0, 1)).max())
 
     _, W = coherence(f"{work}/out/p1_state1_wiDiv")
-    ref = semi_run("semi_p1_own_hbar", 1, hbar=0)
+    ref = ref_run("ref_p1_own_hbar", 1, hbar=0)
     dW = np.abs(W - ref[:, 1]).max()
     if dW > TOL:
-        print(f"  PASS  self-test: semi-cce's own hbar*mu0/4pi is caught (max|dW| = {dW:.2e})")
+        print(f"  PASS  self-test: the reference's own hbar*mu0/4pi is caught (max|dW| = {dW:.2e})")
     else:
-        print(f"  FAIL  self-test: semi-cce's own hbar*mu0/4pi passed (max|dW| = {dW:.2e})")
+        print(f"  FAIL  self-test: the reference's own hbar*mu0/4pi passed (max|dW| = {dW:.2e})")
         ok = False
     return ok
 
@@ -396,4 +396,4 @@ if mode == "compute":
     sys.exit(0 if compute() else 1)
 if mode == "pycce":
     sys.exit(0 if pycce() else 1)
-sys.exit(0 if semi(sys.argv[5]) else 1)
+sys.exit(0 if reference(sys.argv[5]) else 1)

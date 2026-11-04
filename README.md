@@ -50,8 +50,8 @@ versions and the environment variables.
   Each has commented inputs, a `run.sh` and an `expected.png`.
 - [Input file](docs/user/InputFile.md): every key by block, with its unit and default.
 - [Output files](docs/user/OutputFiles.md) and the [analyzer](docs/user/Analysis.md).
-- [Methods](docs/methods/Methods.md): cCCE and gCCE, pCCE, bundles, master-equation CCE, DEER, the Gaussian phase
-  noise, the pseudospin model and GPU execution.
+- [Theory and implementation](docs/methods/Methods.md): cCCE and gCCE, pCCE, bundles, master-equation CCE, DEER,
+  the Gaussian phase noise, the pseudospin model, the frame rotation, the automatic convergence and GPU execution.
 
 ## Folders
 

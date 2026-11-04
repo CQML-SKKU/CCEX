@@ -65,6 +65,6 @@ html.ccex-nav-hidden #nav-path { left: 46px; }
 /* the flowchart of a run (Overview) is drawn large; at full width it fills a screen */
 img[src$="CCEX_workflow.png"] { width: 360px; max-width: 100%; }
 
-/* the table of contents: the entries under a numbered section show only while that section is read (ccex.js) */
-.contents > .toc > ul > li > ul { display: none; }
-.contents > .toc > ul > li.ccex-open > ul { display: block; }
+/* the table of contents: at every level, the entries under a section show only while that section is read (ccex.js) */
+.contents > .toc li > ul { display: none; }
+.contents > .toc li.ccex-open > ul { display: block; }

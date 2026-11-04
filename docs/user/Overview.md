@@ -114,7 +114,7 @@ method and an example for your system, see [What should I use for my case?](Exam
   noise and pseudospin models and runs on a cluster.
 - [Analysis](Analysis.md): the scripts that average, fit and plot the output.
 - [Tools](Tools.md): the programs that prepare the inputs.
-- [Methods](../methods/Methods.md): how each method works.
+- [Theory and implementation](../methods/Methods.md): what each method computes and how CCEX does it.
 - [Changes](Changes.md): what changed in 2.1.0 and in 2.0.0.
 - Data structures and Source files: the code documentation, for developers.
 

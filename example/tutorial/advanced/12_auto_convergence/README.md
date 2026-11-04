@@ -5,9 +5,9 @@ Folder: `example/tutorial/advanced/12_auto_convergence/`
 The automatic convergence (the `auto_convergence` block). With the block, `mpirun -n N main.out -f ccein.jsonc` does not
 run one calculation: rank 0 starts the runner (`example/tools/AutoConvergence/`, Python with numpy, scipy and
 matplotlib), which runs CCEX itself, each run in its own folder with `mpirun -n N`, chooses the time window, rdip,
-rbath and the number of bath configurations, and then computes the production. The rules are in
-[Automatic convergence tags](../../../../docs/user/InputFile_AutoConvergence.md) (and in
-`example/tools/AutoConvergence/README.md`). Every key not written in the
+rbath and the number of bath configurations, and then computes the production. How the runner works is in
+[Automatic convergence](../../../../docs/methods/auto-convergence.md), and its keys are in
+[Automatic convergence tags](../../../../docs/user/InputFile_AutoConvergence.md). Every key not written in the
 input has its default (`main.out -e`).
 
 ## cCCE2_Hahn_ensemble

@@ -1,8 +1,8 @@
 # Gaussian phase noise (method noise)
 
 `"method": "noise"` treats the bath as a source of classical noise on the qubit's transition frequency and gives the
-coherence in the Gaussian approximation. It is ported from `semi-cce` (its `mode_sum`, `cumulant` and `psd`) and, for
-the correlation function, follows PyCCE's `CCENoise`. The keys are in
+coherence in the Gaussian approximation, the semi-classical CCE: a sum over the bath's modes, the second cumulant, or
+the noise spectrum. For the correlation function it follows PyCCE's `CCENoise`. The keys are in
 [InputFile_General](../user/InputFile_General.md#tag_noise_spectrum); the tutorial is
 `example/tutorial/advanced/09_noise/`.
 
@@ -33,8 +33,8 @@ The $\chi_C$ are summed over the CCE terms. This equals the cCCE product of the 
 of a single factor. A sampled bath state (`configuration.s_range`) enters only
 through the mean field of the other bath spins.
 
-The two choices of the noise operator can differ by up to 0.04 in $W$ in `semi-cce`'s ¹³C example (500 G, Hahn echo)
-and by 1e-3 in its P1 example. Which is the better approximation is open.
+The two choices of the noise operator can differ by up to 0.04 in $W$ for a ¹³C bath with DFT hyperfine near an NV
+(500 G, Hahn echo) and by 1e-3 for a P1 bath. Which is the better approximation is open.
 
 ## Model spectra
 
@@ -72,8 +72,8 @@ Without `s_range` the three agree. On the ¹³C bath of `basic/01_first_run` the
 ## Checks
 
 `test/code_verification/check_noise/` compares the model spectra with the OU closed forms and scipy quadrature, the
-three `compute` values with each other, `"correlation"` with PyCCE, and P1 and ¹³C baths with `semi-cce`'s `mode_sum`,
-`cumulant` and `psd` (FID, Hahn and CPMG; with and without the mean field).
+three `compute` values with each other, `"correlation"` with PyCCE, and P1 and ¹³C baths with an independent implementation of the mode sum, the cumulant and
+the spectrum (FID, Hahn and CPMG; with and without the mean field).
 
-References: the semi-classical CCE of `semi-cce` and PyCCE's `CCENoise` (M. Onizhuk and G. Galli, Adv. Theory Simul.
-4, 2100254 (2021)).
+Reference for the correlation function: PyCCE's `CCENoise` (M. Onizhuk and G. Galli, Adv. Theory Simul. 4, 2100254
+(2021)).

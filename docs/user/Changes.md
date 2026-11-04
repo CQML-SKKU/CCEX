@@ -11,8 +11,7 @@ and the builds of 2.0.0.
 - **Two new methods.**
   - `noise` gives the Gaussian coherence exp(−χ) of the qubit's phase noise. It works from the modes of the bath's cCCE
     clusters or from a model spectrum (Ornstein–Uhlenbeck or a power law). With `hamiltonian.noise.compute` it also
-    gives the correlation function C(t) and the spectrum S(f). It was ported from semi-cce, and its mode sums also run
-    on the GPU ([method](InputFile_General.md#tag_method), tutorial
+    gives the correlation function C(t) and the spectrum S(f). Its mode sums also run on the GPU ([method](InputFile_General.md#tag_method), tutorial
     [Advanced 09: Phase noise (method noise)](../../example/tutorial/advanced/09_noise/README.md)).
   - `pseudospin` gives the bath's pairs alone, in the pseudospin model of nuclear flip-flops, for any nuclear spin. It
     writes a table of every channel's Ω and Δ ([channels](InputFile_General.md#tag_pseudospin_channels), tutorial
@@ -25,7 +24,12 @@ and the builds of 2.0.0.
     `[gpu-auto]` line in the log.
 - **Builds.** An nvcc older than 13.2 is accepted for cards below compute capability 12.0 (CUDA 12.8 with MPS on a
   GH200).
-- **Fixed.** The MKL builds write the same last digits from run to run.
+- **Fixed.**
+  - The MKL builds write the same last digits from run to run.
+  - The quadrupole structure `"strained"` gives a far spin the tensor of `file_without_defect`, as `"bubble"` does. It
+    took the defect file's tensor again.
+  - `"strained"` and `"bubble"` with a vertex-format `file_without_defect` no longer hang.
+  - cCCE with `quantity` dm is refused at input. It stopped in the middle of the run.
 - **Tutorials and documentation.** The tutorials are split into `basic/` (the input itself, six topics to read in
   order) and `advanced/` (thirteen topics); [Examples](Examples.md) lists both. Every tutorial input explains its keys
   in comments. New: the pseudospin tutorial, and calculations for the noise spectrum, the automatic GPU options, the
@@ -77,7 +81,7 @@ This section lists what changed in 2.0.0 (released 2026-10-17) since v1.2.2, in 
 lists what it changed. `--check` lists only, and `--stdout` prints the new text. A rewritten input gives the same
 results as before.
 
-The table below lists every renamed or removed key. [Old names](InputFile_OldNames.md) has the same table with more
+The table below lists every renamed or removed key. [Upgrading old inputs](InputFile_OldNames.md) has the same names, by block, with more
 detail.
 
 | Old | New |
