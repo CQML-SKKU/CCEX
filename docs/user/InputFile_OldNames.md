@@ -115,6 +115,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | `qd_tensorfile` | `hamiltonian.common.quadrupole.file` |
 | `qd_tensorfile_woqubit` | `hamiltonian.common.quadrupole.file_without_defect` |
 | `qd_cellpara` | `hamiltonian.common.quadrupole.cell` |
+| `hf_cutoff` | Removed. CCEX warns that the key is not read and ignores it. |
 | `knight` | `hamiltonian.cCCE.knight` |
 | `hfmedi` | `hamiltonian.cCCE.hfmedi` |
 | (none) | `hamiltonian.cCCE.delta_A` (new: Maze's second-order δA term, default `false` = the old calculation) |

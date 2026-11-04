@@ -70,7 +70,7 @@ are chosen at the start from the number of GPUs, their memory and the ranks on t
 
 | Option | Chosen value |
 |---|---|
-| `ranks_per_gpu` | 4, with `backend` `auto`, `cluster.mode` standard, and more than four ranks per GPU on the node. |
+| `ranks_per_gpu` | 4, with `backend` `auto` and more than four ranks per GPU on the node. |
 | `min_dim` | 256 when `ranks_per_gpu` is set. |
 | `evolution_batch_size` | 32. |
 | `cluster_batch_mb` | Two thirds of the smallest card's memory, shared by the ranks that use it, at least 64. |
@@ -119,7 +119,8 @@ density matrices (gCCE) to the host before the products and the MPI reductions, 
 When many ranks share one GPU, run the job under CUDA MPS, with `nvidia-cuda-mps-control -d` at its start and
 `echo quit | nvidia-cuda-mps-control` at its end.
 
-`gpu_options.ranks_per_gpu` (cCCE standard) lets only that many ranks per GPU of a node use the card. The other ranks
+`gpu_options.ranks_per_gpu` lets only that many ranks per GPU of a node use the card. Written in the input it needs
+cCCE standard, and chosen at the start it also applies to pcce. The other ranks
 stay on the CPU, and the clusters are split between the two kinds of rank by their measured cost. The `[gpu-split]` log
 line gives how many ranks use the GPU. With 0 (the default unless chosen at the start) every rank may use it.
 
