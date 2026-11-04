@@ -129,7 +129,7 @@ are meant for small clusters.
 - `execution.evolution_update: "recursive"` (the default is `exact` for both);
 - `rdip_ladder`;
 - the branch's place of the jump operators and its operator names, each with the new form named
-  ([old names](../user/InputFile.md#OldNames)).
+  ([old names](../user/InputFile_OldNames.md)).
 
 **Jump names checked against the bath.** Once the bath is read, `validateJumpOperatorNames` refuses a `bath_name` that
 is neither the qubit nor the name of a bath spin of the run (bath file and Defect sub-spins, case ignored), and lists

@@ -1,148 +1,129 @@
 # Output tags
-The `output` block. Its keys at the top level are refused with their place in the block. What each file holds, its
-name and its columns are in [Output files](OutputFiles.md).
 
-```
-"output": {"path": "results", "file": "ccein", "savemode": {"mode": "coherence", "nodiv": true},
-           "cluster_contributions": {"enabled": true, "max_mb": 256}, "cluster_only": false}
+The `output` block: where the outputs go, what is written, and two diagnostics. Each key has a small table (its type,
+default and unit), what it does, and an example. What each file holds is in [Output files](OutputFiles.md). The keys
+of this block are refused at the top level, with their place in the block.
+
+```json
+"output": {"path": "results", "file": "ccein", "savemode": {"mode": "coherence", "nodiv": true}}
 ```
 
-- [path](#tag_output_path)
-- [file](#tag_outfile)
-- [savemode](#tag_savemode) (`mode`, `nodiv`)
-- [cluster_contributions](#tag_cluster_contributions) (`enabled`, [max_mb](#tag_cluster_contribution_max_mb))
-- [cluster_only](#tag_cluster_only)
+1. [Where and what](#otag_where): `path`, `file`, `savemode`.
+2. [Diagnostics](#otag_diag): `cluster_only`, `cluster_contributions`.
+
+<a id="otag_where"></a>
+## 1. Where and what
 
 <a id="tag_output_path"></a>
-## output.path
-<b>Description:</b><br>
-The folder of the outputs. A relative folder is read from the working directory. A missing folder is made. <br>
-The folder is `-o DIR` from the command line, else `output.path`, else the working directory. <br>
+### output.path
+
+| Type | Default |
+|---|---|
+| string (a folder) | the working directory |
+
+The folder of the outputs, made when it is missing. A relative folder is read from the working directory. `-o DIR` on
+the command line takes its place. At the start the run writes and removes a file there; a folder that cannot be
+written is refused before anything is calculated.
+
 Refused:
 
-- an absolute [output.file](#tag_outfile) together with `output.path` (or `-o`), since the two would name two places;
-- the adaptive refinement, whose steps go to `cluster.adaptive.workdir`;
-- the automatic convergence, whose runs go to `auto_convergence.workdir`. The runner refuses `output.path` and
-  `output.file`, as it refuses `-o`.
+- together with an absolute [output.file](#tag_outfile);
+- with a `cluster.adaptive` block, whose steps go to `cluster.adaptive.workdir`;
+- with an `auto_convergence` block, whose runs go to `auto_convergence.workdir`.
 
-At the start the run writes and removes a file in the output folder (or in the folder given in `output.file`). A folder
-that does not exist or cannot be written is refused before anything is calculated. <br>
-<b>Data Type:</b> String (a folder)
-
-<b>Default:</b> the working directory
-
-<b>Example:</b> ``` "output" : {"path": "results"} ```
-
-<a id="tag_savemode"></a>
-## output.savemode
-<b>Description:</b><br>
-What is written, and whether `_noDiv` is written beside `_wiDiv`. A string gives the mode, with `nodiv` true. The block
-`{"mode": ..., "nodiv": true|false}` gives both; a missing `mode` is `"coherence"` and a missing `nodiv` is `true`. <br>
-<b>mode:</b>
-
-- `"coherence"` : The coherence, "file_wiDiv/noDiv". With sampled bath states (`configuration.s_range`) also one file
-                 pair per state, "file_state{state}_wiDiv/noDiv". <br>
-- `"coherence_tagged"` : Like `"coherence"`, with the same file names. Every time row also carries the zx and zz
-                 components of the first bath spin's hyperfine tensor and the first bath file's name, so that results of
-                 many bath files can be told apart after collecting them. <br>
-- `"cluster_coherence"` : The result and, for each cluster and each state, its coherence in
-                 "file_{cluster}_state{state}_wiDiv/noDiv". `{cluster}` is the bath indices of the cluster joined by `_`;
-                 `_state{state}` appears only with `configuration.s_range`. <br>
-- `"cluster_density_matrix"` : Everything `"cluster_coherence"` writes. With gCCE also, for every cluster, the density
-                 matrix of the whole qubit + cluster space at every time step, as `n` × `n` blocks (`n` the full
-                 dimension), in "file_{cluster}_full_state{state}_wiDiv/noDiv". The cluster's bath indices are as in
-                 `"cluster_coherence"`; the zeroth cluster (the qubits alone) is "file_full_state{state}_...". The
-                 `_wiDiv` and `_noDiv` files hold the same matrix. It costs one full-dimension matrix per time step and
-                 cluster, in memory and on disk, so it is for small systems. cCCE has no qubit + bath density matrix
-                 and writes what `"cluster_coherence"` writes. <br>
-
-<b>nodiv:</b> Write `_noDiv` beside `_wiDiv`. `_wiDiv` is the CCE coherence. `_noDiv` is the product of the
-positive-power cluster terms only (no division); it never diverges, and it is **not** a coherence. On by default because
-these read it:
-
-- the error correction of the group analyzer (`example/analysis/Analyzer`; \|wiDiv − noDiv\| ≥ 2 marks a divergent point);
-- the standing checks;
-- the paper scripts.
-
-`false` writes `_wiDiv` alone (half the files), for runs whose analysis does not need `_noDiv`. Must be a JSON boolean. <br>
-
-Old values and the old `nodiv` key are refused with a message naming the current form ([old names](InputFile.md#OldNames)).
-
-<b>Data Type:</b> String or object (`mode`: string, `nodiv`: boolean)
-
-<b>Default:</b> "coherence" (`nodiv` true)
-
-<b>Example:</b> ``` "output" : {"savemode": "cluster_coherence"} ```, ``` "output" : {"savemode": {"mode": "coherence", "nodiv": false}} ``` (both in `example/tutorial/advanced/08_analysis/cCCE2_Hahn_clusterReport/`)
+```json
+"output": {"path": "results"}
+```
 
 <a id="tag_outfile"></a>
-## output.file
-<b>Description:</b><br>
-Output file name prefix. <br>
-"file_..._wiDiv" is the final result of the coherence function. <br>
-"file_..._noDiv" is the result without dividing the final coherence function by those of its sub-clusters. <br>
-With [configuration.k_range](InputFile_General.md#tag_configuration_k_range) each configuration k writes
-"file_k&lt;k&gt;_...". <br>
-A relative name is read from the output folder: `-o DIR`, else [output.path](#tag_output_path), else the working
-directory. `-o` names the folder, not this name. <br>
-Refused: an absolute name together with `-o` or `output.path`, and any value with the automatic convergence (as
-`output.path`). <br>
-<b>Data Type:</b> String
+### output.file
 
-<b>Default:</b> the input file's name without `.json` or `.jsonc` (`-f run/ccein.json` writes `ccein_noDiv`, `ccein_wiDiv`, ... in the
-output folder).
+| Type | Default |
+|---|---|
+| string | the input file's name without `.json` or `.jsonc` |
 
-<b>Example:</b> ``` "output" : {"file": "filepath"} ```
+The start of every output name (`<file>_wiDiv`, `<file>_noDiv`, ...; [Names](OutputFiles.md#out_names)). A relative
+name is read from the output folder: `-o DIR`, else [output.path](#tag_output_path), else the working directory. With
+`-f run/ccein.json` and no `file`, the outputs are `ccein_wiDiv`, `ccein_noDiv`, ... in the output folder.
+
+Refused: an absolute name together with `-o` or `output.path`, and any value with an `auto_convergence` block.
+
+```json
+"output": {"file": "run1"}
+```
+
+<a id="tag_savemode"></a>
+### output.savemode
+
+| Type | Default |
+|---|---|
+| string, or `{"mode": string, "nodiv": boolean}` | `"coherence"`, with `nodiv` true |
+
+What is written. A string gives `mode`; the object gives both keys, a missing `mode` being `"coherence"` and a missing
+`nodiv` being `true`.
+
+| mode | Writes |
+|---|---|
+| `"coherence"` | the coherence: `<file>_wiDiv` and `_noDiv`, one pair per sampled state with `s_range` |
+| `"coherence_tagged"` | the same files, each line ending with the zx and zz hyperfine components of the first bath spin and the first bath file's name, to tell the results of many bath files apart ([Tagged rows](OutputFiles.md#out_tagged)) |
+| `"cluster_coherence"` | also one file pair per cluster and state: the factor of that cluster in the product ([One file per cluster](OutputFiles.md#out_clusters)) |
+| `"cluster_density_matrix"` | as `"cluster_coherence"`, and with gCCE also the density matrix of the whole qubit + cluster space of every cluster at every time step (`<file>_<cluster>_full_...`); for small systems only. cCCE writes what `"cluster_coherence"` writes |
+
+`nodiv` says whether `_noDiv` is written beside `_wiDiv`. `_noDiv` is the product of the cluster terms with a positive
+power only; it never diverges and is not a coherence. The analyzer's error correction reads it
+([Analysis](Analysis.md)). `false` writes `_wiDiv` alone.
+
+```json
+"output": {"savemode": "cluster_coherence"}
+"output": {"savemode": {"mode": "coherence", "nodiv": false}}
+```
+
+<a id="otag_diag"></a>
+## 2. Diagnostics
 
 <a id="tag_cluster_only"></a>
-## output.cluster_only
-<b>Description:</b><br>
-`true` writes the cluster plan to `<file>.clusters.json` and stops before the dynamics; nothing else is computed or
-written. Use it to see how many clusters an `rbath` and `rdip` give before a long run
-(`example/tutorial/advanced/08_analysis/cCCE2_Hahn_clusterReport/`). <br>
-Works with method cCCE or gCCE, and with cCCE `cluster.mode` pcce with explicit connections. Refused:
+### output.cluster_only
 
-- a `bundle` input whose connections the run checks (no `rdip`);
-- the adaptive probe, factors and except work;
-- a `cluster.adaptive` block;
-- an `auto_convergence` block.
+| Type | Default |
+|---|---|
+| boolean | `false` |
 
-<b>Data Type:</b> Boolean (a JSON `true` or `false`; anything else is refused)
+`true` writes the list of clusters, `<file>.clusters.json`, and stops before the dynamics
+([The cluster plan](OutputFiles.md#out_plan)). Use it to see how many clusters an `rbath` and `rdip` give before a
+long run. It works with cCCE and gCCE, and with cCCE `cluster.mode` pcce. Refused with a `bundle` input that leaves
+`rdip` out (its connections need the dynamics), with a `cluster.adaptive` block and with an `auto_convergence` block.
 
-<b>Default:</b> `false`
-
-<b>Example:</b> ``` "output" : {"cluster_only": true} ```
+```json
+"output": {"cluster_only": true}
+```
 
 <a id="tag_cluster_contributions"></a>
-## output.cluster_contributions
-<b>Description:</b><br>
-Record the contribution of every cluster to the coherence over all time points (cCCE and gCCE, `quantity` =
-`coherence`). A diagnostic, to find the clusters that dominate the decay or diverge
-(`example/tutorial/advanced/08_analysis/cCCE2_Hahn_clusterReport/`). <br>
-Files, with columns in [Output files](OutputFiles.md#out_contributions):
+### output.cluster_contributions
 
-- `<output.file>.contributions.state-<s>.tsv` for each bath state: one row per cluster with sites, bundles, production
-  power, dimension, the largest |log L̃|, undefined points and worst step;
-- `<output.file>.contributions.sites.tsv` once: site, name, spin, gyromagnetic ratio, position.
+| Type | Default |
+|---|---|
+| `{"enabled": boolean, "max_mb": integer}` | off |
 
-The raw table per rank is bounded by [max_mb](#tag_cluster_contribution_max_mb). The value is a block
-`{"enabled": true|false, "max_mb": n}`; a block without `enabled` is on, and a plain boolean is refused. <br>
+Writes how much each cluster contributes to the coherence over all times, to find the clusters that dominate the decay
+or diverge. cCCE and gCCE with `quantity` coherence. A block without `enabled` is on; a plain boolean is refused. The
+files are `<file>.contributions.state-<s>.tsv`, one row per cluster, and `<file>.contributions.sites.tsv`
+([Cluster contributions](OutputFiles.md#out_contributions)).
+[Advanced 08](../../example/tutorial/advanced/08_analysis/README.md) uses it.
 
-<b>Data Type:</b> Object `{"enabled": Boolean, "max_mb": Integer}`
-
-<b>Default:</b> off (absent)
-
-<b>Example:</b> ``` "output" : {"cluster_contributions": {"enabled": true}} ```
+```json
+"output": {"cluster_contributions": {"enabled": true}}
+```
 
 <a id="tag_cluster_contribution_max_mb"></a>
-## output.cluster_contributions.max_mb
-<b>Description:</b><br>
-The memory per rank the contribution table of `output.cluster_contributions` may take. The run
-stops before the propagation if the table would exceed it. <br>
+### output.cluster_contributions.max_mb
 
-<b>Data Type:</b> Integer (positive)
+| Type | Default | Unit |
+|---|---|---|
+| positive integer | `256` | MiB per rank |
 
-<b>Unit:</b> MiB per rank
+The memory per rank the contribution table may take. The run stops before the propagation if the table would need
+more.
 
-<b>Default:</b> `256`
-
-<b>Example:</b> ``` "output" : {"cluster_contributions": {"enabled": true, "max_mb": 512}} ```
+```json
+"output": {"cluster_contributions": {"enabled": true, "max_mb": 512}}
+```

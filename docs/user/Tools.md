@@ -140,7 +140,7 @@ python3 example/tools/InputKeys/set_input_keys.py IN OUT KEY=VALUE ...
 ```
 
 `convert_input_keys.py` reads `.json` and `.jsonc` inputs, keeps the comments (`//`, `#` or `!`) and lists what it
-changed. What it maps is the table of [old names](InputFile.md#OldNames).
+changed. What it maps is the table of [old names](InputFile_OldNames.md).
 
 `set_input_keys.py` writes a copy of `IN` with keys set:
 

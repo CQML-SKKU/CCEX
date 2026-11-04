@@ -184,6 +184,30 @@ can be added to cCCE (`hamiltonian.cCCE`):
 - delta_A is refused with hfmedi, which already contains it.
 - The exact reference for all three is gCCE, which keeps the transverse coupling in the cluster Hamiltonian.
 
+<a id="cce_delta_A"></a>
+### Where delta_A comes from
+
+For a spin-1 qubit, $H = \Delta S_z^2 + \mathbf{S}\cdot\mathsf{A}\cdot\mathbf{I}$. The transverse part
+$S_x a_x + S_y a_y$ ($a_k = \mathbf{A}_k\cdot\mathbf{I}$) changes $m_s$ by ±1. To second order the branch
+$m_s = \pm 1$ gets $(1/2\Delta) V_\pm V_\mp$ with $V_\pm = a_x \mp i a_y$, and $m_s = 0$ gets
+$-(1/2\Delta)(V_+V_- + V_-V_+)$. Since $[a_x, a_y] = i(\mathbf{A}_x\times\mathbf{A}_y)\cdot\mathbf{I}$,
+$V_\pm V_\mp = a_x^2 + a_y^2 \mp (\mathbf{A}_x\times\mathbf{A}_y)\cdot\mathbf{I}$. The part linear in $\mathbf{I}$ is
+$\mp(\mathbf{A}_x\times\mathbf{A}_y)\cdot\mathbf{I}/(2\Delta)$ for $m_s = \pm 1$ and cancels for $m_s = 0$, that is
+$-m_s(\mathbf{A}_x\times\mathbf{A}_y)/(2\Delta)$. The $a_x^2 + a_y^2$ part is a constant for a spin 1/2 and a
+quadrupole-like term otherwise; it is not added. The term has to be odd in $m_s$, since $\mathbf{S}$ and $\mathbf{I}$
+both change sign under time reversal, which takes $m_s$ to $-m_s$.
+
+This differs from the coefficient $(2 - 3|m_s|)$ of Maze, PRB 78, 094303 (2008), Eq. (A4); the two agree for
+$m_s = +1$. Whether Maze's form is a misprint or another convention is not settled. Exact diagonalization of an NV with
+one ¹³C (|A| up to 1.5 MHz, B = 5 G along z) puts the nuclear splitting of each branch off by 2.0 rad/ms without the
+term, by 0.01 with $-m_s$, and with $(2 - 3|m_s|)$ by 1.9 ($m_s = 0$) and 4.0 ($m_s = -1$). For a ¹³C 2.5 Å from an NV
+the term is about 2.5 rad/ms, a phase of order one in a millisecond; for that ¹³C at 5 G along z the Hahn-echo
+deviation from the exact curve goes from 0.81 without it to 4.8e-3 with it, and hfmedi alone deviates by 3.7e-4.
+
+The derivation takes the qubit levels as the $|m_s\rangle$ states, with a field along the qubit axis and
+$\gamma_e B \ll \Delta$. The qubit Zeeman energy is left out of the denominators, as in knight, so the next correction
+is of relative size $\gamma_e B_z/\Delta$ (0.5 % at 5 G, 10 % at 100 G).
+
 <a id="cce_defect"></a>
 ## The defect bath (P1 and other electron spins)
 

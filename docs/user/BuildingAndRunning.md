@@ -235,7 +235,7 @@ The memory check also reads the memory Slurm gives the job (`SLURM_MEM_PER_NODE`
   be opened, or `CUDA_VISIBLE_DEVICES` hides all cards. The `[backend]` lines say why. With `cuda` the run stops
   instead, with an `Error: GPU backend: ...` line from every rank. The GPU binary is `bin/main_gpu.out` ([GPU execution](../methods/gpu.md)).
 - **`Error: input key "..." is not read, did you mean "..."?`** A misspelled key; the run stops before the calculation starts. `Warning: input key ... is not read by this run` only means that this run does not use the key.
-- **A key of an older version** is refused with the name that replaced it ([old names](InputFile.md#OldNames)).
+- **A key of an older version** is refused with the name that replaced it ([old names](InputFile_OldNames.md)).
   `python3 example/tools/InputKeys/convert_input_keys.py OLD.json` rewrites such an input.
 - **A curve above 1** ($|L| > 1$ in `_wiDiv`). A cluster term near zero was divided by; the value is an artefact.
   See [The coherence files](OutputFiles.md#out_coherence) and the analyzer's error correction ([Analysis](Analysis.md)).

@@ -1500,8 +1500,18 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                     ccexRefusalPrint(stdout,"\tPlz, Check the Tensor file !!!\n");
                     ccexRefuse();
                 }
+            }else{
+                // the fold by cell (ReDefinediff) reads MinDif/MaxDif: a vertex file gives the box of its eight
+                // vertices, which is what the coord form writes (before 2.1.0 they stayed 0 and the fold never ended)
+                for (int k=0; k<3; k++){
+                    Q_MinDifwoDef[k] = Q_MaxDifwoDef[k] = Q_vertexwoDef[0][k];
+                    for (int v=1; v<8; v++){
+                        if (Q_vertexwoDef[v][k] < Q_MinDifwoDef[k]) Q_MinDifwoDef[k] = Q_vertexwoDef[v][k];
+                        if (Q_vertexwoDef[v][k] > Q_MaxDifwoDef[k]) Q_MaxDifwoDef[k] = Q_vertexwoDef[v][k];
+                    }
+                }
             }
-    
+
             if (rank==0 && verbosity){
                 printHfInfo_BD(Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, Q_MinDifwoDef, Q_MaxDifwoDef, isVertex_woDef);
             }
@@ -1655,32 +1665,33 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                             if(qd_cellpara[1]!=0.0){rxyz[1]=ReDefinediff(rxyz[1],Q_MinDifwoDef[1],Q_MaxDifwoDef[1],qd_cellpara[1]);}
                             if(qd_cellpara[2]!=0.0){rxyz[2]=ReDefinediff(rxyz[2],Q_MinDifwoDef[2],Q_MaxDifwoDef[2],qd_cellpara[2]);}
 
-                            // Check if the bath spin is in the maximum, minimum range
-                            if (isVertex_wiDef){
-                                isExist_wiDef = CheckBD_vertex(rxyz, Q_vertexwiDef, Q_centerwiDef, Q_normalwiDef, err);
+                            // the folded position is looked up in the file without the defect, as for bubble (case 4);
+                            // before 2.1.0 it was looked up in the file with the defect again (the author's intent: without)
+                            if (isVertex_woDef){
+                                isExist_woDef = CheckBD_vertex(rxyz, Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, err);
                             }else{
-                                isExist_wiDef = CheckBD_Range(rxyz, Q_MinDifwiDef, Q_MaxDifwiDef, err);
+                                isExist_woDef = CheckBD_Range(rxyz, Q_MinDifwoDef, Q_MaxDifwoDef, err);
                             }
-                            
+
                             // Check if the bath spin is matched with the relative distance of the file
-                            if (isExist_wiDef){
+                            if (isExist_woDef){
                                 //AtesnorArray[][0~2]  : atomic position
-                                isFound_wiDef = FIND_AtomPosi(rxyz, QtensorArrayWiDef, &tensorIdx_wiDef);
+                                isFound_woDef = FIND_AtomPosi(rxyz, QtensorArrayWoDef, &tensorIdx_woDef);
                             }
-                            
+
                             // read the tensor information
-                            if (isExist_wiDef){
-                                if (isFound_wiDef){
+                            if (isExist_woDef){
+                                if (isFound_woDef){
                                     //QtesnorArray[][3-11] : Qtensor value
-                                    efg(0,0) = QtensorArrayWiDef[tensorIdx_wiDef][3] ;
-                                    efg(0,1) = QtensorArrayWiDef[tensorIdx_wiDef][4] ;
-                                    efg(0,2) = QtensorArrayWiDef[tensorIdx_wiDef][5] ;
-                                    efg(1,0) = QtensorArrayWiDef[tensorIdx_wiDef][6] ;
-                                    efg(1,1) = QtensorArrayWiDef[tensorIdx_wiDef][7] ;
-                                    efg(1,2) = QtensorArrayWiDef[tensorIdx_wiDef][8] ;
-                                    efg(2,0) = QtensorArrayWiDef[tensorIdx_wiDef][9] ;
-                                    efg(2,1) = QtensorArrayWiDef[tensorIdx_wiDef][10] ;
-                                    efg(2,2) = QtensorArrayWiDef[tensorIdx_wiDef][11] ;
+                                    efg(0,0) = QtensorArrayWoDef[tensorIdx_woDef][3] ;
+                                    efg(0,1) = QtensorArrayWoDef[tensorIdx_woDef][4] ;
+                                    efg(0,2) = QtensorArrayWoDef[tensorIdx_woDef][5] ;
+                                    efg(1,0) = QtensorArrayWoDef[tensorIdx_woDef][6] ;
+                                    efg(1,1) = QtensorArrayWoDef[tensorIdx_woDef][7] ;
+                                    efg(1,2) = QtensorArrayWoDef[tensorIdx_woDef][8] ;
+                                    efg(2,0) = QtensorArrayWoDef[tensorIdx_woDef][9] ;
+                                    efg(2,1) = QtensorArrayWoDef[tensorIdx_woDef][10] ;
+                                    efg(2,2) = QtensorArrayWoDef[tensorIdx_woDef][11] ;
                                 }else{
                                     ccexRefusalPrint(stdout,"error2 in EFG(Opt:%d), the atom is withOut the range of defect cell,\n",qd_readmode);
                                     ccexRefusalPrint(stdout,"                           and is withIn the range of No defect cell(curve or bubble),\n");

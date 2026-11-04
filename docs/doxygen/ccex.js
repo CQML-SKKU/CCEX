@@ -10,6 +10,8 @@
 //    pages; the rail shows the path of the page being read and unfolds on click.
 // 3. The sidebar's dragged width goes into the theme's width variable, so that
 //    the sidebar, the header, the search box and the page follow it together.
+// 4. The table of contents beside a page shows the entries under one numbered
+//    section only: the section being read (the theme marks its link "active").
 (function () {
   function fileOf(href) { return (href || '').split('#')[0].split('/').pop(); }
   function rootEntry() { return document.querySelector('#nav-tree-contents > ul > li'); }
@@ -104,5 +106,23 @@
     var timer = setInterval(function () {
       if (openSelected() || ++tries > 50) clearInterval(timer);
     }, 100);
+  });
+})();
+
+// 4. (above) the table of contents opens the section being read and folds the others
+(function () {
+  function sync(toc) {
+    var tops = toc.querySelectorAll(':scope > ul > li');
+    var open = null;
+    for (var i = 0; i < tops.length; i++) if (tops[i].querySelector('a.active')) { open = tops[i]; break; }
+    if (!open && tops.length) open = tops[0];
+    for (var j = 0; j < tops.length; j++) tops[j].classList.toggle('ccex-open', tops[j] === open);
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var toc = document.querySelector('.contents > .toc');
+    if (!toc) return;
+    sync(toc);
+    new MutationObserver(function () { sync(toc); })
+      .observe(toc, {subtree: true, attributes: true, attributeFilter: ['class']});
   });
 })();

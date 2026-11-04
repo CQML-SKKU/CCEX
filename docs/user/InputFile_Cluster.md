@@ -1,552 +1,477 @@
 # Cluster tags
-The `cluster` block says how the bath is cut into clusters. It holds the [mode](#tag_cluster_mode), the `selection`
-that every mode reads, and the blocks of the `pcce` and `bundle` modes and of the adaptive refinement. `order` and
-`method` stay at the top level. Older key names and places are in the table of [InputFile.md](InputFile.md#OldNames).
 
-How the methods work: [CCE and dsj/itb](../methods/cce.md), [pCCE](../methods/pcce.md),
-[bundle clustering and adaptive refinement](../methods/bundle-adaptive.md).
+The `cluster` block says how the bath is cut into clusters: the mode, the `selection` every mode reads, the blocks of
+the `pcce` and `bundle` modes, and the adaptive refinement. `order` and `method` stay at the top level
+([General tags](InputFile_General.md#tag_order)). Each key has a small table (its type, default and unit), what it
+does, and an example. Old key names are in [Old names](InputFile_OldNames.md). How the modes work is in Methods:
+[cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),
+[bundles and the adaptive refinement](../methods/bundle-adaptive.md).
 
+1. [cluster.mode](#clu_mode): the six ways of cutting the bath.
+2. [cluster.selection](#clu_selection): `add_subclusters` and `max_per_order`.
+3. [cluster.pcce](#clu_pcce): the partitions of pCCE.
+4. [cluster.bundle](#clu_bundle): the bundles of bundle clustering.
+5. [cluster.adaptive](#clu_adaptive): the adaptive refinement, its keys and its results.
+
+```json
+"cluster": {"mode": "pcce", "selection": {"add_subclusters": true}, "pcce": {"partition_size": 2}}
 ```
-"cluster": {"mode": "pcce", "selection": {"add_subclusters": true, "max_per_order": [0, 0, 0]},
-            "pcce": {"partition_size": 2}}
-```
 
-- [order](InputFile_General.md#tag_order), [method](InputFile_General.md#tag_method) (top level)
-- [cluster.mode](#tag_cluster_mode)
-- cluster.selection: [add_subclusters](#tag_add_subclusters), [max_per_order](#tag_max_clusters_per_order)
-- [cluster.pcce](#tag_pcce):[partition_size](#tag_pcce_partition_size), [trials](#tag_pcce_trials),
-  [max_iterations](#tag_pcce_max_iterations), [kmeans_pp](#tag_pcce_kmeans_pp), [print_trials](#tag_pcce_print_trials),
-  [partition](#tag_pcce_partition), [connections](#tag_pcce_connections),
-  [cache](#tag_pcce_cache) (`mode`, `file`)
-- [cluster.bundle](#tag_bundle): [max_dim](#tag_bundle_max_dim), [merge_cutoff](#tag_bundle_merge_cutoff),
-  [connections](#tag_bundle_connections), [connection_budget](#tag_bundle_connection_budget),
-  [max_clusters](#tag_bundle_max_clusters), [max_work](#tag_bundle_max_work)
-- [cluster.adaptive](#tag_adaptive): [the keys](#tag_adaptive_keys), [the results](#tag_adaptive_results),
-  [probe_memory_gb](#tag_adaptive_probe_memory_gb), and its internal [work_file](#tag_adaptive_work_file)
+<a id="clu_mode"></a>
+## 1. cluster.mode
 
 <a id="tag_cluster_mode"></a>
-## cluster.mode
-<b>Description:</b><br>
-How the bath is divided into clusters. <br>
+### cluster.mode
 
-<b>Data Type:</b> String
+| Type | Default |
+|---|---|
+| string | `"standard"` |
 
-<b>Options:</b><br>
-| Option | Description | method |
+How the bath is divided into clusters.
+
+| Value | Clusters | Methods |
 |---|---|---|
-| `standard` | clusters of up to `order` spins within `rdip` | cCCE, gCCE, meCCE, megCCE |
-| `pcce` | partition CCE: the bath is cut into partitions of [pcce.partition_size](#tag_pcce_partition_size) spins, a cluster is up to `order` partitions | cCCE, gCCE, meCCE, megCCE |
-| `bundle` | bundle clustering: strongly coupled spins are tied into bundles first, a cluster is up to `order` bundles | cCCE, gCCE |
-| `dsj` | disjoint clusters: the bath split into groups of at most `order` spins (strongest pairs within `rdip` first), each group computed whole, no other cluster | cCCE |
-| `itb` | inter-bath clusters: only the pair corrections L̃ of the connected pairs between different groups (the factor `dsjitb` adds to `dsj`) | cCCE |
-| `dsjitb` | disjoint + inter-bath (order 2 gives the same result as standard CCE2; above order 2 only pairs connect the groups) | cCCE |
+| `standard` | up to `order` spins connected within `rdip` | cCCE, gCCE, meCCE, megCCE |
+| `pcce` | the bath is cut into partitions of [partition_size](#tag_pcce_partition_size) spins; a cluster is up to `order` partitions | cCCE, gCCE, meCCE, megCCE |
+| `bundle` | strongly coupled spins are tied into bundles first; a cluster is up to `order` bundles | cCCE, gCCE |
+| `dsj` | disjoint groups of at most `order` spins (strongest pairs within `rdip` first), each computed whole, no other cluster | cCCE |
+| `itb` | only the pair corrections between connected spins of different groups (what `dsjitb` adds to `dsj`) | cCCE |
+| `dsjitb` | disjoint groups plus the pairs between them; order 2 gives the result of standard CCE2 | cCCE |
 
-Which methods take which modes:
-
-- `pcce` runs with cCCE, gCCE, meCCE and megCCE. gCCE and the master-equation forms run it on the CPU only, and
-  [pcce.cache](#tag_pcce_cache) works with cCCE only.
-- gCCE with `dsj`, `itb` or `dsjitb` is refused (not implemented yet).
-- meCCE and megCCE with `bundle`, `dsj`, `itb` or `dsjitb` are refused.
-- Old method names are refused with their current form ([old names](InputFile.md#OldNames)).
-
-Each block belongs to its modes and is refused with another mode:
-
-- the [pcce](#tag_pcce) block: `pcce`;
-- the [bundle](#tag_bundle) block: `bundle`;
-- the [adaptive](#tag_adaptive) block: `pcce` and `bundle`.
-
-`"adaptive"` as a value is refused with the name `bundle`.
+Other combinations of method and mode are refused. gCCE and the master-equation methods run `pcce` on the CPU only.
+The [pcce](#tag_pcce) block belongs to `pcce`, the [bundle](#tag_bundle) block to `bundle`, and the
+[adaptive](#tag_adaptive) block to `pcce` and `bundle`; each is refused with another mode.
 
 With `bundle`:
 
-- [order](InputFile_General.md#tag_order) counts bundles per cluster.
-- [bundle.max_dim](#tag_bundle_max_dim) (required) caps the Hilbert dimension of one bundle.
-- With [rdip](InputFile_General.md#tag_rdip) given, bundles are connected by distance. With `rdip` omitted, a coherence
-  check chooses the connections and drops the weak ones.
-- The [adaptive](#tag_adaptive) block turns on the adaptive refinement on top of it.
-- With every bundle one site, `bundle` is standard CCE.
+- [order](InputFile_General.md#tag_order) counts bundles, and [bundle.max_dim](#tag_bundle_max_dim) is required.
+- With [rdip](InputFile_General.md#tag_rdip), bundles are connected by distance. Without `rdip`, a coherence check
+  chooses the connections ([bundle.connections](#tag_bundle_connections)).
+- With every bundle a single site, `bundle` is standard CCE.
 
-The words:
+A *site* is one bath spin, or a defect with its on-site spins; a *bundle* is a set of sites that always enters a
+cluster whole; a *cluster* is up to `order` connected bundles.
 
-- a *site* is one bath spin, or one defect that cannot be split;
-- a *bundle* is a set of sites that always enters a cluster whole and is treated exactly inside;
-- a *cluster* is the union of up to `order` connected bundles, the unit whose Hamiltonian is built and propagated;
-- a *partition* is the whole assignment of every site to exactly one bundle.
+```json
+"cluster": {"mode": "bundle", "bundle": {"max_dim": 8}}
+```
 
-Bundle clustering builds one partition and computes it once. The adaptive refinement measures the error and rebuilds
-the partition. [dsj, itb and dsjitb](../methods/cce.md#cce_dsj), [pCCE](../methods/pcce.md) and
-[bundle](../methods/bundle-adaptive.md) are described in Methods. <br>
-
-<b>Default:</b> `standard`
-
-<b>Example:</b> ``` "cluster" : {"mode": "bundle", "bundle": {"max_dim": 8}} ```
+<a id="clu_selection"></a>
+## 2. cluster.selection
 
 <a id="tag_add_subclusters"></a>
-## cluster.selection.add_subclusters
-<b>Description:</b><br>
-For order ≥ 3: whether the sub-clusters of the kept clusters are listed before the expansion is computed.
+### cluster.selection.add_subclusters
 
-- `true`: every sub-cluster of every kept cluster of order ≥ 3 (each subset of 2 or more of its spins, or partitions
-  with `pcce`) is put into the cluster list before the powers of the expansion are computed. This includes sub-clusters
-  whose spins are not all within `rdip` of each other (the two ends of a chain) and sub-clusters that
-  [max_per_order](#tag_max_clusters_per_order) cut at a lower order.
-- `false`: they are not listed up front. A sub-cluster that the powers need and that is missing is added while the
-  powers are computed.
+| Type | Default |
+|---|---|
+| boolean | `true` |
 
-Both give the same result. `false` can be a little faster; at order 2 it builds the same list by a shorter path.
+For order 3 and above: whether every sub-cluster of the kept clusters (each subset of two or more of its spins, or
+partitions with `pcce`) is listed before the expansion is computed. That includes sub-clusters whose spins are not
+all within `rdip` of each other, and those that [max_per_order](#tag_max_clusters_per_order) cut at a lower order. With
+`false`, a sub-cluster the expansion needs is added when it is found missing. Both give the same result; `false` can
+be a little faster. Not read with `cluster.mode` bundle, whose expansion always holds every subset.
 
-Not read with `cluster.mode` bundle: its expansion is always closed under subsets. <br>
-<b>Data Type:</b> Boolean (`true` or `false`)
-
-<b>Default:</b> `true`
-
-<b>Example:</b> ``` "cluster" : {"selection": {"add_subclusters": true}} ```
+```json
+"cluster": {"selection": {"add_subclusters": false}}
+```
 
 <a id="tag_max_clusters_per_order"></a>
-## cluster.selection.max_per_order
-<b>Description:</b><br>
-The largest number of clusters kept at each CCE order. Useful at order ≥ 3, where the number of clusters becomes
-very large. <br>
+### cluster.selection.max_per_order
 
-- The list has exactly `order + 1` entries, indexed by the cluster order: entry n limits the clusters of order n
-  (entry 0 is the order-0 slot). A list of another length is refused.
-- A 0 means no limit for that order, so all zeros include every cluster.
-- Only entries 3 and up are used (with `pcce`, orders of partitions), and only with `cluster.mode` standard and pcce.
-  Entries 0, 1 and 2 are never applied, and `dsj`, `itb`, `dsjitb` apply none. A nonzero entry that is not applied is
-  ignored with one warning line (`Warning: cluster.selection.max_per_order entry 1 is ignored ...`).
-- `cluster.mode` bundle requires all 0.
+| Type | Default |
+|---|---|
+| list of `order` + 1 integers | all 0 (no limit) |
 
-The clusters of order n are grown from the kept clusters of order n − 1 and ranked by their strength: the sum of
-\|J<sub>zz</sub>\| of the point-dipole coupling over every spin pair of the cluster (with `pcce`, of the partitions:
-see [connections](#tag_pcce_connections)). The strongest `max_per_order[n]` are kept. <br>
-<b>Data Type:</b> Int List (length `order + 1`)
+The largest number of clusters kept at each order, for order 3 and above, where the number of clusters grows fast.
+Entry n limits the clusters of order n, and 0 means no limit. The list must have exactly `order` + 1 entries.
 
-<b>Default:</b> all entries 0 (no limit)
+- Only entries 3 and up are applied, and only with `cluster.mode` standard and pcce (for pcce, orders of partitions).
+  A nonzero entry that is not applied is ignored with a warning.
+- `cluster.mode` bundle needs all entries 0.
 
-<b>Example:</b> ``` "cluster" : {"selection": {"max_per_order": [0, 0, 0, 30000]}} ``` (order 3: at most 30000 clusters of three spins)
+The clusters of order n are grown from the kept clusters of order n − 1, ranked by the sum of \|J<sub>zz</sub>\| of
+the point-dipole coupling over their spin pairs, and the strongest are kept.
+
+```json
+"cluster": {"selection": {"max_per_order": [0, 0, 0, 30000]}}
+```
+
+<a id="clu_pcce"></a>
+## 3. cluster.pcce
 
 <a id="tag_pcce"></a>
-## cluster.pcce
-<b>Description:</b><br>
-The settings of `cluster.mode` `pcce`; refused with any other `cluster.mode`. How the partitions are found and
-connected: [pCCE](../methods/pcce.md). `example/tutorial/advanced/07_pCCE_and_bundle/pCCE2_Hahn_states/` runs `partition_size`
-1 to 3 (4 on request). <br>
+### cluster.pcce
 
-<b>Data Type:</b> Object
+| Type | Default |
+|---|---|
+| object | required with `cluster.mode` pcce (for `partition_size`) |
 
-<b>Default:</b> - (required with `cluster.mode` pcce, for its `partition_size`; every other key has its default)
+The settings of `cluster.mode` pcce. A k-means search divides the bath into partitions
+([pCCE](../methods/pcce.md)). [Advanced 07](../../example/tutorial/advanced/07_pCCE_and_bundle/README.md) runs
+`partition_size` 1 to 3.
 
-<b>Example:</b> ``` "cluster" : {"mode": "pcce", "pcce": {"partition_size": 2, "trials": 1000, "max_iterations": 1000, "connections": "spins"}} ```
+```json
+"cluster": {"mode": "pcce", "pcce": {"partition_size": 2, "trials": 1000, "connections": "spins"}}
+```
 
 <a id="tag_pcce_partition_size"></a>
-## cluster.pcce.partition_size
-<b>Description:</b><br>
-The number of bath spins in one partition. Required with `cluster.mode` `pcce`. A k-means search divides the bath
-into partitions of `partition_size` spins, and a pCCE cluster of order n is n partitions, n × `partition_size` spins. <br>
+### cluster.pcce.partition_size
 
-**The rest spins are dropped.** With N bath spins within `rbath` there are N / `partition_size` partitions, rounded
-down. The N mod `partition_size` spins left over are the **last ones in the order of the bath file**. They are in no
-cluster and take no part in the calculation. Which spins those are depends on how the file is written, not on their
-distance from the qubit, and the run log does not list them. To keep every spin, choose `rbath` or the bath file so
-that N is a multiple of `partition_size` ([pCCE](../methods/pcce.md#pcce_rest)). <br>
+| Type | Default |
+|---|---|
+| positive integer | required |
 
-<b>Data Type:</b> Integer (positive)
+The number of bath spins in one partition. A pCCE cluster of order n is n partitions.
 
-<b>Default:</b> - (required)
+The spins left over are dropped. With N bath spins within `rbath` there are N / `partition_size` partitions, rounded
+down, and the N mod `partition_size` spins left over are the last ones in the order of the bath file. They take no part
+in the calculation, whatever their distance from the qubit, and the log does not list them. To keep every spin, choose
+`rbath` or the bath file so that N is a multiple of `partition_size` ([pCCE](../methods/pcce.md#pcce_rest)).
 
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 3}} ```
+```json
+"cluster": {"pcce": {"partition_size": 3}}
+```
 
 <a id="tag_pcce_trials"></a>
-## cluster.pcce.trials
-<b>Description:</b><br>
-The number of partition trials. Each trial is a k-means run from its own starting centres, and the assignment with
-the best score is kept. With [pcce.partition](#tag_pcce_partition) `deterministic` the trials are split over the ranks
-in a fixed way, so the partition follows `seed`. <br>
+### cluster.pcce.trials
 
-<b>Data Type:</b> Integer (positive)
+| Type | Default |
+|---|---|
+| positive integer | `30000` |
 
-<b>Default:</b> `30000`
+The number of partition trials. Each trial is a k-means run from its own starting centres, and the best assignment is
+kept.
 
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "trials": 1000}} ```
+```json
+"cluster": {"pcce": {"partition_size": 2, "trials": 1000}}
+```
 
 <a id="tag_pcce_max_iterations"></a>
-## cluster.pcce.max_iterations
-<b>Description:</b><br>
-The largest number of k-means iterations in one partition trial. <br>
+### cluster.pcce.max_iterations
 
-<b>Data Type:</b> Integer (positive)
+| Type | Default |
+|---|---|
+| positive integer | `30000` |
 
-<b>Default:</b> `30000`
+The largest number of k-means iterations in one trial.
 
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "max_iterations": 1000}} ```
+```json
+"cluster": {"pcce": {"partition_size": 2, "max_iterations": 1000}}
+```
 
 <a id="tag_pcce_kmeans_pp"></a>
-## cluster.pcce.kmeans_pp
-<b>Description:</b><br>
-Start every k-means trial from k-means++ centres instead of random ones. <br>
+### cluster.pcce.kmeans_pp
 
-<b>Data Type:</b> Boolean
+| Type | Default |
+|---|---|
+| boolean | `true` |
 
-<b>Default:</b> `true`
+Start every trial from k-means++ centres instead of random ones.
 
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "kmeans_pp": true}} ```
+```json
+"cluster": {"pcce": {"partition_size": 2, "kmeans_pp": false}}
+```
 
 <a id="tag_pcce_print_trials"></a>
-## cluster.pcce.print_trials
-<b>Description:</b><br>
-The number of partition trials whose details rank 0 prints; `0` prints none. <br>
-In old inputs this was a switch beside `print_limit`, the most printed. `true` with `print_limit` L is now L, and
-`false` is 0. The switch and `print_limit` are refused with this form. <br>
+### cluster.pcce.print_trials
 
-<b>Data Type:</b> Integer (nonnegative)
+| Type | Default |
+|---|---|
+| integer, 0 or more | `0` |
 
-<b>Default:</b> `0`
+The number of trials whose details are printed; `0` prints none.
 
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "print_trials": 8}} ```
+```json
+"cluster": {"pcce": {"partition_size": 2, "print_trials": 8}}
+```
 
 <a id="tag_pcce_partition"></a>
-## cluster.pcce.partition
-<b>Description:</b><br>
-How the partition of the bath is searched. <br>
+### cluster.pcce.partition
 
-<b>Data Type:</b> String
-
-<b>Options:</b><br>
-| Option | Description |
+| Type | Default |
 |---|---|
-| `deterministic` | the partition follows `seed`; trials are distributed deterministically over the ranks |
-| `legacy` | the original random-number and trial distribution |
+| string | `"deterministic"` |
 
-<b>Default:</b> `deterministic`
+How the partition is searched.
 
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "partition": "deterministic"}} ```
+| Value | Search |
+|---|---|
+| `deterministic` | the trials are spread over the ranks in a fixed way, so the partition follows `seed` |
+| `legacy` | the random numbers and trial distribution of earlier versions |
+
+```json
+"cluster": {"pcce": {"partition_size": 2, "partition": "legacy"}}
+```
 
 <a id="tag_pcce_connections"></a>
-## cluster.pcce.connections
-<b>Description:</b><br>
-Which distance decides that two partitions are connected, so that they can be in one cluster of order 2 or more. The
-inner and the outer `rdip` bound that distance under either rule. `cluster.mode` bundle connects its bundles by
-[bundle.connections](#tag_bundle_connections) instead. <br>
+### cluster.pcce.connections
 
-<b>Data Type:</b> String
-
-<b>Options:</b><br>
-| Option | Description |
+| Type | Default |
 |---|---|
-| `centers` | the distance between the two k-means centres, the centroids of the partitions. The strength that orders the clusters is the point-dipole T<sub>zz</sub> between the centroids. |
-| `spins` | any spin of the one partition between the inner and the outer `rdip` of any spin of the other, the rule of the bundles. The strength is the sum of \|T<sub>zz</sub>\| over the spin pairs of the two partitions. |
+| string | `"centers"` |
 
-With `partition_size` 1 the two rules are the same. Under `centers`, two partitions whose spins are close can stay
-unconnected when their centroids are far apart, more often the larger `partition_size` is; `spins` connects them. The
-rank-0 log says which rule ran and how many partition pairs it connected.
+Which distance decides that two partitions are connected, and so can be in one cluster. Both rules use the inner and
+outer `rdip`.
 
-A comparison on the P1 bath of tutorial `basic/06_defect_bath`:
+| Value | Connected when |
+|---|---|
+| `centers` | the centroids of the two partitions are within `rdip`; the clusters are ranked by the point-dipole T<sub>zz</sub> between the centroids |
+| `spins` | any spin of one partition is within `rdip` of any spin of the other; the clusters are ranked by the sum of \|T<sub>zz</sub>\| over the spin pairs |
 
-- at that tutorial's `rdip` (620 Å) the two rules differ less than pCCE2 differs from CCE4, and `spins` costs 27-65 %
-  more;
-- at an `rdip` comparable to the partition size, `spins` is the closer of the two to CCE4.
+With `partition_size` 1 the two are the same. With `centers`, two partitions with close spins can stay unconnected
+when their centroids are far apart; `spins` connects them, at a higher cost. The log says which rule ran and how many
+pairs it connected.
 
-<b>Default:</b> `centers` (the rule of earlier versions)
-
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "connections": "spins"}} ```
+```json
+"cluster": {"pcce": {"partition_size": 2, "connections": "spins"}}
+```
 
 <a id="tag_pcce_cache"></a>
-## cluster.pcce.cache
-<b>Description:</b><br>
-Reuse a stored partition instead of searching again. Needs [pcce.partition](#tag_pcce_partition) `deterministic` and
-method `cCCE`; refused with gCCE, meCCE and megCCE. <br>
+### cluster.pcce.cache
 
-`mode`: <br>
+| Type | Default |
+|---|---|
+| object `{"mode", "file"}` | `{"mode": "off"}` |
 
-| mode | Description |
+Reuse a stored partition instead of searching again. It needs [partition](#tag_pcce_partition) `deterministic` and
+method cCCE.
+
+| mode | Does |
 |---|---|
 | `off` | search every time |
 | `readwrite` | reuse a matching stored partition, otherwise search and store it |
-| `read` | require a matching stored partition; stop if there is none |
+| `read` | require a matching stored partition, and stop if there is none |
 
-`file`: the partition cache file, relative to the working directory or absolute. Its directory must exist. Required
-with a `mode` other than `off`. With [configuration.k_range](InputFile_General.md#tag_configuration_k_range), `{k}` in
-the name is the configuration's k, and a `file` without `{k}` is refused (one cache file per configuration, e.g.
-`"partition_{k}.cache"`). <br>
+`file` is the cache file, relative to the working directory or absolute, in a folder that exists; it is required with a
+mode other than `off`. With [configuration.k_range](InputFile_General.md#tag_configuration_k_range) the name needs
+`{k}`, one cache file per configuration.
 
-<b>Data Type:</b> Object `{"mode": ..., "file": ...}`
+```json
+"cluster": {"pcce": {"partition_size": 2, "cache": {"mode": "readwrite", "file": "results/partition_{k}.cache"}}}
+```
 
-<b>Default:</b> `{"mode": "off"}`
-
-<b>Example:</b> ``` "cluster" : {"pcce": {"partition_size": 2, "cache": {"mode": "readwrite", "file": "./results/partition.cache"}}} ```
+<a id="clu_bundle"></a>
+## 4. cluster.bundle
 
 <a id="tag_bundle"></a>
-## cluster.bundle
-<b>Description:</b><br>
-The settings of `cluster.mode` `bundle`; refused with any other `cluster.mode`. `max_dim` is required. How the
-bundles are made and connected: [bundle clustering](../methods/bundle-adaptive.md). <br>
+### cluster.bundle
 
-<b>Data Type:</b> Object
+| Type | Default |
+|---|---|
+| object | required with `cluster.mode` bundle (for `max_dim`) |
 
-<b>Default:</b> - (required with `cluster.mode` bundle, for its `max_dim`; every other key has its default)
+The settings of `cluster.mode` bundle ([bundle clustering](../methods/bundle-adaptive.md)).
 
-<b>Example:</b> ``` "cluster" : {"mode": "bundle", "bundle": {"max_dim": 8, "merge_cutoff": 1.0}} ```
+```json
+"cluster": {"mode": "bundle", "bundle": {"max_dim": 8, "merge_cutoff": 1.0}}
+```
 
 <a id="tag_bundle_max_dim"></a>
-## cluster.bundle.max_dim
-<b>Description:</b><br>
-The largest Hilbert dimension one bundle may have. Required with `cluster.mode` `bundle`. The dimension of a cluster
-is the product of its bundle dimensions (gCCE: times the qubit dimension). A cluster that cannot be handled is refused
-during the run. <br>
+### cluster.bundle.max_dim
 
-<b>Data Type:</b> Integer (positive)
+| Type | Default |
+|---|---|
+| positive integer | required |
 
-<b>Default:</b> - (required)
+The largest Hilbert dimension of one bundle. The dimension of a cluster is the product of its bundles' dimensions
+(times the qubit dimension for gCCE).
 
-<b>Example:</b> ``` "cluster" : {"bundle": {"max_dim": 8}} ```
+```json
+"cluster": {"bundle": {"max_dim": 8}}
+```
 
 <a id="tag_bundle_merge_cutoff"></a>
-## cluster.bundle.merge_cutoff
-<b>Description:</b><br>
-The smallest coupling strength at which two sites are put into one bundle. <br>
+### cluster.bundle.merge_cutoff
 
-The sites are taken in pairs, strongest first. A pair whose strength is at least `merge_cutoff` (and above 0) joins the
-two bundles holding its sites when the product of their dimensions is at most [max_dim](#tag_bundle_max_dim).
+| Type | Default | Unit |
+|---|---|---|
+| number, 0 or more | `0` | rad/ms; or `{"value", "unit"}` with `rad/s`, `rad/ms`, `rad/us` |
 
-- `0`: every candidate pair may merge, and `max_dim` alone limits the bundles.
-- a large value: every site stays alone.
+The smallest coupling strength at which two sites go into one bundle. The site pairs are taken strongest first; a pair
+of strength at least `merge_cutoff` (and above 0) joins the bundles of its two sites when the product of their
+dimensions is at most [max_dim](#tag_bundle_max_dim). With `0` every pair may merge and `max_dim` alone limits the
+bundles; a large value keeps every site alone.
 
 The strength of a site pair is Σ 3 I<sub>i</sub> I<sub>j</sub> ‖J<sub>ij</sub>‖<sub>F</sub> over the spins of the two
-sites, with ‖J‖<sub>F</sub> the Frobenius norm of their point-dipole tensor. A defect with its on-site spins is one
-site. The strength bounds the size of the coupling and does not depend on the field direction
-([the coupling strength](../methods/bundle-adaptive.md#bundle_coupling)). <br>
+sites, with ‖J‖<sub>F</sub> the Frobenius norm of their point-dipole tensor
+([the coupling strength](../methods/bundle-adaptive.md#bundle_coupling)).
 
-<b>Data Type:</b> Double (nonnegative), or `{"value": ..., "unit": ...}` with the unit `rad/s`, `rad/ms` or `rad/us`
-([Units](InputFile.md#Units))
-
-<b>Unit:</b> rad/ms
-
-<b>Default:</b> `0`
-
-<b>Example:</b> ``` "cluster" : {"bundle": {"max_dim": 8, "merge_cutoff": 1.0}} ```
+```json
+"cluster": {"bundle": {"max_dim": 8, "merge_cutoff": 1.0}}
+```
 
 <a id="tag_bundle_connections"></a>
-## cluster.bundle.connections
-<b>Description:</b><br>
-How bundles are connected into clusters. <br>
+### cluster.bundle.connections
 
-<b>Data Type:</b> String
-
-<b>Options:</b><br>
-| Option | Description |
+| Type | Default |
 |---|---|
-| `distance` | pairs within `rdip`; `rdip` is required |
-| `auto` | the legacy budget mode: weak pairs are left out up to [connection_budget](#tag_bundle_connection_budget), which is required |
-| `checked` | the coherence-checked connections below; `rdip` is refused with it |
+| string | `"distance"` with `rdip`, `"checked"` without |
 
-The mode used, with the keys written (the run log names it, `cluster.bundle.connections : ...`):
+How bundles are connected into clusters. The log names the rule that ran.
 
-| `rdip` | `connections` | mode |
-|---|---|---|
-| given | absent | `distance` |
-| absent | absent | `checked` |
-| given or absent | `auto` | `auto` (without `rdip`: no distance limit) |
-| given | `distance` | `distance` |
-| absent | `checked` | `checked` |
+| Value | Connections |
+|---|---|
+| `distance` | the pairs within `rdip` (`rdip` required) |
+| `checked` | every link at first; the weakest are left out only if a coherence check allows it (`rdip` refused) |
+| `auto` | the weakest pairs are left out up to [connection_budget](#tag_bundle_connection_budget), which is required |
 
-`checked` is what an input without `rdip` and without this key runs; it can also be written. It works as follows:
+`checked` proposes up to 8 of the weakest bundle pairs for omission and computes the domains around them directly, for
+every bath state and time point. The omissions are made only if the expansion with them stays within
+1e-7 + 1e-5 \|L\| of the direct curves; otherwise every link is kept. It costs one more pass over the bath states and
+writes `[adaptive-check]` to the log and `<output.file>.adaptive.json`. It is a local check, not a convergence test of
+the whole bath ([checked connections](../methods/bundle-adaptive.md#bundle_connections)).
 
-1. Every link is kept at first.
-2. Up to 8 of the weakest bundle pairs are proposed for omission, while their coupling score stays under about 3e-3
-   (the score of `connection_budget` below).
-3. The domains around them and the clusters of their local expansion are computed directly for every bath state and
-   time point.
-4. The omissions are made only if the expansion with them stays within 1e-7 + 1e-5 \|L\| of the direct curves (and
-   the expansion without them does too). Otherwise every link is kept.
-
-The cost is one more pass over the bath states, with at most 64 domain curves per state. The outcome is the log line
-`[adaptive-check] status=...` and the report `<output file>.adaptive.json`. It is a local check, not a convergence test
-of the whole bath ([checked connections](../methods/bundle-adaptive.md#bundle_connections)).
-
-<b>Default:</b> `distance` with `rdip`, `checked` without
-
-<b>Example:</b> ``` "cluster" : {"bundle": {"max_dim": 8, "connections": "auto", "connection_budget": 0.01}} ```
+```json
+"cluster": {"bundle": {"max_dim": 8, "connections": "auto", "connection_budget": 0.01}}
+```
 
 <a id="tag_bundle_connection_budget"></a>
-## cluster.bundle.connection_budget
-<b>Description:</b><br>
-With `connections` `auto`: the allowed score of the left-out bundle pairs. <br>
+### cluster.bundle.connection_budget
 
-The score t<sub>max</sub> × Σ w<sub>AB</sub> over the pairs left out must stay at most this value. Here t<sub>max</sub>
-= `deltat` × (`nstep` − 1) in ms and w<sub>AB</sub> is the [coupling strength](#tag_bundle_merge_cutoff) of the two
-bundles in rad/ms, so the score is in rad. The score measures coupling and does not bound the error.
+| Type | Default | Unit |
+|---|---|---|
+| number, 0 or more | required with `connections` `auto` | rad |
 
-Pairs outside `rdip` (when given) are left out first. The weakest of the rest are then left out while the score
-allows. A value that the required omissions already exceed is refused. <br>
+The allowed score of the bundle pairs left out with `connections` `auto`: t<sub>max</sub> × Σ w<sub>AB</sub> over the
+pairs left out, with t<sub>max</sub> = `deltat` × (`nstep` − 1) and w<sub>AB</sub> the
+[coupling strength](#tag_bundle_merge_cutoff) of the two bundles. Pairs outside `rdip` (when given) are left out
+first, then the weakest of the rest while the score allows. The score measures coupling; it does not bound the error.
 
-<b>Data Type:</b> Double (nonnegative)
-
-<b>Default:</b> -
-
-<b>Example:</b> ``` "cluster" : {"bundle": {"max_dim": 8, "connections": "auto", "connection_budget": 0.01}} ```
+```json
+"cluster": {"bundle": {"max_dim": 8, "connections": "auto", "connection_budget": 0.01}}
+```
 
 <a id="tag_bundle_max_clusters"></a>
-## cluster.bundle.max_clusters
-<b>Description:</b><br>
-The largest number of bundle sets the expansion of a bundle partition may list: the connected sets of up to `order`
-bundles and their subsets, single bundles included. A partition whose list would be longer stops the run before any
-dynamics ("expansion_max_clusters exceeded"). The list is never cut short. <br>
+### cluster.bundle.max_clusters
 
-<b>Data Type:</b> Integer (positive)
+| Type | Default |
+|---|---|
+| positive integer | `200000` |
 
-<b>Default:</b> `200000`
+The largest number of bundle sets the expansion may list (the connected sets of up to `order` bundles and their
+subsets). A longer list stops the run before the calculation; it is never cut short.
 
-<b>Example:</b> ``` "cluster" : {"bundle": {"max_dim": 8, "max_clusters": 200000}} ```
+```json
+"cluster": {"bundle": {"max_dim": 8, "max_clusters": 500000}}
+```
 
 <a id="tag_bundle_max_work"></a>
-## cluster.bundle.max_work
-<b>Description:</b><br>
-The largest number of elementary steps the expansion of a bundle partition may take. One step is one link read, one
-neighbour tried while a connected set is grown, one subset visited or one power updated. Past the limit the run stops
-before any dynamics ("expansion_max_work exceeded"). <br>
+### cluster.bundle.max_work
 
-<b>Data Type:</b> Integer (positive)
+| Type | Default |
+|---|---|
+| positive integer | `20000000` |
 
-<b>Default:</b> `20000000`
+The largest number of elementary steps the expansion may take while it lists the bundle sets. Past the limit the run
+stops before the calculation.
 
-<b>Example:</b> ``` "cluster" : {"bundle": {"max_dim": 8, "max_work": 20000000}} ```
+```json
+"cluster": {"bundle": {"max_dim": 8, "max_work": 50000000}}
+```
+
+<a id="clu_adaptive"></a>
+## 5. cluster.adaptive
 
 <a id="tag_adaptive"></a>
-## cluster.adaptive
-<b>Description:</b><br>
-Turns on the adaptive refinement. The run repeats three steps until `atol` and `rtol` are met or `max_rounds` is
-reached: calculate, measure the error, correct the bundles. <br>
+### cluster.adaptive
 
-- The block belongs to `cluster.mode` `pcce` or `bundle` and is refused with another mode. The refinement driver
-  itself runs with `cluster.mode` `bundle`, `bundle.max_dim` and an explicit [seed](InputFile_General.md#tag_seed).
-- `workdir`, `atol` and `rtol` are required. Every step goes into `workdir`: one folder per step and `summary.json`.
-- The keys are the driver's options with `_` for `-`, and `workdir` for the driver's `output`.
-- [probe_memory_gb](#tag_adaptive_probe_memory_gb) is the memory of the probes; every step reads it.
-- A top-level `adaptive` block, or the block under an older name, is refused with the place it belongs.
-
-All keys with their defaults are in [the keys of cluster.adaptive](#tag_adaptive_keys), the results in
-[the results](#tag_adaptive_results). The method (patches, probes, the local error, the merges, regroup) is in
-[adaptive refinement](../methods/bundle-adaptive.md#adaptive_round). <br>
-
-<b>Data Type:</b> Object
-
-<b>Options:</b><br>
-| Option | Description |
+| Type | Default |
 |---|---|
-| `workdir` | folder for the steps and the summary (required; the old name `output` is refused) |
-| `atol`, `rtol` | absolute and relative tolerance of the coherence (required) |
-| `max_rounds` | the largest number of rounds, default 8 |
-| `probe_memory_gb` | the memory of the probes running at once on a node ([its entry](#tag_adaptive_probe_memory_gb)) |
+| object | no block: one calculation |
 
-<b>Default:</b> - (absent: one calculation)
+Turns on the adaptive refinement. The run repeats three steps until `atol` and `rtol` are met or `max_rounds` is
+reached: calculate, measure the error of a few patches of the bath, and merge or regroup the bundles there. The method
+is described in [adaptive refinement](../methods/bundle-adaptive.md#adaptive_round).
 
-<b>Example:</b> ``` "cluster" : {"adaptive": { "workdir" : "./results/adaptive", "atol" : 1e-3, "rtol" : 0, "max_rounds" : 4 }} ```
+- The block belongs to `cluster.mode` pcce or bundle. The refinement runs with `cluster.mode` bundle,
+  `bundle.max_dim` and a given [configuration.seed](InputFile_General.md#tag_seed), since every round recomputes the
+  same bath states.
+- `workdir`, `atol` and `rtol` are required. `-o` and `output.path` are refused with the block; every step goes into
+  `workdir`.
+- It does not run with [configuration.k_range](InputFile_General.md#tag_configuration_k_range); refine one
+  configuration at a time.
+
+```json
+"cluster": {"mode": "bundle", "bundle": {"max_dim": 8},
+            "adaptive": {"workdir": "results/adaptive", "atol": 1e-3, "rtol": 0, "max_rounds": 4}}
+```
 
 <a id="tag_adaptive_keys"></a>
-## The keys of cluster.adaptive
-<b>Description:</b><br>
-Every key of the block. <br>
+### The keys of cluster.adaptive
 
-- The names are the refinement driver's options with `_` for `-`. The stand-alone `ccex-adaptive` takes the same
-  options as `--max-rounds` etc.
-- Keys are read without regard to case. In the input a key is written with `_` only: `"max-rounds"` is refused with
-  `"max_rounds"`.
-- The driver's `--output` is `workdir`. `output` would read like the top-level output block, so it is refused with
-  the new name.
-- A `true/false` key is on only when `true`.
-- An unknown key, a value of the wrong type or a missing required key stops the run before anything is computed
-  (`Error: cluster.adaptive.<key> ...`).
-- `input`, `binary`, `cwd`, `mpiexec` and `ranks` cannot be given. The input is this file, the binary is the running
-  process, and the ranks are those of `mpirun`.
-- `configuration.seed` is required: every round recomputes the same bath states.
-
-The steps go into `workdir`: one folder per step (`0001-run`, `0002-probe`, `0003-plan`, ...) and `summary.json`. The
-steps run in the same process, so the bath is read once. The `input.json` a step writes has no `adaptive` block. <br>
+Keys are read without regard to case and written with `_` (`"max-rounds"` is refused). An unknown key, a wrong type or
+a missing required key stops the run before anything is computed.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
-| `workdir` | path | required | folder of the steps and of `summary.json` (the old name `output` is refused) |
-| `atol` | real | required | absolute tolerance of the coherence: a patch passes when \|L<sub>expansion</sub> − L<sub>direct</sub>\| ≤ `atol` + `rtol` \|L<sub>direct</sub>\| at every bath state and every time point |
-| `rtol` | real | required | relative tolerance of the coherence (`atol` + `rtol` > 0) |
-| `policy` | string | `merge` | not needed: merge (merge the bundles whose merge reduces the local error most) is the only policy; a written one is reported as not used, the removed policies `error-gated`, `budgeted`, `auto-partition`, `cost-preserving` and `auto-order` are refused |
+| `workdir` | path | required | the folder of the steps and of `summary.json` |
+| `atol` | number | required | absolute tolerance: a patch passes when \|L<sub>expansion</sub> − L<sub>direct</sub>\| ≤ `atol` + `rtol` \|L<sub>direct</sub>\| at every bath state and time point |
+| `rtol` | number | required | relative tolerance (`atol` + `rtol` > 0) |
 | `max_rounds` | integer | `8` | the largest number of rounds |
-| `max_patches` | integer | `64` | the largest number of patches checked in one round (a patch: a few neighbouring bundles, at order 2 a bundle and two of its most strongly linked neighbours, whose expansion is compared with their direct calculation) |
-| `max_probes` | integer | `4096` | the largest number of probe curves held (a probe: one bundle set of a patch computed directly as one cluster, all states and time points) |
+| `max_patches` | integer | `64` | the largest number of patches checked in one round (a patch is a bundle and a few of its most strongly linked neighbours) |
+| `max_probes` | integer | `4096` | the largest number of probe curves held (a probe is one bundle set of a patch computed directly) |
 | `max_candidates` | integer | `16` | the largest number of merge candidates per round |
 | `neighbors` | integer | `8` | the number of neighbouring bundles a patch takes |
-| `cache_mb` | integer | `256` | memory (MB) for the cached probe curves |
-| `timeout` | real | `600` | time limit (s) of one probe run |
-| `raw_cache` | path | - | file in which probe results are kept and reused across runs |
+| `cache_mb` | integer | `256` | the memory (MB) for cached probe curves |
+| `timeout` | number | `600` | the time limit (s) of one probe run |
+| `raw_cache` | path | none | a file in which probe results are kept and reused across runs |
 | `probe_batch_clusters` | integer | `0` | clusters per probe batch; `0` derives it from `cache_mb` |
-| `merge_priority` | string | `gain-per-cost` | order of the merges: `gain-per-cost` or `worst-error` |
-| `max_total_work` | real | `8000000000000.0` | work limit of the whole run (D³ × states × time points) |
-| `prefer_physical` | true/false | off | prefer candidates whose curve stays physical (magnitude of L at most 1) |
-| `hub_candidates` | true/false | off | add candidates built around a hub bundle (needs `prefer_physical`) |
-| `regroup` | true/false | off | instead of merge's selection, regroup the bundles where the magnitude of L exceeds 1 (cCCE order 2 only; not with `prefer_physical` or `hub_candidates`) |
-| `regroup_max_regions` | integer | `64` | with `regroup`: regions checked per round |
-| `regroup_max_candidates` | integer | `256` | with `regroup`: candidates per region |
-| `regroup_factors` | string | `probes` | with `regroup`: `probes` or `factors` (one `factors` step that returns the values at the worst state and time only, instead of probing the culprit pairs over all states) |
-| `regroup_whole` | string | `probes` | with `regroup`: `probes` or `except` (one `except` step that returns the product without the terms a candidate changes, instead of probing every term; needs an x87 80-bit long double build) |
-| `probe_memory_gb` | real | `0` (automatic) | the memory of the probes running at once on a node ([its entry](InputFile_Backend.md#tag_probe_memory_gb)) |
+| `merge_priority` | string | `gain-per-cost` | the order of the merges: `gain-per-cost` or `worst-error` |
+| `max_total_work` | number | `8e12` | the work limit of the whole run (D³ × states × time points) |
+| `prefer_physical` | boolean | `false` | prefer candidates whose curve stays physical (\|L\| ≤ 1) |
+| `hub_candidates` | boolean | `false` | also try candidates built around a strongly linked bundle (needs `prefer_physical`) |
+| `regroup` | boolean | `false` | instead of merging, regroup the bundles where \|L\| exceeds 1 (cCCE order 2 only; not with `prefer_physical` or `hub_candidates`) |
+| `regroup_max_regions` | integer | `64` | with `regroup`: the regions checked per round |
+| `regroup_max_candidates` | integer | `256` | with `regroup`: the candidates per region |
+| `regroup_factors` | string | `probes` | with `regroup`: `probes`, or `factors` to take the values at the worst state and time only |
+| `regroup_whole` | string | `probes` | with `regroup`: `probes`, or `except` to compute the product without the terms a candidate changes (needs a build with an 80-bit long double) |
+| `probe_memory_gb` | number | `0` (automatic) | the memory of the probes running at once ([probe_memory_gb](#tag_adaptive_probe_memory_gb)) |
 
-<b>Example:</b> ``` "cluster" : {"mode": "bundle", "bundle": {"max_dim": 8}, "adaptive": {"workdir": "./adaptive_out", "atol": 1e-8, "rtol": 2e-6}} ```
+`policy` is not needed: `merge` is the only policy, and a written one is reported as not used.
+
+```json
+"adaptive": {"workdir": "results/adaptive", "atol": 1e-8, "rtol": 2e-6, "regroup": true}
+```
 
 <a id="tag_adaptive_results"></a>
-## The results of cluster.adaptive
-<b>Description:</b><br>
-What a refinement leaves in `workdir`, and how it ends ([details](../methods/bundle-adaptive.md#adaptive_stop)). <br>
-- **The result is the last run**: `summary.json` names its folder in `final_directory`, and that folder's
-  `coherence_wiDiv` (`coherence_state<s>_wiDiv` with sampled states) is the curve. The first run, without refinement,
-  is `0001-run`.
-- `summary.json`: `status`, the settings, one record per step (`runs`) and per round (`rounds`: the patches with their
-  scaled errors and worst state and time step, the largest local error, the change since the previous round, the
-  accepted merge with the local error before and after), `final_directory`, `final_bundles`, `limitations`.
-  `final-input.json` (with `final-request.json`) reruns the chosen partition alone.
-- **Status and exit status of `main.out`:**
-  - exit 0: `validated_full_bath_model` and `passed_convergence_checks` (merge), `physical` (regroup);
-  - exit 2, the last run being the result: `round_limit`, `no_feasible_improving_merge`, `probe_budget_limited`, and
-    for regroup `no_positive_culprit`, `no_candidate`, `budget_limited`, `change_limit`;
-  - exit 1: `failed`.
+### The results of cluster.adaptive
 
-  With `configuration.k_range` the next configuration is not started after a non-zero status.
-- **Cost:** every round computes the whole bath again, plus the probes of the patches checked. Use it on baths whose
-  single run is short.
-- The local errors are checks of the patches, not error bounds of the whole bath. In the cases studied so far the
-  refinement changed the curves only a little; compare with a run without it.
+The refinement writes one folder per step into `workdir` (`0001-run`, `0002-probe`, ...) and `summary.json`; the
+first step, `0001-run`, is the calculation without refinement. The result is the last run: `summary.json` names its
+folder in `final_directory`, whose `coherence_wiDiv` (`coherence_state<s>_wiDiv` with sampled states) is the curve.
+`final-input.json` reruns the chosen bundles as one calculation. The files are listed in
+[Output files](OutputFiles.md#out_adaptive).
 
-`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/` (merge; it ends with `no_feasible_improving_merge`, exit 2)
-and `cCCE2_Hahn_regroup/` (regroup) show both. <br>
+| Exit code of `main.out` | Status |
+|---|---|
+| 0 | `validated_full_bath_model`, `passed_convergence_checks` (merge); `physical` (regroup) |
+| 2 | stopped, the last run being the result: `round_limit`, `no_feasible_improving_merge`, `probe_budget_limited` (merge); `no_positive_culprit`, `no_candidate`, `budget_limited`, `change_limit` (regroup) |
+| 1 | `failed` |
+
+Every round computes the whole bath again, plus the probes, so use it on baths whose single run is short. The local
+errors are checks of the patches, not error bounds of the whole bath; compare with a run without the refinement.
+[Advanced 07](../../example/tutorial/advanced/07_pCCE_and_bundle/README.md) runs both the merge (it ends with
+`no_feasible_improving_merge`, exit 2) and the regroup.
 
 <a id="tag_adaptive_probe_memory_gb"></a>
-## cluster.adaptive.probe_memory_gb
-<b>Description:</b><br>
-The memory, in GB per node, that the probes of the adaptive refinement running at once may hold. The driver copies it
-into every step's input. <br>
+### cluster.adaptive.probe_memory_gb
 
-- The probes of a bath state go to the ranks in turn. A probe waits while the probes already running on its node would
-  exceed this budget; a probe larger than the budget runs alone.
-- `0` takes 80 % of the memory the job may use on the node and, when clusters may go to the GPU, of the smallest GPU.
-- The run prints the budget (`[probe-budget]`).
+| Type | Default | Unit |
+|---|---|---|
+| number, 0 or more | `0` (automatic) | GB per node |
 
-How a probe's memory is estimated: [Execution tags](InputFile_Backend.md#tag_probe_memory_gb). <br>
+The memory the probes running at once on a node may hold. A probe waits while the probes already running on its node
+would exceed it; a probe larger than the budget runs alone. `0` takes 80 % of the memory the job may use on the node
+(and, when clusters may go to the GPU, of the smallest GPU). The run prints the budget (`[probe-budget]`). How a
+probe's memory is estimated is under [Execution tags](InputFile_Backend.md#tag_probe_memory_gb).
 
-<b>Data Type:</b> Double (nonnegative)
-
-<b>Unit:</b> GB per node
-
-<b>Default:</b> `0` (automatic)
-
-<b>Example:</b> ``` "cluster" : {"adaptive": {..., "probe_memory_gb": 60}} ```
+```json
+"adaptive": {"workdir": "results/adaptive", "atol": 1e-3, "rtol": 0, "probe_memory_gb": 60}
+```
 
 <a id="tag_adaptive_work_file"></a>
-## cluster.adaptive.work_file
-<b>Description:</b><br>
-The plan/probe protocol file the adaptive refinement driver writes for each step it runs. The driver sets it itself,
-in a step's input, in the `cluster.adaptive` block (beside the user's `probe_memory_gb` only). A hand-written input does
-not need it, and it is refused beside the refinement options. <br>
+### cluster.adaptive.work_file (internal)
 
-<b>Data Type:</b> String (path)
-
-<b>Default:</b> -
-
-<b>Example:</b> ``` "cluster" : {"adaptive": {"work_file": "./work.json"}} ```
+A file the refinement writes into the input of each of its steps. A hand-written input does not need it, and it is
+refused beside the refinement's keys.

@@ -88,6 +88,12 @@ What CCEX computes itself is always in the file frame and always turned:
 
 ## Limits
 
+- The computational x axis is `qubit_axis` × [0, 0, 1], which sets the preparation phase of the qubit states relative
+  to the system. With gCCE and a non-axial qubit ZFS (E ≠ 0) the coherence depends on it: with the system turned by
+  180°, |L| changed by 4.3e-4 for the free induction and by 3.9e-2 for a Hahn echo. cCCE and an axial ZFS do not
+  depend on it (gCCE: about 1e-8, from the non-secular hyperfine).
+- No block, or `"enabled": false`, leaves the run numerically identical to a run without the rotation.
+
 - An external hyperfine or quadrupole file with more than one qubit is refused. The readers have always refused it;
   the rotation says so before a file is opened.
 - cCCE is single-qubit; several qubits are tested with gCCE.

@@ -1,33 +1,21 @@
 # Input file
 <a id="InputFile"></a>
 
-Every key of the input file, in eight groups. Each group has a page of its own, and every key in the lists below links
-to its entry there.
+The input file is JSON and sets every option of a run. This page shows how it is written and lists every key by group;
+each group has a page of its own, and every key below links to its entry there. `main.out -e` writes a template with
+every key ([Getting started](GettingStarted.md#OwnInput)). An input of an earlier version can be converted with the
+table of [Old names](InputFile_OldNames.md).
 
-- `main.out -e` writes an input template (`ccex_example.jsonc`) with every key ([Getting started](GettingStarted.md)).
-- Inputs written for an earlier version use other key names and places. The table of [old names](#OldNames) at the
-  end of this page lists them, and `example/tools/InputKeys/convert_input_keys.py` rewrites an old input.
+1. [How to write the input file](#HowToWrite): the format, comments, types, and what the run reports about keys.
+2. [Units](#Units): the unit of every number, and the keys that take another unit.
+3. [The groups of keys](#KeyGroups): General, Qubit, Cluster, Execution, Pulse, Defect, Output and Automatic
+   convergence.
 
 <a id="HowToWrite"></a>
-## How to write the input file
+## 1. How to write the input file
 
-The input file is a set of key-value pairs. Each key is one setting:
-
-```
-{
-    parameter_name_1 : value_1,
-    parameter_name_2 : value_2,
-                :           
-    parameter_name_N : value_N
-}
-```
-
-A `//`, `#` or `!` outside a JSON string starts a comment that runs to the end of the line. A comment can fill a whole
-line or follow a value. Inside a string these characters are ordinary (`"#note"`, `"file": "run#1"`, `"http://x"`,
-`"a//b"`).
-
-An input with `//` comments can be named `.jsonc` (JSON with comments), which vim and VS Code colour as JSON with
-comments. The default output name drops `.jsonc` as it drops `.json`.
+The input is a JSON object of keys and values. A `//`, `#` or `!` outside a string starts a comment to the end of the
+line; inside a string these characters are ordinary (`"file": "run#1"`). The file may be named `.json` or `.jsonc`.
 
 ```
 // a comment line
@@ -39,24 +27,23 @@ comments. The default output name drops `.jsonc` as it drops `.json`.
 }
 ```
 
-A key that is left out takes its default. Keys are read without regard to case.
-
-A key that is present must have the type its entry gives. A wrong type stops the run and names the key (with its path
-in a block, e.g. `pulse.count`). Examples of wrong types: `"knight": "true"`, a quoted number, `"nstep": 10.5`, a string
-inside a number array. A switch is `true` or `false`; the new keys do not read the 0 and 1 that the old keys took.
+A key that is left out takes its default. Keys are read without regard to case. A key that is present must have the
+type its entry gives; a wrong type stops the run and names the key (with its path in a block, e.g. `pulse.count`).
+Examples of wrong types: `"knight": "true"`, a quoted number, `"nstep": 10.5`. A switch is `true` or `false`, not 0 or
+1.
 
 What the run reports about keys:
 
-- A key that no part of the run reads is reported (`Warning: input key ... is not read`). When it is one or two letters
-  away from a key that was looked up and is absent from the same block, the run stops. Examples: `"s_rang"` would leave
-  `s_range` out (the ensemble), and `"alpha_stat"` in the `Qubit` block would leave out its `alpha_state`.
-- A key the run reads but does not use gets one line, `Warning: input key "..." is not used by this run: <why>`
+- A key that no part of the run reads gets `Warning: input key ... is not read`. When it is one or two letters away
+  from a key that is absent from the same block, the run stops instead: `"s_rang"` would otherwise leave `s_range` out
+  and compute the ensemble.
+- A key the run reads but does not use gets `Warning: input key "..." is not used by this run: <why>`
   ([the cases](InputFile_General.md#tag_not_used)).
 - A file the input names that does not open stops the run ([files](InputFile_General.md#tag_configuration_missing)).
-- A key of an old name is refused with its current name (`Error: input key "npulse" is now "pulse.count"`) and a
-  pointer to the converter ([old names](#OldNames)).
+- A key of an old name is refused with its current name, e.g. `Error: input key "npulse" is now "pulse.count"`
+  ([Old names](InputFile_OldNames.md)).
 
-A whole input in the new keys:
+A whole input:
 
 ```
 {
@@ -78,7 +65,7 @@ A whole input in the new keys:
 ```
 
 <a id="Units"></a>
-### Units
+## 2. Units
 
 A plain number is in the unit its key names (the table below). The keys of the table also take
 `{"value": ..., "unit": "..."}`. The value is what the plain form takes: a number, or a list for `bfield`, `rbath`,
@@ -102,20 +89,14 @@ A plain number is in the unit its key names (the table below). The keys of the t
 "rdip":   {"value": [0.1, 1.0], "unit": "nm"}      # = "rdip": [1, 10]
 ```
 
-The object is turned into the plain number before any reader sees it, by one exact operation:
-
-- to a smaller unit, a multiplication by a power of ten (`nm` to Å: × 10);
-- to a larger unit, a division (`us` to ms: / 1000). 0.001 has no exact binary form, and x / 1000 is the double
-  nearest the decimal value.
-
-So `{"value": 5, "unit": "us"}` is the number `0.005` bit for bit. A plain number is read as it is.
+The object is turned into the plain number before the input is read: multiplied by a power of ten for a smaller unit
+(`nm` to Å: × 10), divided for a larger one (`us` to ms: / 1000), so `{"value": 5, "unit": "us"}` is exactly `0.005`.
 
 Refused, with the units of the key: an object with other keys, a unit not in its row, and a value that is not a number
 or a list of numbers.
 
-Units are case-sensitive and written as in the table (`mT`, not `MT`). The same holds for the units of the Defect block
-and of `Qubit.intmap`: `"mhz"` is refused with `"MHz"`. Older versions compared these without regard to case; the
-converter writes the table's spelling.
+Units are case-sensitive and written as in the table (`mT`, not `MT`), and so are the units of the Defect block and of
+`Qubit.intmap` (`"mhz"` is refused).
 
 Some keys keep a form of their own:
 
@@ -131,7 +112,7 @@ In `auto_convergence.time_window`, `"value"` is a number of ms or `{"value": ...
 beside it was removed and is refused.
 
 <a id="FixedUnits"></a>
-#### Keys without a unit object
+### Keys without a unit object
 
 Every other number has one fixed unit, or its own `unit` sub-key, as the table says.
 
@@ -141,8 +122,7 @@ The zero-field splitting and the detuning have different units in the two blocks
 - in the `Defect` block, **MHz**: `zfs` and `Defect.species[].detuning`.
 
 For example, a `Qubit.intmap` self entry with the tensor [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]] and a
-Defect `zfs` {"D": 2880, "unit": "MHz"} describe the same D = 2.88 GHz. The log notes as read in kHz a plain number
-other than 0 in `Qubit.qubit[].detuning` and a nonzero `Qubit.intmap` tensor without `unit`.
+Defect `zfs` {"D": 2880, "unit": "MHz"} describe the same D = 2.88 GHz.
 
 | Key or file | Unit | Other units |
 |---|---|---|
@@ -158,20 +138,22 @@ other than 0 in `Qubit.qubit[].detuning` and a nonzero `Qubit.intmap` tensor wit
 | quadrupole tensor file (`quadrupole.file`) | Hartree/Bohr² | none |
 | the time column of the output files | ms | none |
 
+<a id="KeyGroups"></a>
+## 3. The groups of keys
+
 <a id="GeneralTag"></a>
-## General tags
-The keys of this group are described in [InputFile_General.md](InputFile_General.md).
+### General tags
 
-The method, the numbers of the calculation, the files of the bath, the frame, and the `hamiltonian` block.
+[General tags](InputFile_General.md): the method, the numbers of the calculation, the files of the bath, the frame, and the `hamiltonian` block.
 
-- [method](InputFile_General.md#tag_method)       
-- [quantity](InputFile_General.md#tag_quantity)     
-- [order](InputFile_General.md#tag_order)        
-- [bfield](InputFile_General.md#tag_bfield)       
+- [method](InputFile_General.md#tag_method)
+- [quantity](InputFile_General.md#tag_quantity)
+- [order](InputFile_General.md#tag_order)
+- [bfield](InputFile_General.md#tag_bfield)
 - [rbath](InputFile_General.md#tag_rbath) (a number or `[inner, outer]`)
 - [rdip](InputFile_General.md#tag_rdip) (a number or `[inner, outer]`)
-- [deltat](InputFile_General.md#tag_deltat)       
-- [nstep](InputFile_General.md#tag_nstep)        
+- [deltat](InputFile_General.md#tag_deltat)
+- [nstep](InputFile_General.md#tag_nstep)
 - [configuration](InputFile_General.md#tag_configuration): the bath configuration
     - [path](InputFile_General.md#tag_configuration_path), [k_range](InputFile_General.md#tag_configuration_k_range)
       and [{k}](InputFile_General.md#tag_configuration_k): several configurations in one run, outputs `<output.file>_k<k>_...`
@@ -199,13 +181,16 @@ The method, the numbers of the calculation, the files of the bath, the frame, an
 - [keys read and not used](InputFile_General.md#tag_not_used), [turning a part off](InputFile_General.md#tag_turn_off)
 
 <a id="QubitArrayTags"></a>
-## Qubit tags
-The keys of this group are described in [InputFile_Qubit.md](InputFile_Qubit.md).
+### Qubit tags
+
+On the page [Qubit tags](InputFile_Qubit.md).
 
 The `Qubit` block: [qubit](InputFile_Qubit.md#tag_qubit), one entry per qubit, with its position written out (`xyz`) or
-read from a file (`file`). Beside the list: `intmap`, `alpha_state`, `beta_state` and `psi0`.
-<b>Example:</b> ``` "Qubit" : {"qubit": [{"file": "file-path"}], "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]}} ```
-The full example is on the [Qubit page](InputFile_Qubit.md).
+read from a file (`file`). Beside the list: `intmap`, `alpha_state`, `beta_state` and `psi0`. For example:
+
+```
+"Qubit" : {"qubit": [{"file": "file-path"}], "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]}}
+```
 
 - [Qubit](InputFile_Qubit.md#tag_Qubit)
 - [qubit](InputFile_Qubit.md#tag_qubit)
@@ -218,29 +203,31 @@ The full example is on the [Qubit page](InputFile_Qubit.md).
 - the Overhauser field: [hamiltonian.common.qubit_bath_mean_field](InputFile_General.md#tag_qubit_bath_mean_field)
 
 <a id="ClusterTags"></a>
-## Cluster tags
-The keys of this group are described in [InputFile_Cluster.md](InputFile_Cluster.md).
+### Cluster tags
+
+On the page [Cluster tags](InputFile_Cluster.md).
 
 - [order](InputFile_General.md#tag_order) and [method](InputFile_General.md#tag_method) (top level)
 - the `cluster` block:
-- [mode](InputFile_Cluster.md#tag_cluster_mode) (`standard`, `pcce`, `bundle`, `dsj`, `itb`, `dsjitb`)
-- `selection`: [add_subclusters](InputFile_Cluster.md#tag_add_subclusters),
-  [max_per_order](InputFile_Cluster.md#tag_max_clusters_per_order)
-- [pcce](InputFile_Cluster.md#tag_pcce):[partition_size](InputFile_Cluster.md#tag_pcce_partition_size),
-  [trials](InputFile_Cluster.md#tag_pcce_trials), [max_iterations](InputFile_Cluster.md#tag_pcce_max_iterations),
-  [kmeans_pp](InputFile_Cluster.md#tag_pcce_kmeans_pp), [print_trials](InputFile_Cluster.md#tag_pcce_print_trials),
-  [partition](InputFile_Cluster.md#tag_pcce_partition),
-  [connections](InputFile_Cluster.md#tag_pcce_connections), [cache](InputFile_Cluster.md#tag_pcce_cache)
-- [bundle](InputFile_Cluster.md#tag_bundle): [max_dim](InputFile_Cluster.md#tag_bundle_max_dim),
-  [merge_cutoff](InputFile_Cluster.md#tag_bundle_merge_cutoff), [connections](InputFile_Cluster.md#tag_bundle_connections),
-  [connection_budget](InputFile_Cluster.md#tag_bundle_connection_budget), [max_clusters](InputFile_Cluster.md#tag_bundle_max_clusters),
-  [max_work](InputFile_Cluster.md#tag_bundle_max_work)
-- [adaptive](InputFile_Cluster.md#tag_adaptive) ([probe_memory_gb](InputFile_Backend.md#tag_probe_memory_gb),
-  [work_file](InputFile_Cluster.md#tag_adaptive_work_file), internal)
+    - [mode](InputFile_Cluster.md#tag_cluster_mode) (`standard`, `pcce`, `bundle`, `dsj`, `itb`, `dsjitb`)
+    - `selection`: [add_subclusters](InputFile_Cluster.md#tag_add_subclusters),
+      [max_per_order](InputFile_Cluster.md#tag_max_clusters_per_order)
+    - [pcce](InputFile_Cluster.md#tag_pcce): [partition_size](InputFile_Cluster.md#tag_pcce_partition_size),
+      [trials](InputFile_Cluster.md#tag_pcce_trials), [max_iterations](InputFile_Cluster.md#tag_pcce_max_iterations),
+      [kmeans_pp](InputFile_Cluster.md#tag_pcce_kmeans_pp), [print_trials](InputFile_Cluster.md#tag_pcce_print_trials),
+      [partition](InputFile_Cluster.md#tag_pcce_partition),
+      [connections](InputFile_Cluster.md#tag_pcce_connections), [cache](InputFile_Cluster.md#tag_pcce_cache)
+    - [bundle](InputFile_Cluster.md#tag_bundle): [max_dim](InputFile_Cluster.md#tag_bundle_max_dim),
+      [merge_cutoff](InputFile_Cluster.md#tag_bundle_merge_cutoff), [connections](InputFile_Cluster.md#tag_bundle_connections),
+      [connection_budget](InputFile_Cluster.md#tag_bundle_connection_budget), [max_clusters](InputFile_Cluster.md#tag_bundle_max_clusters),
+      [max_work](InputFile_Cluster.md#tag_bundle_max_work)
+    - [adaptive](InputFile_Cluster.md#tag_adaptive) ([probe_memory_gb](InputFile_Backend.md#tag_probe_memory_gb),
+      [work_file](InputFile_Cluster.md#tag_adaptive_work_file), internal)
 
 <a id="BackendTags"></a>
-## Execution tags
-The keys of this group are described in [InputFile_Backend.md](InputFile_Backend.md).
+### Execution tags
+
+On the page [Execution tags](InputFile_Backend.md).
 
 Where and how the cluster dynamics is computed, and what the run reports about it: the `execution` block.
 
@@ -257,12 +244,13 @@ On this page too, in other blocks: [cluster.adaptive.probe_memory_gb](InputFile_
 [output.cluster_contributions](InputFile_Output.md#tag_cluster_contributions) (`enabled`, [max_mb](InputFile_Output.md#tag_cluster_contribution_max_mb)).
 
 <a id="PulseTags"></a>
-## Pulse tags
-The keys of this group are described in [InputFile_Pulse.md](InputFile_Pulse.md).
+### Pulse tags
+
+On the page [Pulse tags](InputFile_Pulse.md).
 
 - [pulse](InputFile_Pulse.md#tag_pulse) (required)
-    - [count](InputFile_Pulse.md#tag_pulse_count)       
-    - [name](InputFile_Pulse.md#tag_pulse_name)    
+    - [count](InputFile_Pulse.md#tag_pulse_count)
+    - [name](InputFile_Pulse.md#tag_pulse_name)
     - [sequence](InputFile_Pulse.md#tag_sequence)
     - [per_qubit](InputFile_Pulse.md#tag_pulse_per_qubit)
     - [duration](InputFile_Pulse.md#tag_pulse_duration)
@@ -276,8 +264,9 @@ The keys of this group are described in [InputFile_Pulse.md](InputFile_Pulse.md)
         - [levels](InputFile_Pulse.md#tag_pulse_bath_levels)
 
 <a id="DefectArrayTags"></a>
-## Defect tags
-The keys of this group are described in [InputFile_Defect.md](InputFile_Defect.md).
+### Defect tags
+
+On the page [Defect tags](InputFile_Defect.md).
 
 The `Defect` block of a paramagnetic defect bath: `species`, the list of the defect species (the model). Their axis and
 state files are keys of the configuration
@@ -287,23 +276,24 @@ state files are keys of the configuration
 
 - [Defect](InputFile_Defect.md#tag_Defect)
 - [species](InputFile_Defect.md#tag_df_species)
-    - [name](InputFile_Defect.md#tag_df_name)       
+    - [name](InputFile_Defect.md#tag_df_name)
     - [n_onsite_spins](InputFile_Defect.md#tag_df_n_onsite_spins)
     - [n_axis_states](InputFile_Defect.md#tag_df_n_axis_states)
     - [frame](InputFile_Defect.md#tag_df_frame)
-    - [types](InputFile_Defect.md#tag_df_types)        
-    - [spins](InputFile_Defect.md#tag_df_spins)        
-    - [gyros](InputFile_Defect.md#tag_df_gyros)        
-    - [quadrupole_moments](InputFile_Defect.md#tag_df_quadrupole_moments)          
-    - [nuclear_positions](InputFile_Defect.md#tag_df_nuclear_positions)        
-    - [hyperfine](InputFile_Defect.md#tag_df_hyperfine)         
-    - [efg](InputFile_Defect.md#tag_df_efg)          
+    - [types](InputFile_Defect.md#tag_df_types)
+    - [spins](InputFile_Defect.md#tag_df_spins)
+    - [gyros](InputFile_Defect.md#tag_df_gyros)
+    - [quadrupole_moments](InputFile_Defect.md#tag_df_quadrupole_moments)
+    - [nuclear_positions](InputFile_Defect.md#tag_df_nuclear_positions)
+    - [hyperfine](InputFile_Defect.md#tag_df_hyperfine)
+    - [efg](InputFile_Defect.md#tag_df_efg)
     - [zfs](InputFile_Defect.md#tag_df_zfs) (its [axis](InputFile_Defect.md#tag_df_axis))
     - [detuning](InputFile_Defect.md#tag_df_detuning)
 
 <a id="OutputTags"></a>
-## Output tags
-The keys of this group are described in [InputFile_Output.md](InputFile_Output.md).
+### Output tags
+
+On the page [Output tags](InputFile_Output.md).
 
 The `output` block:
 
@@ -314,164 +304,9 @@ The `output` block:
 - [cluster_only](InputFile_Output.md#tag_cluster_only) (`true`: the cluster plan only)
 
 <a id="AutoConvergenceTags"></a>
-## Automatic convergence tags
-The `auto_convergence` block is described in [InputFile_AutoConvergence.md](InputFile_AutoConvergence.md). Its
+### Automatic convergence tags
+
+On the page [Automatic convergence tags](InputFile_AutoConvergence.md). The block's
 sections are `time_window`, `rdip`, `rbath`, `t2_fit` and `sampling`; the bath configurations come from the
 `configuration` block. `rdip_ladder` is an internal key it writes into its runs' inputs
 ([rdip_ladder](InputFile_General.md#tag_rdip_ladder)).
-
-<a id="OldNames"></a>
-## Old names
-
-Inputs written for an earlier version (v1.2.2 and before, or the adding_DEER / adding_MECCE branches) use other names
-and places for many keys. An old name, value, form or place is refused with its current one, except where the table
-says otherwise:
-`Error: input key "npulse" is now "pulse.count"`, `Error: input key "bathfile" is now "configuration.bathfile" ...`.
-
-The converter rewrites old inputs, keeps their comments, and lists what it changed:
-
-```
-python3 example/tools/InputKeys/convert_input_keys.py FILE...           # rewrite in place
-python3 example/tools/InputKeys/convert_input_keys.py --check FILE...   # list only; exit 1 when a file has old keys
-python3 example/tools/InputKeys/convert_input_keys.py --stdout FILE     # print the new text
-```
-
-What else the converter does:
-
-- It drops keys the run did not read (e.g. `qd_tensorfile` with `qd_readmode` 0) and the defaults `hf_readmode` 0 and
-  `qd_readmode` 0.
-- It refuses an input it cannot express (a `CorrTotSpin` other than 0).
-- An old key whose new name is already in the input (`npulse` beside `pulse.count`; case not read) is kept once when the
-  two values are the same. When they differ, the file stops before it is written.
-- The results do not change: rewritten in the current keys, the inputs of the standing checks (check_numerics,
-  check_input_forms, check_rotation) give the same output bytes.
-- Its tests are `example/tools/InputKeys/tests` (`python3 -m unittest discover -s example/tools/InputKeys/tests`).
-
-These keys kept their names and places, so the table leaves them out: `order`, `rbath`, `rdip`, `quantity`, `bfield`,
-`deltat`, `nstep` and `rdip_ladder` (an internal key of the automatic convergence) at the top level; the keys of the
-`Qubit.qubit` and `Qubit.intmap` entries; and the Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and
-`detuning`.
-
-| Old | Now |
-|---|---|
-| `"method": "CCE"` | `"method": "cCCE"` |
-| `"method": "pCCE"` | `"method": "cCCE", "cluster": {"mode": "pcce"}` |
-| `"method": "dsj"` / `"itb"` / `"dsjitb"` | `"method": "cCCE", "cluster": {"mode": "dsj"}` / `"itb"` / `"dsjitb"` |
-| `"method": "pgCCE"` / `"pmeCCE"` / `"pmegCCE"` (adding_MECCE) | `"method": "gCCE"` / `"meCCE"` / `"megCCE"` with `"cluster": {"mode": "pcce"}` |
-| `cluster_mode` | `cluster.mode` |
-| `"cluster_mode": "adaptive"` | `"cluster": {"mode": "bundle"}` |
-| `Adaptive` block, top-level `adaptive` block | `cluster.adaptive` block (keys unchanged; `cluster.mode` pcce or bundle; keys are read without regard to case, so `Adaptive` inside `cluster` is read) |
-| `Refine` block | `cluster.adaptive` block |
-| `adaptive_work_file` | `cluster.adaptive.work_file` (written by the refinement driver) |
-| `probe_memory_gb` | `cluster.adaptive.probe_memory_gb` (the converter removes it from an input without an `adaptive` block: it was read with the refinement only) |
-| `rbathcut` | `rbath: [inner, outer]` (the inner radius) |
-| `rdipcut` | `rdip: [inner, outer]` (the inner radius) |
-| `gyrofile`, `bathfile`, `nstate`, `seed` (top level) | `configuration.gyrofile`, `configuration.bathfile`, `configuration.s_range` (as `configuration.nstate` below), `configuration.seed` |
-| `configuration.nstate` N | `configuration.s_range: [1, N]`; `nstate` 0 (the ensemble): no `s_range` |
-| a `configuration.seed` number with `k_range` | the number is now the first configuration's seed (k takes seed + k - first); the old meaning, the same seed for every k, is a list of that number, one per configuration, which the converter writes where the run draws (sampled states, Defect species, pcce) |
-| `bathadjust`, `bath_shift` (top level) | `configuration.bath_shift` |
-| `statefile`, `bath_state_file: "prefix"` (top level) | `configuration.bath_state_file: ["prefix"]`, one name per bath file (`{s}` the state, or the state appended) (the converter removes a single prefix beside several bath files: such a prefix was not read, the states were drawn at random) |
-| `avaaxfile`, `Defect.axis_file: "file"` | `configuration.defect_axis_file: ["file"]`, one per bath file |
-| `exstatefile`, `Defect.state_file: "prefix"` | `configuration.defect_state_file: ["prefix"]`, one per bath file |
-| `addsubclus` (0/1 or true/false), `add_subclusters` (top level) | `cluster.selection.add_subclusters` (true/false) |
-| `nk`, `max_clusters_per_order` | `cluster.selection.max_per_order` |
-| `qubitfile` | `Qubit.qubit: [{"file": ...}]` (as `Qubit.file` below) |
-| `qspin`, `qzfs`, `qalphams`, `qbetams` | the entry's `spin`, then as `Qubit.zfs`, `Qubit.alphams`, `Qubit.betams` below |
-| `Qubit.file`, `Qubit.spin`, `Qubit.name` (the one-qubit file form) | an entry of `Qubit.qubit`: `[{"file": ..., "spin": ..., "name": ...}]` (`file` in place of `xyz`) |
-| `Qubit.qubit[].detuning: [x]` | `x` (a number, or `{"value", "unit"}`) |
-| `Qubit.nqubit` | removed: the length of `Qubit.qubit` |
-| `Qubit.overhaus` | `hamiltonian.common.qubit_bath_mean_field` |
-| `Qubit.alphaidx`, `Qubit.betaidx` | `Qubit.alpha_state: {"index": n}`, `Qubit.beta_state: {"index": n}` |
-| `Qubit.psia`, `Qubit.psib` | `Qubit.alpha_state: {"vector": [...]}`, `Qubit.beta_state: {"vector": [...]}` (each side on its own; old inputs used `psia` only with `psib` and `alphaidx` only with `betaidx`, and a vector won over an index) |
-| `Qubit.qubit[].alphams`, `Qubit.qubit[].betams` | `Qubit.alpha_state: {"ms": [m_1, m_2, ...]}`, `Qubit.beta_state: {"ms": [...]}`, one m<sub>s</sub> per qubit in the order of `Qubit.qubit` (the converter fills +1 / 0 for a qubit that wrote none; beside an `alpha_state` or `beta_state` already written, which CCEX used for the state, it removes them with a note) |
-| `Qubit.alphams`, `Qubit.betams` (with `Qubit.file`) | `Qubit.alpha_state: {"ms": [m]}`, `Qubit.beta_state: {"ms": [m]}` |
-| `Qubit.zfs` (with `Qubit.file`, kHz) | a `Qubit.intmap` self entry, `{"between": ["q0", "q0"], "tensor": ..., "unit": "kHz"}` (`q0` the qubit's name, its default) |
-| `Qubit.frame` (with `Qubit.file`, development versions) | the `frame` of that self entry |
-| `vector_mean_field` (false / true) | `hamiltonian.common.bath_bath_mean_field` (`"z"` / `"xyz"`; `"off"` is new) |
-| `hf_readmode` 0 / 1 / 2 / 3 | `hamiltonian.common.hyperfine`: `dipole` `"point"` / `"point"` / `"dft"` / `"dft"`, `contact` false / true / false / true |
-| `hf_tensorfile` | `hamiltonian.common.hyperfine.file` |
-| `hf_ignore_oor` 0 / 1 | `hamiltonian.common.hyperfine.missing_row` `"stop"` / `"point_dipole"` |
-| `qd_readmode` 0 | `hamiltonian.common.quadrupole: "off"` (the default) |
-| `qd_readmode` 1 | not available (experimental constants) |
-| `qd_readmode` 2 / 3 / 4 | `hamiltonian.common.quadrupole.structure` `"plain"` / `"strained"` / `"bubble"` |
-| `qd_tensorfile` | `hamiltonian.common.quadrupole.file` |
-| `qd_tensorfile_woqubit` | `hamiltonian.common.quadrupole.file_without_defect` |
-| `qd_cellpara` | `hamiltonian.common.quadrupole.cell` |
-| `knight` | `hamiltonian.cCCE.knight` |
-| `hfmedi` | `hamiltonian.cCCE.hfmedi` |
-| (none) | `hamiltonian.cCCE.delta_A` (new: Maze's second-order δA term, default `false` = the old calculation) |
-| `DefectTotSpin` | removed: the qubit spin is used (also for the S of a v3 tensor file) |
-| `CorrTotSpin` | removed: it served old-format VASP tensor files only; remake such a file with `example/tools/SpinTensorReader` (format v3) |
-| `sK` | `cluster.pcce.partition_size` |
-| `max_trial` | `cluster.pcce.trials` |
-| `max_iter` | `cluster.pcce.max_iterations` |
-| `kmeans_pp` | `cluster.pcce.kmeans_pp` |
-| `iter_detail`, `pcce_detail_limit` | `cluster.pcce.print_trials` (as below) |
-| `cluster.pcce.print_trials` true / false and `cluster.pcce.print_limit` L | `cluster.pcce.print_trials`: the number of trials printed, L (32 without `print_limit`) / 0 |
-| `pcce_partition` | `cluster.pcce.partition` |
-| `pcce_connections` | `cluster.pcce.connections` |
-| `pcce_cache_mode` | `cluster.pcce.cache.mode` |
-| `pcce_cache_file` | `cluster.pcce.cache.file` |
-| `pcce`, `bundle` (top-level blocks) | `cluster.pcce`, `cluster.bundle` |
-| `bundle_max_dim` | `cluster.bundle.max_dim` |
-| `bundle_merge_cutoff` | `cluster.bundle.merge_cutoff` |
-| `bundle_connections` | `cluster.bundle.connections` |
-| `bundle_connection_budget` | `cluster.bundle.connection_budget` |
-| `expansion_max_clusters` | `cluster.bundle.max_clusters` |
-| `expansion_max_work` | `cluster.bundle.max_work` |
-| `npulse` | `pulse.count` |
-| `pulsename` | `pulse.name` |
-| `sequence` | `pulse.sequence` |
-| `pulseiter` | `pulse.per_qubit` |
-| `pulse_time` | `pulse.duration` |
-| `detuning_factor` | `pulse.detuning_factor` |
-| `backend`, `gpu_options`, `propagator`, `evolution`, `evolution_update`, `column_evolution`, `profile` (top level) | `execution.backend`, `execution.gpu_options`, ... (the same names in `execution`) |
-| `gpu_min_dim`, `gpu_batch_steps`, `gpu_cache_mb`, `gpu_batch_clusters`, `gpu_cluster_batch_mb` | `execution.gpu_options.min_dim`, `.evolution_batch_steps`, `.cache_mb`, `.evolution_batch_size`, `.cluster_batch_mb` |
-| `gcce_refinement` (true/false) | `execution.gcce_refinement: {"enabled": true/false}` |
-| `gcce_refinement_max_sweeps` | `execution.gcce_refinement.max_sweeps` |
-| `outfile` | `output.file` |
-| `savemode`, `save_nodiv` | `output.savemode` |
-| `savemode` `"normal"` / `"info"` / `"all"` / `"allfull"` | `"coherence"` / `"coherence_tagged"` / `"cluster_coherence"` / `"cluster_density_matrix"` |
-| `"save_nodiv": false` | `"savemode": {"mode": "coherence", "nodiv": false}` |
-| `cluster_contributions` (true/false) | `output.cluster_contributions: {"enabled": true/false}` |
-| `cluster_contribution_max_mb` | `output.cluster_contributions.max_mb` |
-| `cluster_only` (top level) | `output.cluster_only` |
-| `coordinate_frame_rotation`, `bath_coordinate_rotation` | `frame.rotation`, on when the block is given (`enabled` defaults to true; the old key defaulted to false, and the converter removes an old block that was off) |
-| `defect_axis_reference` | removed (it only named the rotation's qubit axis in the log) |
-| `frame.rotation.bath_axis` | removed: it only turned the computational x and y about `qubit_axis`; x is now `qubit_axis` x [0, 0, 1], the old default (the converter notes a value other than [0, 0, 1]) |
-| `frame.rotation.reference_qubit` | removed: it only chose the rotation origin (a translation); the origin is the first qubit |
-| `frame.rotation.qubit_position_frame` | removed: its one value was `"bath"`; qubit positions are always in the bath file's frame |
-| `frame.rotation.hf_tensor_frame` / `qd_tensor_frame` | `hamiltonian.common.hyperfine.frame` / `hamiltonian.common.quadrupole.frame` |
-| `Qubit.intmap[].tensor_frame` | `Qubit.intmap[].frame` |
-| `Defect.species[].coordinate_frame` | `Defect.species[].frame` |
-| `Defect.species[].axis` | `Defect.species[].zfs.axis`: `"zfs": {"D": ..., "axis": [...], "unit": ...}` (only the D form used it; the converter drops it elsewhere) |
-| `Defect.species[].zfs.E` (it took 0 only) | removed: the D form has no E, `zfs.tensor` for an E other than 0 |
-| a Defect or `Qubit.intmap` unit in another case, e.g. `"mhz"` | the table's spelling, `"MHz"` (units are case-sensitive) |
-| the frame value `"bath"` | `"file"` |
-| no frame, with the rotation on: a Defect species, a single qubit's `Qubit.intmap` entry, `Qubit.zfs` (read as written before) | refused; the converter writes the old meaning, `"frame": "qubit"` (for `Qubit.zfs` in its intmap self entry) |
-| `magnetic_field_axis` | removed: write `bfield` as [0, 0, Bz] and turn the bath with `frame.rotation` |
-| `"Defect": [ ... ]` | `"Defect": {"species": [ ... ]}` |
-| Defect entry `dfname` | `name` |
-| Defect entry `apprx` | removed (it changed nothing) |
-| Defect entry `naddspin`, `n_nuclear_spins` | `n_onsite_spins` |
-| Defect entry `navaax`, `n_configurations` | `n_axis_states` |
-| Defect entry `eqs` | `quadrupole_moments` |
-| Defect entry `rxyzs` | `nuclear_positions` |
-| Defect entry `hypf` | `hyperfine` |
-| `auto_convergence.launcher` | removed: the runs use the `mpirun -n N` main.out was started with |
-| `auto_convergence.configurations` | `auto_convergence.sampling`; its `bathfile`, `statefile`, `avaaxfile`, `exstatefile` are `configuration.bathfile`, `bath_state_file`, `defect_axis_file`, `defect_state_file` |
-| `converge` of `auto_convergence.time_window`, `rdip`, `rbath`, `sampling` | removed: a section whose value (`value`; `sampling.configurations`) is given is fixed, one without it is found |
-| `auto_convergence.time_window.unit` | `time_window.value: {"value": ..., "unit": ...}` |
-| `auto_convergence.time_window.threshold` | `time_window.decay_level` |
-| `auto_convergence.sampling.number`, `test_number` | `sampling.configurations`, `test_configurations` |
-| `output.path`, `output.file` with `auto_convergence` (never used) | removed: the runs go to `auto_convergence.workdir` |
-| `cluster.adaptive.output` | `cluster.adaptive.workdir` |
-| `cluster.adaptive` keys spelled with `-`, e.g. `max-rounds` | `max_rounds` (`-` is the command line's) |
-| `cluster.adaptive.policy: "merge"` | not needed (the only policy): removed by the converter, reported as not used by CCEX |
-| `bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams` (adding_DEER) | `pulse.bath.count`, `pulse.bath.sequence`, `pulse.bath.defect`, `pulse.bath.energy_shift`, then as below (not rewritten by the converter) |
-| `pulse.bath.spin` | removed: the driven spins' own S is used (it had to be the same) |
-| `pulse.bath.alphams`, `pulse.bath.betams` | `pulse.bath.levels: [alphams, betams]` |
-| `jump_operators` (top level, adding_MECCE) | `hamiltonian.meCCE.jump_operators` or `hamiltonian.megCCE.jump_operators`, the section of the run's method (not rewritten by the converter) |
-| `hamiltonian.corrections`, `hamiltonian.dissipation` (development versions only) | `hamiltonian.cCCE`; `hamiltonian.meCCE` or `hamiltonian.megCCE`, the section of the run's method |
-| jump `operator` `"+-"` / `"-+"` (adding_MECCE) | `"-"` / `"+"` |
-| command-line options `-m`, `-q`, `-B`, `-I`, `-s`, `-a`, `-S`, `-N`, `-P` and the others that set a key | the input keys ([Building and running](BuildingAndRunning.md#HowToRun)); the command line is `-f`, `-o DIR`, `-v`, `-e` and `-h` alone, and `-o` names the output folder, not the output file |

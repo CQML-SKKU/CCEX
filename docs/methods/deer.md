@@ -6,7 +6,7 @@ or pcce.
 
 - The keys are listed in [InputFile_Pulse.md](../user/InputFile_Pulse.md#tag_pulse_bath).
 - The flat keys of an earlier development version are refused, with the new names in the message
-  ([old names](../user/InputFile.md#OldNames)).
+  ([old names](../user/InputFile_OldNames.md)).
 - The test is `test/code_verification/check_deer/`.
 
 ## The physics
@@ -73,7 +73,7 @@ a_j = 2\pi\cdot 52.04\ \text{MHz nm}^3\,\frac{1-3\cos^2\theta_j}{r_j^3}.$$
 | pulses | ideal (`pulse.detuning_factor` 1), `pulse.per_qubit` false, any qubit sequence | `detuning_factor` ≠ 1, `per_qubit` true |
 | `pulse.bath` | its six keys | an unknown key; `count` < 0; a sequence with other than `count`+1 rows, fractions not summing to 1, a last row that is not identity, two pulses of one channel on one edge; `count` > 0 without `defect` or `energy_shift` |
 | driven spins | | a `defect` no spin has (bath file and Defect sub-spins); driven spins of different S; `levels` equal or not levels of S; the old `spin`, `alphams`, `betams` |
-| old keys | | the earlier flat keys (each named with its new key, [old names](../user/InputFile.md#OldNames)) |
+| old keys | | the earlier flat keys (each named with its new key, [old names](../user/InputFile_OldNames.md)) |
 
 **Untested.** `check_deer` drives S = ½ spins (P1, levels ½ and −½) with X 180 pulses only. It covers gCCE with
 propagator eigen and expm, megCCE, and `cluster.mode` standard and pcce. Two cases take the same code

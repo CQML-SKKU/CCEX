@@ -77,7 +77,7 @@ This section lists what changed in 2.0.0 (released 2026-10-17) since v1.2.2, in 
 lists what it changed. `--check` lists only, and `--stdout` prints the new text. A rewritten input gives the same
 results as before.
 
-The table below lists every renamed or removed key. [Old names](InputFile.md#OldNames) has the same table with more
+The table below lists every renamed or removed key. [Old names](InputFile_OldNames.md) has the same table with more
 detail.
 
 | Old | New |
