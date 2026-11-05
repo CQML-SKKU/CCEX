@@ -36,6 +36,7 @@ Outputs are compared on the raw `_noDiv` and `_wiDiv`, never on the error-correc
 | `configuration` | each `k_range` configuration against its files alone; two bath files against the merged file; bad forms refused | same bytes |
 | `autoconv` | `enabled` false against no block; enabled starts the runner once under `mpirun -n 2`; bad values refused | same bytes |
 | `pcce_rest` | pCCE with left-over spins against files without them; with a `CCEX_SANITIZE=1` build in `CCEX_BIN`, a write into deleted spins stops the run | same bytes |
+| `dsjitb` | cluster.mode dsjitb at order 2 against the standard CCE2 (the same clusters and curve, also on a bath whose first spin has inter-bath pairs) | every value within 1e-12, the same cluster counts |
 
 The systems are reduced fixtures that run in seconds on one core: S1a/b NV + ¹³C CCE2 (ensemble and sampled), S2a
 gCCE2, S2b/c NV + P1 10 ppm CCE2 and gCCE2, S3 P1 with ¹⁴N, S4 h-BN V_B⁻ with DFT tensors over `Afile_vertex`, S4b

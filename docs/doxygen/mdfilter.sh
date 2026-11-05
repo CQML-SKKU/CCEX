@@ -17,7 +17,8 @@
 #    and found in IMAGE_PATH. So the directory part is dropped too.
 #  - In a tutorial README: the title gets the page label tutorial_bNN or tutorial_aNN; every
 #    figure is called expected.png in its calculation folder, so ![..](calc/expected.png)
-#    becomes ![..](bNN_calc.png) (and ![..](expected.png) bNN.png), the names of the links in
+#    becomes ![..](bNN_calc.png) (and ![..](expected.png) bNN.png, and any other ![..](calc/name.png)
+#    bNN_calc_name.png), the names of the links in
 #    docs/images/tutorials/; a line "Input: [..](calc/file.jsonc)" or "Inputs: [..](..),
 #    [..](..)" is replaced by the input files themselves, one code block each.
 #  - Math is written for GitHub, $...$ inline and $$...$$ displayed (on one line or over
@@ -39,6 +40,7 @@ tutorial() {
           -e "1s/^# .*/& {#tutorial_$nn}/" \
           -e "s#\]\(([A-Za-z0-9_]+)/expected\.png\)#](${nn}_\1.png)#g" \
           -e "s#\]\(expected\.png\)#](${nn}.png)#g" \
+          -e "s#\]\(([A-Za-z0-9_]+)/([A-Za-z0-9_]+)\.png\)#](${nn}_\1_\2.png)#g" \
           -e "s#\]\(\.\./([0-9][0-9])_[A-Za-z0-9_]*/(README\.md)?\)#](@ref tutorial_${nn%??}\1)#g" \
           -e 's#\]\(\.\./\.\./basic/([0-9][0-9])_[A-Za-z0-9_]*/(README\.md)?\)#](@ref tutorial_b\1)#g' \
           -e 's#\]\(\.\./\.\./advanced/([0-9][0-9])_[A-Za-z0-9_]*/(README\.md)?\)#](@ref tutorial_a\1)#g' \

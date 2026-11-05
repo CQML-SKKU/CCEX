@@ -20,7 +20,7 @@ The cluster reports (the contribution of each cluster, the plan) are in
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [cCCE2_Hahn_dsj](#cs_dsj): disjoint groups against the standard pairs.
+1. [cCCE2_Hahn_dsj](#cs_dsj): disjoint groups, the pairs between them, and both, against the standard pairs.
 2. [pCCE2_Hahn_states](#cs_pcce): partitions of 1, 2 and 3 P1.
 3. [cCCE2_Hahn_bundle](#cs_bundle): bundles of up to three ¹³C.
 4. [cCCE2_Hahn_adaptive](#cs_adaptive): the merge refinement of the bundles.
@@ -29,16 +29,20 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 <a id="cs_dsj"></a>
 ## 1. cCCE2_Hahn_dsj: disjoint groups
 
-- **What it shows:** `cluster.mode` dsj, whose clusters are the disjoint groups of the coupling graph within `rdip`,
-  against the standard pairs (`ccein_standard.jsonc`).
-- **Keys that matter:** `cluster.mode` dsj.
-- **How to run:** `NP=4 bash run.sh`. It takes 1.1 s and 0.05 GB per rank.
-- **Expected result:** `expected.png`. T2 is 1.158 ms with dsj against 1.084 ms, and the largest difference is 0.065.
-- **What to change next:** `cluster.mode` itb or dsjitb (cCCE only).
+- **What it shows:** the three variants of the standard clustering against the standard pairs
+  (`ccein_standard.jsonc`). `cluster.mode` dsj (`ccein.jsonc`) computes only the disjoint groups of the coupling graph
+  within `rdip`. itb (`ccein_itb.jsonc`) computes only the pairs between the groups, the factor the couplings between
+  groups add, so it is a part of the decay and not the coherence. dsjitb (`ccein_dsjitb.jsonc`) computes both, and at
+  order 2 it is the standard CCE2 written another way.
+- **Keys that matter:** `cluster.mode` dsj, itb or dsjitb (cCCE only).
+- **How to run:** `NP=4 bash run.sh`. It takes 2.5 s for the four runs and 0.05 GB per rank.
+- **Expected result:** `expected.png`. T2 is 1.158 ms with dsj against 1.084 ms, with a largest difference of 0.065.
+  dsjitb gives the standard curve exactly. itb alone is still 0.43 at 2 ms.
+- **What to change next:** `order` 3, where dsjitb is no longer CCE3, since only pairs enter between the groups.
 
 ![cCCE2_Hahn_dsj: expected result](cCCE2_Hahn_dsj/expected.png)
 
-Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_dsj/ccein_standard.jsonc)
+Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_itb.jsonc`](cCCE2_Hahn_dsj/ccein_itb.jsonc), [`ccein_dsjitb.jsonc`](cCCE2_Hahn_dsj/ccein_dsjitb.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_dsj/ccein_standard.jsonc)
 
 <a id="cs_pcce"></a>
 ## 2. pCCE2_Hahn_states: partitions
@@ -51,8 +55,10 @@ Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_standard.jsonc`](cC
 - **How to run:** `NP=4 bash run.sh`. It takes 8 s and 0.06 GB per rank. `SIZES="1 2 3 4" bash run.sh` adds size 4,
   which takes much longer.
 - **Expected result:** `expected.png`. T2 is 260 µs for size 1, 183 µs for 2 and 202 µs for 3, for these four states.
-- **What to change next:** more states (`s_range`) before reading the differences, or `cluster.pcce.connections`
-  spins.
+  `run.sh` also runs size 3 with `cluster.pcce.connections` spins, which links two partitions when any of their spins
+  are within `rdip`. It connects 4226 of the 12090 partition pairs instead of 2909, and gives T2 201.5 µs, nearly
+  the same curve as with centers.
+- **What to change next:** more states (`s_range`) before reading the differences.
 
 ![pCCE2_Hahn_states: expected result](pCCE2_Hahn_states/expected.png)
 

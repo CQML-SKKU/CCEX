@@ -70,7 +70,8 @@ test/**/*.sqlite
 # --- tutorial outputs -------------------------------------------------------
 # A tutorial run writes results/, summary*/ and rawdata/ next to its input, plus
 # logs and figures. The recorded ones went to the archive on 2026-09-23; new ones
-# are not tracked, except each calculation's expected.png (A66: the figure a rerun is compared with).
+# are not tracked, except each calculation's expected.png (A66: the figure a rerun is compared with) and the step
+# figures a README shows (step*.png).
 example/tutorial/**/results/
 example/tutorial/**/summary*/
 example/tutorial/**/rawdata/
@@ -80,6 +81,7 @@ example/tutorial/**/*_ErrCorr
 example/tutorial/**/*EnsAvg*
 example/tutorial/**/*.png
 !example/tutorial/**/expected.png
+!example/tutorial/**/step*.png
 example/tutorial/**/outfile
 example/tutorial/**/process*
 example/tutorial/**/Process_*

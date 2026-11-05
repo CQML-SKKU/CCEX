@@ -102,6 +102,10 @@
 - **`"strained"` and `"bubble"` with a vertex-format `file_without_defect` never ended.** The fold used a box of zero
   size. It now uses the box of the file's eight vertices. `check_rotation` folds a far spin for both structures and both
   range forms.
+- **`cluster.mode` itb and dsjitb took the power of each inter-bath pair from the wrong spin.** The single spins are
+  rows 1..N of the cluster list, and the pairs took theirs from row s instead of s + 1, the spin before. A pair on spin 0
+  shortened the list itself, so the last spins dropped out (two of 978 in the dsj tutorial). dsjitb at order 2 now
+  gives the standard CCE2 exactly; it differed by up to 0.06 there. `check_input_forms` has a `dsjitb` stage.
 - **cCCE with `quantity` dm stopped in the middle of the run.** It is now refused at input (dm needs gCCE).
 - **The adaptive refinement's message for `-o` and `output.path`** named `cluster.adaptive.output`, the old name. It
   names `cluster.adaptive.workdir`.

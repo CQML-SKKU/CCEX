@@ -364,9 +364,10 @@ void clusterizeDsjItb(Cluster* cls, int*** cmap, float*** stmap, BathArray* ba){
             cls->clusinfo[2][clusIdx][1] = spin1;
             cls->clusinfo[2][clusIdx][2] = spin2;
 
-	    	// L~_ij = Lij / Li, Lj
-            cls->clusinfo[1][spin1][0]--;
-            cls->clusinfo[1][spin2][0]--;
+	    	// L~_ij = Lij / Li, Lj. Row s+1 of clusinfo[1] is spin s (row 0 holds the count); the rows were indexed by
+	    	// s until 2026-11-05, which took the power from the spin before and, for spin 0, shortened the list
+            cls->clusinfo[1][spin1+1][0]--;
+            cls->clusinfo[1][spin2+1][0]--;
         }
     }
 	

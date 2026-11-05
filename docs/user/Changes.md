@@ -30,6 +30,8 @@ and the builds of 2.0.0.
     took the defect file's tensor again.
   - `"strained"` and `"bubble"` with a vertex-format `file_without_defect` no longer hang.
   - cCCE with `quantity` dm is refused at input. It stopped in the middle of the run.
+  - `cluster.mode` itb and dsjitb give each inter-bath pair the right spins' powers. dsjitb at order 2 is now the
+    standard CCE2, as it should be.
 - **Tutorials and documentation.** The tutorials are split into `basic/` (the input itself, six topics to read in
   order) and `advanced/` (fourteen topics); [Examples](Examples.md) lists both. Every tutorial input explains its keys
   in comments. New: the pseudospin tutorial, and calculations for the noise spectrum, the automatic GPU options, the
