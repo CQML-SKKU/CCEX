@@ -7,8 +7,8 @@ gCCE keeps the qubit in every cluster's Hamiltonian,
 $$H_C = H_q + H_{\rm bath} + \sum_{n \in C} \mathbf{S}\cdot\mathsf{A}_n\cdot\mathbf{I}_n ,$$
 
 with $H_q$ the qubit's Zeeman term and zero-field splitting and $\mathsf{A}_n$ the hyperfine tensor of bath spin $n$.
-It is the exact reference ([Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md)). cCCE puts the qubit
-in one of its two states, $k \in \{\alpha, \beta\}$ with $S_z$ sublevel $m_k$, and solves only the bath in that state:
+Its cluster Hamiltonian is complete, so it is the reference for cCCE
+([Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md)). cCCE puts the qubit in one of its two states, $k \in \{\alpha, \beta\}$ with $S_z$ sublevel $m_k$, and solves only the bath in that state:
 
 $$H_C^{(k)} = H_{\rm bath} + m_k \sum_{n \in C} \mathbf{A}_{z,n}\cdot\mathbf{I}_n ,$$
 
@@ -19,13 +19,14 @@ $\Delta = \tfrac32 D_{zz}$, the keys of `hamiltonian.cCCE` add three pieces of i
 
 | Key | Adds to $H_C^{(k)}$ | Where it matters |
 |---|---|---|
-| `knight` | The Knight shift by the field across the qubit axis, $-(3\lvert m_k\rvert - 2)(\gamma_q/\Delta)\,\mathbf{B}\cdot\tilde{\mathsf{A}}_n\cdot\mathbf{I}_n$, with $\tilde{\mathsf{A}}_n$ the tensor without its z row. | A tilted field. |
+| `knight` | The Knight shift by the field across the qubit axis, $-(3\lvert m_k\rvert - 2)(\gamma_q/\Delta)\,\mathbf{B}\cdot\tilde{\mathsf{A}}_n\cdot\mathbf{I}_n$, with $\tilde{\mathsf{A}}_n$ the tensor without its z row and $\lvert m_k\rvert$ taken as $\langle S_z^2\rangle$ of the qubit eigenstate closest to the branch state (1 for ms ±1 and 0 for ms 0 in a field along the axis). | A tilted field. |
 | `delta_A` | The second-order term of each nucleus on its own, $\delta\mathbf{A}_n\cdot\mathbf{I}_n$ with $\delta\mathbf{A}_n = -m_k(\mathbf{A}_{x,n}\times\mathbf{A}_{y,n})/(2\Delta)$. | Close nuclei at low field. |
 | `hfmedi` | The whole second order, $\sum_{b\neq a} E_{ab}E_{ba}/(\omega_a-\omega_b)$, with $a$ the eigenstate of the qubit Hamiltonian closest to the branch state, $b$ every other eigenstate and $E_{ab} = \sum_n \langle a\rvert\mathbf{S}\lvert b\rangle\cdot\mathsf{A}_n\cdot\mathbf{I}_n$. Its terms with two nuclei are their coupling through the qubit, and those with one nucleus are the terms of `delta_A`. | Close nuclei at low field. |
 
 `knight` and `delta_A` divide by $\Delta$ and are refused without a zero-field splitting, and `delta_A` is refused
-with `hfmedi`, which already holds it. How they are derived is in [cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections). Each case below compares
-cCCE with and without the key against gCCE.
+with `hfmedi`, which already holds it. How they are derived is in
+[cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections). Each case below compares cCCE with and without the
+key against gCCE.
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
@@ -49,7 +50,9 @@ Folder: `cCCE2_Hahn_hfMediated/`
 <a id="a09_hfmedi_input"></a>
 #### 1.1.1 The input
 
-The run is the V_B⁻ of Advanced 06 at 1000 G with its zero-field splitting, one configuration and the ensemble.
+Two nuclei that both couple to the qubit can exchange a flip through a virtual transition of the qubit. cCCE leaves
+this coupling out, and `hfmedi` adds it. The run is the V_B⁻ of Advanced 06 at 1000 G with its zero-field splitting,
+one configuration and the ensemble.
 `ccein_wi_hfmedi.jsonc` turns the hyperfine-mediated coupling on, `ccein_wo_hfmedi.jsonc` is the same without it,
 and `ccein_gcce.jsonc` is the same with `method` gCCE, the reference:
 
@@ -90,7 +93,7 @@ It runs the three inputs and plots them together. It takes 13 s, most of it gCCE
 
 With the term cCCE decays as gCCE does, although the two curves still differ by up to 0.45 at single points.
 
-Next, try a smaller `deltat`, or a higher `bfield`.
+Next, try a smaller `deltat`, or a higher `bfield`, where the term matters less.
 
 Inputs: [`ccein_gcce.jsonc`](cCCE2_Hahn_hfMediated/ccein_gcce.jsonc), [`ccein_wi_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wi_hfmedi.jsonc), [`ccein_wo_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wo_hfmedi.jsonc)
 
@@ -144,9 +147,10 @@ It runs the four inputs and plots them together. It takes 8 s and 0.09 GB per ra
 | cCCE with `knight` and `delta_A` | 1.082 ms |
 | cCCE without | 1.219 ms from the undivided curve (`_noDiv`). The divided curve (`_wiDiv`) jumps to \|L\| 15.7 at one point, 1.396 ms. |
 
-The jump of the divided curve without the term comes from the division by a sub-cluster whose coherence is near
-zero there, so the plot shows that run's undivided curve. With the Knight shift cCCE has the T2 of gCCE. The curves still differ by up to 0.17 in the fast ¹³C oscillation.
-`delta_A` moves the curve by at most 0.011 here.
+The divided curve is the CCE product, in which each cluster is divided by its sub-clusters. Where a sub-cluster's
+coherence is near zero the division can jump ([wiDiv, noDiv](../../../../docs/methods/cce.md#cce_divergence)), so the
+plot shows the undivided curve of the run without the term. With the Knight shift cCCE has the T2 of gCCE, and the
+curves still differ by up to 0.17 in the fast ¹³C oscillation. `delta_A` moves the curve by at most 0.011 here.
 
 Next, lower `bfield`, where `delta_A` matters more.
 
