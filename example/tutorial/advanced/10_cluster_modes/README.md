@@ -8,8 +8,8 @@ of three spins in the bath. The modes of `cluster.mode` put strongly coupled spi
 that unit exactly. pCCE and bundles then run the expansion over these units, so the order need not grow:
 
 - **dsj** (cCCE only) splits the bath into disjoint groups of at most `order` spins, joining the most strongly coupled
-  pairs first, and computes each group as one cluster. It leaves out the couplings between groups and needs far fewer clusters than
-the standard expansion.
+  pairs first, and computes each group as one cluster. It leaves out the couplings between groups and needs fewer
+  clusters than the standard expansion (541 against 4314 in case 1).
 - **pCCE** cuts the bath into partitions of `partition_size` spins close in space (k-means on the positions) and runs
   the expansion over partitions. A partition enters a cluster whole, so order 2 means pairs of partitions.
 - **Bundles** join strongly coupled spins into bundles, from the coupling strengths and up to the dimension
@@ -104,8 +104,8 @@ NP=4 bash run.sh
 ```
 
 It runs sizes 1, 2 and 3, and size 3 once more with `cluster.pcce.connections` spins. By default (`centers`) two
-partitions are linked when their centroids are within `rdip`, and with `spins` when any of their spins are. It takes 8 s and 0.06 GB per rank. `SIZES="1 2 3 4" bash run.sh` adds size 4,
-which takes much longer.
+partitions are linked when their centroids are within `rdip`, and with `spins` when any of their spins are. It takes
+8 s and 0.06 GB per rank. `SIZES="1 2 3 4" bash run.sh` adds size 4, which takes much longer.
 
 <a id="a10_pcce_result"></a>
 ### 2.3 The result
@@ -164,7 +164,7 @@ Folder: `cCCE2_Hahn_adaptive/`
 <a id="a10_adaptive_input"></a>
 ### 4.1 The input
 
-It is the bundled calculation with `rbath` 20 Å over 2 ms, refined by the adaptive merge with `atol` 1e-3:
+This case is the bundled calculation with `rbath` 20 Å over 2 ms, refined by the adaptive merge with `atol` 1e-3:
 
 ```jsonc
 "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
@@ -191,10 +191,10 @@ It runs the refinement and plots the first and the final run. It takes 48 s and 
 
 ![cCCE2_Hahn_adaptive: expected result](cCCE2_Hahn_adaptive/expected.png)
 
-The refinement runs two rounds (27 → 26 bundles) and then stops with the status `no_feasible_improving_merge`: no
-merge lowers the error further. The exit status is 2, which means stopped without passing the checks, and the result
-is the last run ([when it stops](../../../../docs/methods/bundle-adaptive.md#adaptive_stop)). |L| is 0.38 at 2 ms in the first and the final run, and the largest difference is 1.6e-5, so the merges
-hardly move this curve.
+The refinement runs two rounds (27 → 26 bundles) and then stops with the status `no_feasible_improving_merge`, since
+no merge lowers the error further. Its exit status 2 means that the run stopped without passing the checks, and the
+result is the last run ([when it stops](../../../../docs/methods/bundle-adaptive.md#adaptive_stop)). |L| is 0.38 at
+2 ms in the first and the final run, and the largest difference is 1.6e-5, so the merges hardly move this curve.
 
 Next, try `atol` 1e-4, or `max_rounds` 8.
 
@@ -237,7 +237,7 @@ It runs the refinement and prints each round. It takes 1 s and 0.06 GB per rank.
 
 The figure shows state 4 before and after. The first bundles [0,3] [1,5] [2,4] give three states with |L| > 1.01.
 At the worst point the run measures, for every linked bundle pair, $g = \log\lvert L_{ij}/(L_i L_j)\rvert$, and the
-pairs with $g > 0$ are the culprits, here [0,3]-[1,5] (g 1.63), [0,3]-[2,4] (0.10) and [1,5]-[2,4] (5e-4). It accepts
+pairs with $g > 0$ are the culprit pairs, here [0,3]-[1,5] (g 1.63), [0,3]-[2,4] (0.10) and [1,5]-[2,4] (5e-4). It accepts
 one change, splitting [2,4]. The rerun has no unphysical state (status `physical`, exit 0), and the final bundles are
 [[0,3], [1,5], [2], [4]].
 
