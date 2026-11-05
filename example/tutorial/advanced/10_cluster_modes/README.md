@@ -85,7 +85,7 @@ Next, try `order` 3. There dsjitb is no longer CCE3, since only pairs enter betw
 Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_itb.jsonc`](cCCE2_Hahn_dsj/ccein_itb.jsonc), [`ccein_dsjitb.jsonc`](cCCE2_Hahn_dsj/ccein_dsjitb.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_dsj/ccein_standard.jsonc)
 
 <a id="cs_pcce"></a>
-## 2. Partitions, pCCE
+## 2. Partitions (pCCE)
 
 Folder: `pCCE2_Hahn_states/`
 
@@ -136,7 +136,7 @@ The bath has 469 P1, and sizes 2 and 3 leave out one of them (the last in the fi
 | 3 | 156 | 2909 | 202 µs |
 | 3, `connections` spins | 156 | 4226 | 201.5 µs |
 
-The T2 are those of these four states. With `connections` spins, size 3 links 4226 of the 12090 partition pairs
+These T2 come from four sampled states only. With `connections` spins, size 3 links 4226 of the 12090 partition pairs
 instead of 2909, and gives nearly the same curve as with `centers`.
 
 Next, compute more states (`s_range`) before reading the differences.
@@ -187,7 +187,8 @@ and 0.05 GB per rank.
 
 ![cCCE2_Hahn_bundle: expected result](cCCE2_Hahn_bundle/expected.png)
 
-The 197 ¹³C within `rbath` make 83 bundles, 49 of three spins, 16 of two and 18 single spins. T2 is 1.165 ms with
+The 197 ¹³C within `rbath` make 83 bundles, 49 of three spins, 16 of two and 18 single spins. The bundled run
+computes 248 clusters, against 748 for the standard pairs (the log line `Clusters per order`). T2 is 1.165 ms with
 standard clusters and 1.169 ms with bundles, and the largest difference is 0.015.
 
 Next, try `max_dim` 4 (pairs) or 16.
@@ -197,10 +198,10 @@ Inputs: [`ccein_bundle.jsonc`](cCCE2_Hahn_bundle/ccein_bundle.jsonc), [`ccein_st
 <a id="cs_refine"></a>
 ## 4. The adaptive refinement of the bundles
 
-The `cluster.adaptive` block repeats the bundled calculation, changes the bundles where they do badly, and runs again
+The `cluster.adaptive` block repeats the bundled calculation, changes the bundles where they fail its check, and runs again
 ([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)). It has two policies:
 
-| | Merge (the default, case 4) | Regroup (`"regroup": true`, case 5) |
+| | Merge (the default, section 4.1) | Regroup (`"regroup": true`, section 4.2) |
 |---|---|---|
 | What it looks for | A large error at the bundle boundaries. A few neighbouring bundles are computed exactly as one cluster and compared with the expansion over them. | An unphysical curve, with \|L\| > 1. At the worst point it finds the bundle pairs that cause the excess. |
 | What it changes | It merges two bundles. | It merges, splits, moves or exchanges sites around those pairs. |
@@ -215,10 +216,8 @@ Folder: `cCCE2_Hahn_adaptive/`
 <a id="a10_adaptive_input"></a>
 #### 4.1.1 The input
 
-The merge refinement makes the bundles larger where the error at their boundaries is large. It computes a few
-neighbouring bundles exactly as one cluster, compares that with the expansion over them, and merges the pair of
-bundles that lowers the difference most. This case is the bundled calculation with `rbath` 20 Å over 2 ms, refined
-with `atol` 1e-3:
+This case is the bundled calculation of section 3 with `rbath` 20 Å over 2 ms, refined by the merge with `atol`
+1e-3:
 
 ```jsonc
 "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
@@ -249,7 +248,7 @@ The rounds stop when every patch passes, when `max_rounds` is reached, or when n
 NP=4 bash run.sh
 ```
 
-It runs the refinement and plots the first and the final run. It takes 48 s and 0.12 GB per process.
+It runs the refinement and plots the first and the final run. It takes 48 s and 0.12 GB per rank.
 `results/adaptive/` holds one folder per step and `summary.json`.
 
 <a id="a10_adaptive_result"></a>
@@ -276,9 +275,7 @@ Folder: `cCCE2_Hahn_regroup/`
 
 The system is the NV in six P1 electron spins (`bath/bath_p1_6`) with five sampled states and bundles up to
 dimension 4. The NV position and the P1 gyromagnetic ratio are those of
-[Advanced 04: The GPU backend](../04_GPU/README.md). The refinement is regroup. It changes the bundles where the curve
-is unphysical, with |L| > 1, instead of where the local error is large. At the worst point it finds the bundle pairs
-that cause the excess and merges, splits or moves sites around them. It needs cCCE and `order` 2
+[Advanced 04: The GPU backend](../04_GPU/README.md). The refinement is regroup
 ([regroup](../../../../docs/methods/bundle-adaptive.md#adaptive_regroup)):
 
 ```jsonc
@@ -304,8 +301,8 @@ It runs the refinement and prints each round. It takes 1 s and 0.06 GB per rank.
 
 The figure shows state 4 before and after. The first bundles [0,3] [1,5] [2,4] give three states with |L| > 1.01.
 At the worst point the run measures, for every linked bundle pair, $g = \log\lvert L_{ij}/(L_i L_j)\rvert$, and the
-pairs with $g > 0$ are the culprit pairs, here [0,3]-[1,5] (g 1.63), [0,3]-[2,4] (0.10) and [1,5]-[2,4] (5e-4). It accepts
-one change, splitting [2,4]. The rerun has no unphysical state (status `physical`, exit 0), and the final bundles are
+pairs with $g > 0$ are the culprit pairs, here [0,3]-[1,5] (g 1.63), [0,3]-[2,4] (0.10) and [1,5]-[2,4] (5e-4).
+It accepts one change, splitting [2,4]. The rerun has no unphysical state (status `physical`, exit 0), and the final bundles are
 [[0,3], [1,5], [2], [4]].
 
 Next, try `max_dim` 8, or more states.
