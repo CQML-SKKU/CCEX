@@ -2,19 +2,29 @@
 
 Folder: `example/tutorial/advanced/09_cCCE_corrections/`
 
-cCCE puts the qubit in one of its two states and solves only the bath in that state, with the $S_z$ part of the
-hyperfine coupling. It is fast, but it leaves out what goes through the qubit. gCCE keeps the qubit in every
-cluster's Hamiltonian and is the exact reference ([Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md)).
-The keys of `hamiltonian.cCCE` add the missing pieces back to cCCE at second order, for a spin-1 qubit with a
-zero-field splitting:
+gCCE keeps the qubit in every cluster's Hamiltonian,
 
-| Key | What it adds | Where it matters |
+$$H_C = H_q + H_{\rm bath} + \sum_{n \in C} \mathbf{S}\cdot\mathsf{A}_n\cdot\mathbf{I}_n ,$$
+
+with $H_q$ the qubit's Zeeman term and zero-field splitting and $\mathsf{A}_n$ the hyperfine tensor of bath spin $n$.
+It is the exact reference ([Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md)). cCCE puts the qubit
+in one of its two states, $k \in \{\alpha, \beta\}$ with $S_z$ sublevel $m_k$, and solves only the bath in that state:
+
+$$H_C^{(k)} = H_{\rm bath} + m_k \sum_{n \in C} \mathbf{A}_{z,n}\cdot\mathbf{I}_n ,$$
+
+with $\mathbf{A}_{z,n}$ the z row of $\mathsf{A}_n$. This is fast, but it drops the transverse part
+$S_x\,\mathbf{A}_x\cdot\mathbf{I} + S_y\,\mathbf{A}_y\cdot\mathbf{I}$ of the hyperfine coupling, which changes $m_s$
+and acts at second order through virtual qubit transitions. For a spin-1 qubit with the zero-field splitting
+$\Delta = \tfrac32 D_{zz}$, the keys of `hamiltonian.cCCE` add three pieces of it back to $H_C^{(k)}$:
+
+| Key | Adds to $H_C^{(k)}$ | Where it matters |
 |---|---|---|
-| `hfmedi` | The coupling of two nuclei through the qubit, with the rest of the second order. | Close nuclei at low field. |
-| `knight` | The shift of each nucleus by the field across the qubit axis (the Knight shift). | A tilted field. |
-| `delta_A` | The second-order term of each nucleus on its own. | Close nuclei at low field. |
+| `knight` | The Knight shift by the field across the qubit axis, $-(3\lvert m_k\rvert - 2)(\gamma_q/\Delta)\,\mathbf{B}\cdot\tilde{\mathsf{A}}_n\cdot\mathbf{I}_n$, with $\tilde{\mathsf{A}}_n$ the tensor without its z row. | A tilted field. |
+| `delta_A` | The second-order term of each nucleus on its own, $\delta\mathbf{A}_n\cdot\mathbf{I}_n$ with $\delta\mathbf{A}_n = -m_k(\mathbf{A}_{x,n}\times\mathbf{A}_{y,n})/(2\Delta)$. | Close nuclei at low field. |
+| `hfmedi` | The whole second order, $\sum_{b\neq a} E_{ab}E_{ba}/(\omega_a-\omega_b)$, with $a$ the qubit level of the branch, $b$ the other levels and $E_{ab} = \sum_n \langle a\rvert\mathbf{S}\lvert b\rangle\cdot\mathsf{A}_n\cdot\mathbf{I}_n$. Its terms with two nuclei are their coupling through the qubit, and those with one nucleus are the terms of `delta_A`. | Close nuclei at low field. |
 
-How they are derived is in [cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections). Each case below compares
+`knight` and `delta_A` divide by $\Delta$ and are refused without a zero-field splitting, and `delta_A` is refused
+with `hfmedi`, which already holds it. How they are derived is in [cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections). Each case below compares
 cCCE with and without the key against gCCE.
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
@@ -144,10 +154,10 @@ With sampled bath states (`s_range`), every bath spin outside a cluster sits in 
 still acts on the cluster. Two keys of `hamiltonian.common` add that field as a mean field
 ([mean fields](../../../../docs/user/InputFile_General.md#gen_mf)). In the ensemble neither is used.
 
-| Key | Adds the field of the outside spins to | Methods | Default |
+| Key | Adds the field of the outside spins $j$, in their sublevels $m_j$, to | Methods | Default |
 |---|---|---|---|
-| `bath_bath_mean_field` | The bath spins of the cluster, through the bath-bath coupling. | Every method. | `"z"` |
-| `qubit_bath_mean_field` | The qubit, through the hyperfine coupling (the Overhauser field). | gCCE and megCCE. | `false` |
+| `bath_bath_mean_field` | The bath spins of the cluster, $\sum_{j \notin C} J^{zz}_{nj}\, m_j\, I_{z,n}$ (`"z"`), or the whole vector $\mathsf{J}_{nj}(0,0,m_j)$ (`"xyz"`). | Every method. | `"z"` |
+| `qubit_bath_mean_field` | The qubit, the Overhauser field $\sum_{j \notin C} A_{zz,j}\, m_j\, S_z$. | gCCE and megCCE. | `false` |
 
 In the P1 bath of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md), section 2,
 `bath_bath_mean_field` `"off"` gives T2 62 µs against 235 µs with `"z"`. On the P1 bath of
