@@ -201,7 +201,7 @@ jobs:
         stages: ["legacy axis2 errcorr",
                  "gyro comments nodiv allfull evolution_update",
                  "column_evolution gpu_options propagator tensor_format cli",
-                 "configuration autoconv units pcce_rest"]
+                 "configuration autoconv units pcce_rest dsjitb"]
     env:
       CCEX_BIN: ${{ github.workspace }}/build/bin/main.out
       CCEX_BUILD_DIR: ${{ github.workspace }}/build
