@@ -153,7 +153,7 @@ PY
            python3 - "$WORK/S5" "$EX" <<'PY' || not_written
 import json, re, sys; from input_layout import flat, nest
 work, ex = sys.argv[1:3]
-E=f"{ex}/tutorial/advanced/07_multi_qubits/gCCE2_HahnRamsey_NV2"
+E=f"{ex}/../test/code_verification/check_input_forms/inputs/two_nv"   # the two-NV system of the old tutorial gCCE2_HahnRamsey_NV2
 s=open(f"{E}/ccein_hahn.jsonc").read()
 s=re.sub(r'#[^\n]*','',s); s=re.sub(r'!\S*','',s); s=re.sub(r"//[^\n]*","",s)
 d=flat(json.loads(s))

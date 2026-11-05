@@ -39,7 +39,7 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 |---|---|---|
 | `05_P1/` | electron-spin baths further: making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4, a DEER pump | `cCCE2_Hahn_makeBath`, `cCCE2_Hahn_onsite14N`, `cCCE4_Hahn_states`, `gCCE2_Hahn_DEER` |
 | `06_hBN/` | V_B⁻ in h-BN with DFT tensors: making the bath, the tensor files from a VASP run, and the coherence without and with them | `hBN_makeBath`, `makeTensors_hBN`, `cCCE2_Hahn_tensors` |
-| `07_multi_qubits/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV3` |
+| `07_multi_qubits/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV3` |
 | `08_coordinate_rotation/` | a bath written in another frame (`frame.rotation`) | `cCCE2_Hahn_rotation` |
 
 *3. Hamiltonian terms and cluster shapes*
