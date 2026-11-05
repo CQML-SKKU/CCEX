@@ -30,20 +30,23 @@ cCCE with and without the key against gCCE.
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-This page has two cases:
+This page has two sections:
 
-1. [The hyperfine-mediated coupling](#corr_hfmedi) (`cCCE2_Hahn_hfMediated/`).
-2. [The Knight shift in a tilted field](#corr_knight) (`cCCE2_Hahn_knightShift/`).
+1. [The corrections to cCCE, against gCCE](#corr_cases), with two cases:
+   [the hyperfine-mediated coupling](#corr_hfmedi) (`cCCE2_Hahn_hfMediated/`) and
+   [the Knight shift in a tilted field](#corr_knight) (`cCCE2_Hahn_knightShift/`).
+2. [The mean fields of the spins outside a cluster](#corr_meanfield), the other terms the cluster Hamiltonian can hold.
 
-Section 3 is about the other terms the cluster Hamiltonian can hold, the mean fields of the spins outside a cluster.
+<a id="corr_cases"></a>
+## 1. The corrections to cCCE, against gCCE
 
 <a id="corr_hfmedi"></a>
-## 1. The hyperfine-mediated coupling
+### 1.1 The hyperfine-mediated coupling
 
 Folder: `cCCE2_Hahn_hfMediated/`
 
 <a id="a09_hfmedi_input"></a>
-### 1.1 The input
+#### 1.1.1 The input
 
 The run is the V_B⁻ of Advanced 06 at 1000 G with its zero-field splitting, one configuration and the ensemble.
 `ccein_wi_hfmedi.jsonc` turns the hyperfine-mediated coupling on, `ccein_wo_hfmedi.jsonc` is the same without it,
@@ -65,7 +68,7 @@ and `ccein_gcce.jsonc` is the same with `method` gCCE, the reference:
 The ZFS is a `Qubit.intmap` self entry in kHz, and `deltat` 5 ns × `nstep` 50 is the window.
 
 <a id="a09_hfmedi_run"></a>
-### 1.2 Running it
+#### 1.1.2 Running it
 
 ```sh
 NP=4 bash run.sh
@@ -74,7 +77,7 @@ NP=4 bash run.sh
 It runs the three inputs and plots them together. It takes 13 s, most of it gCCE, and 0.09 GB per rank.
 
 <a id="a09_hfmedi_result"></a>
-### 1.3 The result
+#### 1.1.3 The result
 
 ![cCCE2_Hahn_hfMediated: expected result](cCCE2_Hahn_hfMediated/expected.png)
 
@@ -91,12 +94,12 @@ Next, try a smaller `deltat`, or a higher `bfield`.
 Inputs: [`ccein_gcce.jsonc`](cCCE2_Hahn_hfMediated/ccein_gcce.jsonc), [`ccein_wi_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wi_hfmedi.jsonc), [`ccein_wo_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wo_hfmedi.jsonc)
 
 <a id="corr_knight"></a>
-## 2. The Knight shift
+### 1.2 The Knight shift in a tilted field
 
 Folder: `cCCE2_Hahn_knightShift/`
 
 <a id="a09_knight_input"></a>
-### 2.1 The input
+#### 1.2.1 The input
 
 In a field tilted from the NV axis ([50, 0, 100] G), the part of the field across the NV axis shifts the ¹³C
 precession through the qubit (the Knight shift). The NV of Basic 01 has its ZFS as a `Qubit.intmap` self entry, and
@@ -120,7 +123,7 @@ eigenstates of the qubit Hamiltonian ([alpha_state](../../../../docs/user/InputF
 The index counts by descending energy, so 0 and 2 are the levels of ms +1 and 0 in this field.
 
 <a id="a09_knight_run"></a>
-### 2.2 Running it
+#### 1.2.2 Running it
 
 ```sh
 NP=4 bash run.sh
@@ -129,7 +132,7 @@ NP=4 bash run.sh
 It runs the four inputs and plots them together. It takes 8 s and 0.09 GB per rank.
 
 <a id="a09_knight_result"></a>
-### 2.3 The result
+#### 1.2.3 The result
 
 ![cCCE2_Hahn_knightShift: expected result](cCCE2_Hahn_knightShift/expected.png)
 
@@ -138,9 +141,10 @@ It runs the four inputs and plots them together. It takes 8 s and 0.09 GB per ra
 | gCCE (reference) | 1.082 ms |
 | cCCE with `knight` | 1.082 ms |
 | cCCE with `knight` and `delta_A` | 1.082 ms |
-| cCCE without | 1.397 ms, and the divided curve diverges (\|L\| up to 16, cut at 1.2 in the plot) |
+| cCCE without | 1.219 ms from the undivided curve (`_noDiv`). The divided curve (`_wiDiv`) jumps to \|L\| 15.7 at one point, 1.396 ms. |
 
-With the Knight shift cCCE has the T2 of gCCE. The curves still differ by up to 0.17 in the fast ¹³C oscillation.
+The jump of the divided curve without the term comes from the division by a sub-cluster whose coherence is near
+zero there, so the plot shows that run's undivided curve. With the Knight shift cCCE has the T2 of gCCE. The curves still differ by up to 0.17 in the fast ¹³C oscillation.
 `delta_A` moves the curve by at most 0.011 here.
 
 Next, lower `bfield`, where `delta_A` matters more.
@@ -148,7 +152,7 @@ Next, lower `bfield`, where `delta_A` matters more.
 Inputs: [`ccein_gcce.jsonc`](cCCE2_Hahn_knightShift/ccein_gcce.jsonc), [`ccein_wi_knight.jsonc`](cCCE2_Hahn_knightShift/ccein_wi_knight.jsonc), [`ccein_wo_knight.jsonc`](cCCE2_Hahn_knightShift/ccein_wo_knight.jsonc), [`ccein_wi_knight_deltaA.jsonc`](cCCE2_Hahn_knightShift/ccein_wi_knight_deltaA.jsonc)
 
 <a id="corr_meanfield"></a>
-## 3. The mean fields of the spins outside a cluster
+## 2. The mean fields of the spins outside a cluster
 
 With sampled bath states (`s_range`), every bath spin outside a cluster sits in a fixed sublevel, and its static field
 still acts on the cluster. Two keys of `hamiltonian.common` add that field as a mean field
