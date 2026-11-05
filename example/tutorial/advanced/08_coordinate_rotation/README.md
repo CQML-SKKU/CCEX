@@ -28,11 +28,11 @@ CPU.
 
 This page has two cases:
 
-1. [The same NV three ways](#rot_case) (`cCCE2_Hahn_rotation/`).
-2. [A Defect species in the rotated frame](#rot_defect) (`cCCE2_Hahn_rotationDefect/`).
+1. [A qubit axis tilted from the bath frame](#rot_case) (`cCCE2_Hahn_rotation/`).
+2. [A Defect species when the qubit axis is tilted](#rot_defect) (`cCCE2_Hahn_rotationDefect/`).
 
 <a id="rot_case"></a>
-## 1. The same NV three ways
+## 1. A qubit axis tilted from the bath frame
 
 Folder: `cCCE2_Hahn_rotation/`
 
@@ -47,7 +47,7 @@ first uses the bath as generated, with the NV axis along z (`ccein_aligned.jsonc
                    "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]}
 ```
 
-The second uses the cubic-frame bath with the rotation on (`ccein_cubic_rotated.jsonc`):
+The second uses the bath with the NV axis along [111], with the rotation on (`ccein_cubic_rotated.jsonc`):
 
 ```jsonc
 "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
@@ -55,7 +55,7 @@ The second uses the cubic-frame bath with the rotation on (`ccein_cubic_rotated.
 "frame"         : {"rotation": {"qubit_axis": [1, 1, 1]}}
 ```
 
-The third uses the cubic-frame bath without the `frame` block (`ccein_cubic_norotation.jsonc`), so the field is
+The third uses the same bath without the `frame` block (`ccein_cubic_norotation.jsonc`), so the field is
 54.7° off the NV axis.
 
 <a id="a08_rot_run"></a>
@@ -81,7 +81,7 @@ transverse field is refused. Or use a bath with DFT tensors (`hamiltonian.common
 Inputs: [`ccein_aligned.jsonc`](cCCE2_Hahn_rotation/ccein_aligned.jsonc), [`ccein_cubic_norotation.jsonc`](cCCE2_Hahn_rotation/ccein_cubic_norotation.jsonc), [`ccein_cubic_rotated.jsonc`](cCCE2_Hahn_rotation/ccein_cubic_rotated.jsonc)
 
 <a id="rot_defect"></a>
-## 2. A Defect species in the rotated frame
+## 2. A Defect species when the qubit axis is tilted
 
 Folder: `cCCE2_Hahn_rotationDefect/`
 
@@ -94,7 +94,7 @@ written in the NV frame, whose z is the NV axis. The run takes one configuration
 inputs are:
 
 - `ccein_aligned.jsonc` reads the bath as generated, with the NV axis along z, and no rotation.
-- `ccein_cubic_qubit.jsonc` reads the bath turned into the cubic frame, with the rotation on. The tensors are the
+- `ccein_cubic_qubit.jsonc` reads the bath turned so that the NV axis points along [111], with the rotation on. The tensors are the
   same numbers, so the species is declared in the computational frame.
 - `ccein_cubic_file.jsonc` is the same with the species declared in the file frame.
 
