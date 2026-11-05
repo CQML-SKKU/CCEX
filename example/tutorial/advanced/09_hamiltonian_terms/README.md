@@ -1,6 +1,6 @@
-# Advanced 09: Corrections to cCCE
+# Advanced 09: The terms of the cluster Hamiltonian
 
-Folder: `example/tutorial/advanced/09_cCCE_corrections/`
+Folder: `example/tutorial/advanced/09_hamiltonian_terms/`
 
 gCCE keeps the qubit in every cluster's Hamiltonian,
 

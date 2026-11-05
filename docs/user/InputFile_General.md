@@ -526,7 +526,7 @@ The section `hamiltonian.cCCE`, read by cCCE and meCCE.
 | `knight` | boolean, in `hamiltonian.cCCE` | `false` | The Knight-field shift of the bath spins under a field across the qubit axis. It needs a qubit with a zero-field splitting. |
 
 The terms are in [cCCE and gCCE](../methods/cce.md), and
-[Advanced 09](../../example/tutorial/advanced/09_cCCE_corrections/README.md) runs them.
+[Advanced 09](../../example/tutorial/advanced/09_hamiltonian_terms/README.md) runs them.
 
 ```json
 "hamiltonian": {"cCCE": {"hfmedi": true}}

@@ -47,7 +47,7 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 
 | Page | What it covers |
 |---|---|
-| [Advanced 09: Corrections to cCCE](../../example/tutorial/advanced/09_cCCE_corrections/README.md) | The hyperfine-mediated term and the Knight shift. |
+| [Advanced 09: The terms of the cluster Hamiltonian](../../example/tutorial/advanced/09_hamiltonian_terms/README.md) | The corrections to cCCE (the hyperfine-mediated term, the Knight shift) against gCCE, and the mean fields. |
 | [Advanced 10: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/10_cluster_shapes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
 
 <a id="ex_adv_methods"></a>

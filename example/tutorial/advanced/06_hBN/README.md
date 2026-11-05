@@ -124,7 +124,7 @@ Folder: `cCCE2_Hahn_tensors/`
 This case computes a cCCE2 Hahn echo at 3 T over five configurations of `bath/flat/` (`k_range` [1, 5]), with
 `rbath` 20 Å, `rdip` 10 Å and `deltat` 3 µs × `nstep` 50. `bath/flat/` holds 50 configurations of a flat layer, the
 defect position and the tensor files `hBN_VB_flat_ATensor_HSE_CellPBE_v3` and `hBN_VB_flat_QTensor_HSE_CellPBE`.
-The same bath is used in [Advanced 09: Corrections to cCCE](../09_cCCE_corrections/README.md) and
+The same bath is used in [Advanced 09: The terms of the cluster Hamiltonian](../09_hamiltonian_terms/README.md) and
 [Advanced 13: Pseudospin pairs](../13_pseudospin/README.md).
 
 The four inputs differ only in the `hamiltonian` block.

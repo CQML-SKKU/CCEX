@@ -59,7 +59,7 @@ correction (`example/analysis/Analyzer`, [Analysis](../user/Analysis.md)) compar
 
 It happens with strongly coupled spins, for example close pairs of electron spins, a spin-1 qubit without its
 zero-field splitting in gCCE at zero field, or cCCE in a tilted field without
-[knight](../user/InputFile_General.md#tag_knight) (tutorial `advanced/09_cCCE_corrections/cCCE2_Hahn_knightShift`).
+[knight](../user/InputFile_General.md#tag_knight) (tutorial `advanced/09_hamiltonian_terms/cCCE2_Hahn_knightShift`).
 What helps:
 
 - Adding the missing physics, the zero-field splitting or the Knight term.

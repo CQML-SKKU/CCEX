@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/09_cCCE_corrections/cCCE2_Hahn_knightShift: cCCE2 in a tilted field with and without the Knight shift, and with delta_A as well
+# advanced/09_hamiltonian_terms/cCCE2_Hahn_knightShift: cCCE2 in a tilted field with and without the Knight shift, and with delta_A as well
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

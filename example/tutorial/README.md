@@ -46,7 +46,7 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 
 | Folder | Topic | Calculations |
 |---|---|---|
-| `09_cCCE_corrections/` | corrections to cCCE: the hyperfine-mediated term, the Knight shift | `cCCE2_Hahn_hfMediated`, `cCCE2_Hahn_knightShift` |
+| `09_hamiltonian_terms/` | the terms of the cluster Hamiltonian: the corrections to cCCE (hyperfine-mediated term, Knight shift) against gCCE, and the mean fields | `cCCE2_Hahn_hfMediated`, `cCCE2_Hahn_knightShift` |
 | `10_cluster_shapes/` | cluster shapes: disjoint clusters (dsj), partitions (pCCE), bundles, adaptive refinement | `cCCE2_Hahn_dsj`, `pCCE2_Hahn_states`, `cCCE2_Hahn_bundle`, `cCCE2_Hahn_adaptive`, `cCCE2_Hahn_regroup` |
 
 *4. Other models of the bath*
