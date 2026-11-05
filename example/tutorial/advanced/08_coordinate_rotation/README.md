@@ -3,20 +3,26 @@
 Folder: `example/tutorial/advanced/08_coordinate_rotation/`
 
 CCEX builds the Hamiltonian in a frame whose z is the qubit's axis, and reads `bfield` in that frame. Without a
-rotation that frame is the bath file's own, so a bath written in a frame where the defect axis is not z has to be
-turned, by hand or with the `frame.rotation` block. The block turns every position about the qubit so that
-`qubit_axis` (written in the bath file's frame) becomes z, and `"bfield": 500` is then 500 G along `qubit_axis` in the
-lab. The block is on when it is written.
+rotation that frame is the bath file's own. A bath written in the conventional cubic cell of diamond, however, has the
+NV axis along [111], not z.
 
-Tensors and Defect species written in the input say with the key `"frame"`
-whether they are in the bath file's frame (`"file"`, turned with the positions) or already in the turned one
-(`"qubit"`). This example has none, since the NV's zero-field splitting is not in the input.
-[The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what moves and what
-does not. Every key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
+The `frame.rotation` block turns such a bath. Writing the block turns it on:
+
+- `qubit_axis` is the qubit's axis in the bath file's frame. CCEX turns every position about the qubit so that this
+  axis becomes z.
+- `bfield` is then read along `qubit_axis`, so `"bfield": 500` is 500 G along the NV axis.
+- A tensor or `Defect` species written in the input says with its key `"frame"` whether it is in the bath file's frame
+  or already in the turned one. This example has none.
+
+[The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what is turned and what
+is not.
 
 `bath/bath_Diamond_NV_natab_cubic_1` is the bath of Basic 01 turned so that the NV axis points along [111], as a bath
-written in the conventional cubic cell would be. `bath/make_cubic_frame.py` made it from `basic/01_first_run/bath/`
-and says how.
+written in the cubic cell would be. `bath/make_cubic_frame.py` made it from `basic/01_first_run/bath/` and says how.
+
+Run the case with `cd cCCE2_Hahn_rotation && NP=4 bash run.sh`, then compare `results/coherence.png` with
+`expected.png`. Every key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop
+CPU.
 
 This page has one case:
 
@@ -53,10 +59,10 @@ The third uses the cubic-frame bath without the `frame` block (`ccein_cubic_noro
 ### 1.2 Running it
 
 ```sh
-cd cCCE2_Hahn_rotation && NP=4 bash run.sh
+NP=4 bash run.sh
 ```
 
-It takes 1.8 s and 0.05 GB per rank.
+It runs the three inputs and plots them together. It takes 1.8 s and 0.05 GB per rank.
 
 <a id="a08_rot_result"></a>
 ### 1.3 The result
@@ -64,9 +70,9 @@ It takes 1.8 s and 0.05 GB per rank.
 ![cCCE2_Hahn_rotation: expected result](cCCE2_Hahn_rotation/expected.png)
 
 The rotated run reproduces the aligned one, with a largest difference of 1e-10 and T2 1.084 ms. Without the rotation
-T2 is 1.154 ms and the curve differs by up to 0.20.
+the field is off the NV axis, T2 is 1.154 ms and the curve differs by up to 0.20.
 
-Next, give `bfield` as a vector to tilt the field on purpose, without the rotation (with it a transverse field is
-refused), or use a bath with DFT tensors (`hamiltonian.common.hyperfine.frame`, `quadrupole.frame`).
+Next, give `bfield` as a vector to tilt the field on purpose. This works without the rotation only, since with it a
+transverse field is refused. Or use a bath with DFT tensors (`hamiltonian.common.hyperfine.frame`, `quadrupole.frame`).
 
 Inputs: [`ccein_aligned.jsonc`](cCCE2_Hahn_rotation/ccein_aligned.jsonc), [`ccein_cubic_norotation.jsonc`](cCCE2_Hahn_rotation/ccein_cubic_norotation.jsonc), [`ccein_cubic_rotated.jsonc`](cCCE2_Hahn_rotation/ccein_cubic_rotated.jsonc)
