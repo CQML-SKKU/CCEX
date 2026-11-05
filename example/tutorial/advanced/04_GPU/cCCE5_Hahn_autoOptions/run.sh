@@ -16,4 +16,4 @@ else
   echo "no $CCEX_GPU: auto runs on the CPU (bash do_compile.sh gpu makes it)"
   mpirun -n $NP $CCEX -f ccein.jsonc -o results > results/ccein.log
 fi
-python3 $PLOT results/coherence.png --unit us "cpu=results/cpu_wiDiv" "auto=results/ccein_wiDiv"
+python3 $PLOT results/coherence.png --unit us --dashed "cpu=results/cpu_wiDiv" "auto=results/ccein_wiDiv"

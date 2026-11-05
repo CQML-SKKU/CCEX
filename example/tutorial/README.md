@@ -31,7 +31,7 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 | `01_auto_convergence/` | the automatic convergence of the time window, rdip, rbath, the configurations and the states: found, given as candidates, or fixed | `cCCE2_Hahn_ensemble_noCandidates`, `cCCE2_Hahn_ensemble`, `cCCE2_Hahn_ensemble_fixed`, `cCCE2_Hahn_states` |
 | `02_analysis/` | the analyzer (error correction, average, T2 fit) and the cluster reports | `cCCE2_Hahn_analyzer`, `cCCE2_Hahn_clusterReport` |
 | `03_server_runs/` | a production run as a Slurm job: sizing it, one job, a job array | `cCCE2_Hahn_slurm` |
-| `04_GPU/` | the CUDA backend against the CPU, and the automatic GPU options | `cCCE5_Hahn_backends`, `cCCE5_Hahn_autoOptions`, `gCCE4_Hahn_backends`, `pCCE2_Hahn_backends` |
+| `04_GPU/` | the CUDA backend against the CPU, and the automatic GPU options | `cCCE5_Hahn_backends`, `cCCE5_Hahn_autoOptions`, `gCCE4_Hahn_backends` |
 
 *2. Other systems and inputs*
 

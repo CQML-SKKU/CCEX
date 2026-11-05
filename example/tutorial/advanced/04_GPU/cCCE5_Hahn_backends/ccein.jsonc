@@ -3,8 +3,7 @@
     // cluster of all five P1, dimension 4^5 = 1024: the case the GPU is for. The input has backend cpu; run.sh runs it
     // with bin/main.out, then with backend auto and cuda (set_input_keys.py) with bin/main_gpu.out when it exists, and
     // plots the curves (the backends agree to about 1e-10). profile prints the timings per backend and dimension.
-    // The siblings: gCCE4_Hahn_backends (gCCE, where the automatic GPU values below do not apply) and
-    // pCCE2_Hahn_backends (pCCE on the same five P1). Writes results/ccein_wiDiv (cpu), auto_wiDiv, cuda_wiDiv.
+    // The sibling: gCCE4_Hahn_backends (gCCE, where the automatic GPU values below do not apply). Writes results/ccein_wiDiv (cpu), auto_wiDiv, cuda_wiDiv.
     // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
     "Qubit"         : {"qubit": [{"file": "../bath/qubit_p1"}], "alpha_state": {"ms": [1]}},
                                       // the NV (spin 1, the default) at the position in bath/qubit_p1 (x y z,
