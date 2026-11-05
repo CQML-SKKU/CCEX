@@ -22,7 +22,7 @@ the bundle boundaries is large, and changes the bundles there
 The cluster reports (the contribution of each cluster, the plan) are in
 [Advanced 02: Analysis of the output](../02_analysis/README.md).
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
+In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the legends, a number in brackets is the number of curves averaged. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
 This page has five cases:

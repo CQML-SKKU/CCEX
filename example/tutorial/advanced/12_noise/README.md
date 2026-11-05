@@ -14,7 +14,7 @@ The Gaussian approximation leaves out the qubit's back-action on the bath and th
 it is meant for many weakly coupled noise sources. The keys are in
 [General tags](../../../../docs/user/InputFile_General.md#tag_noise_spectrum).
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Times
+In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the legends, a number in brackets is the number of curves averaged. Times
 are for a desktop CPU.
 
 This page has three cases:

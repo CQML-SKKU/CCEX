@@ -33,7 +33,7 @@ is not.
 the cubic cell would be. It made `bath/bath_Diamond_NV_natab_cubic_1` from the ¹³C bath of Basic 01, and
 `bath/bath_DiaP1_1ppm_cubic_1` from the first P1 bath of Basic 06.
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
+In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the legends, a number in brackets is the number of curves averaged. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
 This page has two cases:

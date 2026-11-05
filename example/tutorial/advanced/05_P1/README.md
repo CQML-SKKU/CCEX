@@ -6,7 +6,7 @@ This page goes on from the P1 bath of [Basic 06: An electron-spin bath (P1)](../
 It makes such a bath, compares the two ways of writing a P1 and its ¹⁴N, checks the order of the expansion, and
 pulses the P1 during the echo.
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
+In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the legends, a number in brackets is the number of curves averaged. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
 This page has four cases:

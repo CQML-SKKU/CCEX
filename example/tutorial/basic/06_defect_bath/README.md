@@ -21,7 +21,7 @@ Both sections use the ten ready-made bath configurations at 1 ppm in `bath/14N_1
 - Section 1, `cCCE2_Hahn_states`: the Hahn echo in the P1 bath.
 - Section 2, `cCCE2_Hahn_meanField`: what the static field of the other P1 does.
 
-`NP=4 bash run.sh` in a folder runs its commands.
+`NP=4 bash run.sh` in a folder runs its commands. In the legends, a number in brackets is the number of curves averaged.
 
 <a id="b06_s1"></a>
 ## 1. The Hahn echo in a P1 bath

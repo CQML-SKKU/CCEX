@@ -8,7 +8,7 @@ hyperfine and quadrupole tensor files from the same VASP run, and compares the c
 tensors.
 
 Run each case with `cd <folder> && NP=4 bash run.sh`. Case 3 writes `results/coherence.png`, to compare with
-`expected.png`. Every key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop
+`expected.png`. In the legends, a number in brackets is the number of curves averaged. Every key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop
 CPU.
 
 This page has three cases:

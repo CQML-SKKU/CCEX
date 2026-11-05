@@ -16,7 +16,7 @@ the NV axis. They differ near a level crossing, where two NV levels come close a
 
 Both sections average over the ten bath configurations of [Basic 02](../02_bath_and_states/README.md) (`k_range`
 [1, 10]).
-`NP=4 bash run.sh` in a folder runs its commands.
+`NP=4 bash run.sh` in a folder runs its commands. In the legends, a number in brackets is the number of curves averaged.
 
 <a id="b05_s1"></a>
 ## 1. cCCE and gCCE at 500 G

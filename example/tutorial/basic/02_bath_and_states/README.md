@@ -12,7 +12,7 @@ ways to set up its bath:
 - Section 3, `cCCE2_Hahn_builtinIsotopes`: the built-in isotope table. The ¹³C spin and gyromagnetic ratio come from
   a gyro file or from CCEX's own table.
 
-`NP=4 bash run.sh` in a folder runs its commands.
+`NP=4 bash run.sh` in a folder runs its commands. In the legends, a number in brackets is the number of curves averaged.
 
 <a id="b02_s1"></a>
 ## 1. Several bath configurations

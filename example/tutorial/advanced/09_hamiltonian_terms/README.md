@@ -28,7 +28,7 @@ with `hfmedi`, which already holds it. How they are derived is in
 [cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections). Each case below compares cCCE with and without the
 key against gCCE.
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
+In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the legends, a number in brackets is the number of curves averaged. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
 This page has two sections:

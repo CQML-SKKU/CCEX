@@ -10,4 +10,4 @@ mpirun -n $NP $CCEX -f ccein_standard.jsonc -o results > results/ccein_standard.
 mpirun -n $NP $CCEX -f ccein.jsonc -o results > results/ccein.log
 mpirun -n $NP $CCEX -f ccein_itb.jsonc -o results > results/ccein_itb.log
 mpirun -n $NP $CCEX -f ccein_dsjitb.jsonc -o results > results/ccein_dsjitb.log
-python3 $PLOT results/coherence.png "standard=results/ccein_standard_wiDiv" "dsj=results/ccein_wiDiv" "itb=results/ccein_itb_wiDiv" "dsjitb=results/ccein_dsjitb_wiDiv"
+python3 $PLOT results/coherence.png --dashed "standard CCE2 (single spins and pairs)=results/ccein_standard_wiDiv" "dsj=results/ccein_wiDiv" "itb=results/ccein_itb_wiDiv" "dsjitb=results/ccein_dsjitb_wiDiv"

@@ -10,4 +10,5 @@ for name in standard bundle; do
   mpirun -n $NP $CCEX -f ccein_$name.jsonc -o results > results/ccein_$name.log
 done
 grep -h '^\[adaptive\]' results/ccein_bundle.log || true     # how the spins were bundled
-python3 $PLOT results/coherence.png "standard=results/ccein_standard_wiDiv" "bundle=results/ccein_bundle_wiDiv"
+python3 $PLOT results/coherence.png --dashed "standard CCE2 (single spins and pairs)=results/ccein_standard_wiDiv" \
+    "CCE2 over bundles of up to three 13C=results/ccein_bundle_wiDiv"

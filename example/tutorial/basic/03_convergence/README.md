@@ -30,7 +30,7 @@ folder, which takes about a minute, and the other sections reuse them. Run secti
 
 Except in section 5, the time step is 3.735 µs. This puts every point on a revival of the ¹³C (see
 [Basic 04](../04_pulses/README.md)), so the fast ripple does not hide the differences. Each folder also has a `run.sh`
-with its commands.
+with its commands. In the legends, a number in brackets is the number of curves averaged.
 
 <a id="b03_s1"></a>
 ## 1. How far the bath reaches

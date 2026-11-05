@@ -17,7 +17,7 @@ There are two ways to give the pulses in the input:
 - `pulse.name` "Manual" with `pulse.sequence` gives any other sequence. Each pulse is written out with its time, axis
   and angle. Section 2, `cCCE2_Manual_ensemble`, shows how on a sequence whose answer is known.
 
-`NP=4 bash run.sh` in a folder runs its commands.
+`NP=4 bash run.sh` in a folder runs its commands. In the legends, a number in brackets is the number of curves averaged.
 
 <a id="b04_s1"></a>
 ## 1. Hahn echo, CPMG-2 and CPMG-4
