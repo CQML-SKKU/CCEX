@@ -111,6 +111,10 @@
 - **The `cluster.adaptive` block with `cluster.mode` pcce is refused at the input.** The input check let pcce
   through, and the refinement then stopped with "ValueError: input must use cluster.mode=bundle". The refinement
   changes bundles only, and the message now says so (`check_refusals` case `rj_adaptive_pcce`).
+- **A bath spin on a face of a tensor file's cell stopped the run.** A bath made from the same cell as the DFT tensors
+  has nuclei on the cell's faces, whose rows are in the file at the opposite face. Such a spin (within 0.001 Å of a
+  face, without a row) is now outside the cell, as one beyond it, for the hyperfine and the quadrupole files alike.
+  A spin deeper inside without a row still stops the run.
 - **cCCE with `quantity` dm stopped in the middle of the run.** It is now refused at input (dm needs gCCE).
 - **The adaptive refinement's message for `-o` and `output.path`** named `cluster.adaptive.output`, the old name. It
   names `cluster.adaptive.workdir`.

@@ -1239,6 +1239,9 @@ void readHftensorfile(BathArray* ba, QubitArray* qa, Config* cnf, HypfProvenance
                     //AtesnorArray[][0~2]  : atomic position
                     isFound = FIND_AtomPosi(rxyz, AtensorArray, &tensorIdx);
                 }
+                // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                // is outside the cell (2026-11-06; it stopped the run before)
+                if (isExist && !isFound && onCellEdge(rxyz, isVertex, A_vertex, A_center, A_normal, A_MinDif, A_MaxDif, err)) isExist = false;
 
                 // read the tensor information
                 if (isExist && isFound){
@@ -1592,6 +1595,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                             //AtesnorArray[][0~2]  : atomic position
                             isFound_wiDef = FIND_AtomPosi(rxyz, QtensorArrayWiDef, &tensorIdx_wiDef);
                         }
+                        // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                        // is outside the cell (2026-11-06; it stopped the run before)
+                        if (isExist_wiDef && !isFound_wiDef && onCellEdge(rxyz, isVertex_wiDef, Q_vertexwiDef, Q_centerwiDef, Q_normalwiDef, Q_MinDifwiDef, Q_MaxDifwiDef, err)) isExist_wiDef = false;
 
 
                         // read the tensor information
@@ -1637,6 +1643,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                             //AtesnorArray[][0~2]  : atomic position
                             isFound_wiDef = FIND_AtomPosi(rxyz, QtensorArrayWiDef, &tensorIdx_wiDef);
                         }
+                        // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                        // is outside the cell (2026-11-06; it stopped the run before)
+                        if (isExist_wiDef && !isFound_wiDef && onCellEdge(rxyz, isVertex_wiDef, Q_vertexwiDef, Q_centerwiDef, Q_normalwiDef, Q_MinDifwiDef, Q_MaxDifwiDef, err)) isExist_wiDef = false;
 
                         // read the tensor information
                         if (isExist_wiDef){
@@ -1678,6 +1687,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                                 //AtesnorArray[][0~2]  : atomic position
                                 isFound_woDef = FIND_AtomPosi(rxyz, QtensorArrayWoDef, &tensorIdx_woDef);
                             }
+                            // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                            // is outside the cell (2026-11-06; it stopped the run before)
+                            if (isExist_woDef && !isFound_woDef && onCellEdge(rxyz, isVertex_woDef, Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, Q_MinDifwoDef, Q_MaxDifwoDef, err)) isExist_woDef = false;
 
                             // read the tensor information
                             if (isExist_woDef){
@@ -1726,6 +1738,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                             //AtesnorArray[][0~2]  : atomic position
                             isFound_wiDef = FIND_AtomPosi(rxyz, QtensorArrayWiDef, &tensorIdx_wiDef);
                         }
+                        // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                        // is outside the cell (2026-11-06; it stopped the run before)
+                        if (isExist_wiDef && !isFound_wiDef && onCellEdge(rxyz, isVertex_wiDef, Q_vertexwiDef, Q_centerwiDef, Q_normalwiDef, Q_MinDifwiDef, Q_MaxDifwiDef, err)) isExist_wiDef = false;
 
                         // read the tensor information
                         if (isExist_wiDef){
@@ -1752,6 +1767,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                                     //AtesnorArray[][0~2]  : atomic position
                                     isFound_woDef = FIND_AtomPosi(rxyz, QtensorArrayWoDef, &tensorIdx_woDef);
                                 }
+                                // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                                // is outside the cell (2026-11-06; it stopped the run before)
+                                if (isExist_woDef && !isFound_woDef && onCellEdge(rxyz, isVertex_woDef, Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, Q_MinDifwoDef, Q_MaxDifwoDef, err)) isExist_woDef = false;
         
                                 if (isExist_woDef){
                                     if (isFound_woDef){
@@ -1792,6 +1810,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                                         //AtesnorArray[][0~2]  : atomic position
                                         isFound_woDef = FIND_AtomPosi(rxyz, QtensorArrayWoDef, &tensorIdx_woDef);
                                     }
+                                    // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                                    // is outside the cell (2026-11-06; it stopped the run before)
+                                    if (isExist_woDef && !isFound_woDef && onCellEdge(rxyz, isVertex_woDef, Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, Q_MinDifwoDef, Q_MaxDifwoDef, err)) isExist_woDef = false;
                                     
                                     // read the tensor information
                                     if (isExist_woDef){
@@ -1841,6 +1862,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                                 //AtesnorArray[][0~2]  : atomic position
                                 isFound_woDef = FIND_AtomPosi(rxyz, QtensorArrayWoDef, &tensorIdx_woDef);
                             }
+                            // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                            // is outside the cell (2026-11-06; it stopped the run before)
+                            if (isExist_woDef && !isFound_woDef && onCellEdge(rxyz, isVertex_woDef, Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, Q_MinDifwoDef, Q_MaxDifwoDef, err)) isExist_woDef = false;
 
                             if (isExist_woDef){
                                 if (isFound_woDef){
@@ -1882,6 +1906,9 @@ void readQdtensorfile(BathArray* ba, QubitArray* qa, Config* cnf){
                                     //AtesnorArray[][0~2]  : atomic position
                                     isFound_woDef = FIND_AtomPosi(rxyz, QtensorArrayWoDef, &tensorIdx_woDef);
                                 }
+                                // a spin on a face of the cell (within err) without a row is the image of one on the opposite face, so it
+                                // is outside the cell (2026-11-06; it stopped the run before)
+                                if (isExist_woDef && !isFound_woDef && onCellEdge(rxyz, isVertex_woDef, Q_vertexwoDef, Q_centerwoDef, Q_normalwoDef, Q_MinDifwoDef, Q_MaxDifwoDef, err)) isExist_woDef = false;
                                 
                                 // read the tensor information
                                 if (isExist_woDef){
@@ -2607,6 +2634,20 @@ bool CheckBD_Range(const double Posi[3],const double minRange[3],const double ma
     }
          
     return Is_there;
+}
+
+// A point within err of a face of the tensor file's cell: inside it with the tolerance err, outside it with -err. The
+// cell is the range [min, max] or the polyhedron of the eight vertices (outward normals of its six faces).
+bool onCellEdge(const double Posi[3], bool isVertex, double** vertex, double** center, double** normal,
+                const double minRange[3], const double maxRange[3], double err){
+    if (!isVertex) return CheckBD_Range(Posi, minRange, maxRange, err) && !CheckBD_Range(Posi, minRange, maxRange, -err);
+    if (!CheckBD_vertex(Posi, vertex, center, normal, err)) return false;
+    for (int i = 0; i < 6; i++){
+        double v[3], nn = 0.0;
+        for (int j = 0; j < 3; j++){ v[j] = Posi[j] - center[i][j]; nn += normal[i][j] * normal[i][j]; }
+        if (vector_dot(v, normal[i]) > -err * std::sqrt(nn)) return true;    // within err of face i (or outside it)
+    }
+    return false;
 }
 
 //Check the BD using 8-vertex

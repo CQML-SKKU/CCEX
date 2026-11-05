@@ -83,6 +83,8 @@ bool FIND_AtomPosi(const double refPosi[3], double** TensorValue, int* num);
 bool CheckBD_Range(const double Posi[3],const double minRange[3],const double maxRange[3],double err);
 bool CheckBD_vertex(const double Posi[3],double** vertex, double** center, double** normal, double err);
 bool CheckingUniqeBD(const double Posi[3], double** center, double** normal);
+bool onCellEdge(const double Posi[3], bool isVertex, double** vertex, double** center, double** normal,
+                const double minRange[3], const double maxRange[3], double err);
 void CreatePlaneInfo(double** vertex, double*** center, double*** normal);
 double ReDefinediff(double difXYZ,const  double minRange,const double maxRange,const double Copy_Length);
 void CalCenter(double** center, double p1[], double p2[], double p3[], double p4[]);
