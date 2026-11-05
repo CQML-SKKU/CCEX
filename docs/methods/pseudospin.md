@@ -78,7 +78,7 @@ Each run writes `{output.file}_pseudospin_channels`, one line per channel, with:
 - $\Omega_\alpha$ and $\Omega_\beta$, the splitting $2|\langle m_1,m_2|H|m_1',m_2'\rangle|$, in kHz.
 - $\Delta_\alpha$ and $\Delta_\beta$, the level gap, in kHz.
 
-The file can be large, about 100 MB for the 459 nuclei of the h-BN tutorial.
+The file can be large, 68 MB for the 459 nuclei of the h-BN tutorial.
 
 <a id="ps_support"></a>
 ## 5. Where it runs
