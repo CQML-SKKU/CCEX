@@ -13,8 +13,9 @@ The noise comes either from the bath or from a model ([Semiclassical noise](../.
 - **From a model** of the frequency noise, without a bath. `{"model": "OU", ...}` is Ornstein–Uhlenbeck noise,
   $\langle\delta\nu(t)\delta\nu(0)\rangle = \sigma^2 e^{-|t|/\tau_c}$, and `{"model": "power", ...}` a power-law spectrum
   $S(f) = A\,(f/1\,\text{kHz})^{-\beta}$ between $f_\text{min}$ and $f_\text{max}$.
-- **From the bath** (`hamiltonian.noise.spectrum` `"bath"`, the default). Every cCCE cluster adds, from its eigenstates
-  $|a\rangle$ and their frequency differences $\omega_{ab}$,
+- **From the bath** (`hamiltonian.noise.spectrum` `"bath"`, the default). Every cCCE cluster adds, from the
+  eigenstates $|a\rangle$ of $H_\text{bath} + p\sum_i \mathbf{A}_{z,i}\cdot\mathbf{I}_i$ with
+  $p = (|m_\alpha| + |m_\beta|)/2$ and their frequency differences $\omega_{ab}$,
 
   $$\chi_C = \frac{1}{2D}\sum_{ab}\lvert\langle a\rvert\delta\omega\lvert b\rangle\rvert^2\,\lvert Y(\omega_{ab})\rvert^2,\qquad Y(\omega) = \int f(t)\,e^{i\omega t}\,dt ,$$
 
@@ -101,8 +102,9 @@ The two inputs differ only in what is computed:
 The three values of `compute` are:
 
 - `"coherence"` (the default) takes χ straight from the clusters' eigenmodes, with no time grid.
-- `"spectrum"` writes the correlation C(t) of the qubit's frequency noise on a time grid, its spectrum S(f) by FFT,
-  and the coherence from S(f).
+- `"spectrum"` writes the correlation $C(t) = \operatorname{Re}\operatorname{Tr}[\rho\{B(t), B\}]/2$ of
+  $B = \sum_i A_{zz,i} I_{z,i}$ (in kHz, $\delta\omega$ without its factor $m_\alpha - m_\beta$) on a time grid, its
+  two-sided spectrum S(f) (negative and positive f) by FFT, and the coherence from S(f).
 - `"correlation"` writes C(t) alone, at the run's times.
 
 `hamiltonian.noise.fft` is left out, so its defaults hold. The grid ends at the run's last time and has 8 points per
@@ -166,9 +168,8 @@ It runs both inputs and plots the mean of the 10 states of each. It takes 8 s fo
 
 T2 of the mean of 10 states is 56 µs by `noise` and 150 µs by cCCE2. The two methods compute different quantities:
 
-- `noise` averages every cluster at infinite temperature with one bath Hamiltonian,
-  $H_\text{bath} + p\sum_i \mathbf{A}_{z,i}\cdot\mathbf{I}_i$ with $p = (|m_\alpha| + |m_\beta|)/2$, and keeps only the
-  Gaussian part of the noise. A sampled state enters only through the static field of the other bath spins.
+- `noise` averages every cluster at infinite temperature with the one bath Hamiltonian of the opening, and keeps only
+  the Gaussian part of the noise. A sampled state enters only through the static field of the other bath spins.
 - cCCE2 evolves each sampled state as a pure state under the two Hamiltonians of the qubit's branches.
 
 Next, try `"pseudo_secular": true` in `hamiltonian.noise`, the noise of a bath spin with $A_{zx} I_x + A_{zy} I_y$ as
