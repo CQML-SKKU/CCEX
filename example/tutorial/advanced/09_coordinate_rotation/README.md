@@ -18,6 +18,8 @@ does not. Every key not written in an input has its default (`main.out -e`). Tim
 written in the conventional cubic cell would be. `bath/make_cubic_frame.py` made it from `basic/01_first_run/bath/`
 and says how.
 
+This page has one case:
+
 1. [The same NV three ways](#rot_case) (`cCCE2_Hahn_rotation/`).
 
 <a id="rot_case"></a>
@@ -25,18 +27,46 @@ and says how.
 
 Folder: `cCCE2_Hahn_rotation/`
 
-- **What it shows:** the Hahn echo of the NV of Basic 01, computed three ways. The first uses the bath as generated,
-  with the NV axis along z (`ccein_aligned.jsonc`). The second uses the cubic-frame bath with the rotation on
-  (`qubit_axis` [1, 1, 1], `ccein_cubic_rotated.jsonc`). The third uses the cubic-frame bath without it
-  (`ccein_cubic_norotation.jsonc`), so the field is 54.7° off the NV axis.
-- **Keys that matter:** `frame.rotation.qubit_axis` [1, 1, 1] and `configuration.bathfile` (the cubic-frame file).
-- **How to run:** `cd cCCE2_Hahn_rotation && NP=4 bash run.sh`. It takes 1.8 s and 0.05 GB per rank.
-- **Expected result:** `expected.png`. The rotated run reproduces the aligned one (largest difference 1e-10, T2
-  1.084 ms). Without the rotation T2 is 1.154 ms and the curve differs by up to 0.20.
-- **What to change next:** `bfield` as a vector to tilt the field on purpose, without the rotation (with it a
-  transverse field is refused), or a bath with DFT tensors (`hamiltonian.common.hyperfine.frame`,
-  `quadrupole.frame`).
+<a id="a09_rot_input"></a>
+### 1.1 The input
+
+The three inputs compute the Hahn echo of the NV of Basic 01 and differ only in the bath file and the rotation. The
+first uses the bath as generated, with the NV axis along z (`ccein_aligned.jsonc`):
+
+```jsonc
+"configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                   "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]}
+```
+
+The second uses the cubic-frame bath with the rotation on (`ccein_cubic_rotated.jsonc`):
+
+```jsonc
+"configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                   "bathfile": ["../bath/bath_Diamond_NV_natab_cubic_1"]},
+"frame"         : {"rotation": {"qubit_axis": [1, 1, 1]}}
+```
+
+The third uses the cubic-frame bath without the `frame` block (`ccein_cubic_norotation.jsonc`), so the field is
+54.7° off the NV axis.
+
+<a id="a09_rot_run"></a>
+### 1.2 Running it
+
+```sh
+cd cCCE2_Hahn_rotation && NP=4 bash run.sh
+```
+
+It takes 1.8 s and 0.05 GB per rank.
+
+<a id="a09_rot_result"></a>
+### 1.3 The result
 
 ![cCCE2_Hahn_rotation: expected result](cCCE2_Hahn_rotation/expected.png)
+
+The rotated run reproduces the aligned one, with a largest difference of 1e-10 and T2 1.084 ms. Without the rotation
+T2 is 1.154 ms and the curve differs by up to 0.20.
+
+Next, give `bfield` as a vector to tilt the field on purpose, without the rotation (with it a transverse field is
+refused), or use a bath with DFT tensors (`hamiltonian.common.hyperfine.frame`, `quadrupole.frame`).
 
 Inputs: [`ccein_aligned.jsonc`](cCCE2_Hahn_rotation/ccein_aligned.jsonc), [`ccein_cubic_norotation.jsonc`](cCCE2_Hahn_rotation/ccein_cubic_norotation.jsonc), [`ccein_cubic_rotated.jsonc`](cCCE2_Hahn_rotation/ccein_cubic_rotated.jsonc)

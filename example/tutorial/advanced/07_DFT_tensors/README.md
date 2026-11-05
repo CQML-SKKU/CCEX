@@ -17,6 +17,8 @@ tutorial bath, so `cCCE2_Hahn_tensors` uses the files kept with
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
+This page has two cases:
+
 1. [How the tensor files are made from a VASP run](#dft_make) (`makeTensors_hBN/`).
 2. [What the DFT tensors change](#dft_effect) (`cCCE2_Hahn_tensors/`).
 
@@ -25,40 +27,81 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 
 Folder: `makeTensors_hBN/`
 
-- **What it shows:** how the tensor files are made. `run.sh` runs `example/tools/SpinTensorReader/main.py` on the VASP
-  run of V_B⁻ kept in `example/tools/SpinTensorReader/examples/02.hBN_VB_VASP`, with its relaxed cell
-  `VASP_CONTCAR_flat`, the defect named `VB`, and `VASP_OUTCAR_flat` for both `--A` and `--Q`. It checks that
-  `results/Afile` and `results/Qfile` are the example's `Afile_v2` and `Qfile_v2`, byte for byte.
-- **What the files hold:**
-  - The first line names the DFT code (`VASP`).
-  - The second line, which CCEX reads, says what the values are
-    (`# CCEX-tensor v3: values = hyperfine of the spin-S defect (MHz), source = VASP OUTCAR, S = 1`).
-  - Then come the gyromagnetic g-factors and the corners `v1` .. `v8` of the cell (Å from the defect, the range of the
-    rows).
-  - Last comes one row per atom, with the position from the defect, the isotropic (contact) term and the nine
-    components, in MHz. Here there are 53 B and 54 N, and the three ¹⁴N next to the vacancy have a contact term of
-    121 MHz.
-  - `Qfile` has the same layout with the field gradient (Hartree/Bohr²).
-- **How to run:** `sh run.sh`. It takes under a second and needs python3 with numpy, pandas and psutil, but not CCEX.
-- **What to change next:** your own OUTCAR. `--addhfcore False` leaves out the core term of the contact interaction,
-  and for Quantum ESPRESSO give `--spin S` ([Tools](../../../../docs/user/Tools.md)).
+<a id="a07_make_input"></a>
+### 1.1 The input
+
+The input of this case is the VASP run of V_B⁻ kept in `example/tools/SpinTensorReader/examples/02.hBN_VB_VASP`, not a
+CCEX input. `run.sh` gives `example/tools/SpinTensorReader/main.py` the relaxed cell `VASP_CONTCAR_flat`, the defect
+named `VB`, and `VASP_OUTCAR_flat` for both `--A` and `--Q`:
+
+```sh
+python3 $STR/main.py VASP $EX/VASP_CONTCAR_flat VB --A $EX/VASP_OUTCAR_flat --Q $EX/VASP_OUTCAR_flat
+```
+
+<a id="a07_make_run"></a>
+### 1.2 Running it
+
+```sh
+sh run.sh
+```
+
+It takes under a second and needs python3 with numpy, pandas and psutil, but not CCEX. It checks that
+`results/Afile` and `results/Qfile` are the example's `Afile_v2` and `Qfile_v2`, byte for byte.
+
+<a id="a07_make_result"></a>
+### 1.3 The result
+
+`Afile` holds, in order:
+
+- The name of the DFT code (`VASP`) on the first line.
+- On the second line, which CCEX reads, what the values are
+  (`# CCEX-tensor v3: values = hyperfine of the spin-S defect (MHz), source = VASP OUTCAR, S = 1`).
+- The gyromagnetic g-factors and the corners `v1` .. `v8` of the cell (Å from the defect, the range of the rows).
+- One row per atom, with the position from the defect, the isotropic (contact) term and the nine components, in MHz.
+  Here there are 53 B and 54 N, and the three ¹⁴N next to the vacancy have a contact term of 121 MHz.
+
+`Qfile` has the same layout with the field gradient (Hartree/Bohr²).
+
+Next, use your own OUTCAR. `--addhfcore False` leaves out the core term of the contact interaction, and Quantum
+ESPRESSO needs `--spin S` ([Tools](../../../../docs/user/Tools.md)).
 
 <a id="dft_effect"></a>
 ## 2. What the tensors change
 
 Folder: `cCCE2_Hahn_tensors/`
 
-- **What it shows:** a cCCE2 Hahn echo at 3 T over five configurations (`k_range`) with the hyperfine and quadrupole
-  tensors (`ccein_hf3_qd2.jsonc`), with the quadrupole only (the hyperfine a point dipole, `hf0_qd2`) and with the
-  hyperfine only (`hf3_qd0`).
-- **Keys that matter:** `hamiltonian.common.hyperfine` {`dipole` dft, `contact` true, `file`},
-  `hamiltonian.common.quadrupole` {`structure` plain, `file`}, `bfield` 30000 G, `rbath` 20 Å, `rdip` 10 Å, `deltat`
-  3 µs × `nstep` 50 and `k_range` [1, 5].
-- **How to run:** `NP=4 bash run.sh`. It takes 8 s and 0.07 GB per rank.
-- **Expected result:** `expected.png`. The T2 is 56.5 µs with both tensors, 56.6 µs with the quadrupole only and
-  34.0 µs with the hyperfine only.
-- **What to change next:** `k_range` [1, 50], or `rbath` 30 to check convergence.
+<a id="a07_effect_input"></a>
+### 2.1 The input
+
+This case computes a cCCE2 Hahn echo at 3 T over five configurations (`k_range` [1, 5]), with `rbath` 20 Å, `rdip` 10 Å and `deltat`
+3 µs × `nstep` 50. The three inputs differ only in the `hamiltonian` block. `ccein_hf3_qd2.jsonc` has both tensors:
+
+```jsonc
+"hamiltonian" : {"common": {"hyperfine": {"dipole": "dft", "contact": true,
+                                          "file": "../../06_hBN/bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
+                            "quadrupole": {"structure": "plain",
+                                           "file": "../../06_hBN/bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}}}
+```
+
+`ccein_hf0_qd2.jsonc` keeps the quadrupole only, so the hyperfine is a point dipole, and `ccein_hf3_qd0.jsonc` keeps
+the hyperfine only.
+
+<a id="a07_effect_run"></a>
+### 2.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+It takes 8 s and 0.07 GB per rank.
+
+<a id="a07_effect_result"></a>
+### 2.3 The result
 
 ![cCCE2_Hahn_tensors: expected result](cCCE2_Hahn_tensors/expected.png)
+
+The T2 is 56.5 µs with both tensors, 56.6 µs with the quadrupole only and 34.0 µs with the hyperfine only.
+
+Next, try `k_range` [1, 50], or `rbath` 30 to check convergence.
 
 Inputs: [`ccein_hf0_qd2.jsonc`](cCCE2_Hahn_tensors/ccein_hf0_qd2.jsonc), [`ccein_hf3_qd0.jsonc`](cCCE2_Hahn_tensors/ccein_hf3_qd0.jsonc), [`ccein_hf3_qd2.jsonc`](cCCE2_Hahn_tensors/ccein_hf3_qd2.jsonc)
