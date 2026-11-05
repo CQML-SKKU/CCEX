@@ -58,7 +58,7 @@ not converged at those times. A sub-cluster coherence close to zero sits in a de
 correction (`example/analysis/Analyzer`, [Analysis](../user/Analysis.md)) compares the two curves to find these points.
 
 It happens with strongly coupled spins, for example close pairs of electron spins, a spin-1 qubit without its
-zero-field splitting in gCCE (tutorial `advanced/05_P1/gCCE2_Hahn_zfs`), or cCCE in a tilted field without
+zero-field splitting in gCCE at zero field, or cCCE in a tilted field without
 [knight](../user/InputFile_General.md#tag_knight) (tutorial `advanced/10_cCCE_corrections/cCCE2_Hahn_knightShift`).
 What helps:
 

@@ -141,8 +141,10 @@
   `advanced/07_DFT_tensors/cCCE2_Hahn_tensors`. `advanced/06_hBN/gCCE2_Hahn_states` has the V_B⁻ zero-field splitting
   it lacked (T2 0.25 µs, with a 1 ns step; 0.44 µs before), `04_hBN/gCCE2_Hahn_OH` is `gCCE2_Hahn_Overhauser`,
   `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job with nothing visible in its 4.9 ns) is
-  `advanced/08_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs), and the 50 ppm input of
-  `advanced/05_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `advanced/04_GPU` has its `expected.png`, made on a GPU node; `plot_coherence.py --log-time` draws a log time axis.
+  `advanced/08_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs). `advanced/05_P1` makes a P1 bath with BathGenerator
+  (`cCCE2_Hahn_makeBath`) and runs the ¹⁴N as a detuning and as a spin side by side, and order 2 beside order 4.
+  `advanced/05_P1/cCCE2_Hahn_VpBath`, `gCCE2_Hahn_zfs` and `gCCE2_Ramsey_population` (with the 10 ppm and Vp baths of
+  `basic/06_defect_bath/bath/`) and `advanced/04_GPU/pCCE2_Hahn_backends` are removed. `advanced/04_GPU` has its `expected.png`, made on a GPU node; `plot_coherence.py --log-time` draws a log time axis.
 - **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`, with each key's explanation on the lines above it.
   The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
   plain-text formulas are TeX. The automatic convergence has a key page, `docs/user/InputFile_AutoConvergence.md`, and a method page,

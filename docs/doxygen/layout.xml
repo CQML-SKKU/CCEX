@@ -47,7 +47,7 @@
           <tab type="user" url="@ref tutorial_a04" title="04 The GPU backend"/>
         </tab>
         <tab type="usergroup" url="[none]" title="2. Other systems and inputs">
-          <tab type="user" url="@ref tutorial_a05" title="05 The P1 bath further"/>
+          <tab type="user" url="@ref tutorial_a05" title="05 Electron-spin baths further"/>
           <tab type="user" url="@ref tutorial_a06" title="06 V_B⁻ in hexagonal BN"/>
           <tab type="user" url="@ref tutorial_a07" title="07 DFT hyperfine and quadrupole tensors"/>
           <tab type="user" url="@ref tutorial_a08" title="08 Multiple qubits"/>

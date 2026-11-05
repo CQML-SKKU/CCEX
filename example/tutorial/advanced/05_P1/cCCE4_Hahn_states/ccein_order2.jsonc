@@ -1,14 +1,12 @@
 {
-    // cCCE2_Hahn_states to order 4: the convergence check of the expansion. max_per_order keeps the 5000 strongest
-    // three-spin and 10000 strongest four-spin clusters (0 = all).
+    // The order-2 reference of ccein_order4.jsonc: the same bath, states and times at order 2 (cCCE2).
     // Sampled bath states: configuration.s_range [1, 10], each state s its own output _state<s>.
     //
     // The physics: clusters of three and four P1 add the correlated flip-flops of larger groups. If the curve of
-    // order 4 lies on that of order 2, order 2 was enough; here it does (T2 of the mean 307 us for both, README).
-    // Writes results/ccein_k<k>_state<s>_wiDiv and _noDiv for k = 1, 2 and s = 1 .. 10.
+    // order 4 lies on that of order 2, order 2 was enough (README).
+    // Writes results/ccein_order2_k<k>_state<s>_wiDiv and _noDiv for k = 1, 2 and s = 1 .. 10.
     //
-    // Differs from cCCE2_Hahn_states only in "order" and "cluster". The cluster list takes 0.84 GB per rank: run.sh
-    // is meant for NP=2 on a 2 GB machine.
+    // Differs from ccein_order4.jsonc only in "order" and "cluster".
     // Every key not written here has its default (main.out -e writes them all).
 
     "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [1]}},
@@ -26,8 +24,7 @@
                                       // of k_range (bath_DiaP1_1ppm_1 and _2, 469 and 461 P1 within rbath). s_range:
                                       // ten pure bath states per configuration. seed: one per configuration (both 1),
                                       // the same seeds as cCCE2_Hahn_states
-    "order"         : 4,              // clusters of up to four P1 (cCCE4). The cost grows fast with the order: see
-                                      // "cluster" below
+    "order"         : 2,              // single P1 and pairs of P1 (cCCE2)
     "bfield"        : 500,            // Gauss along z, the NV axis
     "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV are kept
     "rdip"          : 620,            // Angstrom: P1 closer than 620 A are connected; a cluster of 3 or 4 is a
@@ -35,11 +32,6 @@
     "deltat"        : 0.01,           // ms: the time step, 10 us. t is the whole echo time 2 tau
     "nstep"         : 300,            // 300 points: t = 0 .. 2.99 ms
     "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
-    "cluster"       : {"selection": {"max_per_order": [0, 0, 0, 5000, 10000]}},
-                                      // the most clusters kept per order, entries for order 0 .. 4: the 5000 strongest
-                                      // of three P1 and the 10000 strongest of four (0 = all of them). Entries 0-2 are
-                                      // not used. All clusters of order 3 and 4 (0, 0) need much more memory; raise
-                                      // the two numbers until T2 stops changing
 
     // The P1 centre: substitutional N, an electron spin 1/2 on a 14N (I = 1). Defect.species makes every bath spin
     // named "P1" this defect. The 14N is not a spin of its own here (n_onsite_spins 0, the default): its hyperfine

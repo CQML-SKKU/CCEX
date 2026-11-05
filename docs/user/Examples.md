@@ -37,7 +37,7 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 
 | Page | What it covers |
 |---|---|
-| [Advanced 05: The P1 bath further](../../example/tutorial/advanced/05_P1/README.md) | The ¹⁴N as a spin, order 4, gCCE at zero field, the density matrix, a Vp bath and a DEER pump. |
+| [Advanced 05: Electron-spin baths further](../../example/tutorial/advanced/05_P1/README.md) | Making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4 and a DEER pump. |
 | [Advanced 06: V_B⁻ in hexagonal BN](../../example/tutorial/advanced/06_hBN/README.md) | DFT tensors, sampled states and the Overhauser field. |
 | [Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) | The tensor files from a VASP run (`example/tools/SpinTensorReader`), and what they change. |
 | [Advanced 08: Multiple qubits](../../example/tutorial/advanced/08_multi_qubits/README.md) | Two and three NVs as one register. |

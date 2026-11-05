@@ -1,0 +1,45 @@
+{
+    // The 2e form of the P1 bath of ccein_2e2n.jsonc: the same bath, states and times, with the 14N of every P1 only a
+    // frozen shift A_zz m_I of its electron (12 detunings, as in basic/06_defect_bath/cCCE2_Hahn_states), so a pair
+    // cluster is two electrons. ccein_2e2n.jsonc has the 14N as a spin of its own (a pair is two electrons and two 14N).
+    // Sampled bath states: configuration.s_range [1, 10], each state s its own output _state<s>.
+    // Writes results/ccein_2e_k<k>_state<s>_wiDiv and _noDiv, k = 1, 2, s = 1 .. 10.
+    //
+    // Differs from ccein_2e2n.jsonc only in the Defect block.
+    // Every key not written here has its default (main.out -e writes them all).
+
+    "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [1]}},
+                                      // the NV. "file": the defect file next to the bath files, its first line the NV
+                                      // position x y z (Angstrom). Spin 1 and the electron gyromagnetic ratio are the
+                                      // defaults. alpha_state ms +1, beta_state the default ms 0: L(t) between ms +1
+                                      // and 0
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
+                       "k_range" : [1, 2],
+                       "s_range" : [1, 10],
+                       "seed"    : [1, 1]},
+                                      // the bath, as in cCCE2_Hahn_states. gyrofile: the P1 electron as a spin 1/2
+                                      // (rad kHz/G); the 14N is not a spin here.
+                                      // bathfile: {k} is replaced by each k of k_range (bath_DiaP1_1ppm_1 and _2, 469
+                                      // and 461 P1 within rbath). s_range: ten pure bath states per configuration;
+                                      // seed: one per configuration (both 1)
+    "order"         : 2,              // cCCE2: single P1 and pairs of P1
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV are kept
+    "rdip"          : 620,            // Angstrom: two P1 closer than 620 A form a pair cluster
+    "deltat"        : 0.01,           // ms: the time step, 10 us. t is the whole echo time 2 tau
+    "nstep"         : 300,            // 300 points: t = 0 .. 2.99 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+
+    // P1 in the detuning form: 12 axis states, the four bond axes times the three m_I of the 14N; each P1 is given
+    // one of them at random (from seed)
+    "Defect"        : {"species": [{
+        "name"          : "P1",
+        "n_axis_states" : 12,
+        // [axis state, "e" (the electron), shift in MHz]. 1-9: the three tilted axes (A_zz 84.946496 MHz) with
+        // m_I +1, 0, -1; 10-12: the axis along z (A_zz 114.0264 MHz).
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+}

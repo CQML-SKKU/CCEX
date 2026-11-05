@@ -37,7 +37,7 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 
 | Folder | Topic | Calculations |
 |---|---|---|
-| `05_P1/` | the P1 bath further: the ¹⁴N as a spin, order 4, gCCE at zero field, the density matrix, Vp, a DEER pump | `cCCE2_Hahn_onsite14N`, `cCCE4_Hahn_states`, `gCCE2_Hahn_zfs`, `gCCE2_Ramsey_population`, `cCCE2_Hahn_VpBath`, `gCCE2_Hahn_DEER` |
+| `05_P1/` | electron-spin baths further: making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4, a DEER pump | `cCCE2_Hahn_makeBath`, `cCCE2_Hahn_onsite14N`, `cCCE4_Hahn_states`, `gCCE2_Hahn_DEER` |
 | `06_hBN/` | V_B⁻ in h-BN with DFT tensors: sampled states, the Overhauser field | `gCCE2_Hahn_states`, `gCCE2_Hahn_Overhauser` |
 | `07_DFT_tensors/` | the hyperfine and quadrupole files from a VASP run, and what they change | `makeTensors_hBN`, `cCCE2_Hahn_tensors` |
 | `08_multi_qubits/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV3` |

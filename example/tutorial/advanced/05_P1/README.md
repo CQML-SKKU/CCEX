@@ -1,251 +1,220 @@
-# Advanced 05: The P1 bath further
+# Advanced 05: Electron-spin baths further
 
 Folder: `example/tutorial/advanced/05_P1/`
 
-This topic goes further with the P1 bath of
-[Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md), and every input here reads its `bath/`.
+This page goes on from the P1 bath of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md).
+It makes such a bath, compares the two ways of writing a P1 and its ¹⁴N, checks the order of the expansion, and
+pulses the P1 during the echo.
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-This page has six cases:
+This page has four cases:
 
-1. [The ¹⁴N of each P1 as a nuclear spin](#p1_onsite) (`cCCE2_Hahn_onsite14N/`).
-2. [The expansion to order 4](#p1_order4) (`cCCE4_Hahn_states/`).
-3. [gCCE at zero field, where the NV zero-field splitting is needed](#p1_zfs) (`gCCE2_Hahn_zfs/`).
-4. [The qubit density matrix](#p1_population) (`gCCE2_Ramsey_population/`).
-5. [A Vp bath at three densities](#p1_vp) (`cCCE2_Hahn_VpBath/`).
-6. [A DEER pump on the bath](#p1_deer) (`gCCE2_Hahn_DEER/`).
+1. [Making a P1 bath](#p1_makebath) (`cCCE2_Hahn_makeBath/`).
+2. [The ¹⁴N as a detuning (2e) or as a spin (2e2n)](#p1_onsite) (`cCCE2_Hahn_onsite14N/`).
+3. [Checking whether order 2 is enough](#p1_order4) (`cCCE4_Hahn_states/`).
+4. [A DEER pump on the bath](#p1_deer) (`gCCE2_Hahn_DEER/`).
 
-<a id="p1_onsite"></a>
-## 1. The ¹⁴N as a spin
+<a id="p1_makebath"></a>
+## 1. Making a P1 bath
 
-Folder: `cCCE2_Hahn_onsite14N/`
+Folder: `cCCE2_Hahn_makeBath/`
 
-<a id="a05_onsite_input"></a>
+<a id="a05_makebath_input"></a>
 ### 1.1 The input
 
-Each P1 is written with its ¹⁴N as an on-site nuclear spin, so a cluster of one P1 is its electron and its ¹⁴N. The
-`Defect` species gives the ¹⁴N and, for each of the four Jahn-Teller axes, its hyperfine and quadrupole tensors:
+`example/tools/BathGenerator` puts spins on the sites of a crystal at random
+([Tools](../../../../docs/user/Tools.md#tag_tool_bathgenerator)), and Basic 01 makes its ¹³C bath with it. A P1 is a nitrogen on a carbon
+site, so a P1 bath is made the same way, with P1 in place of ¹³C. The folder has three files for it:
 
-```jsonc
-"Defect" : {"species": [{"name": "P1", "n_onsite_spins": 1, "types": ["14N"], "spins": [1],
-                         "quadrupole_moments": [2.044], "gyros": [1.9337792], "n_axis_states": 4,
-                         "hyperfine": [[1, "14N", [81.312, 0.0, 0.0, 0.0, 81.312, 0.0, 0.0, 0.0, 114.0264]], ...],
-                         "efg":       [[1, "14N", [0.52191, 0.0, 0.0, 0.0, 0.522771, -8.6e-05, 0.0, -8.6e-05, -1.044681]], ...]}]}
+- `POSCAR_pure_P` and `POSCAR_NV_P` are the diamond cells of `basic/01_first_run/bath/genbath/` with the carbon
+  sites named `P`. `POSCAR_NV_P` holds the NV, which the generator puts at the centre of the bath.
+- `prob_P1_100ppm` gives three lines per spin, its name, its spin and its share of the sites in percent
+  ([the prob file](../../../../docs/user/Tools.md#tag_prob_file)):
+
+```
+P1
+0.5
+0.01
+N
+1.0
+0.0
 ```
 
-The bath is two configurations (`k_range` [1, 2]) of ten sampled states each (`s_range` [1, 10]).
+The generator takes the element of a name by dropping its digits, so `P1` goes on 0.01 % of the `P` sites (100 ppm).
+The N of the NV gets no spin.
 
-<a id="a05_onsite_run"></a>
+`ccein.jsonc` computes the Hahn echo in the bath the generator writes, with the P1 in the 2e form of section 2:
+
+```jsonc
+"Qubit"         : {"qubit": [{"file": "results/bath/bath_P1_100ppm_defect"}], "alpha_state": {"ms": [1]}},
+"configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                   "bathfile": ["results/bath/bath_P1_100ppm"], "s_range": [1, 10], "seed": 1},
+"rbath"         : 145,
+"rdip"          : 135
+```
+
+<a id="a05_makebath_run"></a>
 ### 1.2 Running it
 
 ```sh
 NP=4 bash run.sh
 ```
 
-It takes 65 s and 0.07 GB per rank.
+`run.sh` makes the bath in a cube of 300 Å and then runs CCEX. The generator command is:
+
+```sh
+python3 BathGenerator.py -o results/bath/bath_P1_100ppm -i POSCAR_pure_P -I POSCAR_NV_P -p prob_P1_100ppm \
+    --size 300 --Defect V
+```
+
+`run.sh` seeds the random numbers, so the same bath comes out every time. The generator may abort with "double free"
+after it has written the file, so `run.sh` checks the file instead of the exit status. The bath takes 68 s and
+0.16 GB on one process, and the CCEX run under a second. The generator goes through every site of the cube, so its
+time grows with the volume of the cube.
+
+<a id="a05_makebath_result"></a>
+### 1.3 The result
+
+![cCCE2_Hahn_makeBath: expected result](cCCE2_Hahn_makeBath/expected.png)
+
+The cube holds 444 P1, 192 of them within `rbath`, and T2 of the mean of the 10 states is 6.9 µs. The bath is small
+for the example, so this T2 is not converged. A converged run needs a cube that covers `rbath` at the concentration of
+interest, as the ready-made baths of Basic 06 do (cubes of 2248 Å at 1 ppm).
+
+Next, change the share in `prob_P1_100ppm` (0.001 for 10 ppm) and `--size`. The NV sits at the centre of the cube, so
+`--size` has to be at least twice `rbath`.
+
+Inputs: [`ccein.jsonc`](cCCE2_Hahn_makeBath/ccein.jsonc), [`prob_P1_100ppm`](cCCE2_Hahn_makeBath/prob_P1_100ppm)
+
+<a id="p1_onsite"></a>
+## 2. The ¹⁴N as a detuning (2e) or as a spin (2e2n)
+
+Folder: `cCCE2_Hahn_onsite14N/`
+
+<a id="a05_onsite_input"></a>
+### 2.1 The input
+
+A P1 is an electron with a ¹⁴N nucleus (I = 1) next to it. CCEX can write the ¹⁴N in two ways:
+
+- **2e.** The ¹⁴N is only a fixed shift of its electron's energy, $A_{zz} m_I$, one of 12 detunings set by the bond
+  axis and $m_I$. A pair cluster is two electrons. Basic 06 uses this form.
+- **2e2n.** The ¹⁴N is a spin of its own, with its full hyperfine tensor to the electron, its quadrupole coupling and
+  its Zeeman term. A pair cluster is two electrons and two ¹⁴N, and a cluster of one P1 has dimension 6.
+
+The two inputs compute the same bath, two configurations (`k_range` [1, 2]) of ten sampled states each
+(`s_range` [1, 10]), and differ only in the `Defect` block. `ccein_2e.jsonc` gives the 12 detunings:
+
+```jsonc
+"Defect" : {"species": [{"name": "P1", "n_axis_states": 12,
+                         "detuning": [[1, "e", 84.946496], [2, "e", 84.946496], ..., [12, "e", -114.0264]]}]}
+```
+
+`ccein_2e2n.jsonc` gives the ¹⁴N and, for each of the four Jahn-Teller axes, its hyperfine and quadrupole tensors:
+
+```jsonc
+"Defect" : {"species": [{"name": "P1", "n_onsite_spins": 1, "types": ["14N"], "spins": [1],
+                         "quadrupole_moments": [2.044], "gyros": [1.9337792], "n_axis_states": 4,
+                         "hyperfine": [[1, "14N", [...]], ...],
+                         "efg":       [[1, "14N", [...]], ...]}]}
+```
+
+`n_onsite_spins` 1 puts one nuclear spin on every P1, and `hyperfine` and `efg` hold one tensor of nine numbers per
+axis state. A defect without on-site nuclei needs no `Defect`
+block, and its spin and gyromagnetic ratio come from the gyro file alone.
+
+<a id="a05_onsite_run"></a>
+### 2.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+It runs both inputs and plots the mean of the 20 curves of each. It takes 71 s, nearly all of it the 2e2n run, and
+0.09 GB per rank.
 
 <a id="a05_onsite_result"></a>
-### 1.3 The result
+### 2.3 The result
 
 ![cCCE2_Hahn_onsite14N: expected result](cCCE2_Hahn_onsite14N/expected.png)
 
-The T2 of the mean is 266 µs, against 307 µs with the detunings of `basic/06_defect_bath/cCCE2_Hahn_states`.
+T2 is 307 µs in the 2e form, the value of Basic 06, and 266 µs in the 2e2n form. The curves differ by up to 0.17.
 
 Next, the on-site states can be read from a file (`configuration.defect_state_file`).
 
-Input: [`ccein.jsonc`](cCCE2_Hahn_onsite14N/ccein.jsonc)
+Inputs: [`ccein_2e.jsonc`](cCCE2_Hahn_onsite14N/ccein_2e.jsonc), [`ccein_2e2n.jsonc`](cCCE2_Hahn_onsite14N/ccein_2e2n.jsonc)
 
 <a id="p1_order4"></a>
-## 2. Order 4
+## 3. Checking whether order 2 is enough
 
 Folder: `cCCE4_Hahn_states/`
 
 <a id="a05_order4_input"></a>
-### 2.1 The input
+### 3.1 The input
 
-The bath of Basic 06's `cCCE2_Hahn_states` is computed to order 4, to check the convergence of the expansion.
-`cluster.selection.max_per_order` keeps the 5000 strongest three-spin and 10000 strongest four-spin clusters:
+The expansion is cut at an order, and order 2 is enough when a higher order gives the same curve. This case computes
+the P1 bath of section 2 in the 2e form, at order 2 and at order 4. The two inputs differ only in these keys:
 
 ```jsonc
-"order"   : 4,
+"order"   : 2                                                       // ccein_order2.jsonc
+"order"   : 4,                                                      // ccein_order4.jsonc
 "cluster" : {"selection": {"max_per_order": [0, 0, 0, 5000, 10000]}}
 ```
 
+`cluster.selection.max_per_order` keeps the 5000 strongest three-spin and 10000 strongest four-spin clusters, which
+limits the number of clusters and with it the memory.
+
 <a id="a05_order4_run"></a>
-### 2.2 Running it
+### 3.2 Running it
 
 ```sh
 NP=2 bash run.sh
 ```
 
-Two ranks keep the run within 2 GB. The cluster list takes 0.84 GB per rank, and the run 34 s on 2 ranks.
+It runs both inputs and plots the mean of the 20 curves of each. The order-4 run takes 0.81 GB per rank, so two ranks
+keep it within 2 GB. The two runs take 38 s on 2 ranks.
 
 <a id="a05_order4_result"></a>
-### 2.3 The result
+### 3.3 The result
 
 ![cCCE4_Hahn_states: expected result](cCCE4_Hahn_states/expected.png)
 
-The T2 of the mean is 307 µs, the same as at order 2, so the expansion has converged at order 2 here.
+T2 of the mean is 307.4 µs at order 2 and 306.8 µs at order 4, and the two curves differ by at most 0.045. Order 2 is
+enough for this bath, and the other cases use it.
 
 Next, `max_per_order` 0 keeps all clusters and needs much more memory.
 
-Input: [`ccein.jsonc`](cCCE4_Hahn_states/ccein.jsonc)
-
-<a id="p1_zfs"></a>
-## 3. Zero field needs the zero-field splitting
-
-Folder: `gCCE2_Hahn_zfs/`
-
-<a id="a05_zfs_input"></a>
-### 3.1 The input
-
-At zero field the NV must be a spin 1 with its zero-field splitting in gCCE, D = 2.88 GHz, given as the `intmap`
-self tensor in kHz. `ccein_with_ZFS.jsonc` has it, and `ccein_without_ZFS.jsonc` is the same input without it:
-
-```jsonc
-"method" : "gCCE",
-"Qubit"  : {"qubit": [{"name": "NV", "xyz": [523.336, 524.936, 521.003]}],
-            "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]},
-            "intmap": [{"between": ["NV", "NV"], "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]}]},
-"bfield" : 0
-```
-
-Both read one sampled state (`s_range` [1, 1], `seed` 8810) of the 10 ppm bath, with `deltat` 50 ns.
-
-<a id="a05_zfs_run"></a>
-### 3.2 Running it
-
-```sh
-NP=4 bash run.sh
-```
-
-It takes 1.5 s and 0.06 GB per rank.
-
-<a id="a05_zfs_result"></a>
-### 3.3 The result
-
-![gCCE2_Hahn_zfs: expected result](gCCE2_Hahn_zfs/expected.png)
-
-The T2 with the ZFS is 3.59 µs. Without it the ms ±1 levels are degenerate and the divided curve (`_wiDiv`) diverges,
-with |L| up to 3.8e15 (cut at 1.2 in the plot).
-
-Next, try a small field (`bfield` 10) without the ZFS, or more states.
-
-Inputs: [`ccein_with_ZFS.jsonc`](gCCE2_Hahn_zfs/ccein_with_ZFS.jsonc), [`ccein_without_ZFS.jsonc`](gCCE2_Hahn_zfs/ccein_without_ZFS.jsonc)
-
-<a id="p1_population"></a>
-## 4. The density matrix
-
-Folder: `gCCE2_Ramsey_population/`
-
-<a id="a05_population_input"></a>
-### 4.1 The input
-
-The NV is prepared in ms = 0 and has no pulse, and gCCE2 writes the qubit density matrix over 50 ms in 10 ppm P1 at
-300 G. Its ms = 0 population is what flip-flops with the bath would lower:
-
-```jsonc
-"method"   : "gCCE",
-"quantity" : "dm",
-"Qubit"    : {"alpha_state": {"ms": [0]}, "beta_state": {"ms": [0]}, ...},
-"bfield"   : 300,
-"deltat"   : 0.01,
-"nstep"    : 5000,
-"pulse"    : {"count": 0}
-```
-
-<a id="a05_population_run"></a>
-### 4.2 Running it
-
-```sh
-NP=4 bash run.sh
-```
-
-It takes 76 s and 0.06 GB per rank.
-
-<a id="a05_population_result"></a>
-### 4.3 The result
-
-![gCCE2_Ramsey_population: expected result](gCCE2_Ramsey_population/expected.png)
-
-The y axis spans only the range of the data. The population stays within 0.997 to 1.003.
-
-Next, a scan of `bfield` shows where an NV transition comes into resonance with the bath, since the population drops
-there.
-
-Input: [`ccein.jsonc`](gCCE2_Ramsey_population/ccein.jsonc)
-
-<a id="p1_vp"></a>
-## 5. A Vp bath
-
-Folder: `cCCE2_Hahn_VpBath/`
-
-<a id="a05_vp_input"></a>
-### 5.1 The input
-
-This case computes the Hahn echo in a bath of Vp defects at 10, 12 and 50 ppm, one configuration and one sampled
-state each. A Vp is a spin 1/2 without on-site nuclei, so the input has no `Defect` block, and the gyro file gives it:
-
-```jsonc
-"configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/Vp/DiaVp_gyro",
-                   "bathfile": ["../../../basic/06_defect_bath/bath/Vp/10ppm/bath_DiaVp_10ppm_1"],
-                   "s_range": [1, 1], "seed": 1}
-```
-
-`rbath`, `rdip` and `deltat` differ per concentration:
-
-| Input | `rbath` | `rdip` | `deltat` |
-|---|---|---|---|
-| `ccein_10ppm.jsonc` | 370 Å | 330 Å | 30 ns |
-| `ccein_12ppm.jsonc` | 370 Å | 330 Å | 0.5 µs |
-| `ccein_50ppm.jsonc` | 240 Å | 220 Å | 10 ns |
-
-<a id="a05_vp_run"></a>
-### 5.2 Running it
-
-```sh
-NP=4 bash run.sh
-```
-
-It takes 1.7 s and 0.06 GB per rank.
-
-<a id="a05_vp_result"></a>
-### 5.3 The result
-
-![cCCE2_Hahn_VpBath: expected result](cCCE2_Hahn_VpBath/expected.png)
-
-The time axis is on a log scale (`plot_coherence.py --log-time`), since the T2 differ tenfold. For this one state
-they are 5.2 µs at 10 ppm, 13.5 µs at 12 ppm (a longer window) and 2.3 µs at 50 ppm (a 10 ns step).
-
-Next, compute more states (`s_range` [1, 20]) before comparing concentrations.
-
-Inputs: [`ccein_10ppm.jsonc`](cCCE2_Hahn_VpBath/ccein_10ppm.jsonc), [`ccein_12ppm.jsonc`](cCCE2_Hahn_VpBath/ccein_12ppm.jsonc), [`ccein_50ppm.jsonc`](cCCE2_Hahn_VpBath/ccein_50ppm.jsonc)
+Inputs: [`ccein_order2.jsonc`](cCCE4_Hahn_states/ccein_order2.jsonc), [`ccein_order4.jsonc`](cCCE4_Hahn_states/ccein_order4.jsonc)
 
 <a id="p1_deer"></a>
-## 6. A DEER pump
+## 4. A DEER pump
 
 Folder: `gCCE2_Hahn_DEER/`
 
 <a id="a05_deer_input"></a>
-### 6.1 The input
+### 4.1 The input
 
-A DEER pump (`pulse.bath`) applies a π pulse to the P1 spins at the time of the NV's π pulse. `ccein_pump.jsonc` has
-it, and `ccein_nopump.jsonc` is the plain Hahn echo. Both are gCCE2 with the NV in ms +1 / 0, 1 ppm and ten sampled
-states (`s_range` [1, 10]):
+A DEER pump (double electron-electron resonance) applies a π pulse to the P1 at the time of the NV's π pulse. It is
+the block `pulse.bath`. `ccein_pump.jsonc` has it, and `ccein_nopump.jsonc` is the plain Hahn echo. Both compute the
+NV between ms +1 and 0 in the 1 ppm bath, with ten sampled states (`s_range` [1, 10]):
 
 ```jsonc
 "pulse" : {"count": 1, "bath": {"count": 1, "defect": "P1", "energy_shift": [0.0],
                                 "sequence": [["1/2", "X", 180.0], ["1/2", "I", 0.0]]}}
 ```
 
-The tone `energy_shift` 0 MHz drives only the P1 whose `detuning` is within `bandwidth` of it, the central ¹⁴N line
-(axis states 4, 5, 6 and 11 of the `Defect` detunings). The NV is in ms +1 because at 500 G its ms −1 / 0 transition is
-close to the P1 lines and its gCCE2 curve diverges.
+`energy_shift` is the frequency of the pump tone, as a detuning in MHz. A P1 is driven when its detuning in the
+`Defect` block is within `bandwidth` (by default about 1.6 kHz) of the tone, so the tone 0 MHz drives the P1 of the
+central ¹⁴N line.
+
+A pulse on the bath needs gCCE, which has the NV in every cluster's Hamiltonian, so both inputs are gCCE2. In gCCE the
+NV zero-field splitting has to be written (`Qubit.intmap`). Without it the ms ±1 levels are degenerate at zero field
+and the curve diverges. The NV is in ms +1 because at 500 G its ms −1 / 0 transition is close to the P1 lines, and
+there the gCCE2 curve diverges.
 
 <a id="a05_deer_run"></a>
-### 6.2 Running it
+### 4.2 Running it
 
 ```sh
 NP=4 bash run.sh
@@ -254,14 +223,15 @@ NP=4 bash run.sh
 It takes 9 s and 0.06 GB per rank.
 
 <a id="a05_deer_result"></a>
-### 6.3 The result
+### 4.3 The result
 
 ![gCCE2_Hahn_DEER: expected result](gCCE2_Hahn_DEER/expected.png)
 
-The pumped spins' coupling to the NV is no longer refocused, so the echo decays faster. The T2 of the mean of the 10
-states is 150 µs for the Hahn echo and 36 µs with the pump.
+The NV's π pulse flips the sign of its coupling to every P1, so the phase of the first half is undone in the second.
+A P1 flipped at the same moment flips the sign once more, its phase adds up instead, and the echo decays faster.
+T2 of the mean of the 10 states is 150 µs for the Hahn echo and 36 µs with the pump.
 
-Next, try another tone (`energy_shift` [84.946496] drives the axis states 1–3), or the pump at another time
+Next, try another tone (`energy_shift` [84.946496], another line of the P1), or the pump at another time
 (`pulse.bath.sequence` [["0.3", "X", 180], ["0.7", "I", 0]]). [DEER bath pulses](../../../../docs/methods/deer.md)
 explains the pulses.
 

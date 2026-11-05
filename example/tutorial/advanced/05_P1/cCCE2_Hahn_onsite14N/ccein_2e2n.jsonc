@@ -1,15 +1,15 @@
 {
-    // basic/06_defect_bath/cCCE2_Hahn_states with the 14N of every P1 as a spin of its own (the cluster of a P1 is its electron and its
-    // 14N).
+    // The 2e2n form of the P1 bath: the 14N of every P1 as a spin of its own, so a pair cluster is two electrons and
+    // two 14N. ccein_2e.jsonc is the same with the 14N as a detuning of its electron (2e).
     // Sampled bath states: configuration.s_range [1, 10], each state s its own output _state<s>.
     //
     // The physics: in cCCE2_Hahn_states the 14N is only a frozen shift A_zz m_I of its electron (12 detunings). Here
     // the 14N (I = 1) is a quantum spin with its full hyperfine tensor to the electron, its quadrupole coupling and its
     // Zeeman term, so its own dynamics enters every cluster the P1 is in:
-    // a cluster of order 1 is one electron + one 14N (dimension 6), a pair two of each. T2 of the mean 266 us, against
-    // 307 us with the detunings (README). Writes results/ccein_k<k>_state<s>_wiDiv and _noDiv, k = 1, 2, s = 1 .. 10.
+    // a cluster of order 1 is one electron + one 14N (dimension 6), a pair two of each. Writes
+    // results/ccein_2e2n_k<k>_state<s>_wiDiv and _noDiv, k = 1, 2, s = 1 .. 10.
     //
-    // Differs from cCCE2_Hahn_states only in the Defect block. It takes about 65 s on 4 ranks (README).
+    // Differs from ccein_2e.jsonc only in the Defect block.
     // Every key not written here has its default (main.out -e writes them all).
 
     "Qubit"         : {"qubit": [{"file": "../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_Defect"}], "alpha_state": {"ms": [1]}},
