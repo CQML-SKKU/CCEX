@@ -5,41 +5,36 @@ Folder: `example/tutorial/advanced/08_coordinate_rotation/`
 A bath file, the qubit positions and the position columns of a tensor file are written in the lab or crystal frame
 (the file frame). CCEX builds the Hamiltonian in the computational frame, whose z is the qubit's axis, and reads
 `bfield` in it. Without a rotation the two frames are the same. In a bath written in the conventional cubic cell of
-diamond the NV axis points along [111], so the qubit's frame is tilted from the file frame.
+diamond, however, the NV axis points along one of the ⟨111⟩ directions (here [111]), so the qubit's frame is tilted
+from the file frame.
 
-The `frame.rotation` block turns the file frame onto the computational one, and it is on when it is written:
-
-- `qubit_axis` is the qubit's axis in the file frame. CCEX turns every position about the qubit so that this
-  axis becomes z.
-- `bfield` is then read along `qubit_axis`, so `"bfield": 500` is 500 G along the NV axis.
-- A tensor or `Defect` species written in the input says in which frame it is with its key `"frame"`, `"file"` for
-  the file frame (it is turned with the positions) and `"qubit"` for the computational one. With the rotation on the
-  key is required, since a tensor turned twice or not at all still looks like a tensor. Case 2 shows it.
-
-In formulas, with $\hat q$ the unit `qubit_axis` and $\hat z = [0, 0, 1]$ of the file frame, the rotation $R$ has the
-rows
+The `frame.rotation` block turns the file frame onto the computational one, and it is on when it is written. Its key
+`qubit_axis` is the qubit's axis in the file frame. With $\hat q$ the unit `qubit_axis` and $\hat z = [0, 0, 1]$ of the
+file frame, the rotation $R$ has the rows
 
 $$\mathbf e_z = \hat q, \qquad \mathbf e_x = \frac{\hat q \times \hat z}{\lvert \hat q \times \hat z\rvert}, \qquad \mathbf e_y = \mathbf e_z \times \mathbf e_x,$$
 
 so that $R\hat q = [0, 0, 1]$. CCEX applies it once, before the clusters are made:
 
-- Every position, with $\mathbf r_0$ the position of the first qubit, becomes
-  $\mathbf r_\text{new} = \mathbf r_0 + R(\mathbf r_\text{old} - \mathbf r_0)$.
-- Every tensor declared `"file"` becomes $T_\text{new} = R\,T\,R^T$. A tensor declared `"qubit"` is used as written.
-- `bfield` is not changed, since it is already in the computational frame. In the file frame it is
-  $R^T [0, 0, B_z] = B_z \hat q$, a field along the qubit axis.
+- **Positions.** Every position becomes $\mathbf r_\text{new} = \mathbf r_0 + R(\mathbf r_\text{old} - \mathbf r_0)$, with
+  $\mathbf r_0$ the position of the first qubit.
+- **Tensors.** A tensor declared `"frame": "file"` becomes $R\,T\,R^T$, and one declared `"qubit"` is used as written.
+  With the rotation on, every tensor of the input, and every `Defect` species with tensors or positions, has to
+  declare its frame, since a tensor turned twice or not at all still looks like a tensor (case 2).
+- **Field.** `bfield` is not changed, since it is read in the computational frame. `"bfield": 500` is therefore 500 G
+  along the qubit axis, $R^T [0, 0, B_z] = B_z \hat q$ in the file frame.
 
 For `qubit_axis` [1, 1, 1] the rows are $\mathbf e_x = [1, -1, 0]/\sqrt2$, $\mathbf e_y = [1, 1, -2]/\sqrt6$ and
-$\mathbf e_z = [1, 1, 1]/\sqrt3$, and the run log prints them. A bath spin 1 Å from the qubit along [1, 1, 1] ends up 1 Å
-from it along z. [The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what
-is turned and what is not.
+$\mathbf e_z = [1, 1, 1]/\sqrt3$, and the run log prints them.
+[The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what is turned and what
+is not.
 
 `bath/make_cubic_frame.py` turns a bath about its qubit so that the NV axis points along [111], as a bath written in
 the cubic cell would be. It made `bath/bath_Diamond_NV_natab_cubic_1` from the ¹³C bath of Basic 01, and
 `bath/bath_DiaP1_1ppm_cubic_1` from the first P1 bath of Basic 06.
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop
-CPU.
+In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
+key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
 This page has two cases:
 
