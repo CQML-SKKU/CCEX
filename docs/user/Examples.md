@@ -38,27 +38,26 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 | Page | What it covers |
 |---|---|
 | [Advanced 05: Electron-spin baths further](../../example/tutorial/advanced/05_P1/README.md) | Making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4 and a DEER pump. |
-| [Advanced 06: V_B⁻ in hexagonal BN](../../example/tutorial/advanced/06_hBN/README.md) | DFT tensors, sampled states and the Overhauser field. |
-| [Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) | The tensor files from a VASP run (`example/tools/SpinTensorReader`), and what they change. |
-| [Advanced 08: Multiple qubits](../../example/tutorial/advanced/08_multi_qubits/README.md) | Two and three NVs as one register. |
-| [Advanced 09: Coordinate rotation](../../example/tutorial/advanced/09_coordinate_rotation/README.md) | A bath written in another frame (`frame.rotation`). |
+| [Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) | Making an h-BN bath, the tensor files from a VASP run (`example/tools/SpinTensorReader`), and the coherence without and with them. |
+| [Advanced 07: Multiple qubits](../../example/tutorial/advanced/07_multi_qubits/README.md) | Two and three NVs as one register. |
+| [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) | A bath written in another frame (`frame.rotation`). |
 
 <a id="ex_adv_cce"></a>
 ### 2.3 Hamiltonian terms and cluster shapes
 
 | Page | What it covers |
 |---|---|
-| [Advanced 10: Corrections to cCCE](../../example/tutorial/advanced/10_cCCE_corrections/README.md) | The hyperfine-mediated term and the Knight shift. |
-| [Advanced 11: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/11_cluster_shapes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
+| [Advanced 09: Corrections to cCCE](../../example/tutorial/advanced/09_cCCE_corrections/README.md) | The hyperfine-mediated term and the Knight shift. |
+| [Advanced 10: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/10_cluster_shapes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
 
 <a id="ex_adv_methods"></a>
 ### 2.4 Other models of the bath
 
 | Page | What it covers |
 |---|---|
-| [Advanced 12: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/12_dissipation/README.md) | Lindblad relaxation of the bath spins in every cluster. |
-| [Advanced 13: Semiclassical noise (method noise)](../../example/tutorial/advanced/13_noise/README.md) | The Gaussian coherence of the phase noise, from the bath or from a model spectrum, and its correlation C(t) and spectrum S(f). |
-| [Advanced 14: Pseudospin pairs](../../example/tutorial/advanced/14_pseudospin/README.md) | The pairs of a nuclear bath in the pseudospin model, against cCCE2. |
+| [Advanced 11: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/11_dissipation/README.md) | Lindblad relaxation of the bath spins in every cluster. |
+| [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md) | The Gaussian coherence of the phase noise, from the bath or from a model spectrum, and its correlation C(t) and spectrum S(f). |
+| [Advanced 13: Pseudospin pairs](../../example/tutorial/advanced/13_pseudospin/README.md) | The pairs of a nuclear bath in the pseudospin model, against cCCE2. |
 
 <a id="WhatToUse"></a>
 ## 3. What should I use for my case?
@@ -67,12 +66,12 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 |---|---|---|
 | A defect in a nuclear-spin bath, with the field along the defect axis. | cCCE (default). | [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) |
 | An electron-spin bath (P1, ...). | The `Defect` block and sampled states. | [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) |
-| Hyperfine and quadrupole from DFT. | The tensor files. | [Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) |
+| Hyperfine and quadrupole from DFT. | The tensor files. | [Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) |
 | Near a level crossing, a low or tilted field, or the density matrix. | gCCE. | [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) |
-| Several qubits. | gCCE with `intmap`. | [Advanced 08: Multiple qubits](../../example/tutorial/advanced/08_multi_qubits/README.md) |
-| Strongly coupled bath spins. | pCCE or bundles. | [Advanced 11: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/11_cluster_shapes/README.md) |
+| Several qubits. | gCCE with `intmap`. | [Advanced 07: Multiple qubits](../../example/tutorial/advanced/07_multi_qubits/README.md) |
+| Strongly coupled bath spins. | pCCE or bundles. | [Advanced 10: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/10_cluster_shapes/README.md) |
 | Large clusters. | The GPU backend. | [Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) |
-| A bath written in the crystal frame. | `frame.rotation`. | [Advanced 09: Coordinate rotation](../../example/tutorial/advanced/09_coordinate_rotation/README.md) |
-| A noise spectrum, or a model noise without a bath. | Method noise. | [Advanced 13: Semiclassical noise (method noise)](../../example/tutorial/advanced/13_noise/README.md) |
-| Which nuclear pairs drive the decay. | Method pseudospin. | [Advanced 14: Pseudospin pairs](../../example/tutorial/advanced/14_pseudospin/README.md) |
-| Relaxation of the bath spins or of the qubit. | meCCE or megCCE. | [Advanced 12: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/12_dissipation/README.md) |
+| A bath written in the crystal frame. | `frame.rotation`. | [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) |
+| A noise spectrum, or a model noise without a bath. | Method noise. | [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md) |
+| Which nuclear pairs drive the decay. | Method pseudospin. | [Advanced 13: Pseudospin pairs](../../example/tutorial/advanced/13_pseudospin/README.md) |
+| Relaxation of the bath spins or of the qubit. | meCCE or megCCE. | [Advanced 11: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/11_dissipation/README.md) |

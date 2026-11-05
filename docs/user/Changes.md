@@ -13,10 +13,10 @@ and the builds of 2.0.0.
     clusters or from a model spectrum (Ornstein–Uhlenbeck or a power law). With `hamiltonian.noise.compute` it also
     gives the correlation function C(t) and the spectrum S(f). Its mode sums also run on the GPU
     ([method](InputFile_General.md#tag_method), tutorial
-    [Advanced 13: Semiclassical noise (method noise)](../../example/tutorial/advanced/13_noise/README.md)).
+    [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md)).
   - `pseudospin` gives the bath's pairs alone, in the pseudospin model of nuclear flip-flops, for any nuclear spin. It
     writes a table of every channel's Ω and Δ ([channels](InputFile_General.md#tag_pseudospin_channels), tutorial
-    [Advanced 14: Pseudospin pairs](../../example/tutorial/advanced/14_pseudospin/README.md)).
+    [Advanced 13: Pseudospin pairs](../../example/tutorial/advanced/13_pseudospin/README.md)).
 - **GPU runs on a full node** ([Execution tags](InputFile_Backend.md#tag_backend)).
   - `execution.gpu_options.ranks_per_gpu` lets only some ranks of a node use the GPU while the others stay on the CPU.
     The clusters are split between them by measured cost.

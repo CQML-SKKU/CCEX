@@ -31,7 +31,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 // rad/us. A plain frequency is kHz for the qubit (detuning, intmap) and MHz for a Defect species.
 {
     // ---- method -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_method. Tutorials: basic/05_cCCE_vs_gCCE, advanced/13_noise, advanced/14_pseudospin.
+    // docs: InputFile_General.md#tag_method. Tutorials: basic/05_cCCE_vs_gCCE, advanced/12_noise, advanced/13_pseudospin.
 
     // cCCE (default): the qubit only sets the field each bath spin feels (pure dephasing).
     // gCCE: the qubit is in every cluster (qubit-bath flip-flops, any spin and field).
@@ -44,7 +44,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
     "quantity"         : "coherence",
 
     // ---- the qubit --------------------------------------------------------------------------------------------------
-    // docs: InputFile_Qubit.md. Tutorials: basic/01_first_run, advanced/08_multi_qubits (several qubits).
+    // docs: InputFile_Qubit.md. Tutorials: basic/01_first_run, advanced/07_multi_qubits (several qubits).
     "Qubit"            : {
         // One entry per qubit.
         "qubit"       : [
@@ -262,7 +262,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- the coordinate frame ---------------------------------------------------------------------------------------
-    // docs: InputFile_General.md#tag_frame_rotation. Tutorial: advanced/09_coordinate_rotation.
+    // docs: InputFile_General.md#tag_frame_rotation. Tutorial: advanced/08_coordinate_rotation.
 //  "frame"            : {
         // For a bath file in the crystal frame with the qubit along another axis: qubits and bath are turned so that
         // qubit_axis is the new z. On when the block is given; then every directional input states its "frame".
@@ -313,7 +313,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- the clusters -----------------------------------------------------------------------------------------------
-    // docs: InputFile_Cluster.md. Tutorials: advanced/11_cluster_shapes, basic/05_cCCE_vs_gCCE (dsj).
+    // docs: InputFile_Cluster.md. Tutorials: advanced/10_cluster_shapes, basic/05_cCCE_vs_gCCE (dsj).
 //  "cluster"          : {
         // standard (default): clusters of up to order bath spins. pcce: of partitions. bundle: of bundles of strongly
         // coupled spins. dsj, itb, dsjitb (cCCE): disjoint and inter-bath variants.
@@ -440,7 +440,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- output -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_Output.md. Tutorial: advanced/11_cluster_shapes (cCCE2_Hahn_clusterReport).
+    // docs: InputFile_Output.md. Tutorial: advanced/10_cluster_shapes (cCCE2_Hahn_clusterReport).
 //  "output"           : {
         // Folder of the outputs, made when missing; -o DIR takes its place. Default: the working directory.
 //      "path"                  : "results",

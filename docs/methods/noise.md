@@ -4,7 +4,7 @@
 coherence in the Gaussian approximation, the semi-classical CCE. It computes it from a sum over the bath's modes, from
 the second cumulant or from the noise spectrum, and for the correlation function it follows PyCCE's `CCENoise`. The
 keys are in [General tags](../user/InputFile_General.md#tag_noise_spectrum), the tutorial is
-`example/tutorial/advanced/13_noise/`, and `test/code_verification/check_noise/` compares the method with closed forms,
+`example/tutorial/advanced/12_noise/`, and `test/code_verification/check_noise/` compares the method with closed forms,
 quadrature, PyCCE and an independent implementation.
 
 1. [The coherence](#noise_coherence): the Gaussian phase and its limits.
@@ -67,7 +67,7 @@ Such a run reads no bath, and `order`, `bfield`, `rbath`, `rdip` and `Qubit` may
 - `"correlation"` gives $C(t)$ alone at the run's times. With `s_range` the cluster starts in its sampled pure state,
   as in PyCCE, so this is then a different quantity from the other two.
 
-Without `s_range` the three agree. `example/tutorial/advanced/13_noise/noiseSpectrum_13C/` computes the spectrum of
+Without `s_range` the three agree. `example/tutorial/advanced/12_noise/noiseSpectrum_13C/` computes the spectrum of
 the ¹³C bath of `basic/01_first_run`.
 
 <a id="noise_support"></a>

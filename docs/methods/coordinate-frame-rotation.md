@@ -2,7 +2,7 @@
 
 This page describes the `frame.rotation` block of the input file and the `frame` key beside each set of directional
 numbers. The short form is the [frame.rotation](../user/InputFile_General.md#tag_frame_rotation) entry of General tags,
-[Advanced 09: Coordinate rotation](../../example/tutorial/advanced/09_coordinate_rotation/README.md) runs it, and
+[Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) runs it, and
 `test/code_verification/check_rotation/` checks it against hand-turned inputs. The keys of earlier versions are in
 [Upgrading old inputs](../user/InputFile_OldNames.md).
 

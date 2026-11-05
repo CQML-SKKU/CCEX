@@ -110,7 +110,7 @@ is made, so `--Q` alone also takes an OUTCAR without magnetization.
 `spHamilReader/` is the package (`base/`, `vasp/`, `qe/`), and `main.py` the command line (`-h`). `examples/01..05`
 are five worked cases with their inputs and the tensor files they produced, each with a `do` that reproduces it. The
 tensors of the h-BN tutorials came from this tool, and
-[Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) runs it.
+[Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) runs it.
 
 <a id="tag_tool_isotopetable"></a>
 ## 3. IsotopeTable

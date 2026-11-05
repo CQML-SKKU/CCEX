@@ -38,25 +38,24 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 | Folder | Topic | Calculations |
 |---|---|---|
 | `05_P1/` | electron-spin baths further: making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4, a DEER pump | `cCCE2_Hahn_makeBath`, `cCCE2_Hahn_onsite14N`, `cCCE4_Hahn_states`, `gCCE2_Hahn_DEER` |
-| `06_hBN/` | V_B⁻ in h-BN with DFT tensors: sampled states, the Overhauser field | `gCCE2_Hahn_states`, `gCCE2_Hahn_Overhauser` |
-| `07_DFT_tensors/` | the hyperfine and quadrupole files from a VASP run, and what they change | `makeTensors_hBN`, `cCCE2_Hahn_tensors` |
-| `08_multi_qubits/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV3` |
-| `09_coordinate_rotation/` | a bath written in another frame (`frame.rotation`) | `cCCE2_Hahn_rotation` |
+| `06_hBN/` | V_B⁻ in h-BN with DFT tensors: making the bath, the tensor files from a VASP run, and the coherence without and with them | `hBN_makeBath`, `makeTensors_hBN`, `cCCE2_Hahn_tensors` |
+| `07_multi_qubits/` | several NV centres as one register | `gCCE2_Hahn_oneVsTwoNV`, `gCCE2_HahnRamsey_NV2`, `gCCE2_HahnRamsey_NV3` |
+| `08_coordinate_rotation/` | a bath written in another frame (`frame.rotation`) | `cCCE2_Hahn_rotation` |
 
 *3. Hamiltonian terms and cluster shapes*
 
 | Folder | Topic | Calculations |
 |---|---|---|
-| `10_cCCE_corrections/` | corrections to cCCE: the hyperfine-mediated term, the Knight shift | `cCCE2_Hahn_hfMediated`, `cCCE2_Hahn_knightShift` |
-| `11_cluster_shapes/` | cluster shapes: disjoint clusters (dsj), partitions (pCCE), bundles, adaptive refinement | `cCCE2_Hahn_dsj`, `pCCE2_Hahn_states`, `cCCE2_Hahn_bundle`, `cCCE2_Hahn_adaptive`, `cCCE2_Hahn_regroup` |
+| `09_cCCE_corrections/` | corrections to cCCE: the hyperfine-mediated term, the Knight shift | `cCCE2_Hahn_hfMediated`, `cCCE2_Hahn_knightShift` |
+| `10_cluster_shapes/` | cluster shapes: disjoint clusters (dsj), partitions (pCCE), bundles, adaptive refinement | `cCCE2_Hahn_dsj`, `pCCE2_Hahn_states`, `cCCE2_Hahn_bundle`, `cCCE2_Hahn_adaptive`, `cCCE2_Hahn_regroup` |
 
 *4. Other models of the bath*
 
 | Folder | Topic | Calculations |
 |---|---|---|
-| `12_dissipation/` | dissipation: meCCE, Lindblad relaxation of the bath spins | `meCCE2_Hahn_bathRelaxation` |
-| `13_noise/` | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum; C(t) and S(f) | `noise2_Hahn_vsCCE`, `noiseModel_OU`, `noiseSpectrum_13C` |
-| `14_pseudospin/` | method `pseudospin`: the pairs of a nuclear bath in the pseudospin model, against cCCE2 | `pseudospin2_Hahn_vsCCE` |
+| `11_dissipation/` | dissipation: meCCE, Lindblad relaxation of the bath spins | `meCCE2_Hahn_bathRelaxation` |
+| `12_noise/` | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum; C(t) and S(f) | `noise2_Hahn_vsCCE`, `noiseModel_OU`, `noiseSpectrum_13C` |
+| `13_pseudospin/` | method `pseudospin`: the pairs of a nuclear bath in the pseudospin model, against cCCE2 | `pseudospin2_Hahn_vsCCE` |
 
 ## Running one
 

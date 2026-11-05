@@ -34,7 +34,7 @@
   `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
   computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `hamiltonian.noise.fft` is optional:
   `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and an independent semi-classical CCE code
-  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/13_noise`: method noise against cCCE2 for a
+  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/12_noise`: method noise against cCCE2 for a
   1 ppm P1 bath, and an OU model spectrum without the bath keys.
   `noise` was a reserved name refused as not implemented (A49).
 - **method `pseudospin`**: the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops, alone (Seo et
@@ -134,14 +134,14 @@
   to cCCE, 11 cluster shapes, 12 dissipation, 13 semiclassical noise, 14 pseudospin); `example/tutorial/README.md` lists the calculations of each, and
   `git show v2.0.1:example/tutorial/README.md` the folders of 2.0. Every tutorial input explains each key in a comment
   (its meaning, unit and why this value); the JSON of the inputs did not change except where noted here. New:
-  `advanced/14_pseudospin/pseudospin2_Hahn_vsCCE`, `advanced/13_noise/noiseSpectrum_13C` (`compute` spectrum: C(t),
-  S(f)), `advanced/04_GPU/cCCE5_Hahn_autoOptions` (the automatic `gpu_options`), `advanced/07_DFT_tensors/makeTensors_hBN`
+  `advanced/13_pseudospin/pseudospin2_Hahn_vsCCE`, `advanced/12_noise/noiseSpectrum_13C` (`compute` spectrum: C(t),
+  S(f)), `advanced/04_GPU/cCCE5_Hahn_autoOptions` (the automatic `gpu_options`), `advanced/06_hBN/makeTensors_hBN`
   (SpinTensorReader on a VASP run), `advanced/02_analysis/cCCE2_Hahn_analyzer` (error correction, average, T2 fit) and
   `advanced/03_server_runs/cCCE2_Hahn_slurm` (sizing a run, a Slurm job, a job array). `04_hBN/cCCE2_Hahn_ensemble` is
-  `advanced/07_DFT_tensors/cCCE2_Hahn_tensors`. `advanced/06_hBN/gCCE2_Hahn_states` has the V_B⁻ zero-field splitting
-  it lacked (T2 0.25 µs, with a 1 ns step; 0.44 µs before), `04_hBN/gCCE2_Hahn_OH` is `gCCE2_Hahn_Overhauser`,
+  `advanced/06_hBN/cCCE2_Hahn_tensors`. The h-BN topic is one page, `advanced/06_hBN` (the tensor files and what they change),
+  without `04_hBN/single-sample_gCCE` and `gCCE2_Hahn_OH`, and the Advanced topics after it are one number lower;
   `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job with nothing visible in its 4.9 ns) is
-  `advanced/08_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs). `advanced/05_P1` makes a P1 bath with BathGenerator
+  `advanced/07_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs). `advanced/05_P1` makes a P1 bath with BathGenerator
   (`cCCE2_Hahn_makeBath`) and runs the ¹⁴N as a detuning and as a spin side by side, and order 2 beside order 4.
   `advanced/05_P1/cCCE2_Hahn_VpBath`, `gCCE2_Hahn_zfs` and `gCCE2_Ramsey_population` (with the 10 ppm and Vp baths of
   `basic/06_defect_bath/bath/`) and `advanced/04_GPU/pCCE2_Hahn_backends` are removed. `advanced/04_GPU` has its `expected.png`, made on a GPU node; `plot_coherence.py --log-time` draws a log time axis.

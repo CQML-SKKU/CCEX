@@ -6,7 +6,7 @@ The model for two spins 1/2 is that of Seo et al. (2016), which Lee, Park and Se
 to larger spins and several channels described below is CCEX's own.
 
 The key is [channels](../user/InputFile_General.md#tag_pseudospin_channels), the tutorial is
-`example/tutorial/advanced/14_pseudospin/`, and `test/code_verification/check_pseudospin/` holds the exact cases and
+`example/tutorial/advanced/13_pseudospin/`, and `test/code_verification/check_pseudospin/` holds the exact cases and
 the refusals.
 
 1. [The cut Hamiltonian](#ps_cut): which elements of a pair's Hamiltonian are kept.

@@ -86,7 +86,7 @@ when everything that decides it is the same:
 
 With `configuration.k_range` the file name holds `{k}`, so there is one cache per configuration.
 
-`example/tutorial/advanced/11_cluster_shapes/pCCE2_Hahn_states/` runs `partition_size` 1 to 3 on a P1 bath. pCCE runs on the GPU
+`example/tutorial/advanced/10_cluster_shapes/pCCE2_Hahn_states/` runs `partition_size` 1 to 3 on a P1 bath. pCCE runs on the GPU
 as cCCE does ([GPU execution](gpu.md#gpu_what)).
 
 References: to be added by the CCEX authors.

@@ -1,0 +1,48 @@
+{
+    // V_B- (the boron vacancy, an electron spin 1) in a flat hexagonal-BN layer with natural-abundance 10B, 11B, 14N
+    // (and a few 15N) at 3 T: the cCCE2 Hahn echo of the ensemble for five bath configurations (k_range [1, 5]), with
+    // the DFT quadrupole tensors only (qd2); the hyperfine is the point dipole of the positions (hf0, the default).
+    //
+    // The physics: every B and N site carries a nuclear spin, so the bath is dense (459 spins within rbath here).
+    // 10B (I = 3), 11B (I = 3/2) and 14N (I = 1) have a quadrupole moment: the electric-field gradient (EFG) at each
+    // nucleus splits its levels on top of the Zeeman term. The point dipole misses the contact term and the spin
+    // density near the defect; compare with ccein_hf3_qd2 to see how much that changes the echo.
+    //
+    // Writes results/ccein_hf0_qd2_k<k>_wiDiv and _noDiv for k = 1 ... 5, one pair per configuration (CCEX does not
+    // average them; run.sh plots them). The siblings differ only in hamiltonian.common: ccein_hf3_qd2 (DFT hyperfine
+    // and quadrupole) and ccein_hf3_qd0 (DFT hyperfine, no quadrupole).
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "Qubit"         : {"qubit": [{"file": "../bath/flat/bath_hBN_VB_flat_Defect"}]},
+                                      // the V_B-. "file": its position is the first line of that file (33.94 45.73
+                                      // 7.50 A, in the layer at z = 7.5 A). Not written, so the defaults: spin 1, the
+                                      // electron's gyromagnetic ratio, L between ms +1 (alpha) and ms 0 (beta). No
+                                      // intmap (no zero-field splitting): cCCE does not use it here, it only enters
+                                      // hamiltonian.cCCE.hfmedi, knight and delta_A
+    "configuration" : {"gyrofile": "../bath/hBN_natab_gyro",
+                       "bathfile": ["../bath/flat/bath_hBN_VB_flat_{k}"],
+                       "k_range" : [1, 5]},
+                                      // the bath. gyrofile: name, spin, gyromagnetic ratio (rad kHz/G) of 10B (3,
+                                      // 2.875), 11B (3/2, 8.585), 14N (1, 1.9338), 15N (1/2, -2.713). bathfile: {k} is
+                                      // replaced by each k of k_range, so bath_hBN_VB_flat_1 ... _5, five random
+                                      // isotope draws of the same layer (bath/flat has 50: k_range [1, 50] for all)
+    "order"         : 2,              // the largest cluster: single nuclei and pairs (cCCE2)
+    "bfield"        : 30000,          // Gauss along z, the layer normal (the V_B- axis): 3 T. The nuclei precess at
+                                      // 41.0 MHz (11B), 13.7 MHz (10B), 9.23 MHz (14N)
+    "rbath"         : 20,             // Angstrom: the nuclei within 20 A of the V_B- (459 in each configuration).
+                                      // Raise it (30) to check that the curve no longer changes
+    "rdip"          : 10,             // Angstrom: two nuclei closer than 10 A form a pair cluster (a convergence knob)
+    "deltat"        : 0.003,          // the time step in ms (3 us); t is the whole echo (2 tau)
+    "nstep"         : 50,             // 50 time points: t = 0 .. 147 us (T2 56.6 us here, README)
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "hamiltonian"   : {"common": {
+            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients of the 11B,
+                                                                      // 10B, 14N
+                            "file": "../bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}
+                                                                      // adds I.Q.I of each nucleus with I > 1/2 from
+                                                                      // the EFG tensors of the file (Hartree/Bohr^2)
+                                                                      // and the quadrupole moments it lists. structure
+                                                                      // plain: one file computed with the defect.
+                                                                      // No "hyperfine" block: the default {"dipole":
+                                                                      // "point", "contact": false}, the point dipole
+        }}
+}
