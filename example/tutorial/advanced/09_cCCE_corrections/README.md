@@ -21,7 +21,7 @@ $\Delta = \tfrac32 D_{zz}$, the keys of `hamiltonian.cCCE` add three pieces of i
 |---|---|---|
 | `knight` | The Knight shift by the field across the qubit axis, $-(3\lvert m_k\rvert - 2)(\gamma_q/\Delta)\,\mathbf{B}\cdot\tilde{\mathsf{A}}_n\cdot\mathbf{I}_n$, with $\tilde{\mathsf{A}}_n$ the tensor without its z row. | A tilted field. |
 | `delta_A` | The second-order term of each nucleus on its own, $\delta\mathbf{A}_n\cdot\mathbf{I}_n$ with $\delta\mathbf{A}_n = -m_k(\mathbf{A}_{x,n}\times\mathbf{A}_{y,n})/(2\Delta)$. | Close nuclei at low field. |
-| `hfmedi` | The whole second order, $\sum_{b\neq a} E_{ab}E_{ba}/(\omega_a-\omega_b)$, with $a$ the qubit level of the branch, $b$ the other levels and $E_{ab} = \sum_n \langle a\rvert\mathbf{S}\lvert b\rangle\cdot\mathsf{A}_n\cdot\mathbf{I}_n$. Its terms with two nuclei are their coupling through the qubit, and those with one nucleus are the terms of `delta_A`. | Close nuclei at low field. |
+| `hfmedi` | The whole second order, $\sum_{b\neq a} E_{ab}E_{ba}/(\omega_a-\omega_b)$, with $a$ the eigenstate of the qubit Hamiltonian closest to the branch state, $b$ every other eigenstate and $E_{ab} = \sum_n \langle a\rvert\mathbf{S}\lvert b\rangle\cdot\mathsf{A}_n\cdot\mathbf{I}_n$. Its terms with two nuclei are their coupling through the qubit, and those with one nucleus are the terms of `delta_A`. | Close nuclei at low field. |
 
 `knight` and `delta_A` divide by $\Delta$ and are refused without a zero-field splitting, and `delta_A` is refused
 with `hfmedi`, which already holds it. How they are derived is in [cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections). Each case below compares

@@ -170,7 +170,7 @@ can be added to cCCE (`hamiltonian.cCCE`):
 |---|---|---|
 | [knight](../user/InputFile_General.md#tag_knight) | The Knight shift of each bath spin by the field across the qubit axis, $-(3\lvert m_s\rvert - 2)(\gamma_q/\Delta)\,\mathbf{B}\cdot\tilde{\mathsf{A}}\cdot\mathbf{I}$, with $\tilde{\mathsf{A}}$ the hyperfine tensor without its z row. | A tilted field. |
 | [delta_A](../user/InputFile_General.md#tag_delta_A) | The same-nucleus second-order term $\delta\mathbf{A}_n(m_s)\cdot\mathbf{I}_n$, $\delta\mathbf{A}_n = -m_s(\mathbf{A}_x\times\mathbf{A}_y)/(2\Delta)$. | Nuclei close to the defect at low field. |
-| [hfmedi](../user/InputFile_General.md#tag_hfmedi) | The complete second order in the hyperfine coupling, $\sum_{\beta\neq\alpha} E_{\alpha\beta}E_{\alpha\beta}^\dagger/(\omega_\alpha-\omega_\beta)$, which holds the bath-bath coupling mediated by the qubit and the same-nucleus terms. | Close nuclei at low field. |
+| [hfmedi](../user/InputFile_General.md#tag_hfmedi) | The complete second order in the hyperfine coupling, $\sum_{b\neq a} E_{ab}E_{ab}^\dagger/(\omega_a-\omega_b)$, with $a$ the eigenstate of the qubit Hamiltonian closest to the branch state, $b$ every other eigenstate and $E_{ab} = \sum_n \langle a\rvert\mathbf{S}\lvert b\rangle\cdot\mathsf{A}_n\cdot\mathbf{I}_n$. It holds the bath-bath coupling mediated by the qubit and the same-nucleus terms. | Close nuclei at low field. |
 
 - knight and delta_A divide by $\Delta$ and are refused without a zero-field splitting.
 - delta_A is refused with hfmedi, which already contains it.
