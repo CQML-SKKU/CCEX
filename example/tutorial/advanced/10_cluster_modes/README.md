@@ -15,16 +15,8 @@ that unit exactly. pCCE and bundles then run the expansion over these units, so 
 - **Bundles** join strongly coupled spins into bundles, from the coupling strengths and up to the dimension
   `cluster.bundle.max_dim`, and run the expansion over bundles. `order` counts bundles.
 
-The `cluster.adaptive` block then changes the bundles from the results. It repeats the bundled calculation, changes
-the bundles where they do badly, and runs again ([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)).
-It has two policies, case 4 and case 5:
-
-| | Merge (the default, case 4) | Regroup (`"regroup": true`, case 5) |
-|---|---|---|
-| What it looks for | A large error at the bundle boundaries. A few neighbouring bundles are computed exactly as one cluster and compared with the expansion over them. | An unphysical curve, with \|L\| > 1. At the worst point it finds the bundle pairs that cause the excess. |
-| What it changes | It merges two bundles. | It merges, splits, moves or exchanges sites around those pairs. |
-| When it stops | Every patch passes, no merge helps, or `max_rounds` is reached. | Every state and time point has \|L\| ≤ 1.01. |
-| What it needs | Bundles. | cCCE, `order` 2 and the links by distance (`rdip`). |
+The `cluster.adaptive` block then changes the bundles from the results, with cCCE or gCCE and bundles only. Section 4
+shows its two policies.
 
 The cluster reports (the contribution of each cluster, the plan) are in
 [Advanced 02: Analysis of the output](../02_analysis/README.md).
@@ -32,13 +24,14 @@ The cluster reports (the contribution of each cluster, the plan) are in
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the legends, a number in brackets is the number of curves averaged. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-This page has five cases:
+This page has four sections:
 
 1. [Disjoint groups, the pairs between them, and both, against the standard pairs](#cs_dsj) (`cCCE2_Hahn_dsj/`).
 2. [Partitions of 1, 2 and 3 P1](#cs_pcce) (`pCCE2_Hahn_states/`).
 3. [Bundles of up to three ¹³C](#cs_bundle) (`cCCE2_Hahn_bundle/`).
-4. [Refining the bundles where the error is large (merge)](#cs_adaptive) (`cCCE2_Hahn_adaptive/`).
-5. [Refining the bundles where |L| > 1 (regroup)](#cs_regroup) (`cCCE2_Hahn_regroup/`).
+4. [The adaptive refinement of the bundles](#cs_refine), with two cases:
+   [refining the bundles where the error is large](#cs_adaptive) (`cCCE2_Hahn_adaptive/`) and
+   [refining the bundles where |L| > 1](#cs_regroup) (`cCCE2_Hahn_regroup/`).
 
 <a id="cs_dsj"></a>
 ## 1. Disjoint groups
@@ -201,13 +194,26 @@ Next, try `max_dim` 4 (pairs) or 16.
 
 Inputs: [`ccein_bundle.jsonc`](cCCE2_Hahn_bundle/ccein_bundle.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_bundle/ccein_standard.jsonc)
 
+<a id="cs_refine"></a>
+## 4. The adaptive refinement of the bundles
+
+The `cluster.adaptive` block repeats the bundled calculation, changes the bundles where they do badly, and runs again
+([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)). It has two policies:
+
+| | Merge (the default, case 4) | Regroup (`"regroup": true`, case 5) |
+|---|---|---|
+| What it looks for | A large error at the bundle boundaries. A few neighbouring bundles are computed exactly as one cluster and compared with the expansion over them. | An unphysical curve, with \|L\| > 1. At the worst point it finds the bundle pairs that cause the excess. |
+| What it changes | It merges two bundles. | It merges, splits, moves or exchanges sites around those pairs. |
+| When it stops | Every patch passes, no merge helps, or `max_rounds` is reached. | Every state and time point has \|L\| ≤ 1.01. |
+| What it needs | Bundles, with cCCE or gCCE. | Bundles with cCCE, `order` 2 and the links by distance (`rdip`). |
+
 <a id="cs_adaptive"></a>
-## 4. Refining the bundles where the error is large (merge)
+### 4.1 Refining the bundles where the error is large (merge)
 
 Folder: `cCCE2_Hahn_adaptive/`
 
 <a id="a10_adaptive_input"></a>
-### 4.1 The input
+#### 4.1.1 The input
 
 The merge refinement makes the bundles larger where the error at their boundaries is large. It computes a few
 neighbouring bundles exactly as one cluster, compares that with the expansion over them, and merges the pair of
@@ -237,7 +243,7 @@ steps. A round of the merge goes through four steps
 The rounds stop when every patch passes, when `max_rounds` is reached, or when no merge helps.
 
 <a id="a10_adaptive_run"></a>
-### 4.2 Running it
+#### 4.1.2 Running it
 
 ```sh
 NP=4 bash run.sh
@@ -247,7 +253,7 @@ It runs the refinement and plots the first and the final run. It takes 48 s and 
 `results/adaptive/` holds one folder per step and `summary.json`.
 
 <a id="a10_adaptive_result"></a>
-### 4.3 The result
+#### 4.1.3 The result
 
 ![cCCE2_Hahn_adaptive: expected result](cCCE2_Hahn_adaptive/expected.png)
 
@@ -261,12 +267,12 @@ Next, try `atol` 1e-4, or `max_rounds` 8.
 Input: [`ccein.jsonc`](cCCE2_Hahn_adaptive/ccein.jsonc)
 
 <a id="cs_regroup"></a>
-## 5. Refining the bundles where |L| > 1 (regroup)
+### 4.2 Refining the bundles where |L| > 1 (regroup)
 
 Folder: `cCCE2_Hahn_regroup/`
 
 <a id="a10_regroup_input"></a>
-### 5.1 The input
+#### 4.2.1 The input
 
 The system is the NV in six P1 electron spins (`bath/bath_p1_6`) with five sampled states and bundles up to
 dimension 4. The NV position and the P1 gyromagnetic ratio are those of
@@ -283,7 +289,7 @@ that cause the excess and merges, splits or moves sites around them. It needs cC
 ```
 
 <a id="a10_regroup_run"></a>
-### 5.2 Running it
+#### 4.2.2 Running it
 
 ```sh
 NP=4 bash run.sh
@@ -292,7 +298,7 @@ NP=4 bash run.sh
 It runs the refinement and prints each round. It takes 1 s and 0.06 GB per rank.
 
 <a id="a10_regroup_result"></a>
-### 5.3 The result
+#### 4.2.3 The result
 
 ![cCCE2_Hahn_regroup: expected result](cCCE2_Hahn_regroup/expected.png)
 
