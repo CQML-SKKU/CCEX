@@ -2,27 +2,14 @@
 
 Folder: `example/tutorial/advanced/06_hBN/`
 
-The qubit here is the boron vacancy V_B⁻ (spin 1) in hexagonal BN, with natural-abundance ¹⁰B, ¹¹B and ¹⁴N as the
-bath. Close to such a defect the point dipole of the positions is not enough, so the hyperfine and quadrupole tensors
-come from DFT. `example/tools/SpinTensorReader` reads a VASP OUTCAR (or a Quantum ESPRESSO output) and writes two
-files:
+The qubit here is the boron vacancy V_B⁻ (spin 1) in hexagonal BN, and the bath is the natural-abundance ¹⁰B, ¹¹B
+and ¹⁴N of the layer. The page goes from a VASP run of the defect to a CCEX run. It makes the bath, makes the
+hyperfine and quadrupole tensor files from the same VASP run, and compares the coherence without and with the
+tensors.
 
-- `Afile`, the hyperfine tensor of each atom of the cell (MHz, tensor format v3).
-- `Qfile`, the electric-field gradient of each atom, for the spins with I > 1/2.
-
-An input names them in `hamiltonian.common.hyperfine` (`dipole` dft, `contact` true, `file`) and
-`hamiltonian.common.quadrupole` (`file`). The rows are matched to the bath spins by position from the defect, so the
-bath has to be built on the lattice of the DFT cell. A bath spin inside the cell without a row stops the run, and
-spins outside the cell take the point dipole (`missing_row` point_dipole extends that to every missing row).
-
-`bath/flat/` holds 50 bath configurations of a flat layer, the defect position (`bath_hBN_VB_flat_Defect`) and the two
-tensor files the inputs read, `hBN_VB_flat_ATensor_HSE_CellPBE_v3` and `hBN_VB_flat_QTensor_HSE_CellPBE`. The
-gyromagnetic ratios are in `bath/hBN_natab_gyro`. The same bath is used in
-[Advanced 09: Corrections to cCCE](../09_cCCE_corrections/README.md) and
-[Advanced 13: Pseudospin pairs](../13_pseudospin/README.md).
-
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
-key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
+Run each case with `cd <folder> && NP=4 bash run.sh`. Case 3 writes `results/coherence.png`, to compare with
+`expected.png`. Every key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop
+CPU.
 
 This page has three cases:
 
@@ -38,9 +25,9 @@ Folder: `hBN_makeBath/`
 <a id="a06_makebath_input"></a>
 ### 1.1 The input
 
-`example/tools/BathGenerator` builds the layer from a pure cell, inserts the relaxed cell with the defect at the
-centre, and puts on every B and N site an isotope drawn with the abundances of `bath/prob_hBN` (¹⁰B 19.9 %,
-¹¹B 80.1 %, ¹⁴N 99.632 %, ¹⁵N 0.368 %). The folder has the two cells:
+`example/tools/BathGenerator` repeats a pure cell into a layer and puts the relaxed cell with the defect at its
+centre. On every B and N site it draws an isotope with the abundances of `bath/prob_hBN` (¹⁰B 19.9 %, ¹¹B 80.1 %,
+¹⁴N 99.632 %, ¹⁵N 0.368 %). The folder has the two cells:
 
 - `POSCAR_VB_flat` is the relaxed V_B⁻ cell of the VASP run of case 2 (`VASP_CONTCAR_flat` of
   `example/tools/SpinTensorReader/examples/02.hBN_VB_VASP`, the positions only, without the velocities VASP adds).
@@ -61,19 +48,19 @@ python3 BathGenerator.py -o results/bath_hBN -i POSCAR_pure_flat -I POSCAR_VB_fl
     --size 60 --Defect VB --opt2D
 ```
 
-`--opt2D` keeps the layer two-dimensional, and `--Defect VB` names the vacancy, whose position goes to
-`results/bath_hBN_defect`. `run.sh` seeds the random numbers, so the same bath comes out every time, and checks the
-file instead of the exit status, since the generator may abort with "double free" after it has written the file. It
-takes a second.
+`--opt2D` keeps the layer two-dimensional. `--Defect VB` names the vacancy, and its position goes to
+`results/bath_hBN_defect`. `run.sh` seeds the random numbers, so the same bath comes out every time. The generator
+may abort with "double free" after it has written the file, so `run.sh` checks the file instead of the exit status.
+The run takes a second.
 
 <a id="a06_makebath_result"></a>
 ### 1.3 The result
 
 The bath has 1293 nuclei, 123 ¹⁰B, 511 ¹¹B, 652 ¹⁴N and 6 ¹⁵N, and the defect sits at (30.0, 30.0, 7.5) Å.
 
-This bath and the tensor files of case 2 come from the same VASP cell. At present CCEX stops on the four nuclei that
-lie on the edge of that cell, where the file has no row, so case 3 reads the ready-made bath and tensor files of
-`bath/flat/`.
+This bath and the tensor files of case 2 come from the same VASP cell. CCEX stops, however, on the four nuclei that
+lie on the edge of that cell, where the tensor files have no row. Case 3 therefore reads the ready-made bath and
+tensor files of `bath/flat/`.
 
 Next, change `--size`, which has to be at least twice `rbath`, or the abundances in `prob_hBN`.
 
@@ -115,7 +102,13 @@ It takes under a second and needs python3 with numpy, pandas and psutil, but not
 - One row per atom, with the position from the defect, the isotropic (contact) term and the nine components, in MHz.
   Here there are 53 B and 54 N, and the three ¹⁴N next to the vacancy have a contact term of 121 MHz.
 
-`Qfile` has the same layout with the field gradient (Hartree/Bohr²).
+`Qfile` has the same layout with the electric-field gradient (Hartree/Bohr²), for the nuclei with I > 1/2.
+
+An input names the two files in `hamiltonian.common.hyperfine` (`dipole` dft, `contact` true, `file`) and
+`hamiltonian.common.quadrupole` (`file`). CCEX matches a row to a bath spin by its position from the defect, so the
+bath has to be built on the lattice of the DFT cell. A bath spin inside the cell without a row stops the run, and a
+spin outside the cell takes the point dipole (`missing_row` point_dipole gives the point dipole to every missing
+row).
 
 Next, use your own OUTCAR. `--addhfcore False` leaves out the core term of the contact interaction, and Quantum
 ESPRESSO needs `--spin S` ([Tools](../../../../docs/user/Tools.md)).
@@ -129,7 +122,12 @@ Folder: `cCCE2_Hahn_tensors/`
 ### 3.1 The input
 
 This case computes a cCCE2 Hahn echo at 3 T over five configurations of `bath/flat/` (`k_range` [1, 5]), with
-`rbath` 20 Å, `rdip` 10 Å and `deltat` 3 µs × `nstep` 50. The four inputs differ only in the `hamiltonian` block.
+`rbath` 20 Å, `rdip` 10 Å and `deltat` 3 µs × `nstep` 50. `bath/flat/` holds 50 configurations of a flat layer, the
+defect position and the tensor files `hBN_VB_flat_ATensor_HSE_CellPBE_v3` and `hBN_VB_flat_QTensor_HSE_CellPBE`.
+The same bath is used in [Advanced 09: Corrections to cCCE](../09_cCCE_corrections/README.md) and
+[Advanced 13: Pseudospin pairs](../13_pseudospin/README.md).
+
+The four inputs differ only in the `hamiltonian` block.
 `ccein_hf0_qd0.jsonc` has none, so every nucleus couples to the defect as a point dipole at its position and has no
 quadrupole term. `ccein_hf3_qd2.jsonc` has both tensors:
 
