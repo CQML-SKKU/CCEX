@@ -17,10 +17,10 @@ with one jump operator $C_k$ per entry of `jump_operators`:
 
 There are two methods ([Master-equation CCE](../../../../docs/methods/master-equation.md)):
 
-| `method` | Built on | Jumps on |
-|---|---|---|
-| `meCCE` | cCCE, the qubit projected out. | Bath spins. |
-| `megCCE` | gCCE, the qubit in the cluster. | Bath spins and the qubit. |
+| `method` | Built on | Jumps on | Pulses |
+|---|---|---|---|
+| `meCCE` | cCCE, the qubit projected out. | Bath spins. | Ideal π flips from `pulse.count`. |
+| `megCCE` | gCCE, the qubit in the cluster. | Bath spins and the qubit (one qubit). | Any sequence, as in gCCE. |
 
 Without jump operators meCCE gives the cCCE curve and megCCE the gCCE curve.
 
@@ -40,7 +40,7 @@ Folder: `meCCE2_Hahn_bathRelaxation/`
 <a id="a11_bath_input"></a>
 ### 1.1 The input
 
-The system is that of Basic 01, with 500 points of 4 µs. `ccein_cCCE.jsonc` is the plain cCCE run, and
+The system is that of Basic 01, with 500 points 4 µs apart (2 ms). `ccein_cCCE.jsonc` is the plain cCCE run, and
 `ccein_meCCE.jsonc` adds the method and the jump operators:
 
 ```jsonc
@@ -49,7 +49,8 @@ The system is that of Basic 01, with 500 points of 4 µs. `ccein_cCCE.jsonc` is 
                                               {"bath_name": "13C", "operator": "+", "rate": 1.5915e-06}]}}
 ```
 
-$S_-$ and $S_+$ act on every ¹³C with $\gamma$ = 0.01 rad/ms each, and relax the bath spins.
+$S_-$ and $S_+$ act on every ¹³C with $\gamma$ = 0.01 rad/ms each. With equal rates up and down they relax each ¹³C
+towards the unpolarised state.
 
 <a id="a11_bath_run"></a>
 ### 1.2 Running it
@@ -88,7 +89,7 @@ run, and `ccein_megCCE.jsonc` adds the method and one jump on the qubit:
 "hamiltonian" : {"megCCE": {"jump_operators": [{"bath_name": "qubit", "operator": "-", "rate": 1.5915e-4}]}}
 ```
 
-$S_-$ on the NV with $\gamma$ = 1 rad/ms takes ms +1 towards 0 and 0 towards −1. A qubit jump needs a single qubit.
+$S_-$ on the NV with $\gamma$ = 1 rad/ms takes ms +1 towards 0 and 0 towards −1.
 
 <a id="a11_qubit_run"></a>
 ### 2.2 Running it
@@ -97,8 +98,9 @@ $S_-$ on the NV with $\gamma$ = 1 rad/ms takes ms +1 towards 0 and 0 towards −
 NP=4 bash run.sh
 ```
 
-It runs both inputs and plots them. It takes 84 s, nearly all of it megCCE, and 0.09 GB per rank. megCCE evolves
-each cluster in the Liouville space, of dimension $(d_q d_B)^2$, which is why it is much slower than gCCE.
+It runs both inputs and plots them. It takes 84 s and 0.09 GB per rank. The gCCE run takes 0.02 s of it and megCCE
+81 s, since megCCE evolves each cluster in the Liouville space, of dimension $(d_q d_B)^2$, with a matrix exponential,
+since the eigendecomposition of gCCE does not apply there.
 
 <a id="a11_qubit_result"></a>
 ### 2.3 The result
