@@ -100,8 +100,16 @@ states (`s_range` [1, 4]). The clustering block is:
 "cluster" : {"mode": "pcce", "pcce": {"partition_size": 2, "trials": 1000, "max_iterations": 1000}}
 ```
 
-`partition_size` is 2 in the input, and `run.sh` sets it to 1, 2 and 3, or to the values of `SIZES`. Size 1 is
-ordinary CCE2 over single spins. `trials` and `max_iterations` set the k-means search.
+pCCE works in three steps ([Partition CCE](../../../../docs/methods/pcce.md)):
+
+1. The bath spins within `rbath` are cut into partitions of exactly `partition_size` spins that are close in space,
+   by a k-means search on the positions. `trials` and `max_iterations` set the search.
+2. The N mod `partition_size` spins that do not fill a partition are left out. The log names them in the line
+   `pCCE spins left out`.
+3. The expansion runs over partitions. A cluster of order n is n linked partitions, and a partition always enters a
+   cluster whole, so the couplings inside it are computed exactly. With `partition_size` 1 pCCE is standard CCE.
+
+`partition_size` is 2 in the input, and `run.sh` sets it to 1, 2 and 3, or to the values of `SIZES`.
 
 <a id="a10_pcce_run"></a>
 ### 2.2 Running it
@@ -119,9 +127,17 @@ partitions are linked when their centroids are within `rdip`, and with `spins` w
 
 ![pCCE2_Hahn_states: expected result](pCCE2_Hahn_states/expected.png)
 
-T2 is 260 µs for size 1, 183 µs for 2 and 202 µs for 3, for these four states. With `connections` spins, size 3
-connects 4226 of the 12090 partition pairs instead of 2909, and gives T2 201.5 µs, nearly the same curve as with
-centers.
+The bath has 469 P1, and sizes 2 and 3 leave out one of them (the last in the file, 743.5 Å from the NV).
+
+| `partition_size` | Partitions | Linked partition pairs | T2 |
+|---|---|---|---|
+| 1 (standard CCE2) | 469 | 25929 | 260 µs |
+| 2 | 234 | 6488 | 183 µs |
+| 3 | 156 | 2909 | 202 µs |
+| 3, `connections` spins | 156 | 4226 | 201.5 µs |
+
+The T2 are those of these four states. With `connections` spins, size 3 links 4226 of the 12090 partition pairs
+instead of 2909, and gives nearly the same curve as with `centers`.
 
 Next, compute more states (`s_range`) before reading the differences.
 
