@@ -58,9 +58,20 @@ The run takes a second.
 
 The bath has 1293 nuclei, 123 ¹⁰B, 511 ¹¹B, 652 ¹⁴N and 6 ¹⁵N, and the defect sits at (30.0, 30.0, 7.5) Å.
 
-This bath and the tensor files of case 2 come from the same VASP cell. CCEX stops, however, on the four nuclei that
-lie on the edge of that cell, where the tensor files have no row. Case 3 therefore reads the ready-made bath and
-tensor files of `bath/flat/`.
+This bath and the tensor files of case 2 come from the same VASP cell, so CCEX can read them together. In
+`cCCE2_Hahn_tensors/ccein_hf3_qd2.jsonc` of case 3, change the bath and the two tensor files and leave out
+`k_range`, since there is one bath:
+
+```jsonc
+"Qubit"         : {"qubit": [{"file": "../hBN_makeBath/results/bath_hBN_defect"}]},
+"configuration" : {"gyrofile": "../bath/hBN_natab_gyro", "bathfile": ["../hBN_makeBath/results/bath_hBN"]},
+"file" : "../makeTensors_hBN/results/Afile"     // in hamiltonian.common.hyperfine
+"file" : "../makeTensors_hBN/results/Qfile"     // in hamiltonian.common.quadrupole
+```
+
+Some nuclei of the bath lie on a face of the DFT cell. The tensor files have their rows at the opposite face, so
+CCEX counts them as outside the cell. With both tensors T2 of this one configuration is 51.7 µs, and without them
+36.9 µs. Case 3 reads the 50 configurations of `bath/flat/` instead, and averages five of them.
 
 Next, change `--size`, which has to be at least twice `rbath`, or the abundances in `prob_hBN`.
 
@@ -108,7 +119,8 @@ An input names the two files in `hamiltonian.common.hyperfine` (`dipole` dft, `c
 `hamiltonian.common.quadrupole` (`file`). CCEX matches a row to a bath spin by its position from the defect, so the
 bath has to be built on the lattice of the DFT cell. A bath spin inside the cell without a row stops the run, and a
 spin outside the cell takes the point dipole (`missing_row` point_dipole gives the point dipole to every missing
-row).
+row). A spin on a face of the cell without a row counts as outside, since a periodic cell has its row at the
+opposite face.
 
 Next, use your own OUTCAR. `--addhfcore False` leaves out the core term of the contact interaction, and Quantum
 ESPRESSO needs `--spin S` ([Tools](../../../../docs/user/Tools.md)).
