@@ -36,7 +36,7 @@ To run your own input, use `mpirun -n 4 bin/main.out -f ccein.jsonc -o results`.
 ## Build
 
 `bash do_compile.sh <preset>` writes `bin/main.out`, and also `bin/main_gpu.out` when CUDA is enabled. The presets are
-`wsl-gnu`, `wsl-icpx`, `idm4`, `gpu` (idm4-gpu with CUDA), `nurion`, `mac` and `generic` (any MPI C++ wrapper). CMake
+`wsl-gnu`, `wsl-icpx`, `mac` and `generic` (any MPI C++ wrapper), and presets for the developers' clusters. CMake
 also works: `cmake -B build && cmake --build build -j 8` puts everything in `build/`.
 
 You need a C++17 compiler behind an MPI wrapper. Eigen, uthash and SQLite are included in `external/`, and MKL is used

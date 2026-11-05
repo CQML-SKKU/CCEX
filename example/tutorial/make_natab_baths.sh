@@ -4,7 +4,7 @@
 # cells, 1.1 % 13C) in a SIZE A cell (default 110: rbath up to 53 A). Configuration k uses the random seed k, so every
 # call makes the same files; files already there are kept. The configurations are shared over NP MPI ranks (default 4,
 # make_natab_baths.py; without mpirun they are made one after another): about 5 s per configuration (SIZE 110), 40 in
-# 51 s with NP=4 (i7-14700K, WSL). RMIN > 0 (A, default 0) leaves out the spins closer than RMIN to the NV, whose
+# 51 s with NP=4 on a desktop CPU. RMIN > 0 (A, default 0) leaves out the spins closer than RMIN to the NV, whose
 # hyperfine coupling is too strong for a weak bath spin. Needs python3 with mpi4py, numpy and psutil.
 set -e
 N=$1; OUT=$2; SIZE=${3:-110}; RMIN=${4:-0}

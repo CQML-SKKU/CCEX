@@ -136,7 +136,7 @@
   it lacked (T2 0.25 µs, with a 1 ns step; 0.44 µs before), `04_hBN/gCCE2_Hahn_OH` is `gCCE2_Hahn_Overhauser`,
   `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job with nothing visible in its 4.9 ns) is
   `advanced/08_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs), and the 50 ppm input of
-  `advanced/05_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `advanced/04_GPU` has its `expected.png`, made on idm4-gpu; `plot_coherence.py --log-time` draws a log time axis.
+  `advanced/05_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `advanced/04_GPU` has its `expected.png`, made on a GPU node; `plot_coherence.py --log-time` draws a log time axis.
 - **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`, with each key's explanation on the lines above it.
   The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
   plain-text formulas are TeX. The automatic convergence has a key page, `docs/user/InputFile_AutoConvergence.md`, and a method page,
@@ -164,8 +164,8 @@
   a qubit dimension q >= 8 (the product of 2S+1 over the qubits) reaches: `test_gcce_cuda` passed for q = 3 to 7 and
   failed for 8 and 9 on every repeat. The source is unchanged: CUDA 13.2.2 compiles it right (compute-sanitizer finds
   no error, NV6 gives the CPU's outputs exactly, and 08_GPU's cCCE5, gCCE4 and pCCE2 agree with the 12.8 build to 1e-10,
-  the last printed digit). The `gpu` preset and `test/gpu_verification/server/environment.sh` load `cuda/cuda-13.2`
-  (`/usr/local/cuda-13.2` on idm4-gpu), `do_compile.sh` and CMake take only nvcc 13.2 or newer (an older one found on
+  the last printed digit). The `gpu` preset and `test/gpu_verification/server/environment.sh` load `cuda/cuda-13.2`,
+  `do_compile.sh` and CMake take only nvcc 13.2 or newer (an older one found on
   `PATH` by `generic` or by CMake's `CCEX_CUDA=AUTO` is left out with a warning; one named by the `gpu` preset,
   `CUDA_HOME`, `NVCC` or `CCEX_CUDA=ON` stops the build), and `test_gcce_cuda` has a q = 9 case, so `make gpu-test` catches it. Where 12.8
   must stay, compiling `gpu_backend.cu` alone with `-Xptxas -O0`, or embedding only its PTX for the driver to compile,
@@ -173,8 +173,8 @@
 
 ### Builds
 
-- **idm4-gpu builds with Intel MPI, as idm4 does.** The `gpu` preset takes `mpiicpc` with icpx and MKL from the module
-  `intel/oneapi-2023.2` (oneAPI 2023.2, Intel MPI 2021.10, MKL 2023.2: the paths of idm4's `intel-23.2/icc-23.2`), with
+- **The `gpu` preset builds with Intel MPI.** The `gpu` preset takes `mpiicpc` with icpx and MKL from the module
+  `intel/oneapi-2023.2` (oneAPI 2023.2, Intel MPI 2021.10, MKL 2023.2), with
   GCC 11.5 and CUDA 13.2; it took Open MPI's `mpicxx` with icpx from `setvars.sh` before, and stops now with a message
   when the module is not there. `test/gpu_verification/server/environment.sh` loads the same module, so the jobs'
   `mpirun`, the one the checks take (the Intel MPI of `I_MPI_ROOT` first, `test/README.md`) and the binaries' MPI are
@@ -183,23 +183,23 @@
   node with 32 cores, one Xeon 6731P; one rank per core): `MPI_Reduce` with `MPI_PROD` of 729 × 729 complex numbers
   on 16 ranks took 1.55 ms against 12.98 ms with Open MPI
   4.1.5 and 14.00 ms with 5.0.10, and NV6 gCCE2 `dm` (16 ranks with MPS) spent 0.41 s in it on rank 0 against
-  1.1-1.3 s, with the same outputs (job 17695). Rank 0 then wrote the 1.14 GB of the two `dm` files in 17.1 s instead
+  1.1-1.3 s, with the same outputs. Rank 0 then wrote the 1.14 GB of the two `dm` files in 17.1 s instead
   of 9.7 s in 11 of 21 such runs with Intel MPI and in none of 9 with Open MPI: the same instructions at a lower rate
   (2.33 against 4.18 per cycle) through the whole write, with no other task on its core, the same clock and the same
-  share of transparent huge pages; `I_MPI_PIN=off` did not change it (jobs 17695-17697). The cause is not known. A
+  share of transparent huge pages; `I_MPI_PIN=off` did not change it. The cause is not known. A
   `coherence` run writes a few numbers per step, so its write is short.
 - **The CUDA files compile with `nvcc -split-compile`.** `warp_cluster_gpu.cu` instantiates 30 kernels (2.17 million
-  SASS instructions), and nvcc optimized them one after another: with CUDA 13.2 the file took 1217 s on idm4-gpu
-  (one node with 32 cores, one Xeon 6731P), nearly all of a 1331 s build at `CCEX_JOBS=32` (job 17690).
+  SASS instructions), and nvcc optimized them one after another: with CUDA 13.2 the file took 1217 s on a GPU node
+  (one node with 32 cores, one Xeon 6731P), nearly all of a 1331 s build at `CCEX_JOBS=32`.
   `do_compile.sh` gives the three CUDA files
   `-split-compile=$CCEX_JOBS` (default 5; the make variable `NVCC_SPLIT`, which `NVCC_SPLIT=` on the make line
   empties), CMake `-split-compile=${CCEX_CUDA_SPLIT_COMPILE}` (default 5; 1 is off). At 32 the file takes 284 s and
-  the build 301 s (job 17692). The machine code differs (every kernel of the three files), the results do not: NV6
+  the build 301 s. The machine code differs (every kernel of the three files), the results do not: NV6
   gCCE2 `dm` on 1 rank and on 16 ranks with MPS gives the CPU binary's outputs exactly, 08_GPU's cCCE5, gCCE4 and
-  pCCE2 those of the build without it, and `make gpu-test` passes 203 of 203 (jobs 17692, 17694). With 2 threads,
+  pCCE2 those of the build without it, and `make gpu-test` passes 203 of 203. With 2 threads,
   what `test/gpu_verification/server/build.sbatch` gives on its two CPUs, that job took 788 s (the build 765 s; at most
   4.9 GB of memory with the page cache), within its 20 minutes and 8 GiB; the default 5 built in 393 s on five CPUs.
-  The machine code also depends on the number of threads, and both builds gave the outputs above exactly (job 17708).
+  The machine code also depends on the number of threads, and both builds gave the outputs above exactly.
 - **macOS (Apple Silicon).** The `mac` preset builds at `-O3 -mcpu=native` (it said `-O2`) and links Apple's Accelerate
   for the large clusters in MKL's place: the same Fortran `zgemm_` and `zheevd_` (`src/common/blas_option.cpp`), with the
   system on every Mac. `CCEX_BLAS=auto` (the default) takes it on macOS, `accelerate` insists, `off` leaves it out, and
@@ -646,7 +646,7 @@ against the CPU path (relative 1.3e-6, 1.6e-5 on the diverging CR60 curve).
   where a run is; `analyze` reads the same `auto_convergence` block as the runner. Keys are read without regard to case,
   and two keys that differ only in case are refused.
 - **SpinTensorReader** writes tensor format v3 (above); `--fidentify` is removed (the lines are always written).
-- **Builds**: `do_compile.sh` presets (`wsl-gnu`, `wsl-icpx`, `idm4`, `gpu`, `nurion`, `mac`, `generic`) and a CMake
+- **Builds**: `do_compile.sh` presets (`wsl-gnu`, `wsl-icpx`, `gpu`, `mac`, `generic`, and presets for the developers' clusters) and a CMake
   build (`cmake -B build && cmake --build build`, everything in `build/`).
 - `example/tutorial/make_natab_baths.sh` makes the natural-abundance ¹³C configurations of the tutorials with MPI
   (the configurations divided over `NP` ranks).
@@ -785,7 +785,7 @@ against the CPU path (relative 1.3e-6, 1.6e-5 on the diverging CR60 curve).
 
 Same inputs and node (one node with 64 cores, two 32-core Xeon Gold 6530; 64 ranks, one per core), median of 3 runs.
 v1.2.2 built with icpx 2023.2 without MKL; 2.0.0 (a
-development build, commit 7b33ca7d5) built with `do_compile.sh idm4`, MKL on, so the times include the effect of MKL.
+development build, commit 7b33ca7d5) built with the developers' cluster preset of `do_compile.sh`, MKL on, so the times include the effect of MKL.
 Wall time of each run in seconds, start-up included.
 
 | Case | v1.2.2 (s) | 2.0.0 (s) |
@@ -809,7 +809,7 @@ field of gCCE, the density-matrix `nan`, the pCCE partition) or from points wher
 
 #### On the GPU node
 
-The released code (job 17715), built as the `gpu` preset builds it after 2.0.0 (CUDA 13.2, Intel MPI 2021.10, icpx
+The released code, built as the `gpu` preset builds it after 2.0.0 (CUDA 13.2, Intel MPI 2021.10, icpx
 2023.2; see 2.0.1), on the GPU node (one node with 32 cores, one Xeon 6731P, and one
 RTX PRO 6000; 32 ranks and 16 for the 6 NV, one per core; CUDA MPS): v1.2.2
 (CPU only, built with icpx 2023.2 and the same MPI) against 2.0.0 `main.out` (CPU) and `main_gpu.out` (GPU,
