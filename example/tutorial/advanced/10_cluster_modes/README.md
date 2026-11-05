@@ -50,10 +50,17 @@ The system is the NV of Basic 01 with `rbath` 50 Å and `rdip` 10 Å. The four i
                                   // ccein_standard.jsonc has no cluster block, the standard pairs
 ```
 
-dsj computes only the disjoint groups. itb computes only the pairs between the groups, the factor that the couplings
-between groups add, so it is a part of the decay and not the coherence. dsjitb computes both, and at order 2 it is the
-standard CCE2 written another way ([dsj, itb and dsjitb](../../../../docs/methods/cce.md#cce_dsj)). The three modes
-run with cCCE only.
+The three modes start from the same groups. The pairs of spins within `rdip` are taken from the strongest
+$\lvert J_{zz}\rvert$ down, and two spins (or their groups) are joined while the group stays at most `order` spins.
+A linked pair whose spins end in different groups is an inter-bath pair. The modes differ in what they compute:
+
+| `cluster.mode` | Computes | What it holds |
+|---|---|---|
+| `dsj` | $\prod_G L_G$, every group $G$ as one cluster. | The couplings inside the groups. Those between groups are left out. |
+| `itb` | $\prod_{(a,b)} L_{ab}/(L_a L_b)$ over the inter-bath pairs. | Only the factor that the couplings between groups add, a part of the decay and not the coherence. |
+| `dsjitb` | Both products. | Both. At `order` 2 it equals standard CCE2. |
+
+The three modes run with cCCE only ([dsj, itb and dsjitb](../../../../docs/methods/cce.md#cce_dsj)).
 
 <a id="a10_dsj_run"></a>
 ### 1.2 Running it
