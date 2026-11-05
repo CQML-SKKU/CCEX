@@ -102,6 +102,8 @@
 - **`"strained"` and `"bubble"` with a vertex-format `file_without_defect` never ended.** The fold used a box of zero
   size. It now uses the box of the file's eight vertices. `check_rotation` folds a far spin for both structures and both
   range forms.
+- **The automatic convergence's `summary.txt` named only the rdip of step 2.** When the check at the larger rbath
+  raises it (step 3), step 2 now adds the line `final rdip R: r did not hold at the larger rbath (step 3)`.
 - **`cluster.mode` itb and dsjitb took the power of each inter-bath pair from the wrong spin.** The single spins are
   rows 1..N of the cluster list, and the pairs took theirs from row s instead of s + 1, the spin before. A pair on spin 0
   shortened the list itself, so the last spins dropped out (two of 978 in the dsj tutorial). dsjitb at order 2 now

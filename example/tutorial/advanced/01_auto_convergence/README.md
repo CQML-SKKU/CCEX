@@ -119,7 +119,8 @@ agree. With candidates the runner chose itself, it asks for two agreements in a 
 65.2 Å. The difference is 3.09 % at 33.4 Å and 0.94 % at 41.7 Å, so rbath is 41.7 Å.
 
 At the larger rbath, rdip is checked again. There 6.6 Å no longer agrees but 8.24 Å does, so the final rdip is
-8.24 Å. The figure of step 2 therefore still marks 6.6 Å.
+8.24 Å. The figure of step 2, drawn before this check, still marks 6.6 Å, and `summary.txt` adds the line
+"final rdip 8.244" under step 2.
 
 ![Step 3: rbath](cCCE2_Hahn_ensemble_noCandidates/step3_rbath.png)
 
