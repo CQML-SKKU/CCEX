@@ -202,7 +202,10 @@ Folder: `cCCE2_Hahn_adaptive/`
 <a id="a10_adaptive_input"></a>
 ### 4.1 The input
 
-This case is the bundled calculation with `rbath` 20 Å over 2 ms, refined by the adaptive merge with `atol` 1e-3:
+The merge refinement makes the bundles larger where the error at their boundaries is large. It computes a few
+neighbouring bundles exactly as one cluster, compares that with the expansion over them, and merges the pair of
+bundles that lowers the difference most. This case is the bundled calculation with `rbath` 20 Å over 2 ms, refined
+with `atol` 1e-3:
 
 ```jsonc
 "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
@@ -260,8 +263,9 @@ Folder: `cCCE2_Hahn_regroup/`
 
 The system is the NV in six P1 electron spins (`bath/bath_p1_6`) with five sampled states and bundles up to
 dimension 4. The NV position and the P1 gyromagnetic ratio are those of
-[Advanced 04: The GPU backend](../04_GPU/README.md). The refinement is regroup, which looks for the bundles behind an
-unphysical curve, |L| > 1, instead of merging by the local error. It needs cCCE and `order` 2
+[Advanced 04: The GPU backend](../04_GPU/README.md). The refinement is regroup. It changes the bundles where the curve
+is unphysical, with |L| > 1, instead of where the local error is large. At the worst point it finds the bundle pairs
+that cause the excess and merges, splits or moves sites around them. It needs cCCE and `order` 2
 ([regroup](../../../../docs/methods/bundle-adaptive.md#adaptive_regroup)):
 
 ```jsonc
