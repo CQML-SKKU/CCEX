@@ -10,7 +10,9 @@ $$W(T) = e^{-\chi(T)}, \qquad \chi = \langle\varphi^2\rangle/2 .$$
 
 The noise comes either from the bath or from a model ([Semiclassical noise](../../../../docs/methods/noise.md)):
 
-- **From a model** of the frequency noise, without a bath (`{"model": "OU", ...}` or `{"model": "power", ...}`).
+- **From a model** of the frequency noise, without a bath. `{"model": "OU", ...}` is Ornstein–Uhlenbeck noise,
+  $\langle\delta\nu(t)\delta\nu(0)\rangle = \sigma^2 e^{-|t|/\tau_c}$, and `{"model": "power", ...}` a power-law spectrum
+  $S(f) = A\,(f/1\,\text{kHz})^{-\beta}$ between $f_\text{min}$ and $f_\text{max}$.
 - **From the bath** (`hamiltonian.noise.spectrum` `"bath"`, the default). Every cCCE cluster adds, from its eigenstates
   $|a\rangle$ and their frequency differences $\omega_{ab}$,
 
@@ -20,7 +22,8 @@ The noise comes either from the bath or from a model ([Semiclassical noise](../.
   enters only through the filter $Y$.
 
 The Gaussian approximation leaves out the qubit's back-action on the bath and the non-Gaussian part of the noise, so
-it is meant for many weakly coupled noise sources. The keys are in
+it is meant for many weakly coupled noise sources. Strongly coupled spins need cCCE or gCCE, as case 3 shows. The keys
+are in
 [General tags](../../../../docs/user/InputFile_General.md#tag_noise_spectrum).
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the
@@ -40,8 +43,7 @@ Folder: `noiseModel_OU/`
 <a id="a12_ou_input"></a>
 ### 1.1 The input
 
-The noise is Ornstein–Uhlenbeck frequency noise, $\langle\delta\nu(t)\delta\nu(0)\rangle = \sigma^2 e^{-|t|/\tau_c}$
-with σ = 10 kHz and τ_c = 50 µs. No bath is read, so `order`, `bfield`, `rbath`, `rdip` and `Qubit` are left out:
+The noise is Ornstein–Uhlenbeck noise with σ = 10 kHz and τ_c = 50 µs. No bath is read, so `order`, `bfield`, `rbath`, `rdip` and `Qubit` are left out:
 
 ```jsonc
 "method"      : "noise",
@@ -71,9 +73,11 @@ It runs the input as a Hahn echo, then with `pulse.count` 0 (Ramsey) and 4 (CPMG
 T2 is 24 µs for Ramsey, 62 µs for the Hahn echo and 138 µs for CPMG-4. The echo and the decoupling sequence filter
 the slow noise out. For OU noise χ is computed exactly for any sequence of ideal π pulses.
 
-Next, try `{"model": "power", "amplitude": 50, "beta": 1, "f_min": 0.01, "f_max": 200}`, 1/f noise between f_min and
-f_max (kHz). For $\tau_c \gg T$ the Hahn echo goes to the slow-noise limit $\chi \approx (2\pi\sigma)^2 T^3 / (12 \tau_c)$. With
+For $\tau_c \gg T$ the Hahn echo goes to the slow-noise limit $\chi \approx (2\pi\sigma)^2 T^3 / (12 \tau_c)$. With
 `tau_c` 50 ms this input gives χ within 0.3 % of it up to 0.3 ms.
+
+Next, try `{"model": "power", "amplitude": 50, "beta": 1, "f_min": 0.01, "f_max": 200}`, 1/f noise between f_min and
+f_max (kHz).
 
 Input: [`ccein.jsonc`](noiseModel_OU/ccein.jsonc)
 
@@ -85,19 +89,24 @@ Folder: `noiseSpectrum_13C/`
 <a id="a12_spectrum_input"></a>
 ### 2.1 The input
 
-This case shows the noise itself, as a noise-spectroscopy experiment sees it. The NV of `basic/01_first_run` in its
-natural-abundance ¹³C (978 ¹³C within 50 Å, 500 G, Hahn echo) is run by method `noise`. The two inputs differ only in
-what is computed:
+This case writes the noise itself, its correlation function and spectrum, which noise spectroscopy measures. The NV
+of `basic/01_first_run` in its natural-abundance ¹³C (978 ¹³C within 50 Å, 500 G, Hahn echo) is run by method `noise`.
+The two inputs differ only in what is computed:
 
 ```jsonc
 "hamiltonian" : {"noise": {"compute": "spectrum"}}     // ccein_spectrum.jsonc
 "hamiltonian" : {"noise": {"compute": "coherence"}}    // ccein_coherence.jsonc
 ```
 
-`"spectrum"` writes the correlation C(t) of the qubit's frequency noise, its spectrum S(f) by FFT and the coherence
-from S(f). `"coherence"` takes χ straight from the clusters' eigenmodes, and `"correlation"` would write C(t) alone, at
-the run's times. `hamiltonian.noise.fft` is left out, so its defaults hold. The grid ends at the run's last time and
-has 8 points per period of the fastest bath mode.
+The three values of `compute` are:
+
+- `"coherence"` (the default) takes χ straight from the clusters' eigenmodes, with no time grid.
+- `"spectrum"` writes the correlation C(t) of the qubit's frequency noise on a time grid, its spectrum S(f) by FFT,
+  and the coherence from S(f).
+- `"correlation"` writes C(t) alone, at the run's times.
+
+`hamiltonian.noise.fft` is left out, so its defaults hold. The grid ends at the run's last time and has 8 points per
+period of the fastest bath mode.
 
 <a id="a12_spectrum_run"></a>
 ### 2.2 Running it
