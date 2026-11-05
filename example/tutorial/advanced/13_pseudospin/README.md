@@ -3,21 +3,24 @@
 Folder: `example/tutorial/advanced/13_pseudospin/`
 
 Two nuclear spins can exchange their states, for example by a flip-flop $|m_1, m_2\rangle \leftrightarrow
-|m_1-1, m_2+1\rangle$. Each such exchange, a channel, is a two-level system, a pseudospin, with a coupling $\Omega$
-between its two states and a level gap $\Delta$, both different for the two qubit states $\alpha$ and $\beta$. Method
-`pseudospin` computes the pair clusters of cCCE in this picture, for any nuclear spin. It is meant for reading which
-pairs drive a decay, not for the best curve. The model for two spins 1/2 is that of Seo et al., Nat. Commun. 7, 12935
-(2016), applied to h-BN by Lee, Park and Seo, npj 2D Mater. Appl. 6, 60 (2022)
+|m_1-1, m_2+1\rangle$. Each such exchange is called a channel. A channel is a two-level system, the pseudospin, with a
+coupling $\Omega$ between its two states and a level gap $\Delta$, both of them different in the qubit states $\alpha$
+and $\beta$.
+
+Method `pseudospin` computes the pair clusters of cCCE in this picture, for any nuclear spin. It is meant for finding
+the pairs that drive a decay, and it does not give the most accurate curve. The model for two spins 1/2 is that of
+Seo et al., Nat. Commun. 7, 12935 (2016), which Lee, Park and Seo applied to h-BN, npj 2D Mater. Appl. 6, 60 (2022)
 ([Pseudospin model of nuclear pairs](../../../../docs/methods/pseudospin.md)).
 
-For each pair CCEX keeps the channels and drops the elements that change one spin only, and computes the pair's
-coherence $L_\text{pair}$ from them. The output is the product over the pairs of
+For each pair CCEX keeps the channels, drops the elements that change one spin only, and computes the pair's
+coherence $L_\text{pair}$. The output is the product over the pairs of
 
 $$P = \frac{L_\text{pair}}{L_1 L_2},$$
 
-with $L_1$ and $L_2$ the two single spins from their eigenvalues alone (1 under a Hahn echo). $P$ is the pairs' part of
-the decay, without the ESEEM of the single spins, so the output times cCCE order 1 is what compares with cCCE order 2.
-For two spins 1/2 with the secular hyperfine and the flip-flop alone it is Seo's eq. 23,
+with $L_1$ and $L_2$ the two single spins from their eigenvalues alone (1 under a Hahn echo). $P$ leaves out the ESEEM
+of the single spins. To compare the output with cCCE order 2, multiply it by cCCE order 1.
+
+For two spins 1/2 with the secular hyperfine and the flip-flop alone, $P$ is Seo's eq. 23,
 
 $$P = 1 - K \sin^2\!\big(\sqrt{\Delta A^2 + D^2}\, t/4\big) \sin^2(D t/4), \qquad K = \frac{\Delta A^2}{\Delta A^2 + D^2},$$
 
@@ -51,7 +54,7 @@ Folder: `pseudospin2_Hahn_vsCCE/`
 
 The system is the V_B⁻ of `advanced/06_hBN`, with one configuration of the flat layer, DFT hyperfine and quadrupole,
 3 T, a Hahn echo, the ensemble and 459 nuclei within 20 Å. The rest is as in
-`advanced/06_hBN/cCCE2_Hahn_tensors` (`ccein_hf3_qd2.jsonc`). Four inputs differ in the method:
+`advanced/06_hBN/cCCE2_Hahn_tensors` (`ccein_hf3_qd2.jsonc`). The four inputs differ in the method or the order:
 
 ```jsonc
 "order"  : 2                                                                       // ccein_cce2.jsonc, cCCE2
@@ -83,23 +86,32 @@ $\Delta_\alpha$ and $\Delta_\beta$ (the level gap), in kHz.
 
 ![pseudospin2_Hahn_vsCCE: expected result](pseudospin2_Hahn_vsCCE/expected.png)
 
-T2 is 58.0 µs by cCCE2 and 58.1 µs by pseudospin × cCCE1, with both `channels` within 2.3e-3 of cCCE2. The pairs
-alone give 58.2 µs, within 3.9e-2 of cCCE2, so at 3 T nearly all of the decay comes from the pairs. `grouped` and
-`pairwise` agree here.
+| Run | T2 |
+|---|---|
+| cCCE2 | 58.0 µs |
+| pseudospin × cCCE1, `grouped` and `pairwise` | 58.1 µs, within 2.3e-3 of cCCE2 |
+| pseudospin, the pairs alone | 58.2 µs, within 3.9e-2 of cCCE2 |
+
+At 3 T the pairs alone give nearly all of the decay, and `grouped` and `pairwise` agree.
 
 The channel table shows which pairs can flip. A channel moves its two states into each other only when its gap
-$\Delta$ is not much larger than its coupling $\Omega$, as for any two-level system. Sorted by $\Omega_\alpha$ (column
-13), the strongest channels are flip-flips $|½,½\rangle \leftrightarrow |-½,-½\rangle$ of neighbouring ¹¹B, 2.49 Å
-apart, with $\Omega_\alpha$ 4.8 kHz but $\Delta_\alpha$ 91 MHz, far off resonance. 712 channels have
-$\lvert\Delta_\alpha\rvert < \Omega_\alpha$, and the strongest of them are flip-flops
-$|½,-½\rangle \leftrightarrow |-½,½\rangle$ of the same ¹¹B pairs, with $\Omega_\alpha$ 1.6 kHz and $\Delta_\alpha$
-near 0:
+$\Delta$ is not much larger than its coupling $\Omega$, as in any two-level system. In this table:
+
+- The channels with the largest $\Omega_\alpha$ (column 13) are flip-flips $|½,½\rangle \leftrightarrow |-½,-½\rangle$
+  of neighbouring ¹¹B, 2.49 Å apart. Their $\Omega_\alpha$ is 4.8 kHz, but their $\Delta_\alpha$ is 91 MHz, far off
+  resonance.
+- 712 channels have $\lvert\Delta_\alpha\rvert < \Omega_\alpha$. The strongest of them are flip-flops
+  $|½,-½\rangle \leftrightarrow |-½,½\rangle$ of the same ¹¹B pairs, with $\Omega_\alpha$ 1.6 kHz and $\Delta_\alpha$
+  near 0.
+
+These lines list the channels with $\lvert\Delta_\alpha\rvert < \Omega_\alpha$, the strongest first:
 
 ```sh
 grep -v '^#' results/ccein_grouped_pseudospin_channels | awk '{d = $15 < 0 ? -$15 : $15; if (d < $13) print}' \
     | sort -k13 -g -r | head
 ```
 
-Next, try `bfield` 3000 (0.3 T). The single nuclei's ESEEM grows, and pseudospin × cCCE1 is farther from cCCE2.
+Next, try `bfield` 3000 (0.3 T). At a lower field pseudospin × cCCE1 moves further from cCCE2
+([how accurate it is](../../../../docs/methods/pseudospin.md#ps_accuracy)).
 
 Inputs: [`ccein_cce2.jsonc`](pseudospin2_Hahn_vsCCE/ccein_cce2.jsonc), [`ccein_cce1.jsonc`](pseudospin2_Hahn_vsCCE/ccein_cce1.jsonc), [`ccein_grouped.jsonc`](pseudospin2_Hahn_vsCCE/ccein_grouped.jsonc), [`ccein_pairwise.jsonc`](pseudospin2_Hahn_vsCCE/ccein_pairwise.jsonc)
