@@ -10,5 +10,5 @@ mkdir -p results
 for name in aligned cubic_qubit cubic_file; do
   mpirun -n $NP $CCEX -f ccein_$name.jsonc -o results > results/ccein_$name.log
 done
-python3 $PLOT results/coherence.png --unit us --dashed "aligned=results/ccein_aligned_k1_state*_wiDiv" \
-    "[111] bath, Defect frame qubit=results/ccein_cubic_qubit_k1_state*_wiDiv" "[111] bath, Defect frame file=results/ccein_cubic_file_k1_state*_wiDiv"
+python3 $PLOT results/coherence.png --unit us --dashed "aligned (reference)=results/ccein_aligned_k1_state*_wiDiv" \
+    "[111] bath, Defect frame qubit (right)=results/ccein_cubic_qubit_k1_state*_wiDiv" "[111] bath, Defect frame file (wrong)=results/ccein_cubic_file_k1_state*_wiDiv"
