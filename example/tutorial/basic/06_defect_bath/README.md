@@ -24,7 +24,9 @@ Both sections use the ten ready-made bath configurations at 1 ppm in `bath/14N_1
 `NP=4 bash run.sh` in a folder runs its commands.
 
 <a id="b06_s1"></a>
-## 1. cCCE2_Hahn_states: the Hahn echo in a P1 bath
+## 1. The Hahn echo in a P1 bath
+
+Folder: `cCCE2_Hahn_states/`
 
 ```sh
 cd example/tutorial/basic/06_defect_bath/cCCE2_Hahn_states
@@ -47,7 +49,9 @@ coherence much longer than the average, or lose it much faster.
 Input: [`ccein.jsonc`](cCCE2_Hahn_states/ccein.jsonc)
 
 <a id="b06_s2"></a>
-## 2. cCCE2_Hahn_meanField: the static field of the other bath spins
+## 2. The static field of the other bath spins
+
+Folder: `cCCE2_Hahn_meanField/`
 
 In a sampled state every P1 outside a cluster points up or down, and its dipolar field shifts the P1 inside. The two
 P1 of a pair then sit in different fields, which slows their flip-flop. `hamiltonian.common.bath_bath_mean_field` sets

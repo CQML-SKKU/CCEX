@@ -17,11 +17,13 @@ tutorial bath, so `cCCE2_Hahn_tensors` uses the files kept with
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [makeTensors_hBN](#dft_make): how the tensor files are made from a VASP run.
-2. [cCCE2_Hahn_tensors](#dft_effect): what the DFT tensors change.
+1. [How the tensor files are made from a VASP run](#dft_make) (`makeTensors_hBN/`).
+2. [What the DFT tensors change](#dft_effect) (`cCCE2_Hahn_tensors/`).
 
 <a id="dft_make"></a>
-## 1. makeTensors_hBN: making the tensor files
+## 1. Making the tensor files
+
+Folder: `makeTensors_hBN/`
 
 - **What it shows:** how the tensor files are made. `run.sh` runs `example/tools/SpinTensorReader/main.py` on the VASP
   run of V_B⁻ kept in `example/tools/SpinTensorReader/examples/02.hBN_VB_VASP`, with its relaxed cell
@@ -42,7 +44,9 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
   and for Quantum ESPRESSO give `--spin S` ([Tools](../../../../docs/user/Tools.md)).
 
 <a id="dft_effect"></a>
-## 2. cCCE2_Hahn_tensors: what the tensors change
+## 2. What the tensors change
+
+Folder: `cCCE2_Hahn_tensors/`
 
 - **What it shows:** a cCCE2 Hahn echo at 3 T over five configurations (`k_range`) with the hyperfine and quadrupole
   tensors (`ccein_hf3_qd2.jsonc`), with the quadrupole only (the hyperfine a point dipole, `hf0_qd2`) and with the

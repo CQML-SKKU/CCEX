@@ -9,11 +9,13 @@ which clusters matter.
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [cCCE2_Hahn_analyzer](#a02_analyzer): the error correction, the average and the T2 fit.
-2. [cCCE2_Hahn_clusterReport](#a02_report): what a run reports about its clusters.
+1. [The error correction, the average and the T2 fit](#a02_analyzer) (`cCCE2_Hahn_analyzer/`).
+2. [What a run reports about its clusters](#a02_report) (`cCCE2_Hahn_clusterReport/`).
 
 <a id="a02_analyzer"></a>
-## 1. cCCE2_Hahn_analyzer: the error correction, the average and the T2 fit
+## 1. The error correction, the average and the T2 fit
+
+Folder: `cCCE2_Hahn_analyzer/`
 
 - **What it shows:** the three steps of the analyzer on the 20 curves of
   [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md)'s `cCCE2_Hahn_states`, whose input is
@@ -36,7 +38,9 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 Input: [`ccein.jsonc`](cCCE2_Hahn_analyzer/ccein.jsonc)
 
 <a id="a02_report"></a>
-## 2. cCCE2_Hahn_clusterReport: what a run reports about its clusters
+## 2. What a run reports about its clusters
+
+Folder: `cCCE2_Hahn_clusterReport/`
 
 - **What it shows:** three reports on the system of Basic 01.
   - `ccein_contributions.jsonc` (`output.cluster_contributions`) writes

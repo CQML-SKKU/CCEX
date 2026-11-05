@@ -20,7 +20,9 @@ There are two ways to give the pulses in the input:
 `NP=4 bash run.sh` in a folder runs its commands.
 
 <a id="b04_s1"></a>
-## 1. cCCE2_CPMG_ensemble: Hahn echo, CPMG-2 and CPMG-4
+## 1. Hahn echo, CPMG-2 and CPMG-4
+
+Folder: `cCCE2_CPMG_ensemble/`
 
 CPMG-N puts N equally spaced π pulses in the total time t (at t/(2N), 3t/(2N), ...); N = 1 is the Hahn echo.
 
@@ -56,7 +58,9 @@ T2 grows from 0.89 ms (one pulse) to 1.18 ms (two) and 2.10 ms (four).
 Input: [`ccein.jsonc`](cCCE2_CPMG_ensemble/ccein.jsonc)
 
 <a id="b04_s2"></a>
-## 2. cCCE2_Manual_ensemble: a sequence written out
+## 2. A sequence written out
+
+Folder: `cCCE2_Manual_ensemble/`
 
 A sequence without a name, for example one with pulses at uneven times, cannot be given by `pulse.count`. It is
 written out instead, with `pulse.name` "Manual" and one row of `pulse.sequence` per free period. A row holds the free

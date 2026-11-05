@@ -18,10 +18,12 @@ does not. Every key not written in an input has its default (`main.out -e`). Tim
 written in the conventional cubic cell would be. `bath/make_cubic_frame.py` made it from `basic/01_first_run/bath/`
 and says how.
 
-1. [cCCE2_Hahn_rotation](#rot_case): the same NV three ways.
+1. [The same NV three ways](#rot_case) (`cCCE2_Hahn_rotation/`).
 
 <a id="rot_case"></a>
-## 1. cCCE2_Hahn_rotation: the same NV three ways
+## 1. The same NV three ways
+
+Folder: `cCCE2_Hahn_rotation/`
 
 - **What it shows:** the Hahn echo of the NV of Basic 01, computed three ways. The first uses the bath as generated,
   with the NV axis along z (`ccein_aligned.jsonc`). The second uses the cubic-frame bath with the rotation on

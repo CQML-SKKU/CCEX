@@ -8,15 +8,17 @@ This topic goes further with the P1 bath of
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [cCCE2_Hahn_onsite14N](#p1_onsite): the ¹⁴N of each P1 as a nuclear spin.
-2. [cCCE4_Hahn_states](#p1_order4): the expansion to order 4.
-3. [gCCE2_Hahn_zfs](#p1_zfs): gCCE at zero field, where the NV zero-field splitting is needed.
-4. [gCCE2_Ramsey_population](#p1_population): the qubit density matrix.
-5. [cCCE2_Hahn_VpBath](#p1_vp): a Vp bath at three densities.
-6. [gCCE2_Hahn_DEER](#p1_deer): a DEER pump on the bath.
+1. [The ¹⁴N of each P1 as a nuclear spin](#p1_onsite) (`cCCE2_Hahn_onsite14N/`).
+2. [The expansion to order 4](#p1_order4) (`cCCE4_Hahn_states/`).
+3. [gCCE at zero field, where the NV zero-field splitting is needed](#p1_zfs) (`gCCE2_Hahn_zfs/`).
+4. [The qubit density matrix](#p1_population) (`gCCE2_Ramsey_population/`).
+5. [A Vp bath at three densities](#p1_vp) (`cCCE2_Hahn_VpBath/`).
+6. [A DEER pump on the bath](#p1_deer) (`gCCE2_Hahn_DEER/`).
 
 <a id="p1_onsite"></a>
-## 1. cCCE2_Hahn_onsite14N: the ¹⁴N as a spin
+## 1. The ¹⁴N as a spin
+
+Folder: `cCCE2_Hahn_onsite14N/`
 
 - **What it shows:** each P1 written with its ¹⁴N as an on-site nuclear spin (`n_onsite_spins` 1, four Jahn-Teller
   axes with the ¹⁴N hyperfine and quadrupole tensors), so a cluster of one P1 is its electron and its ¹⁴N.
@@ -32,7 +34,9 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 Input: [`ccein.jsonc`](cCCE2_Hahn_onsite14N/ccein.jsonc)
 
 <a id="p1_order4"></a>
-## 2. cCCE4_Hahn_states: order 4
+## 2. Order 4
+
+Folder: `cCCE4_Hahn_states/`
 
 - **What it shows:** the same bath to order 4, to check the convergence of the expansion.
   `cluster.selection.max_per_order` keeps the 5000 strongest three-spin and 10000 strongest four-spin clusters.
@@ -48,7 +52,9 @@ Input: [`ccein.jsonc`](cCCE2_Hahn_onsite14N/ccein.jsonc)
 Input: [`ccein.jsonc`](cCCE4_Hahn_states/ccein.jsonc)
 
 <a id="p1_zfs"></a>
-## 3. gCCE2_Hahn_zfs: zero field needs the zero-field splitting
+## 3. Zero field needs the zero-field splitting
+
+Folder: `gCCE2_Hahn_zfs/`
 
 - **What it shows:** at zero field the NV must be a spin 1 with its zero-field splitting in gCCE (D = 2.88 GHz, the
   `intmap` tensor in kHz). Without it the ms ±1 levels are degenerate and the divided curve (`_wiDiv`) diverges.
@@ -65,7 +71,9 @@ Input: [`ccein.jsonc`](cCCE4_Hahn_states/ccein.jsonc)
 Inputs: [`ccein_with_ZFS.jsonc`](gCCE2_Hahn_zfs/ccein_with_ZFS.jsonc), [`ccein_without_ZFS.jsonc`](gCCE2_Hahn_zfs/ccein_without_ZFS.jsonc)
 
 <a id="p1_population"></a>
-## 4. gCCE2_Ramsey_population: the density matrix
+## 4. The density matrix
+
+Folder: `gCCE2_Ramsey_population/`
 
 - **What it shows:** the NV prepared in ms = 0 (`alpha_state` = `beta_state` = `{"ms": [0]}`) without a pulse, and
   the qubit density matrix (`quantity` dm) of gCCE2 over 50 ms in 10 ppm P1 at 300 G. It gives the ms = 0 population,
@@ -82,7 +90,9 @@ Inputs: [`ccein_with_ZFS.jsonc`](gCCE2_Hahn_zfs/ccein_with_ZFS.jsonc), [`ccein_w
 Input: [`ccein.jsonc`](gCCE2_Ramsey_population/ccein.jsonc)
 
 <a id="p1_vp"></a>
-## 5. cCCE2_Hahn_VpBath: a Vp bath
+## 5. A Vp bath
+
+Folder: `cCCE2_Hahn_VpBath/`
 
 - **What it shows:** the Hahn echo in a bath of Vp defects at 10, 12 and 50 ppm, one configuration and one sampled
   state each. A Vp is a spin 1/2 without on-site nuclei, so the input has no `Defect` block.
@@ -99,7 +109,9 @@ Input: [`ccein.jsonc`](gCCE2_Ramsey_population/ccein.jsonc)
 Inputs: [`ccein_10ppm.jsonc`](cCCE2_Hahn_VpBath/ccein_10ppm.jsonc), [`ccein_12ppm.jsonc`](cCCE2_Hahn_VpBath/ccein_12ppm.jsonc), [`ccein_50ppm.jsonc`](cCCE2_Hahn_VpBath/ccein_50ppm.jsonc)
 
 <a id="p1_deer"></a>
-## 6. gCCE2_Hahn_DEER: a DEER pump
+## 6. A DEER pump
+
+Folder: `gCCE2_Hahn_DEER/`
 
 - **What it shows:** a DEER pump (`pulse.bath`), a π pulse on the P1 spins at the time of the NV's π pulse
   (`ccein_pump.jsonc`), against the plain Hahn echo (`ccein_nopump.jsonc`). It is gCCE2 with the NV in ms +1 / 0,

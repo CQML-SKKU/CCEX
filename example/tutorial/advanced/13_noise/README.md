@@ -16,12 +16,14 @@ it is meant for many weakly coupled noise sources. The keys are in
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Times are for a desktop CPU.
 
-1. [noise2_Hahn_vsCCE](#nz_vscce): the noise of a P1 bath against cCCE2.
-2. [noiseModel_OU](#nz_ou): Ornstein–Uhlenbeck noise under three sequences.
-3. [noiseSpectrum_13C](#nz_spectrum): the correlation C(t) and the spectrum S(f) of a ¹³C bath.
+1. [The noise of a P1 bath against cCCE2](#nz_vscce) (`noise2_Hahn_vsCCE/`).
+2. [Ornstein–Uhlenbeck noise under three sequences](#nz_ou) (`noiseModel_OU/`).
+3. [The correlation C(t) and the spectrum S(f) of a ¹³C bath](#nz_spectrum) (`noiseSpectrum_13C/`).
 
 <a id="nz_vscce"></a>
-## 1. noise2_Hahn_vsCCE: against cCCE2
+## 1. The noise of a P1 bath against cCCE2
+
+Folder: `noise2_Hahn_vsCCE/`
 
 - **What it shows:** the Hahn echo of the NV (ms +1 / 0) in 1 ppm P1, the bath of `basic/06_defect_bath` with one
   configuration and 10 sampled states, by method `noise` and by cCCE2. They are not the same quantity. In `noise` a
@@ -40,7 +42,9 @@ In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/cohe
 Inputs: [`ccein_noise.jsonc`](noise2_Hahn_vsCCE/ccein_noise.jsonc), [`ccein_cce.jsonc`](noise2_Hahn_vsCCE/ccein_cce.jsonc)
 
 <a id="nz_ou"></a>
-## 2. noiseModel_OU: a model spectrum
+## 2. A model spectrum
+
+Folder: `noiseModel_OU/`
 
 - **What it shows:** Ornstein–Uhlenbeck frequency noise,
   $\langle\delta\nu(t)\delta\nu(0)\rangle = \sigma^2 e^{-|t|/\tau_c}$ with σ = 10 kHz and τ_c = 50 µs, under a Ramsey
@@ -60,7 +64,9 @@ Inputs: [`ccein_noise.jsonc`](noise2_Hahn_vsCCE/ccein_noise.jsonc), [`ccein_cce.
 Input: [`ccein.jsonc`](noiseModel_OU/ccein.jsonc)
 
 <a id="nz_spectrum"></a>
-## 3. noiseSpectrum_13C: the correlation and the spectrum
+## 3. The correlation and the spectrum
+
+Folder: `noiseSpectrum_13C/`
 
 - **What it shows:** the noise itself, as a noise-spectroscopy experiment sees it. The NV of `basic/01_first_run` in
   its natural-abundance ¹³C (978 ¹³C within 50 Å, 500 G, Hahn echo) is run by method `noise` with

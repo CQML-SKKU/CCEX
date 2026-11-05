@@ -33,7 +33,9 @@ Except in section 5, the time step is 3.735 µs. This puts every point on a revi
 with its commands.
 
 <a id="b03_s1"></a>
-## 1. cCCE2_Hahn_rbath: how far the bath reaches
+## 1. How far the bath reaches
+
+Folder: `cCCE2_Hahn_rbath/`
 
 This scans `rbath` from 20 to 70 Å in steps of 5 Å, with `rdip` 10 Å, `order` 2 and ten configurations.
 
@@ -72,7 +74,9 @@ Configuration 1 has 268 clusters at 20 Å, 4336 at 50 Å and 12670 at 70 Å. The
 Input: [`ccein.jsonc`](cCCE2_Hahn_rbath/ccein.jsonc)
 
 <a id="b03_s2"></a>
-## 2. cCCE2_Hahn_rdip: which pairs are kept
+## 2. Which pairs are kept
+
+Folder: `cCCE2_Hahn_rdip/`
 
 This scans `rdip` from 4 to 14 Å in steps of 1 Å, with `rbath` 50 Å and `order` 2.
 
@@ -109,7 +113,9 @@ other tutorials use 10 Å.
 Input: [`ccein.jsonc`](cCCE2_Hahn_rdip/ccein.jsonc)
 
 <a id="b03_s3"></a>
-## 3. cCCE_Hahn_order: the largest cluster
+## 3. The largest cluster
+
+Folder: `cCCE_Hahn_order/`
 
 This scans `order` from 1 to 4, with `rbath` 50 Å and `rdip` 10 Å. Order 4 is expensive, so the scan uses
 configuration 1 only.
@@ -147,7 +153,9 @@ costs 10 to 20 times more. The other tutorials use order 2 to stay fast.
 Input: [`ccein.jsonc`](cCCE_Hahn_order/ccein.jsonc)
 
 <a id="b03_s4"></a>
-## 4. cCCE2_Hahn_configurations: how many configurations
+## 4. How many configurations
+
+Folder: `cCCE2_Hahn_configurations/`
 
 Every configuration gives a different curve (Basic 02). Their mean therefore carries a statistical error, which
 shrinks as 1/√N with the number N of configurations. This runs 20 configurations once. `plot_convergence.py --first`
@@ -186,7 +194,9 @@ This is the largest error in this system. The other tutorials use 10 configurati
 Input: [`ccein.jsonc`](cCCE2_Hahn_configurations/ccein.jsonc)
 
 <a id="b03_s5"></a>
-## 5. cCCE2_Hahn_timeAxis: the time step and the window
+## 5. The time step and the window
+
+Folder: `cCCE2_Hahn_timeAxis/`
 
 The window, `deltat` × `nstep`, has to reach past the decay. The step has to resolve the fast ¹³C ripple, whose
 period is 3.7 µs at 500 G, or else land on its revivals. This input uses a 1 µs step over 2 ms. The commands also run

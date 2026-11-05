@@ -10,12 +10,14 @@ their dipolar interaction from the positions.
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [gCCE2_Hahn_oneVsTwoNV](#mq_one_two): one NV against two in the same bath.
-2. [gCCE2_HahnRamsey_NV2](#mq_nv2): the density matrix of two NVs and a ¹³C pair.
-3. [gCCE2_HahnRamsey_NV3](#mq_nv3): the same with a third NV.
+1. [One NV against two in the same bath](#mq_one_two) (`gCCE2_Hahn_oneVsTwoNV/`).
+2. [The density matrix of two NVs and a ¹³C pair](#mq_nv2) (`gCCE2_HahnRamsey_NV2/`).
+3. [The same with a third NV](#mq_nv3) (`gCCE2_HahnRamsey_NV3/`).
 
 <a id="mq_one_two"></a>
-## 1. gCCE2_Hahn_oneVsTwoNV: one NV against two
+## 1. One NV against two
+
+Folder: `gCCE2_Hahn_oneVsTwoNV/`
 
 - **What it shows:** the Hahn echo of one NV against two NVs 25 Å apart along z, in the bath of Basic 01. The single
   NV (`ccein_single.jsonc`) takes its position from a file (`Qubit.qubit[].file`) and has its ZFS. The two NVs
@@ -32,7 +34,9 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 Inputs: [`ccein_multi2.jsonc`](gCCE2_Hahn_oneVsTwoNV/ccein_multi2.jsonc), [`ccein_single.jsonc`](gCCE2_Hahn_oneVsTwoNV/ccein_single.jsonc)
 
 <a id="mq_nv2"></a>
-## 2. gCCE2_HahnRamsey_NV2: the density matrix of two NVs
+## 2. The density matrix of two NVs
+
+Folder: `gCCE2_HahnRamsey_NV2/`
 
 - **What it shows:** two NVs 50 Å apart and a pair of ¹³C near the first. The run writes the 2-qubit density matrix
   (`quantity` dm) for the bath state in the file `state1`, for the Hahn echo (`ccein_hahn.jsonc`) and for Ramsey
@@ -50,7 +54,9 @@ Inputs: [`ccein_multi2.jsonc`](gCCE2_Hahn_oneVsTwoNV/ccein_multi2.jsonc), [`ccei
 Inputs: [`ccein_hahn.jsonc`](gCCE2_HahnRamsey_NV2/ccein_hahn.jsonc), [`ccein_ramsey.jsonc`](gCCE2_HahnRamsey_NV2/ccein_ramsey.jsonc)
 
 <a id="mq_nv3"></a>
-## 3. gCCE2_HahnRamsey_NV3: a third NV
+## 3. Three NVs
+
+Folder: `gCCE2_HahnRamsey_NV3/`
 
 - **What it shows:** the calculation of `gCCE2_HahnRamsey_NV2` with a third NV, on a window 100 times longer. The
   register has dimension 3³ = 27, and with the two ¹³C the clusters have dimension 108. The qubits' dipolar coupling

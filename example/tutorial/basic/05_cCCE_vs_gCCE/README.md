@@ -19,7 +19,9 @@ Both sections average over the ten bath configurations of [Basic 02](../02_bath_
 `NP=4 bash run.sh` in a folder runs its commands.
 
 <a id="b05_s1"></a>
-## 1. gCCE2_Hahn_vsCCE: 500 G
+## 1. cCCE and gCCE at 500 G
+
+Folder: `gCCE2_Hahn_vsCCE/`
 
 This section runs the input of Basic 01 on the ten configurations twice: by cCCE (`ccein_cCCE.jsonc`) and by gCCE
 (`ccein_gCCE.jsonc`, with `method` gCCE and the zero-field splitting).
@@ -45,7 +47,9 @@ The two curves lie on top of each other; they differ by less than 4e-4. At this 
 Inputs: [`ccein_cCCE.jsonc`](gCCE2_Hahn_vsCCE/ccein_cCCE.jsonc), [`ccein_gCCE.jsonc`](gCCE2_Hahn_vsCCE/ccein_gCCE.jsonc)
 
 <a id="b05_s2"></a>
-## 2. gCCE2_Hahn_levelCrossing: 1024 G, near the level crossing
+## 2. cCCE and gCCE near the level crossing, 1024 G
+
+Folder: `gCCE2_Hahn_levelCrossing/`
 
 This section runs the same two inputs at 1024 G, with L(t) between ms −1 and 0 (`Qubit.alpha_state`
 `{"ms": [-1]}`). At this field the ms −1 ↔ 0 transition is only about 10 MHz, against 2.88 GHz at zero field. That is

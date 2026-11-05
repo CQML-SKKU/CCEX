@@ -15,7 +15,9 @@ ways to set up its bath:
 `NP=4 bash run.sh` in a folder runs its commands.
 
 <a id="b02_s1"></a>
-## 1. cCCE2_Hahn_ensemble: several bath configurations
+## 1. Several bath configurations
+
+Folder: `cCCE2_Hahn_ensemble/`
 
 The ¹³C sit at random sites, and the curve depends on where they are. The few ¹³C next to the NV matter most. One
 bath file therefore gives the curve of one particular NV. An experiment on many NVs sees the average, so the
@@ -50,7 +52,9 @@ decides.
 Input: [`ccein.jsonc`](cCCE2_Hahn_ensemble/ccein.jsonc)
 
 <a id="b02_s2"></a>
-## 2. cCCE2_Hahn_states: sampled bath states
+## 2. Sampled bath states
+
+Folder: `cCCE2_Hahn_states/`
 
 In Basic 01 the bath is unpolarised. Every ¹³C is up or down with equal weight, and the result is the average over
 all bath states, called the ensemble. A single measurement on one NV sees the bath in one state instead. With
@@ -94,7 +98,9 @@ mpirun -n 4 ../../../../../bin/main.out -f ccein_files.jsonc -o results > result
 Inputs: [`ccein.jsonc`](cCCE2_Hahn_states/ccein.jsonc), [`ccein_files.jsonc`](cCCE2_Hahn_states/ccein_files.jsonc)
 
 <a id="b02_s3"></a>
-## 3. cCCE2_Hahn_builtinIsotopes: the built-in isotope table
+## 3. The built-in isotope table
+
+Folder: `cCCE2_Hahn_builtinIsotopes/`
 
 Basic 01 reads the ¹³C spin and gyromagnetic ratio from a gyro file, `bath/gyro_13C`. Without
 `configuration.gyrofile`, CCEX looks up each isotope name of the bath file, such as 13C, 29Si or 1H, in its built-in

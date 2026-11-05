@@ -11,10 +11,12 @@ in [General tags](../../../../docs/user/InputFile_General.md#tag_pseudospin_chan
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Times are for a desktop CPU.
 
-1. [pseudospin2_Hahn_vsCCE](#ps_vscce): the pairs of an h-BN bath against cCCE2.
+1. [The pairs of an h-BN bath against cCCE2](#ps_vscce) (`pseudospin2_Hahn_vsCCE/`).
 
 <a id="ps_vscce"></a>
-## 1. pseudospin2_Hahn_vsCCE: against cCCE2
+## 1. The pairs of an h-BN bath against cCCE2
+
+Folder: `pseudospin2_Hahn_vsCCE/`
 
 - **What it shows:** the V_B⁻ of `advanced/06_hBN`, with one configuration of the flat layer, DFT hyperfine and
   quadrupole, 3 T, a Hahn echo, the ensemble and 459 nuclei within 20 Å. It runs cCCE2 (`ccein_cce2.jsonc`), cCCE1

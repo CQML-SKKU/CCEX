@@ -9,10 +9,12 @@ spins, and megCCE the gCCE with jump operators on the bath spins and on the qubi
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [meCCE2_Hahn_bathRelaxation](#ds_bath): the relaxation of the bath spins against cCCE.
+1. [The relaxation of the bath spins against cCCE](#ds_bath) (`meCCE2_Hahn_bathRelaxation/`).
 
 <a id="ds_bath"></a>
-## 1. meCCE2_Hahn_bathRelaxation: the bath spins relax
+## 1. The bath spins relax
+
+Folder: `meCCE2_Hahn_bathRelaxation/`
 
 - **What it shows:** `method` meCCE, the cCCE with a Lindblad master equation in each cluster, on the system of
   Basic 01 with 500 points of 4 µs. Jump operators S₋ and S₊ on every ¹³C, at γ = 0.01 rad/ms each (`rate`

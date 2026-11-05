@@ -13,11 +13,13 @@ are made is in [cCCE and gCCE](../../../../docs/methods/cce.md#cce_corrections),
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [cCCE2_Hahn_hfMediated](#corr_hfmedi): the hyperfine-mediated coupling.
-2. [cCCE2_Hahn_knightShift](#corr_knight): the Knight shift in a tilted field.
+1. [The hyperfine-mediated coupling](#corr_hfmedi) (`cCCE2_Hahn_hfMediated/`).
+2. [The Knight shift in a tilted field](#corr_knight) (`cCCE2_Hahn_knightShift/`).
 
 <a id="corr_hfmedi"></a>
-## 1. cCCE2_Hahn_hfMediated: the hyperfine-mediated coupling
+## 1. The hyperfine-mediated coupling
+
+Folder: `cCCE2_Hahn_hfMediated/`
 
 - **What it shows:** the hyperfine-mediated bath-bath coupling (`hamiltonian.cCCE.hfmedi`) at 1000 G with the V_B⁻
   zero-field splitting. Pairs of nuclei couple through the defect's transverse hyperfine. The run uses one
@@ -33,7 +35,9 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 Inputs: [`ccein_wi_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wi_hfmedi.jsonc), [`ccein_wo_hfmedi.jsonc`](cCCE2_Hahn_hfMediated/ccein_wo_hfmedi.jsonc)
 
 <a id="corr_knight"></a>
-## 2. cCCE2_Hahn_knightShift: the Knight shift
+## 2. The Knight shift
+
+Folder: `cCCE2_Hahn_knightShift/`
 
 - **What it shows:** in a field tilted from the NV axis ([50, 0, 100] G), the part of the field across the NV axis
   shifts the ¹³C precession through the qubit (the Knight shift). `hamiltonian.cCCE.knight` adds that shift to cCCE (`ccein_wi_knight.jsonc`), compared with a run

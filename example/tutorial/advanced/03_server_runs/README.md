@@ -8,10 +8,12 @@ production of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/
 scripts can be tried anywhere, and the same steps carry over to runs of hours. Add what your cluster needs to the
 `#SBATCH` lines (`--partition`, `--account`) and to the `module load` line (the compiler and MPI CCEX was built with).
 
-1. [cCCE2_Hahn_slurm](#sr_slurm): sizing a run, one job, and a job array.
+1. [Sizing a run, one job, and a job array](#sr_slurm) (`cCCE2_Hahn_slurm/`).
 
 <a id="sr_slurm"></a>
-## 1. cCCE2_Hahn_slurm: sizing a run, one job, and a job array
+## 1. Sizing a run, one job, and a job array
+
+Folder: `cCCE2_Hahn_slurm/`
 
 - **What it shows:** three steps.
   1. `estimate.sh` runs one state of one configuration on the spot and prints three lines of the log. They are the

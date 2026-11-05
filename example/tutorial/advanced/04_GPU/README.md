@@ -26,13 +26,15 @@ a ¹⁵N each), the last four of them (`bath_p1_4`), the NV position (`qubit_p1`
 
 The expected figures were made on an RTX PRO 6000 with 32 ranks and MPS, with the binaries of `do_compile.sh gpu`.
 
-1. [cCCE5_Hahn_backends](#a04_cce5): one large cCCE cluster on each backend.
-2. [cCCE5_Hahn_autoOptions](#a04_auto): the `gpu_options` chosen at the start.
-3. [gCCE4_Hahn_backends](#a04_gcce4): gCCE on each backend.
-4. [pCCE2_Hahn_backends](#a04_pcce2): pCCE on each backend.
+1. [One large cCCE cluster on each backend](#a04_cce5) (`cCCE5_Hahn_backends/`).
+2. [The `gpu_options` chosen at the start](#a04_auto) (`cCCE5_Hahn_autoOptions/`).
+3. [gCCE on each backend](#a04_gcce4) (`gCCE4_Hahn_backends/`).
+4. [pCCE on each backend](#a04_pcce2) (`pCCE2_Hahn_backends/`).
 
 <a id="a04_cce5"></a>
-## 1. cCCE5_Hahn_backends: one large cCCE cluster on each backend
+## 1. One large cCCE cluster on each backend
+
+Folder: `cCCE5_Hahn_backends/`
 
 - **What it shows:** the cCCE5 Hahn echo of the NV in the five P1. One cluster has dimension 1024, the case the GPU is
   for, and takes about a minute of CPU for its 100 time steps. The same run is made on each backend, with the
@@ -49,7 +51,9 @@ The expected figures were made on an RTX PRO 6000 with 32 ranks and MPS, with th
 Input: [`ccein.jsonc`](cCCE5_Hahn_backends/ccein.jsonc)
 
 <a id="a04_auto"></a>
-## 2. cCCE5_Hahn_autoOptions: the gpu_options chosen at the start
+## 2. The gpu_options chosen at the start
+
+Folder: `cCCE5_Hahn_autoOptions/`
 
 - **What it shows:** the input of `cCCE5_Hahn_backends` with `backend` `auto` and no `gpu_options`. For cCCE with
   `auto` or `cuda`, `bin/main_gpu.out` sets the keys an input leaves out at the start and reports them in a
@@ -74,7 +78,9 @@ Input: [`ccein.jsonc`](cCCE5_Hahn_backends/ccein.jsonc)
 Input: [`ccein.jsonc`](cCCE5_Hahn_autoOptions/ccein.jsonc)
 
 <a id="a04_gcce4"></a>
-## 3. gCCE4_Hahn_backends: gCCE on each backend
+## 3. gCCE on each backend
+
+Folder: `gCCE4_Hahn_backends/`
 
 - **What it shows:** the gCCE4 Hahn echo of the NV (a spin 1 with its zero-field splitting) in four P1. The cluster of
   all four has dimension 768 with the qubit.
@@ -96,7 +102,9 @@ Input: [`ccein.jsonc`](cCCE5_Hahn_autoOptions/ccein.jsonc)
 Input: [`ccein.jsonc`](gCCE4_Hahn_backends/ccein.jsonc)
 
 <a id="a04_pcce2"></a>
-## 4. pCCE2_Hahn_backends: pCCE on each backend
+## 4. pCCE on each backend
+
+Folder: `pCCE2_Hahn_backends/`
 
 - **What it shows:** pCCE2 (partitions of two P1) on the five P1. The pair of partitions is one cluster of dimension
   256, so it goes to the GPU under `auto` too (`min_dim` 256). On the RTX PRO 6000 with 32 ranks and MPS it took

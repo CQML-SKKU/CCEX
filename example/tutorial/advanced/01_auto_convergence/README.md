@@ -2,124 +2,303 @@
 
 Folder: `example/tutorial/advanced/01_auto_convergence/`
 
-In [Basic 03: Checking convergence](../../basic/03_convergence/README.md) you change `rbath`, `rdip`, the time window
-and the number of bath configurations by hand until the curve stops moving. An `auto_convergence` block in the input
-does this for you. You write an ordinary input, add the block and prepare the bath files, and run
-`mpirun -n N main.out -f ccein.jsonc` as usual. CCEX then starts the runner (`example/tools/AutoConvergence/`, Python
-with numpy, scipy and matplotlib) instead of one calculation. The runner makes many small CCEX runs, picks the values,
-and at the end computes the final curve with them.
+A CCE result depends on a few choices that cut the problem down to a size that can be computed. You can trust it
+only when making these choices larger no longer changes the curve. The four choices are:
 
-Three words are used below:
+- `rbath`, how far from the qubit bath spins are included.
+- `rdip`, how close two bath spins must be to form a pair cluster.
+- The time window, how long the curve is computed.
+- The number of bath configurations, the random placements of the spins that are averaged.
 
-- **Candidates** are the values of `rbath` or `rdip` the runner tries. You can give them, or leave them out and let
-  the runner choose them.
-- **The production** is the final calculation with the chosen values, on its own set of bath configurations.
-- **Converged** is the status when every value was found. `unresolved` means one was not, and the summary says which
-  and what to change.
+[Basic 03: Checking convergence](../../basic/03_convergence/README.md) checks them by hand, one at a time. An
+`auto_convergence` block in the input does the same automatically. You write an ordinary input, add the block, and
+run `mpirun -n N main.out -f ccein.jsonc` as usual. CCEX then hands the run to a Python program, the runner
+(`example/tools/AutoConvergence/`), which makes many small CCEX runs, chooses the four values, and finally computes
+the curve with them.
+
+You need Python with numpy, scipy and matplotlib, and several bath files named with `{k}` (`config_1`, `config_2`,
+...), one per configuration. The `run.sh` of each case makes them.
 
 How the runner decides is in [Automatic convergence](../../../../docs/methods/auto-convergence.md), and every key of
 the block is in [Automatic convergence tags](../../../../docs/user/InputFile_AutoConvergence.md).
 
-1. [cCCE2_Hahn_ensemble](#ac_given): you give the candidates.
-2. [cCCE2_Hahn_ensemble_noCandidates](#ac_found): the runner chooses the candidates.
-3. [The two cases compared](#ac_compared): the values found, the times, and one warning to read.
+This page has four cases:
 
-<a id="ac_given"></a>
-## 1. cCCE2_Hahn_ensemble: you give the candidates
-
-- **What it shows:** the NV of Basic 01, a cCCE2 Hahn echo of the ensemble. The input gives the rdip candidates
-  4–12 Å and the rbath candidates 30–45 Å. The runner finds the time window (1.5 times the decay time), rdip, rbath,
-  and how many configurations the mean needs for a relative error of 5 % or less.
-- **Keys that matter:** `auto_convergence` {`workdir`, `rdip.candidates`, `rbath.candidates`, `sampling`}. The bath
-  files are `configuration.bathfile` ["results/bath/config_{k}"], and every k whose file exists is used. `nstep` 101
-  is the number of time points of every run, and `deltat` sets only the first window.
-- **How to run:** `NP=4 bash run.sh`. It first makes 40 bath configurations with `../../../make_natab_baths.sh` (cells
-  of 110 Å, enough for rbath up to 53 Å, and `NBATH` sets how many). Then it starts the runner. It takes about 5 min,
-  most of it making the baths, and under 0.2 GB per process. Running it again goes on from where it stopped and reuses
-  the baths and the finished runs.
-- **Expected result:** `expected.png`, the runner's `6_converged_coherence.png`. The status is converged, with the
-  window 2.58 ms, rdip 8 Å, rbath 35 Å and 25 production configurations (relative error 4.0 %). T2 is 0.82 ms from a
-  stretched-exponential fit with n 1.37. `run.sh` prints the status and `results/auto/result/summary.txt`, and
-  `results/auto/result/` also has the figure of each step (`1_window.png`, `2_rdip.png`, `3_rbath.png`,
-  `5_configurations.png`) and the final curve, `coherence_mean.txt`.
-- **What to change next:** raise `nstep`. The 101 points over 2.58 ms are 26 µs apart, coarser than the ¹³C
-  precession at 500 G (about 2 µs), so the small ESEEM ripple is not resolved. The runner keeps `nstep` as written and
-  does not check it.
-
-![cCCE2_Hahn_ensemble: expected result](cCCE2_Hahn_ensemble/expected.png)
-
-Input: [`ccein.jsonc`](cCCE2_Hahn_ensemble/ccein.jsonc)
-
-<a id="ac_steps"></a>
-### What the runner did, step by step
-
-`results/auto/result/summary.txt` lists every step, and each step has a figure. The runner first splits the 40
-configurations into 10 test configurations, which every step below uses, and 30 for the production.
-
-**Step 1, the time window.** The runner computes the test configurations with the largest rbath and rdip, averages
-them (black) and fits $\exp(-(t/T_2)^n)$ to the average (red, T2 0.92 ms, n 2.45). The fit reaches |L| = 0.01 at
-1.72 ms, the decay time, and the window is 1.5 times that, 2.58 ms (dotted line). Every later run uses this window.
-
-![Step 1: the time window](cCCE2_Hahn_ensemble/step1_window.png)
-
-**Step 2, rdip.** At rbath 45 Å the runner computes every rdip candidate and compares each with the largest, rdip
-15 Å. The left panel shows the curves, and the right one the relative difference of the area under their T2 fits.
-The difference falls below the 2 % threshold at rdip 8 Å (1.25 %) and stays below it for every larger rdip, so 8 Å is
-chosen.
-
-![Step 2: rdip](cCCE2_Hahn_ensemble/step2_rdip.png)
-
-**Step 3, rbath.** The same with rbath at rdip 8 Å, against rbath 45 Å. The differences are 5.21 % at 30 Å, 1.72 % at
-35 Å and 0.53 % at 40 Å, so 35 Å is chosen. The runner then checks rdip 8 Å again at rbath 45 Å, and it still passes.
-
-![Step 3: rbath](cCCE2_Hahn_ensemble/step3_rbath.png)
-
-**Step 4, the states,** is skipped, since this input is the ensemble (no `configuration.s_range`).
-
-**Step 5, the configurations.** With rbath 35 Å and rdip 8 Å the runner computes the production configurations and
-measures the relative error σA/A of the mean as configurations are added (right panel). The test configurations
-estimated that 14 are needed. The runner computes 1.5 times that, rounded up to a multiple of 5, so 25, and the error
-with 25 is 4.00 %, below the 5 % threshold. The left panel shows the mean of the first 1, 2, 5, ... configurations
-settling down.
-
-![Step 5: the number of configurations](cCCE2_Hahn_ensemble/step5_configurations.png)
-
-**Step 6, the result,** is the mean of the 25 production curves with its T2 fit, the figure `expected.png` above.
+1. [Letting the runner choose everything](#ac_found) (`cCCE2_Hahn_ensemble_noCandidates/`): the shortest input, and
+   [what the runner does step by step](#ac_steps).
+2. [Giving the candidates](#ac_given) (`cCCE2_Hahn_ensemble/`): you list the rdip and rbath values to try.
+3. [Fixing some values](#ac_fixed) (`cCCE2_Hahn_ensemble_fixed/`): the window and rbath given, so the runner does not
+   search them.
+4. [Sampled bath states](#ac_states) (`cCCE2_Hahn_states/`): the step that checks the number of states.
 
 <a id="ac_found"></a>
-## 2. cCCE2_Hahn_ensemble_noCandidates: the runner chooses the candidates
+## 1. Letting the runner choose everything
 
-- **What it shows:** the same calculation with the `rdip` and `rbath` blocks left out. The runner counts the ¹³C of
-  its test configurations and sets four rbath candidates up to 33.4 Å, the radius that holds 300 spins, and seven rdip
-  candidates up to 8.2 Å, from an estimate of the pair couplings. It then raises the largest of each until the
-  results agree (`example/tools/AutoConvergence/autoconv/autostart.py`).
-- **Keys that matter:** `auto_convergence` {`workdir`, `sampling`} only. The rest is as in `cCCE2_Hahn_ensemble`.
-- **How to run:** `NP=4 bash run.sh`. With candidates it chose itself, the runner asks for two agreeing results in a
-  row, so it goes to larger rbath and needs larger baths. `run.sh` makes them in cells of 140 Å (rbath up to 68 Å).
-  With the 110 Å cells of `cCCE2_Hahn_ensemble` the run would stop as `truncation-unresolved` and ask for baths
-  covering 65.5 Å.
-- **Expected result:** `expected.png`, the runner's `6_converged_coherence.png`. The status is converged.
-- **What to change next:** compare the values it found with those of `cCCE2_Hahn_ensemble` ([section 3](#ac_compared)).
+Folder: `cCCE2_Hahn_ensemble_noCandidates/`
+
+<a id="ac_found_input"></a>
+### 1.1 The input
+
+The system is the NV of Basic 01, a cCCE2 Hahn echo of the ensemble at 500 G. The input has no `rbath` or `rdip`,
+and it adds one block:
+
+```jsonc
+"configuration"    : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C", "seed": 1,
+                      "bathfile": ["results/bath/config_{k}"]},
+"deltat"           : 0.01,
+"nstep"            : 101,
+"auto_convergence" : {"workdir": "results/auto", "sampling": {}}
+```
+
+- `workdir` is the folder for the runs and the results.
+- `sampling` is left empty, so its defaults hold.
+- Each `results/bath/config_k` that exists is one configuration.
+- `nstep` is the number of time points of every run. `deltat` only sets the first window.
+
+<a id="ac_found_run"></a>
+### 1.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+`run.sh` makes 40 bath configurations in cells of 140 Å with `../../../make_natab_baths.sh` (`NBATH` sets how many).
+Then it runs `mpirun -n 4 main.out -f ccein.jsonc`. On 4 ranks of a desktop CPU this takes about 7 min, most of it for
+the baths, and 0.19 GB per process. A stopped run goes on from where it stopped when you start it again.
+
+<a id="ac_steps"></a>
+### 1.3 What the runner does
+
+Each step prints its lines in `results/auto/result/summary.txt` and draws a figure in the same folder.
+
+**How the runner judges.** Every step turns a curve into one number, the area under a stretched exponential fitted to
+the mean |L(t)|:
+
+$$A = \int_0^\infty e^{-(t/T_2)^n}\,dt = T_2\,\Gamma(1 + 1/n).$$
+
+When a fit fails, the area under the mean curve itself, from 0 to the decay time, is used. The criteria are:
+
+| Step | Criterion | Key, default |
+|---|---|---|
+| 1. Time window | The decay time $T_d$ is where the fit reaches \|L\| = 0.01, and the window is $1.5\,T_d$. | `time_window.decay_level` 0.01, `production_factor` 1.5 |
+| 2. rdip, 3. rbath | A value agrees when $\lvert A/A_\text{ref} - 1\rvert \le$ 2 %, with $A_\text{ref}$ the largest value computed. The smallest value from which every larger one agrees is chosen. | `rdip.threshold`, `rbath.threshold` 0.02 |
+| 4. States | The share of the states in the error of the mean is at most 5 %. This is a check only. | `sampling.states_threshold` 0.05 |
+| 5. Configurations | The relative error of the mean, $\sigma_A/A$, is at most 5 %. | `sampling.threshold` 0.05 |
+
+First the runner splits the 40 configurations. Ten are test configurations, which steps 1 to 3 use. The other 30 are
+for the production, the final calculation with the chosen values. Then it counts the ¹³C of the test configurations
+and sets the candidates, the values of rbath and rdip to try:
+
+- Four rbath candidates up to 33.4 Å, the radius that holds 300 spins.
+- Seven rdip candidates from 3.4 to 12.9 Å, around an estimate of 8.2 Å from the pair couplings
+  (`example/tools/AutoConvergence/autoconv/autostart.py`).
+
+<a id="ac_step1"></a>
+#### Step 1. The time window
+
+The test configurations (grey) are averaged (black), and $\exp(-(t/T_2)^n)$ is fitted to the average (red). The fit
+reaches |L| = 0.01 at 1.99 ms, the decay time. The window is 1.5 times that, 2.98 ms (dotted line), and every later
+run uses it. The decay time is checked once more at the largest rbath and rdip, and the window stays.
+
+![Step 1: the time window](cCCE2_Hahn_ensemble_noCandidates/step1_window.png)
+
+<a id="ac_step2"></a>
+#### Step 2. rdip
+
+At rbath 33.4 Å every rdip candidate is computed and compared with a larger reference, 16.1 Å. The right panel shows
+the relative difference of the area under the T2 fits. It drops below the 2 % threshold at 6.6 Å (1.88 %) and stays
+below it for every larger rdip.
+
+![Step 2: rdip](cCCE2_Hahn_ensemble_noCandidates/step2_rdip.png)
+
+<a id="ac_step3"></a>
+#### Step 3. rbath
+
+rbath is compared in the same way, with rdip 8.24 Å. The largest rbath grows by a factor 1.25 until the two largest
+agree. With candidates the runner chose itself, it asks for two agreements in a row, so the reference reaches
+65.2 Å. The difference is 3.09 % at 33.4 Å and 0.94 % at 41.7 Å, so rbath is 41.7 Å.
+
+At the larger rbath, rdip is checked again. There 6.6 Å no longer agrees but 8.24 Å does, so the final rdip is
+8.24 Å. The figure of step 2 therefore still marks 6.6 Å.
+
+![Step 3: rbath](cCCE2_Hahn_ensemble_noCandidates/step3_rbath.png)
+
+<a id="ac_step4"></a>
+#### Step 4. The states
+
+This input is the ensemble (no `configuration.s_range`), so there are no sampled states and the step is skipped.
+[Section 4](#ac_states) shows it with sampled states.
+
+<a id="ac_step5"></a>
+#### Step 5. The number of configurations
+
+With rbath 41.7 Å and rdip 8.24 Å the production configurations are computed one after another, and the relative
+error σA/A of their mean is measured as they are added (right panel). The test configurations estimated that 30 are
+needed, which is all the production has. With 30 the error is 3.27 %, below the 5 % threshold.
+
+![Step 5: the number of configurations](cCCE2_Hahn_ensemble_noCandidates/step5_configurations.png)
+
+<a id="ac_found_result"></a>
+### 1.4 The result
 
 ![cCCE2_Hahn_ensemble_noCandidates: expected result](cCCE2_Hahn_ensemble_noCandidates/expected.png)
 
+The figure is the mean of the 30 production curves with its T2 fit, the runner's `6_converged_coherence.png`. The
+mean itself is in `results/auto/result/coherence_mean.txt`.
+
+`summary.txt` starts with the status, `converged`, which means every value was found. If one had not been found, it
+would read `unresolved` and say which value and what to change. The values found are rdip 8.24 Å, rbath 41.7 Å and
+the window 2.98 ms, and T2 is 0.81 ms (stretched-exponential fit, n 1.81).
+
+Read the WARNINGS under the status before you use the result. At the end the runner compares the chosen rbath and
+rdip with the largest values it computed, on three production configurations. Here they differ by 5.7 % in the area
+under the curve, more than the 2 % of each step. This is only a warning, and the status stays converged.
+
+Next, give the candidates yourself (section 2). It is faster and needs smaller baths.
+
 Input: [`ccein.jsonc`](cCCE2_Hahn_ensemble_noCandidates/ccein.jsonc)
 
-<a id="ac_compared"></a>
-## 3. The two cases compared
+<a id="ac_given"></a>
+## 2. Giving the candidates
 
-Times are for 4 ranks of a desktop CPU. Most of the time is making the 40 baths, which is done once.
+Folder: `cCCE2_Hahn_ensemble/`
 
-| | rdip | rbath | Window | Configurations | T2 (n) | Time in all (baths + runner) | Peak memory |
-|---|---|---|---|---|---|---|---|
-| `cCCE2_Hahn_ensemble` (candidates given) | 8 Å | 35 Å | 2.58 ms | 25 | 0.82 ms (1.37) | 4.8 min (3.9 + 0.8) | 0.18 GB |
-| `cCCE2_Hahn_ensemble_noCandidates` | 8.24 Å | 41.7 Å | 2.98 ms | 30 | 0.81 ms (1.81) | 6.9 min (5.6 + 1.2) | 0.19 GB |
+<a id="ac_given_input"></a>
+### 2.1 The input
 
-The two T2 agree within 2 %, but the exponents n do not (1.37 and 1.81). The bath configurations are not the same,
-since the cells have another size.
+It is the input of section 1 with the candidates written in the block:
 
-**A warning to read.** At the end the runner compares the chosen rbath and rdip with the largest values it computed,
-on three production configurations. Here they differ by 9 % in the area under the curve for `cCCE2_Hahn_ensemble`
-(rbath 35 and rdip 8 against rbath 45 and rdip 15) and by 5.7 % for `cCCE2_Hahn_ensemble_noCandidates`, more than the
-2 % each step allows. The runner writes this as a warning in the summary and still reports converged, so read the
-warnings in `summary.txt` before you use the result.
+```jsonc
+"auto_convergence" : {"workdir": "results/auto", "sampling": {},
+                      "rdip": {"candidates": [4, 6, 8, 10, 12]}, "rbath": {"candidates": [30, 35, 40, 45]}}
+```
+
+The runner picks among these values instead of choosing its own. The largest of each is the reference.
+
+<a id="ac_given_run"></a>
+### 2.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+The baths are made in cells of 110 Å, enough for rbath up to 53 Å. The run takes about 5 min and under 0.2 GB per
+process.
+
+<a id="ac_given_result"></a>
+### 2.3 The result
+
+![cCCE2_Hahn_ensemble: expected result](cCCE2_Hahn_ensemble/expected.png)
+
+The status is converged. The values found are the window 2.58 ms, rdip 8 Å, rbath 35 Å and 25 production
+configurations, with a relative error of 4.0 %. T2 is 0.82 ms (n 1.37), the same as in section 1 within 2 %. The runner
+itself took 0.8 min here and 1.2 min in section 1. The final check differs by 9 %, again a warning only.
+
+The time points are worth a second look. The 101 points over 2.58 ms are 26 µs apart, coarser than the ¹³C precession
+at 500 G (about 2 µs), so the small ESEEM ripple is not resolved. The runner keeps `nstep` as written and does not
+check it, so raise `nstep` if the ripple matters.
+
+Input: [`ccein.jsonc`](cCCE2_Hahn_ensemble/ccein.jsonc)
+
+<a id="ac_fixed"></a>
+## 3. Fixing some values
+
+Folder: `cCCE2_Hahn_ensemble_fixed/`
+
+<a id="ac_fixed_input"></a>
+### 3.1 The input
+
+A section of the block can take a value instead of candidates. The runner then uses that value as it is and does not
+test its convergence. This input fixes the window and rbath at the values section 2 found, and leaves rdip to be
+searched:
+
+```jsonc
+"auto_convergence" : {"workdir": "results/auto", "sampling": {},
+                      "time_window": {"value": 2.58}, "rbath": {"value": 35},
+                      "rdip": {"candidates": [4, 6, 8, 10, 12]}}
+```
+
+The values that can be fixed are `time_window.value` (ms), `rdip.value`, `rbath.value` (Å) and
+`sampling.configurations` with `sampling.states`. Fixing all four is refused, since nothing is then left to find. Run
+CCEX itself with those values instead.
+
+<a id="ac_fixed_run"></a>
+### 3.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+It makes the baths of section 2 (cells of 110 Å) and starts the runner. The runner needs 0.018 core-hours here,
+against 0.044 in section 2, since it computes no rbath candidates.
+
+<a id="ac_fixed_result"></a>
+### 3.3 The result
+
+![cCCE2_Hahn_ensemble_fixed: expected result](cCCE2_Hahn_ensemble_fixed/expected.png)
+
+The status is converged. `summary.txt` shows what was not searched. Step 1 reads "window given: 2.58 ms", and step 3
+reads "rbath 35 given (not converged)". rdip is again 8 Å, and the production uses 30 configurations (relative error
+4.06 %). T2 is 0.83 ms (n 1.46).
+
+A fixed value is not checked, and the runner says so in the warnings when it can. Step 1 still fits the test curves,
+and here it measured a decay time of 2.06 ms, whose 1.5 times, 3.08 ms, is longer than the given 2.58 ms. The
+warning "1.5 x T_d = 3.083 ms is longer than the given window" tells you the window may be short. Fix only values you
+have checked before.
+
+Input: [`ccein.jsonc`](cCCE2_Hahn_ensemble_fixed/ccein.jsonc)
+
+<a id="ac_states"></a>
+## 4. Sampled bath states
+
+Folder: `cCCE2_Hahn_states/`
+
+<a id="ac_states_input"></a>
+### 4.1 The input
+
+It is the input of section 2 with sampled bath states. Each spin of a configuration then starts in a definite
+state, and every configuration is computed in several such states instead of the unpolarised ensemble:
+
+```jsonc
+"configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C", "seed": 1, "s_range": [1, 30],
+                   "bathfile": ["results/bath/config_{k}"]}
+```
+
+With an `auto_convergence` block, `s_range` only switches the states on. Its numbers are not used, and the runner says
+so in a warning. How many states are computed comes from `sampling`. The test runs use `test_states` (5 by default)
+states per configuration, and step 4 may add more, up to `max_states` (30). The runner writes the state of every spin
+itself, so a spin keeps its state at every rbath and rdip.
+
+<a id="ac_states_run"></a>
+### 4.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+It uses baths in cells of 110 Å, as section 2. With 5 states per configuration the runner needs 0.057 core-hours,
+against 0.044 for the ensemble of section 2.
+
+<a id="ac_states_step4"></a>
+### 4.3 Step 4, the states
+
+Steps 1 to 3 run as in section 2, now on the test configurations in 5 states each. Step 4 then asks whether 5 states
+are enough. It measures how much of the error of the mean comes from the states, the right panel, for 2 to 5 states.
+
+![Step 4: the states](cCCE2_Hahn_states/step4_states.png)
+
+The share of the states is 1.7 % to 2.9 %, below the 5 % threshold (`states_threshold`) from 2 states on. So 5 states
+are enough, and the step adds none. Had it been above the threshold, the runner would have computed 5 more states at
+a time, up to `max_states`. This step is only a check. Its result is a warning when the states are not enough, and
+the production always uses `test_states` states, here 5.
+
+<a id="ac_states_result"></a>
+### 4.4 The result
+
+![cCCE2_Hahn_states: expected result](cCCE2_Hahn_states/expected.png)
+
+The status is converged, with the window 2.67 ms, rdip 8 Å, rbath 40 Å and 30 production configurations of 5 states
+each (relative error 4.52 %). T2 is 0.87 ms (n 1.38).
+
+Input: [`ccein.jsonc`](cCCE2_Hahn_states/ccein.jsonc)
+

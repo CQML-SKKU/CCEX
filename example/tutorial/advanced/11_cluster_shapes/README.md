@@ -20,14 +20,16 @@ The cluster reports (the contribution of each cluster, the plan) are in
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-1. [cCCE2_Hahn_dsj](#cs_dsj): disjoint groups, the pairs between them, and both, against the standard pairs.
-2. [pCCE2_Hahn_states](#cs_pcce): partitions of 1, 2 and 3 P1.
-3. [cCCE2_Hahn_bundle](#cs_bundle): bundles of up to three ¹³C.
-4. [cCCE2_Hahn_adaptive](#cs_adaptive): the merge refinement of the bundles.
-5. [cCCE2_Hahn_regroup](#cs_regroup): regroup, aimed at |L| > 1.
+1. [Disjoint groups, the pairs between them, and both, against the standard pairs](#cs_dsj) (`cCCE2_Hahn_dsj/`).
+2. [Partitions of 1, 2 and 3 P1](#cs_pcce) (`pCCE2_Hahn_states/`).
+3. [Bundles of up to three ¹³C](#cs_bundle) (`cCCE2_Hahn_bundle/`).
+4. [The merge refinement of the bundles](#cs_adaptive) (`cCCE2_Hahn_adaptive/`).
+5. [Regroup, aimed at |L| > 1](#cs_regroup) (`cCCE2_Hahn_regroup/`).
 
 <a id="cs_dsj"></a>
-## 1. cCCE2_Hahn_dsj: disjoint groups
+## 1. Disjoint groups
+
+Folder: `cCCE2_Hahn_dsj/`
 
 - **What it shows:** the three variants of the standard clustering against the standard pairs
   (`ccein_standard.jsonc`). `cluster.mode` dsj (`ccein.jsonc`) computes only the disjoint groups of the coupling graph
@@ -45,7 +47,9 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_itb.jsonc`](cCCE2_Hahn_dsj/ccein_itb.jsonc), [`ccein_dsjitb.jsonc`](cCCE2_Hahn_dsj/ccein_dsjitb.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_dsj/ccein_standard.jsonc)
 
 <a id="cs_pcce"></a>
-## 2. pCCE2_Hahn_states: partitions
+## 2. Partitions, pCCE
+
+Folder: `pCCE2_Hahn_states/`
 
 - **What it shows:** pCCE2 of the NV in 1 ppm P1, the bath of
   [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md) with one configuration and four sampled
@@ -65,7 +69,9 @@ Inputs: [`ccein.jsonc`](cCCE2_Hahn_dsj/ccein.jsonc), [`ccein_itb.jsonc`](cCCE2_H
 Input: [`ccein.jsonc`](pCCE2_Hahn_states/ccein.jsonc)
 
 <a id="cs_bundle"></a>
-## 3. cCCE2_Hahn_bundle: bundles
+## 3. Bundles
+
+Folder: `cCCE2_Hahn_bundle/`
 
 - **What it shows:** the NV of Basic 01 (`rbath` 30) with ordinary clusters (`ccein_standard.jsonc`) and with bundles
   of up to three ¹³C (`bundle.max_dim` 8, `ccein_bundle.jsonc`). The `[adaptive]` log line says how the 199 spins
@@ -81,7 +87,9 @@ Input: [`ccein.jsonc`](pCCE2_Hahn_states/ccein.jsonc)
 Inputs: [`ccein_bundle.jsonc`](cCCE2_Hahn_bundle/ccein_bundle.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_bundle/ccein_standard.jsonc)
 
 <a id="cs_adaptive"></a>
-## 4. cCCE2_Hahn_adaptive: the merge refinement
+## 4. The merge refinement
+
+Folder: `cCCE2_Hahn_adaptive/`
 
 - **What it shows:** the bundled calculation (`rbath` 20, 2 ms) with the adaptive merge refinement and `atol`
   1e-3. It runs two rounds (27 → 26 bundles) and then stops with the status `no_feasible_improving_merge` (exit status 2).
@@ -98,7 +106,9 @@ Inputs: [`ccein_bundle.jsonc`](cCCE2_Hahn_bundle/ccein_bundle.jsonc), [`ccein_st
 Input: [`ccein.jsonc`](cCCE2_Hahn_adaptive/ccein.jsonc)
 
 <a id="cs_regroup"></a>
-## 5. cCCE2_Hahn_regroup: regroup
+## 5. Regroup, aimed at |L| > 1
+
+Folder: `cCCE2_Hahn_regroup/`
 
 - **What it shows:** the NV in six P1 electron spins (`bath/bath_p1_6`, five sampled states, bundles up to dimension 4)
   with `"regroup": true`. The bundles [0,3] [1,5] [2,4] give three states with |L| > 1.01. The run finds the culprit

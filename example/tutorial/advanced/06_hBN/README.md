@@ -20,11 +20,13 @@ prepared. [Advanced 07: DFT hyperfine and quadrupole tensors](../07_DFT_tensors/
 compares the coherence with and without them, and the hyperfine-mediated term on this bath is in
 [Advanced 10: Corrections to cCCE](../10_cCCE_corrections/README.md).
 
-1. [gCCE2_Hahn_states](#hbn_states): the qubit density matrix of one sampled bath state.
-2. [gCCE2_Hahn_Overhauser](#hbn_overhauser): the Overhauser field of the bath on the qubit.
+1. [The qubit density matrix of one sampled bath state](#hbn_states) (`gCCE2_Hahn_states/`).
+2. [The Overhauser field of the bath on the qubit](#hbn_overhauser) (`gCCE2_Hahn_Overhauser/`).
 
 <a id="hbn_states"></a>
-## 1. gCCE2_Hahn_states: one sampled bath state
+## 1. One sampled bath state
+
+Folder: `gCCE2_Hahn_states/`
 
 - **What it shows:** gCCE2 of one sampled bath state, the qubit density matrix (`quantity` dm) over 0.5 µs in a small
   bath (`rbath` 5 Å). The plot shows the element between ms +1 and 0, divided by its value at t = 0.
@@ -40,7 +42,9 @@ compares the coherence with and without them, and the hyperfine-mediated term on
 Input: [`ccein.jsonc`](gCCE2_Hahn_states/ccein.jsonc)
 
 <a id="hbn_overhauser"></a>
-## 2. gCCE2_Hahn_Overhauser: the Overhauser field
+## 2. The Overhauser field
+
+Folder: `gCCE2_Hahn_Overhauser/`
 
 - **What it shows:** the Overhauser field of the bath on the qubit (`hamiltonian.common.qubit_bath_mean_field`) at
   zero field, between the ms ±1 superposition (`alpha_state` vector [1, 0, 1]) and ms 0.
