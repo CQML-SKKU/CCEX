@@ -16,8 +16,23 @@ The `frame.rotation` block turns the file frame onto the computational one, and 
   the file frame (it is turned with the positions) and `"qubit"` for the computational one. With the rotation on the
   key is required, since a tensor turned twice or not at all still looks like a tensor. Case 2 shows it.
 
-[The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what is turned and what
-is not.
+In formulas, with $\hat q$ the unit `qubit_axis` and $\hat z = [0, 0, 1]$ of the file frame, the rotation $R$ has the
+rows
+
+$$\mathbf e_z = \hat q, \qquad \mathbf e_x = \frac{\hat q \times \hat z}{\lvert \hat q \times \hat z\rvert}, \qquad \mathbf e_y = \mathbf e_z \times \mathbf e_x,$$
+
+so that $R\hat q = [0, 0, 1]$. CCEX applies it once, before the clusters are made:
+
+- Every position, with $\mathbf r_0$ the position of the first qubit, becomes
+  $\mathbf r_\text{new} = \mathbf r_0 + R(\mathbf r_\text{old} - \mathbf r_0)$.
+- Every tensor declared `"file"` becomes $T_\text{new} = R\,T\,R^T$. A tensor declared `"qubit"` is used as written.
+- `bfield` is not changed, since it is already in the computational frame. In the file frame it is
+  $R^T [0, 0, B_z] = B_z \hat q$, a field along the qubit axis.
+
+For `qubit_axis` [1, 1, 1] the rows are $\mathbf e_x = [1, -1, 0]/\sqrt2$, $\mathbf e_y = [1, 1, -2]/\sqrt6$ and
+$\mathbf e_z = [1, 1, 1]/\sqrt3$, and the run log prints them. A bath spin 1 Å from the qubit along [1, 1, 1] ends up 1 Å
+from it along z. [The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what
+is turned and what is not.
 
 `bath/make_cubic_frame.py` turns a bath about its qubit so that the NV axis points along [111], as a bath written in
 the cubic cell would be. It made `bath/bath_Diamond_NV_natab_cubic_1` from the ¹³C bath of Basic 01, and
