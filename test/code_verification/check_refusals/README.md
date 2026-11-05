@@ -18,7 +18,7 @@ It writes to `../check_input_forms/_work/`, which git ignores.
 | Old keys | removed or renamed keys, values and places (`frame.rotation` keys, top-level `backend`, `outfile`, old `alphams`, old `savemode` names, flat `gpu_*` keys, ...) | message naming the new form |
 | Command line | removed options `-I -N -m -q -B -s -S -a -P --auto_conv --adaptive --auto_status`, unknown options, `-o` and `-e` misuse | message; `--help` equals `-h` |
 | Malformed values | missing axes, out-of-range indices, unknown `unit`, wrong types, misspelt keys, short arrays, bad Manual sequences, `nstep` 0, bad qubit states | message |
-| Combinations | gCCE with dsj or itb; `hamiltonian.cCCE` in gCCE; `adaptive` outside pcce or bundle; `delta_A` without a spin-1 ZFS; `quantity` `noise`; bad `evolution_update`, `propagator` and `gpu_options` pairings | message, before the calculation |
+| Combinations | gCCE with dsj or itb; `hamiltonian.cCCE` in gCCE; `adaptive` outside bundle; `delta_A` without a spin-1 ZFS; `quantity` `noise`; bad `evolution_update`, `propagator` and `gpu_options` pairings | message, before the calculation |
 | v3 tensor files | wrong tag or provenance line, unknown version or source, bad S | message |
 | Regroup `factors`, `except` | states or steps outside the run, gCCE, order 1, keys outside their mode | before any state is calculated |
 | Must not exit 0 | h-BN tensor file without `g-factor___` or `etc____`; result files on `/dev/full`; a directory in place of `_noDiv` | non-zero exit |

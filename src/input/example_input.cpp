@@ -357,7 +357,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //          "max_clusters"      : 200000,
 //          "max_work"          : 20000000
 //      },
-        // The adaptive refinement (mode pcce or bundle): rerun, measure the error, change the bundles, until atol and
+        // The adaptive refinement (mode bundle): rerun, measure the error, change the bundles, until atol and
         // rtol hold or max_rounds.
 //      "adaptive"  : {
             // Folder of the steps and summary.json. Required.
@@ -440,7 +440,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- output -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_Output.md. Tutorial: advanced/10_cluster_modes (cCCE2_Hahn_clusterReport).
+    // docs: InputFile_Output.md. Tutorial: advanced/02_analysis (cCCE2_Hahn_clusterReport).
 //  "output"           : {
         // Folder of the outputs, made when missing; -o DIR takes its place. Default: the working directory.
 //      "path"                  : "results",

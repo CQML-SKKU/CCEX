@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.1.0 — 2026-11-04 (changes since 2.0.1)
+## 2.1.0 — 2026-11-06 (changes since 2.0.1)
 
 ### Summary
 
@@ -108,6 +108,9 @@
   rows 1..N of the cluster list, and the pairs took theirs from row s instead of s + 1, the spin before. A pair on spin 0
   shortened the list itself, so the last spins dropped out (two of 978 in the dsj tutorial). dsjitb at order 2 now
   gives the standard CCE2 exactly; it differed by up to 0.06 there. `check_input_forms` has a `dsjitb` stage.
+- **The `cluster.adaptive` block with `cluster.mode` pcce is refused at the input.** The input check let pcce
+  through, and the refinement then stopped with "ValueError: input must use cluster.mode=bundle". The refinement
+  changes bundles only, and the message now says so (`check_refusals` case `rj_adaptive_pcce`).
 - **cCCE with `quantity` dm stopped in the middle of the run.** It is now refused at input (dm needs gCCE).
 - **The adaptive refinement's message for `-o` and `output.path`** named `cluster.adaptive.output`, the old name. It
   names `cluster.adaptive.workdir`.

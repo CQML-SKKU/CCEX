@@ -784,8 +784,10 @@ reject_case natab_cce2_hahn rj_cce_dm "method cCCE computes quantity coherence o
 # method noise turns backend auto into cpu; with GPU ranks asked for, the message names the method (A98)
 reject_case natab_cce2_hahn rj_noise_ranks_per_gpu "method noise runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu" \
   "d['method'] = 'noise'; d['backend'] = 'auto'; d['gpu_options'] = {'ranks_per_gpu': 4}"
-# the adaptive block belongs to cluster_mode pcce or bundle; the pcce block to pcce
-reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" \
+# the adaptive block belongs to cluster_mode bundle (pcce was let through until 2026-11-06); the pcce block to pcce
+reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode standard)" \
+  "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"
+reject_case p1_pcce2_sk2 rj_adaptive_pcce "the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode pcce)" \
   "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"
 reject_case natab_cce2_hahn rj_pcce_block_standard "the cluster.pcce block belongs to cluster.mode pcce" "d['pcce'] = {'partition_size': 2}"
 # delta_A (A83; what it computes is in ../check_analytic/) needs a spin-1 qubit with a zero-field splitting and is
@@ -987,7 +989,7 @@ reject_attached(){    # reject_attached <option word before the file name> <name
     ( cd "$REPO/test/code_verification/check_numerics/cases/natab_cce2_hahn" &&
       "$MPIRUN" -n 1 "$BIN_DEV" "$1$w/rj_adaptive_standard.json" > "$w/proc_$2" 2>&1 < /dev/null )
     rc=$?
-    if [ $rc -ne 0 ] && grep -qF "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" "$w/proc_$2"
+    if [ $rc -ne 0 ] && grep -qF "the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode standard)" "$w/proc_$2"
     then echo "  PASS  $2 (exit=$rc)"; PASS=$((PASS+1))
     else echo "  FAIL  $2 : exit=$rc, see $w/proc_$2"; FAIL=$((FAIL+1)); fi
 }

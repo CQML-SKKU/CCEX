@@ -437,8 +437,8 @@ void validateHamiltonianForMethod(Config* cnf, QubitArray* qa) {
 //                  "adaptive": { "policy": "merge", "output": "./adaptive_out",
 //                                "atol": 1e-8, "rtol": 2e-6, "max_rounds": 8 } }
 //
-// (written "Adaptive" until A47; keys are read without regard to case). The block belongs to cluster.mode pcce or
-// bundle. A step's input, which the refinement driver writes, holds
+// (written "Adaptive" until A47; keys are read without regard to case). The block belongs to cluster.mode bundle (the
+// refinement changes bundles; pcce was let through here until 2026-11-06 and refused later, in adaptive_main). A step's input, which the refinement driver writes, holds
 // cluster.adaptive: {"work_file": ...} alone: that is the step's
 // work request (cJSON_readOptionConfig), not a request for a refinement.
 //
@@ -475,8 +475,8 @@ std::vector<std::string> adaptiveArgsFromInput(char* fccein, const char* self) {
     }
     cJSON* mode = cJSON_IsObject(clusterBlock) ? cJSON_GetObjectItem(clusterBlock,"mode") : nullptr;
     const char* shape = cJSON_IsString(mode) ? mode->valuestring : "standard";
-    if(strcasecmp(shape,"pcce") && strcasecmp(shape,"bundle"))
-        fail(std::string("the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode ")+shape+")");
+    if(strcasecmp(shape,"bundle"))
+        fail(std::string("the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode ")+shape+")");
     static const char* fixed[] = {"input","binary","cwd","mpiexec","ranks"};
     const auto value_text = [&](cJSON* v, const std::string& key) -> std::string {
         if(cJSON_IsString(v)) return v->valuestring;
