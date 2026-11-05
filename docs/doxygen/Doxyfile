@@ -971,7 +971,7 @@ INPUT                  = ../../include \
                          ../../example/tutorial/advanced/07_multi_qubits/README.md \
                          ../../example/tutorial/advanced/08_coordinate_rotation/README.md \
                          ../../example/tutorial/advanced/09_hamiltonian_terms/README.md \
-                         ../../example/tutorial/advanced/10_cluster_shapes/README.md \
+                         ../../example/tutorial/advanced/10_cluster_modes/README.md \
                          ../../example/tutorial/advanced/11_dissipation/README.md \
                          ../../example/tutorial/advanced/12_noise/README.md \
                          ../../example/tutorial/advanced/13_pseudospin/README.md

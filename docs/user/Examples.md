@@ -48,7 +48,7 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 | Page | What it covers |
 |---|---|
 | [Advanced 09: The terms of the cluster Hamiltonian](../../example/tutorial/advanced/09_hamiltonian_terms/README.md) | The corrections to cCCE (the hyperfine-mediated term, the Knight shift) against gCCE, and the mean fields. |
-| [Advanced 10: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/10_cluster_shapes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
+| [Advanced 10: The cluster modes (dsj, pCCE, bundles) and adaptive refinement](../../example/tutorial/advanced/10_cluster_modes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
 
 <a id="ex_adv_methods"></a>
 ### 2.4 Other models of the bath
@@ -69,7 +69,7 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 | Hyperfine and quadrupole from DFT. | The tensor files. | [Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) |
 | Near a level crossing, a low or tilted field, or the density matrix. | gCCE. | [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) |
 | Several qubits. | gCCE with `intmap`. | [Advanced 07: Multiple qubits](../../example/tutorial/advanced/07_multi_qubits/README.md) |
-| Strongly coupled bath spins. | pCCE or bundles. | [Advanced 10: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/10_cluster_shapes/README.md) |
+| Strongly coupled bath spins. | pCCE or bundles. | [Advanced 10: The cluster modes (dsj, pCCE, bundles) and adaptive refinement](../../example/tutorial/advanced/10_cluster_modes/README.md) |
 | Large clusters. | The GPU backend. | [Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) |
 | A bath written in the crystal frame. | `frame.rotation`. | [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) |
 | A noise spectrum, or a model noise without a bath. | Method noise. | [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md) |

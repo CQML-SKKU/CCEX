@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/10_cluster_shapes/cCCE2_Hahn_dsj: cCCE2 with cluster.mode dsj, itb and dsjitb against the standard clusters
+# advanced/10_cluster_modes/cCCE2_Hahn_dsj: cCCE2 with cluster.mode dsj, itb and dsjitb against the standard clusters
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

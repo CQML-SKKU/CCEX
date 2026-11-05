@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/10_cluster_shapes/cCCE2_Hahn_adaptive: adaptive refinement of the bundles (merge policy)
+# advanced/10_cluster_modes/cCCE2_Hahn_adaptive: adaptive refinement of the bundles (merge policy)
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

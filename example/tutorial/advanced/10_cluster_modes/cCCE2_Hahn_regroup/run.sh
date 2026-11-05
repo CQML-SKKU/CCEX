@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/10_cluster_shapes/cCCE2_Hahn_regroup: bundled cCCE2 of the NV in six P1 (five states) refined by regroup until every state is physical
+# advanced/10_cluster_modes/cCCE2_Hahn_regroup: bundled cCCE2 of the NV in six P1 (five states) refined by regroup until every state is physical
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

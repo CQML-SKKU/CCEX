@@ -54,7 +54,7 @@
         </tab>
         <tab type="usergroup" url="[none]" title="3. Hamiltonian terms and cluster shapes">
           <tab type="user" url="@ref tutorial_a09" title="09 The terms of the cluster Hamiltonian"/>
-          <tab type="user" url="@ref tutorial_a10" title="10 Cluster shapes (dsj, pCCE and bundles)"/>
+          <tab type="user" url="@ref tutorial_a10" title="10 The cluster modes (dsj, pCCE, bundles) and adaptive refinement"/>
         </tab>
         <tab type="usergroup" url="[none]" title="4. Other models of the bath">
           <tab type="user" url="@ref tutorial_a11" title="11 Dissipation (meCCE and megCCE)"/>

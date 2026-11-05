@@ -130,8 +130,9 @@
 
 - **Tutorials.** `example/tutorial/` is split into `basic/` (01 first run, 02 bath and states, 03 checking convergence,
   04 pulses, 05 cCCE against gCCE, 06 an electron-spin bath) and `advanced/` (01 automatic convergence, 02 analysis, 03 runs on a
-  cluster, 04 GPU, 05 P1 further, 06 hBN, 07 DFT tensors, 08 multiple qubits, 09 coordinate rotation, 10 corrections
-  to cCCE, 11 cluster shapes, 12 dissipation, 13 semiclassical noise, 14 pseudospin); `example/tutorial/README.md` lists the calculations of each, and
+  cluster, 04 GPU, 05 electron-spin baths, 06 V_B⁻ in h-BN with DFT tensors, 07 multiple qubits, 08 coordinate
+  rotation, 09 the terms of the cluster Hamiltonian, 10 the cluster modes and adaptive refinement, 11 dissipation,
+  12 semiclassical noise, 13 pseudospin); `example/tutorial/README.md` lists the calculations of each, and
   `git show v2.0.1:example/tutorial/README.md` the folders of 2.0. Every tutorial input explains each key in a comment
   (its meaning, unit and why this value); the JSON of the inputs did not change except where noted here. New:
   `advanced/13_pseudospin/pseudospin2_Hahn_vsCCE`, `advanced/12_noise/noiseSpectrum_13C` (`compute` spectrum: C(t),

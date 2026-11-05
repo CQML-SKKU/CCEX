@@ -1,6 +1,6 @@
-# Advanced 10: Cluster shapes (dsj, pCCE and bundles)
+# Advanced 10: The cluster modes (dsj, pCCE, bundles) and adaptive refinement
 
-Folder: `example/tutorial/advanced/10_cluster_shapes/`
+Folder: `example/tutorial/advanced/10_cluster_modes/`
 
 These are other ways of cutting the bath into clusters than the standard one.
 

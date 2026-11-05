@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/10_cluster_shapes/cCCE2_Hahn_bundle: cCCE2 with ordinary clusters and with bundles
+# advanced/10_cluster_modes/cCCE2_Hahn_bundle: cCCE2 with ordinary clusters and with bundles
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

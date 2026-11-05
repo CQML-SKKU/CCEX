@@ -63,7 +63,7 @@ cluster whole. Without `rdip`, a coherence check chooses which bundles are conne
 | object | required with `cluster.mode` pcce (for `partition_size`) |
 
 The settings of `cluster.mode` pcce. A k-means search divides the bath into partitions ([pCCE](../methods/pcce.md)).
-[Advanced 10](../../example/tutorial/advanced/10_cluster_shapes/README.md) runs `partition_size` 1 to 3.
+[Advanced 10](../../example/tutorial/advanced/10_cluster_modes/README.md) runs `partition_size` 1 to 3.
 
 ```json
 "cluster": {"mode": "pcce", "pcce": {"partition_size": 2, "trials": 1000, "connections": "spins"}}
@@ -264,4 +264,4 @@ Every step goes into `workdir`, not into `-o` or `output.path`.
 The final curve is `coherence_wiDiv` in the folder that `summary.json` names as `final_directory`
 ([Output files](OutputFiles.md#out_adaptive), [exit codes](BuildingAndRunning.md#ExitCodes)). The patch checks are not
 an error bound of the whole bath, so compare with a run without the refinement.
-[Advanced 10](../../example/tutorial/advanced/10_cluster_shapes/README.md) runs the merge and the regroup.
+[Advanced 10](../../example/tutorial/advanced/10_cluster_modes/README.md) runs the merge and the regroup.

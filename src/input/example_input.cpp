@@ -313,7 +313,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- the clusters -----------------------------------------------------------------------------------------------
-    // docs: InputFile_Cluster.md. Tutorials: advanced/10_cluster_shapes, basic/05_cCCE_vs_gCCE (dsj).
+    // docs: InputFile_Cluster.md. Tutorials: advanced/10_cluster_modes, basic/05_cCCE_vs_gCCE (dsj).
 //  "cluster"          : {
         // standard (default): clusters of up to order bath spins. pcce: of partitions. bundle: of bundles of strongly
         // coupled spins. dsj, itb, dsjitb (cCCE): disjoint and inter-bath variants.
@@ -440,7 +440,7 @@ const char* const kExampleInput = R"CCEX(// ccex_example.jsonc: an input templat
 //  },
 
     // ---- output -----------------------------------------------------------------------------------------------------
-    // docs: InputFile_Output.md. Tutorial: advanced/10_cluster_shapes (cCCE2_Hahn_clusterReport).
+    // docs: InputFile_Output.md. Tutorial: advanced/10_cluster_modes (cCCE2_Hahn_clusterReport).
 //  "output"           : {
         // Folder of the outputs, made when missing; -o DIR takes its place. Default: the working directory.
 //      "path"                  : "results",

@@ -229,7 +229,7 @@ them would exceed `order`, is an *inter-bath* pair.
   equals standard CCE2.
 - At higher order a group is computed whole, but between groups only pairs enter, so `dsjitb` is not CCE-`order`.
 - dsj keeps the strongest couplings inside clusters and needs far fewer clusters than standard CCE. Compare it with
-  `standard` at the same `order` and `rdip`, as `example/tutorial/advanced/10_cluster_shapes/cCCE2_Hahn_dsj/` does.
+  `standard` at the same `order` and `rdip`, as `example/tutorial/advanced/10_cluster_modes/cCCE2_Hahn_dsj/` does.
 
 <a id="cce_references"></a>
 ## References

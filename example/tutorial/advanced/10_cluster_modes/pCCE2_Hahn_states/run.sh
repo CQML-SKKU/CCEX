@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/10_cluster_shapes/pCCE2_Hahn_states: pCCE2 of the NV in 1 ppm P1 with partitions of 1, 2 and 3 spins, and 3 with the connections of spins
+# advanced/10_cluster_modes/pCCE2_Hahn_states: pCCE2 of the NV in 1 ppm P1 with partitions of 1, 2 and 3 spins, and 3 with the connections of spins
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}
