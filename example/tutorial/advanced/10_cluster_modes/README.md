@@ -2,17 +2,19 @@
 
 Folder: `example/tutorial/advanced/10_cluster_modes/`
 
-These are other ways of cutting the bath into clusters than the standard one.
+The standard clusters of CCE are every set of up to `order` bath spins linked by pairs within `rdip`. The modes of
+`cluster.mode` cut the bath in other ways, so that strongly coupled spins are computed together:
 
-- **dsj** (`cluster.mode` dsj, cCCE only) splits the bath into disjoint groups of the coupling graph and computes each
-  group as one cluster.
-- **pCCE** (`cluster.mode` pcce) groups the bath into partitions of `partition_size` spins by k-means on the positions
-  and runs the expansion over partitions, so order 2 means pairs of partitions.
-- **Bundle clustering** (`cluster.mode` bundle) bundles strongly coupled spins, from the coupling strengths and under
-  the dimension cap `cluster.bundle.max_dim`. Every bundle enters a cluster whole, and `order` counts bundles.
-- **Adaptive refinement** (the `cluster.adaptive` block,
-  [Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)) repeats the bundled calculation, measures
-  the error at the bundle boundaries and re-bundles.
+- **dsj** (cCCE only) splits the bath into disjoint groups of at most `order` spins, joining the most strongly coupled
+  pairs first, and computes each group as one cluster. It needs far fewer clusters than the standard expansion.
+- **pCCE** cuts the bath into partitions of `partition_size` spins close in space (k-means on the positions) and runs
+  the expansion over partitions. A partition enters a cluster whole, so order 2 means pairs of partitions.
+- **Bundles** join strongly coupled spins into bundles, from the coupling strengths and up to the dimension
+  `cluster.bundle.max_dim`, and run the expansion over bundles. `order` counts bundles.
+
+The `cluster.adaptive` block works on the bundles. It repeats the bundled calculation, measures the error of the
+expansion at the bundle boundaries and changes the bundles where it is large
+([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)).
 
 The cluster reports (the contribution of each cluster, the plan) are in
 [Advanced 02: Analysis of the output](../02_analysis/README.md).
@@ -45,9 +47,10 @@ The system is the NV of Basic 01 with `rbath` 50 Å and `rdip` 10 Å. The four i
                                   // ccein_standard.jsonc has no cluster block, the standard pairs
 ```
 
-dsj computes only the disjoint groups of the coupling graph within `rdip`. itb computes only the pairs between the
-groups, the factor the couplings between groups add, so it is a part of the decay and not the coherence. dsjitb
-computes both, and at order 2 it is the standard CCE2 written another way. The three modes run with cCCE only.
+dsj computes only the disjoint groups. itb computes only the pairs between the groups, the factor that the couplings
+between groups add, so it is a part of the decay and not the coherence. dsjitb computes both, and at order 2 it is the
+standard CCE2 written another way ([dsj, itb and dsjitb](../../../../docs/methods/cce.md#cce_dsj)). The three modes
+run with cCCE only.
 
 <a id="a10_dsj_run"></a>
 ### 1.2 Running it
@@ -63,7 +66,8 @@ It runs the four inputs and plots them together. The four runs take 2.5 s and 0.
 
 ![cCCE2_Hahn_dsj: expected result](cCCE2_Hahn_dsj/expected.png)
 
-T2 is 1.158 ms with dsj against 1.084 ms for the standard pairs, with a largest difference of 0.065. dsjitb gives the
+dsj computes 541 clusters, against 4314 for the standard pairs (the log line `Clusters per order`). T2 is 1.158 ms
+with dsj against 1.084 ms for the standard pairs, with a largest difference of 0.065. dsjitb gives the
 standard curve exactly. itb alone is still 0.43 at 2 ms.
 
 Next, try `order` 3. There dsjitb is no longer CCE3, since only pairs enter between the groups.
@@ -96,8 +100,8 @@ ordinary CCE2 over single spins. `trials` and `max_iterations` set the k-means s
 NP=4 bash run.sh
 ```
 
-It runs sizes 1, 2 and 3, and size 3 once more with `cluster.pcce.connections` spins, which links two partitions when
-any of their spins are within `rdip`. It takes 8 s and 0.06 GB per rank. `SIZES="1 2 3 4" bash run.sh` adds size 4,
+It runs sizes 1, 2 and 3, and size 3 once more with `cluster.pcce.connections` spins. By default (`centers`) two
+partitions are linked when their centroids are within `rdip`, and with `spins` when any of their spins are. It takes 8 s and 0.06 GB per rank. `SIZES="1 2 3 4" bash run.sh` adds size 4,
 which takes much longer.
 
 <a id="a10_pcce_result"></a>
@@ -184,8 +188,9 @@ It runs the refinement and plots the first and the final run. It takes 48 s and 
 
 ![cCCE2_Hahn_adaptive: expected result](cCCE2_Hahn_adaptive/expected.png)
 
-The refinement runs two rounds (27 → 26 bundles) and then stops with the status `no_feasible_improving_merge` (exit
-status 2). |L| is 0.38 at 2 ms in the first and the final run, and the largest difference is 1.6e-5, so the merges
+The refinement runs two rounds (27 → 26 bundles) and then stops with the status `no_feasible_improving_merge`: no
+merge lowers the error further. The exit status is 2, which means stopped without passing the checks, and the result
+is the last run ([when it stops](../../../../docs/methods/bundle-adaptive.md#adaptive_stop)). |L| is 0.38 at 2 ms in the first and the final run, and the largest difference is 1.6e-5, so the merges
 hardly move this curve.
 
 Next, try `atol` 1e-4, or `max_rounds` 8.
@@ -202,7 +207,9 @@ Folder: `cCCE2_Hahn_regroup/`
 
 The system is the NV in six P1 electron spins (`bath/bath_p1_6`) with five sampled states and bundles up to
 dimension 4. The NV position and the P1 gyromagnetic ratio are those of
-[Advanced 04: The GPU backend](../04_GPU/README.md). The refinement is regroup:
+[Advanced 04: The GPU backend](../04_GPU/README.md). The refinement is regroup, which looks for the bundles behind an
+unphysical curve, |L| > 1, instead of merging by the local error. It needs cCCE and `order` 2
+([regroup](../../../../docs/methods/bundle-adaptive.md#adaptive_regroup)):
 
 ```jsonc
 "configuration" : {"gyrofile": "../../04_GPU/bath/gyro_P1", "bathfile": ["../bath/bath_p1_6"],
@@ -226,8 +233,9 @@ It runs the refinement and prints each round. It takes 1 s and 0.06 GB per rank.
 ![cCCE2_Hahn_regroup: expected result](cCCE2_Hahn_regroup/expected.png)
 
 The figure shows state 4 before and after. The first bundles [0,3] [1,5] [2,4] give three states with |L| > 1.01.
-The run finds the culprit pairs [0,3]-[1,5] (g 1.63), [0,3]-[2,4] (0.10) and [1,5]-[2,4] (5e-4), and accepts one
-change, splitting [2,4]. The rerun has no unphysical state (status `physical`, exit 0), and the final bundles are
+At the worst point the run measures, for every linked bundle pair, $g = \log\lvert L_{ij}/(L_i L_j)\rvert$, and the
+pairs with $g > 0$ are the culprits, here [0,3]-[1,5] (g 1.63), [0,3]-[2,4] (0.10) and [1,5]-[2,4] (5e-4). It accepts
+one change, splitting [2,4]. The rerun has no unphysical state (status `physical`, exit 0), and the final bundles are
 [[0,3], [1,5], [2], [4]].
 
 Next, try `max_dim` 8, or more states.
