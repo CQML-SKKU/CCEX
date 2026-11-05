@@ -37,8 +37,8 @@ This page has five cases:
 1. [Disjoint groups, the pairs between them, and both, against the standard pairs](#cs_dsj) (`cCCE2_Hahn_dsj/`).
 2. [Partitions of 1, 2 and 3 P1](#cs_pcce) (`pCCE2_Hahn_states/`).
 3. [Bundles of up to three ¹³C](#cs_bundle) (`cCCE2_Hahn_bundle/`).
-4. [The merge refinement of the bundles](#cs_adaptive) (`cCCE2_Hahn_adaptive/`).
-5. [Regroup, aimed at |L| > 1](#cs_regroup) (`cCCE2_Hahn_regroup/`).
+4. [Refining the bundles where the error is large (merge)](#cs_adaptive) (`cCCE2_Hahn_adaptive/`).
+5. [Refining the bundles where |L| > 1 (regroup)](#cs_regroup) (`cCCE2_Hahn_regroup/`).
 
 <a id="cs_dsj"></a>
 ## 1. Disjoint groups
@@ -202,7 +202,7 @@ Next, try `max_dim` 4 (pairs) or 16.
 Inputs: [`ccein_bundle.jsonc`](cCCE2_Hahn_bundle/ccein_bundle.jsonc), [`ccein_standard.jsonc`](cCCE2_Hahn_bundle/ccein_standard.jsonc)
 
 <a id="cs_adaptive"></a>
-## 4. The merge refinement
+## 4. Refining the bundles where the error is large (merge)
 
 Folder: `cCCE2_Hahn_adaptive/`
 
@@ -261,7 +261,7 @@ Next, try `atol` 1e-4, or `max_rounds` 8.
 Input: [`ccein.jsonc`](cCCE2_Hahn_adaptive/ccein.jsonc)
 
 <a id="cs_regroup"></a>
-## 5. Regroup, aimed at |L| > 1
+## 5. Refining the bundles where |L| > 1 (regroup)
 
 Folder: `cCCE2_Hahn_regroup/`
 
