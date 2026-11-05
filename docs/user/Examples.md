@@ -1,49 +1,78 @@
 # Examples
 
-The tutorials are in `example/tutorial/`, in two levels. `basic/` covers the input itself and runs in seconds to a minute; read
-it in order. `advanced/` builds on it; pick the topic you need.
+The tutorials are in `example/tutorial/`, in two levels. `basic/` covers the input itself and runs in seconds to a
+minute, so read it in order. `advanced/` builds on it, so pick the topic you need.
 
-**Basic**
+1. [Basic](#ex_basic): the input, six topics in order.
+2. [Advanced](#ex_advanced): fourteen topics in four groups, each on its own.
+3. [What should I use for my case?](#WhatToUse): the method and the tutorial for a situation.
 
-| Page | Folder | Topic |
-|---|---|---|
-| [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) | `basic/01_first_run` | NV in natural-abundance ¹³C, cCCE2 Hahn echo, seconds on a laptop |
-| [Basic 02: Bath configurations, sampled states and isotopes](../../example/tutorial/basic/02_bath_and_states/README.md) | `basic/02_bath_and_states` | averaging over bath configurations (`k_range`) and over sampled bath states (`s_range`); the built-in isotope table |
-| [Basic 03: Checking convergence](../../example/tutorial/basic/03_convergence/README.md) | `basic/03_convergence` | `rbath`, `rdip`, `order`, the number of configurations and the time axis: change one, see whether the curve still moves |
-| [Basic 04: Pulse sequences](../../example/tutorial/basic/04_pulses/README.md) | `basic/04_pulses` | Hahn echo, CPMG, a sequence written out (`Manual`) |
-| [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) | `basic/05_cCCE_vs_gCCE` | the two methods: the same at a strong field, different near a level crossing |
-| [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) | `basic/06_defect_bath` | an electron-spin bath (P1): the `Defect` block, sampled states, the mean field of the bath |
+<a id="ex_basic"></a>
+## 1. Basic
 
-**Advanced**
+| Page | What it covers |
+|---|---|
+| [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) | An NV in natural-abundance ¹³C, a cCCE2 Hahn echo in seconds on a laptop. |
+| [Basic 02: Bath configurations, sampled states and isotopes](../../example/tutorial/basic/02_bath_and_states/README.md) | Averaging over bath configurations (`k_range`) and over sampled bath states (`s_range`), and the built-in isotope table. |
+| [Basic 03: Checking convergence](../../example/tutorial/basic/03_convergence/README.md) | `rbath`, `rdip`, `order`, the number of configurations and the time axis, each changed until the curve no longer moves. |
+| [Basic 04: Pulse sequences](../../example/tutorial/basic/04_pulses/README.md) | The Hahn echo, CPMG, and a sequence written out (`Manual`). |
+| [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) | The two methods, the same at a strong field and different near a level crossing. |
+| [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) | The `Defect` block, sampled states and the mean field of the bath. |
 
-| Page | Folder | Topic |
-|---|---|---|
-| [Advanced 01: The P1 bath further](../../example/tutorial/advanced/01_P1/README.md) | `advanced/01_P1` | the P1 bath further: the ¹⁴N as a spin, order 4, gCCE at zero field, the density matrix, Vp, a DEER pump |
-| [Advanced 02: V_B⁻ in hexagonal BN](../../example/tutorial/advanced/02_hBN/README.md) | `advanced/02_hBN` | V_B⁻ in h-BN with DFT tensors: sampled states, the Overhauser field |
-| [Advanced 03: Several NV centres](../../example/tutorial/advanced/03_multiNV/README.md) | `advanced/03_multiNV` | several NV centres as one register |
-| [Advanced 04: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/04_DFT_tensors/README.md) | `advanced/04_DFT_tensors` | the hyperfine and quadrupole files from a VASP run (`example/tools/SpinTensorReader`), and what they change |
-| [Advanced 05: Coordinate rotation](../../example/tutorial/advanced/05_coordinate_rotation/README.md) | `advanced/05_coordinate_rotation` | a bath written in another frame (`frame.rotation`) |
-| [Advanced 06: More terms and models](../../example/tutorial/advanced/06_terms_and_models/README.md) | `advanced/06_terms_and_models` | disjoint clusters, the hyperfine-mediated term, meCCE, the Knight shift |
-| [Advanced 07: pCCE and bundles](../../example/tutorial/advanced/07_pCCE_and_bundle/README.md) | `advanced/07_pCCE_and_bundle` | clusters of groups: partitions (pCCE), bundles, adaptive refinement |
-| [Advanced 08: Analysis of the output](../../example/tutorial/advanced/08_analysis/README.md) | `advanced/08_analysis` | the analyzer (error correction, average, T2 fit) and the cluster reports |
-| [Advanced 09: Phase noise (method noise)](../../example/tutorial/advanced/09_noise/README.md) | `advanced/09_noise` | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum; its correlation C(t) and spectrum S(f) |
-| [Advanced 10: Pseudospin pairs](../../example/tutorial/advanced/10_pseudospin/README.md) | `advanced/10_pseudospin` | method `pseudospin`: the pairs of a nuclear bath in the pseudospin model, against cCCE2 |
-| [Advanced 11: The GPU backend](../../example/tutorial/advanced/11_GPU/README.md) | `advanced/11_GPU` | the CUDA backend against the CPU, and the automatic GPU options |
-| [Advanced 12: Automatic convergence](../../example/tutorial/advanced/12_auto_convergence/README.md) | `advanced/12_auto_convergence` | the automatic convergence of the time window, rdip, rbath and the configurations |
-| [Advanced 13: Runs on a cluster (Slurm)](../../example/tutorial/advanced/13_server_runs/README.md) | `advanced/13_server_runs` | a production run as a Slurm job: sizing it, one job, a job array |
+<a id="ex_advanced"></a>
+## 2. Advanced
+
+<a id="ex_adv_run"></a>
+### 2.1 Running and handling a calculation
+
+| Page | What it covers |
+|---|---|
+| [Advanced 01: Automatic convergence](../../example/tutorial/advanced/01_auto_convergence/README.md) | The time window, rdip, rbath and the configurations found by the runner. |
+| [Advanced 02: Analysis of the output](../../example/tutorial/advanced/02_analysis/README.md) | The analyzer (error correction, average, T2 fit) and the cluster reports. |
+| [Advanced 03: Runs on a cluster (Slurm)](../../example/tutorial/advanced/03_server_runs/README.md) | A production run as a Slurm job, its size, one job and a job array. |
+| [Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) | The CUDA backend against the CPU, and the automatic GPU options. |
+
+<a id="ex_adv_systems"></a>
+### 2.2 Other systems and inputs
+
+| Page | What it covers |
+|---|---|
+| [Advanced 05: The P1 bath further](../../example/tutorial/advanced/05_P1/README.md) | The ¹⁴N as a spin, order 4, gCCE at zero field, the density matrix, a Vp bath and a DEER pump. |
+| [Advanced 06: V_B⁻ in hexagonal BN](../../example/tutorial/advanced/06_hBN/README.md) | DFT tensors, sampled states and the Overhauser field. |
+| [Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) | The tensor files from a VASP run (`example/tools/SpinTensorReader`), and what they change. |
+| [Advanced 08: Multiple qubits](../../example/tutorial/advanced/08_multi_qubits/README.md) | Two and three NVs as one register. |
+| [Advanced 09: Coordinate rotation](../../example/tutorial/advanced/09_coordinate_rotation/README.md) | A bath written in another frame (`frame.rotation`). |
+
+<a id="ex_adv_cce"></a>
+### 2.3 Hamiltonian terms and cluster shapes
+
+| Page | What it covers |
+|---|---|
+| [Advanced 10: Corrections to cCCE](../../example/tutorial/advanced/10_cCCE_corrections/README.md) | The hyperfine-mediated term and the Knight shift. |
+| [Advanced 11: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/11_cluster_shapes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
+
+<a id="ex_adv_methods"></a>
+### 2.4 Other models of the bath
+
+| Page | What it covers |
+|---|---|
+| [Advanced 12: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/12_dissipation/README.md) | Lindblad relaxation of the bath spins in every cluster. |
+| [Advanced 13: Semiclassical noise (method noise)](../../example/tutorial/advanced/13_noise/README.md) | The Gaussian coherence of the phase noise, from the bath or from a model spectrum, and its correlation C(t) and spectrum S(f). |
+| [Advanced 14: Pseudospin pairs](../../example/tutorial/advanced/14_pseudospin/README.md) | The pairs of a nuclear bath in the pseudospin model, against cCCE2. |
 
 <a id="WhatToUse"></a>
-## What should I use for my case?
+## 3. What should I use for my case?
 
 | Situation | Use | Example |
 |---|---|---|
-| a defect in a nuclear-spin bath, field along the defect axis | cCCE (default) | [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) |
-| an electron-spin bath (P1, ...) | the `Defect` block, sampled states | [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) |
-| hyperfine and quadrupole from DFT | the tensor files | [Advanced 04: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/04_DFT_tensors/README.md) |
-| near a level crossing, a low or tilted field, density matrix | gCCE | [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) |
-| several qubits | gCCE with `intmap` | [Advanced 03: Several NV centres](../../example/tutorial/advanced/03_multiNV/README.md) |
-| strongly coupled bath spins | pCCE or bundles | [Advanced 07: pCCE and bundles](../../example/tutorial/advanced/07_pCCE_and_bundle/README.md) |
-| large clusters | the GPU backend | [Advanced 11: The GPU backend](../../example/tutorial/advanced/11_GPU/README.md) |
-| a bath written in the crystal frame | `frame.rotation` | [Advanced 05: Coordinate rotation](../../example/tutorial/advanced/05_coordinate_rotation/README.md) |
-| a noise spectrum, or a model noise without a bath | method noise | [Phase noise](../../example/tutorial/advanced/09_noise/README.md) |
-| which nuclear pairs drive the decay | method pseudospin | [Advanced 10: Pseudospin pairs](../../example/tutorial/advanced/10_pseudospin/README.md) |
+| A defect in a nuclear-spin bath, with the field along the defect axis. | cCCE (default). | [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) |
+| An electron-spin bath (P1, ...). | The `Defect` block and sampled states. | [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) |
+| Hyperfine and quadrupole from DFT. | The tensor files. | [Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) |
+| Near a level crossing, a low or tilted field, or the density matrix. | gCCE. | [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) |
+| Several qubits. | gCCE with `intmap`. | [Advanced 08: Multiple qubits](../../example/tutorial/advanced/08_multi_qubits/README.md) |
+| Strongly coupled bath spins. | pCCE or bundles. | [Advanced 11: Cluster shapes (dsj, pCCE and bundles)](../../example/tutorial/advanced/11_cluster_shapes/README.md) |
+| Large clusters. | The GPU backend. | [Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) |
+| A bath written in the crystal frame. | `frame.rotation`. | [Advanced 09: Coordinate rotation](../../example/tutorial/advanced/09_coordinate_rotation/README.md) |
+| A noise spectrum, or a model noise without a bath. | Method noise. | [Advanced 13: Semiclassical noise (method noise)](../../example/tutorial/advanced/13_noise/README.md) |
+| Which nuclear pairs drive the decay. | Method pseudospin. | [Advanced 14: Pseudospin pairs](../../example/tutorial/advanced/14_pseudospin/README.md) |
+| Relaxation of the bath spins or of the qubit. | meCCE or megCCE. | [Advanced 12: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/12_dissipation/README.md) |

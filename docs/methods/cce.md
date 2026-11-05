@@ -40,7 +40,7 @@ a spin connected to any member. For order 3 and up, [cluster.selection.max_per_o
   their sub-clusters. The strength of a cluster is the sum of $|J_{zz}|$ over its spin pairs (below).
 
 A result has converged when raising `order`, `rdip` and `rbath` no longer changes the curve.
-`example/tutorial/advanced/01_P1/cCCE4_Hahn_states/` compares order 2 with order 4, and
+`example/tutorial/advanced/05_P1/cCCE4_Hahn_states/` compares order 2 with order 4, and
 [auto_convergence](../user/InputFile_AutoConvergence.md) finds `rdip`, `rbath` and the time window by itself.
 
 <a id="cce_wiDiv"></a>
@@ -58,8 +58,8 @@ not converged at those times. A sub-cluster coherence close to zero sits in a de
 correction (`example/analysis/Analyzer`, [Analysis](../user/Analysis.md)) compares the two curves to find these points.
 
 It happens with strongly coupled spins, for example close pairs of electron spins, a spin-1 qubit without its
-zero-field splitting in gCCE (tutorial `advanced/01_P1/gCCE2_Hahn_zfs`), or cCCE in a tilted field without
-[knight](../user/InputFile_General.md#tag_knight) (tutorial `advanced/06_terms_and_models/cCCE2_Hahn_knightShift`).
+zero-field splitting in gCCE (tutorial `advanced/05_P1/gCCE2_Hahn_zfs`), or cCCE in a tilted field without
+[knight](../user/InputFile_General.md#tag_knight) (tutorial `advanced/10_cCCE_corrections/cCCE2_Hahn_knightShift`).
 What helps:
 
 - Adding the missing physics, the zero-field splitting or the Knight term.
@@ -205,7 +205,8 @@ Electron baths are usually run with sampled states (`s_range`):
 - The on-site spins' states come from `seed` or `defect_state_file`.
 - The other bath spins act through the [mean field](#cce_meanfield).
 
-`example/tutorial/basic/06_defect_bath/` runs both forms of the ¹⁴N, and [Defect tags](../user/InputFile_Defect.md)
+`example/tutorial/basic/06_defect_bath/` runs the ¹⁴N as a detuning, `advanced/05_P1/cCCE2_Hahn_onsite14N/` as an
+on-site spin, and [Defect tags](../user/InputFile_Defect.md)
 describes the keys.
 
 <a id="cce_dsj"></a>
@@ -228,7 +229,7 @@ them would exceed `order`, is an *inter-bath* pair.
   equals standard CCE2.
 - At higher order a group is computed whole, but between groups only pairs enter, so `dsjitb` is not CCE-`order`.
 - dsj keeps the strongest couplings inside clusters and needs far fewer clusters than standard CCE. Compare it with
-  `standard` at the same `order` and `rdip`, as `example/tutorial/advanced/06_terms_and_models/cCCE2_Hahn_dsj/` does.
+  `standard` at the same `order` and `rdip`, as `example/tutorial/advanced/11_cluster_shapes/cCCE2_Hahn_dsj/` does.
 
 <a id="cce_references"></a>
 ## References

@@ -80,7 +80,7 @@ or to find the clusters that dominate the decay or make it diverge.
 | `cluster_contributions.max_mb` | positive integer (MiB per rank) | `256` | The memory the contribution table may take. The run stops before the propagation if it needs more. |
 
 `cluster_only` shows how many clusters an `rbath` and `rdip` give before a long run.
-[Advanced 08](../../example/tutorial/advanced/08_analysis/README.md) uses `cluster_contributions`.
+[Advanced 02](../../example/tutorial/advanced/02_analysis/README.md) uses `cluster_contributions`.
 
 ```json
 "output": {"cluster_contributions": {"enabled": true, "max_mb": 512}}

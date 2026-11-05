@@ -60,7 +60,7 @@ modules. A preset for another machine can be added in the same way.
 ### CMake
 
 `cmake -B build && cmake --build build` puts the binaries in `build/bin/`. Point the tutorials at them with
-`export CCEX_BIN=$PWD/build/bin/main.out` (and `CCEX_GPU_BIN` for Advanced 11).
+`export CCEX_BIN=$PWD/build/bin/main.out` (and `CCEX_GPU_BIN` for Advanced 04).
 
 | Option | Effect |
 |---|---|

@@ -82,7 +82,7 @@ Each entry says where a `method` runs with a `cluster.mode`:
 | `gCCE` | CPU, GPU¹ | CPU | CPU, GPU¹ | refused |
 | `meCCE` (cCCE + Lindblad jumps on bath spins) | CPU | CPU | refused | refused |
 | `megCCE` (gCCE + jumps on bath spins and the qubit) | CPU | CPU | refused | refused |
-| `noise` (Gaussian phase noise) | CPU, GPU² | refused | refused | refused |
+| `noise` (semiclassical noise) | CPU, GPU² | refused | refused | refused |
 | `pseudospin` (the pairs in the pseudospin model) | CPU | refused | refused | refused |
 
 ¹ With `execution.propagator` `eigen` (the default); `expm` runs on the CPU.
@@ -111,7 +111,7 @@ method and an example for your system, see [What should I use for my case?](Exam
 - [Input file](InputFile.md): every key by group, and the unit of every number.
 - [Output files](OutputFiles.md): every file a run writes, with its columns.
 - [Examples](Examples.md): the tutorials, with their inputs and expected figures. The six basic ones run in seconds;
-  the thirteen advanced ones cover other baths, DFT tensors, the analysis, the GPU, the automatic convergence, the
+  the fourteen advanced ones cover other baths, DFT tensors, the analysis, the GPU, the automatic convergence, the
   noise and pseudospin models and runs on a cluster.
 - [Analysis](Analysis.md): the scripts that average, fit and plot the output.
 - [Tools](Tools.md): the programs that prepare the inputs.

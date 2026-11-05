@@ -42,7 +42,7 @@ mean of 10: 10 file(s), T2 0.8892 ms
 ```
 
 Single configurations scatter widely around the mean, most of all in the ripple of the first 0.5 ms. How many
-configurations are enough is what [Advanced 12: Automatic convergence](../../advanced/12_auto_convergence/README.md)
+configurations are enough is what [Advanced 01: Automatic convergence](../../advanced/01_auto_convergence/README.md)
 decides.
 
 ![cCCE2_Hahn_ensemble: expected result](cCCE2_Hahn_ensemble/expected.png)

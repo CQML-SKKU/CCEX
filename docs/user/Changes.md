@@ -13,10 +13,10 @@ and the builds of 2.0.0.
     clusters or from a model spectrum (Ornstein–Uhlenbeck or a power law). With `hamiltonian.noise.compute` it also
     gives the correlation function C(t) and the spectrum S(f). Its mode sums also run on the GPU
     ([method](InputFile_General.md#tag_method), tutorial
-    [Advanced 09: Phase noise (method noise)](../../example/tutorial/advanced/09_noise/README.md)).
+    [Advanced 13: Semiclassical noise (method noise)](../../example/tutorial/advanced/13_noise/README.md)).
   - `pseudospin` gives the bath's pairs alone, in the pseudospin model of nuclear flip-flops, for any nuclear spin. It
     writes a table of every channel's Ω and Δ ([channels](InputFile_General.md#tag_pseudospin_channels), tutorial
-    [Advanced 10: Pseudospin pairs](../../example/tutorial/advanced/10_pseudospin/README.md)).
+    [Advanced 14: Pseudospin pairs](../../example/tutorial/advanced/14_pseudospin/README.md)).
 - **GPU runs on a full node** ([Execution tags](InputFile_Backend.md#tag_backend)).
   - `execution.gpu_options.ranks_per_gpu` lets only some ranks of a node use the GPU while the others stay on the CPU.
     The clusters are split between them by measured cost.
@@ -31,7 +31,7 @@ and the builds of 2.0.0.
   - `"strained"` and `"bubble"` with a vertex-format `file_without_defect` no longer hang.
   - cCCE with `quantity` dm is refused at input. It stopped in the middle of the run.
 - **Tutorials and documentation.** The tutorials are split into `basic/` (the input itself, six topics to read in
-  order) and `advanced/` (thirteen topics); [Examples](Examples.md) lists both. Every tutorial input explains its keys
+  order) and `advanced/` (fourteen topics); [Examples](Examples.md) lists both. Every tutorial input explains its keys
   in comments. New: the pseudospin tutorial, and calculations for the noise spectrum, the automatic GPU options, the
   tensor files from a VASP run, the analyzer and a run on a Slurm cluster. The site is reorganized: one page per input
   block with a small table per key, a page for the old names ([Upgrading old inputs](InputFile_OldNames.md)), and the

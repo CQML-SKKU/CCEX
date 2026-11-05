@@ -81,7 +81,7 @@ The first call writes `results/ccein_k1_ErrCorr` ... `ccein_k10_ErrCorr`. The se
 With sampled states, the files are `ccein_state<s>_wiDiv`, or `ccein_k<k>_state<s>_wiDiv` together with `k_range`.
 Configurations and states can be averaged in one call with two variables, every curve with the same weight:
 `-fi ccein_kCONF_stateST_ErrCorr -vn CONF ST -v $(seq 1 10) -v $(seq 1 10)`.
-[Advanced 08: Analysis of the output](../../example/tutorial/advanced/08_analysis/README.md) runs the three steps on a
+[Advanced 02: Analysis of the output](../../example/tutorial/advanced/02_analysis/README.md) runs the three steps on a
 P1 bath.
 
 The fit is made by least squares on the real part of the curve, at the points of its upper envelope. `-fit_space` sets
@@ -111,5 +111,5 @@ configurations element by element.
 
 [Basic 03: Checking convergence](../../example/tutorial/basic/03_convergence/README.md) checks `rbath`, `rdip`, `order`,
 the number of configurations and the time axis by hand, with `plot_convergence.py`.
-[Advanced 12: Automatic convergence](../../example/tutorial/advanced/12_auto_convergence/README.md) does the search by
+[Advanced 01: Automatic convergence](../../example/tutorial/advanced/01_auto_convergence/README.md) does the search by
 itself with the `auto_convergence` block.

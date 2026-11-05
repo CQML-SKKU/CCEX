@@ -3,7 +3,7 @@
 An `auto_convergence` block makes `main.out -f input.json` choose the time window, rdip, rbath and the number of
 configurations (and states) by itself, and then run the production. You prepare the bath files, and the rest is found.
 How the runner works is in [Automatic convergence](../methods/auto-convergence.md), and
-[Advanced 12: Automatic convergence](../../example/tutorial/advanced/12_auto_convergence/README.md) runs it.
+[Advanced 01: Automatic convergence](../../example/tutorial/advanced/01_auto_convergence/README.md) runs it.
 
 It supports cCCE with `cluster.mode` standard or pcce (order 2 or more), gCCE (order 1 or more) and fixed bundles, on
 the CPU or the GPU. The order is the input's. The run needs one qubit, `quantity` coherence, and one bath file per

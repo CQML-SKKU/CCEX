@@ -145,7 +145,7 @@ The units of the object form:
 - `hyperfine`: `Hz`, `kHz`, `MHz`, `GHz`;
 - `efg`: `Hartree/Bohr^2` (`a.u.`), `V/m^2`, `V/A^2`.
 
-[Advanced 01](../../example/tutorial/advanced/01_P1/README.md) runs the same P1 bath this way, with 4 axis states
+[Advanced 05](../../example/tutorial/advanced/05_P1/README.md) runs the same P1 bath this way, with 4 axis states
 (the m<sub>I</sub> are now states of the ¹⁴N spin):
 
 ```json

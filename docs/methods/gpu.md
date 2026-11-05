@@ -2,7 +2,7 @@
 
 CCEX has an optional NVIDIA CUDA backend. It runs in the GPU binary `bin/main_gpu.out`, and the CPU binary
 `bin/main.out` runs every cluster on the CPU. The keys are in [Execution tags](../user/InputFile_Backend.md), and
-[Advanced 11: The GPU backend](../../example/tutorial/advanced/11_GPU/README.md) runs it.
+[Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) runs it.
 
 1. [What runs on the GPU](#gpu_what): the methods and what stays on the CPU.
 2. [Building](#gpu_build): the GPU binary.

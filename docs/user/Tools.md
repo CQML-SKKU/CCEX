@@ -44,7 +44,7 @@ are left out of the bath. More than 100 % is refused. The natural-abundance diam
 1.1
 ```
 
-so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/advanced/02_hBN/bath/prob_hBN`) the file lists ¹⁰B (3,
+so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/advanced/06_hBN/bath/prob_hBN`) the file lists ¹⁰B (3,
 19.9), ¹¹B (3/2, 80.1), ¹⁴N (1, 99.632) and ¹⁵N (1/2, 0.368).
 
 | Option | Meaning |
@@ -110,7 +110,7 @@ is made, so `--Q` alone also takes an OUTCAR without magnetization.
 `spHamilReader/` is the package (`base/`, `vasp/`, `qe/`), and `main.py` the command line (`-h`). `examples/01..05`
 are five worked cases with their inputs and the tensor files they produced, each with a `do` that reproduces it. The
 tensors of the h-BN tutorials came from this tool, and
-[Advanced 04: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/04_DFT_tensors/README.md) runs it.
+[Advanced 07: DFT hyperfine and quadrupole tensors](../../example/tutorial/advanced/07_DFT_tensors/README.md) runs it.
 
 <a id="tag_tool_isotopetable"></a>
 ## 3. IsotopeTable

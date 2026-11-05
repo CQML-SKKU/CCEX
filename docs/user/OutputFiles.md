@@ -185,7 +185,7 @@ status and the path of `summary.json`. The status sets the exit code of `main.ou
 | an error during the refinement | 1 |
 
 With exit code 2 the refinement stopped at that status, and its last step is still the result.
-`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive` ends this way, with `no_feasible_improving_merge`.
+`example/tutorial/advanced/11_cluster_shapes/cCCE2_Hahn_adaptive` ends this way, with `no_feasible_improving_merge`.
 
 <a id="out_autoconv"></a>
 ## 9. Automatic convergence (auto_convergence.workdir)

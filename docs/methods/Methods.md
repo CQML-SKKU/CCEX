@@ -16,7 +16,7 @@ other pages build on. The input keys are in the [input reference](../user/InputF
 | [Partition CCE (pCCE)](pcce.md) | Partitions of fixed size from a k-means search, the dropped rest spins, connections by centres or spins, and the partition cache. |
 | [Bundle clustering and adaptive refinement](bundle-adaptive.md) | Bundles from the coupling strengths, their connections (distance, auto, checked), the limits of the expansion, and the merge and regroup refinement with its outputs and exit statuses. |
 | [Master-equation CCE](master-equation.md) | meCCE and megCCE, with Lindblad jump operators on the bath and the qubit. |
-| [Gaussian phase noise](noise.md) | Method noise, the coherence exp(−χ) from the bath's cluster modes or from a model spectrum, and the correlation function and spectrum. |
+| [Semiclassical noise](noise.md) | Method noise, the coherence exp(−χ) from the bath's cluster modes or from a model spectrum, and the correlation function and spectrum. |
 | [Pseudospin model of nuclear pairs](pseudospin.md) | Method pseudospin, the cut pair Hamiltonian, the channels grouped or pairwise, its accuracy and the channel table. |
 
 <a id="meth_parts"></a>

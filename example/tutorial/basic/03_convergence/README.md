@@ -233,7 +233,7 @@ Input: [`ccein.jsonc`](cCCE2_Hahn_timeAxis/ccein.jsonc)
 | time axis | 1 µs, 10 µs, revivals; 0.3 and 2 ms | revivals or 1 µs, 2 ms | revivals or 1 µs |
 
 These values hold for this system: ¹³C at natural abundance, 500 G, Hahn echo. Another bath, field or pulse sequence
-needs its own check. [Advanced 12: Automatic convergence](../../advanced/12_auto_convergence/README.md) runs the same
+needs its own check. [Advanced 01: Automatic convergence](../../advanced/01_auto_convergence/README.md) runs the same
 search automatically.
 
 ## Next

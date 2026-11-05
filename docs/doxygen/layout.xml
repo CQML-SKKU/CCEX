@@ -11,7 +11,7 @@
       <tab type="user" url="@ref md_docs_2methods_2pcce" title="Partition CCE (pCCE)"/>
       <tab type="user" url="@ref md_docs_2methods_2bundle-adaptive" title="Bundles and adaptive refinement"/>
       <tab type="user" url="@ref md_docs_2methods_2master-equation" title="Master-equation CCE"/>
-      <tab type="user" url="@ref md_docs_2methods_2noise" title="Gaussian phase noise"/>
+      <tab type="user" url="@ref md_docs_2methods_2noise" title="Semiclassical noise"/>
       <tab type="user" url="@ref md_docs_2methods_2pseudospin" title="Pseudospin model"/>
       <tab type="user" url="@ref md_docs_2methods_2deer" title="DEER bath pulses"/>
       <tab type="user" url="@ref md_docs_2methods_2coordinate-frame-rotation" title="Coordinate frame rotation"/>
@@ -40,19 +40,28 @@
         <tab type="user" url="@ref tutorial_b06" title="06 An electron-spin bath (P1)"/>
       </tab>
       <tab type="usergroup" url="[none]" title="Advanced">
-        <tab type="user" url="@ref tutorial_a01" title="01 The P1 bath further"/>
-        <tab type="user" url="@ref tutorial_a02" title="02 V_B⁻ in hexagonal BN"/>
-        <tab type="user" url="@ref tutorial_a03" title="03 Several NV centres"/>
-        <tab type="user" url="@ref tutorial_a04" title="04 DFT hyperfine and quadrupole tensors"/>
-        <tab type="user" url="@ref tutorial_a05" title="05 Coordinate rotation"/>
-        <tab type="user" url="@ref tutorial_a06" title="06 More terms and models"/>
-        <tab type="user" url="@ref tutorial_a07" title="07 pCCE and bundles"/>
-        <tab type="user" url="@ref tutorial_a08" title="08 Analysis of the output"/>
-        <tab type="user" url="@ref tutorial_a09" title="09 Phase noise (method noise)"/>
-        <tab type="user" url="@ref tutorial_a10" title="10 Pseudospin pairs"/>
-        <tab type="user" url="@ref tutorial_a11" title="11 The GPU backend"/>
-        <tab type="user" url="@ref tutorial_a12" title="12 Automatic convergence"/>
-        <tab type="user" url="@ref tutorial_a13" title="13 Runs on a cluster (Slurm)"/>
+        <tab type="usergroup" url="[none]" title="1. Running and handling a calculation">
+          <tab type="user" url="@ref tutorial_a01" title="01 Automatic convergence"/>
+          <tab type="user" url="@ref tutorial_a02" title="02 Analysis of the output"/>
+          <tab type="user" url="@ref tutorial_a03" title="03 Runs on a cluster (Slurm)"/>
+          <tab type="user" url="@ref tutorial_a04" title="04 The GPU backend"/>
+        </tab>
+        <tab type="usergroup" url="[none]" title="2. Other systems and inputs">
+          <tab type="user" url="@ref tutorial_a05" title="05 The P1 bath further"/>
+          <tab type="user" url="@ref tutorial_a06" title="06 V_B⁻ in hexagonal BN"/>
+          <tab type="user" url="@ref tutorial_a07" title="07 DFT hyperfine and quadrupole tensors"/>
+          <tab type="user" url="@ref tutorial_a08" title="08 Multiple qubits"/>
+          <tab type="user" url="@ref tutorial_a09" title="09 Coordinate rotation"/>
+        </tab>
+        <tab type="usergroup" url="[none]" title="3. Hamiltonian terms and cluster shapes">
+          <tab type="user" url="@ref tutorial_a10" title="10 Corrections to cCCE"/>
+          <tab type="user" url="@ref tutorial_a11" title="11 Cluster shapes (dsj, pCCE and bundles)"/>
+        </tab>
+        <tab type="usergroup" url="[none]" title="4. Other models of the bath">
+          <tab type="user" url="@ref tutorial_a12" title="12 Dissipation (meCCE and megCCE)"/>
+          <tab type="user" url="@ref tutorial_a13" title="13 Semiclassical noise (method noise)"/>
+          <tab type="user" url="@ref tutorial_a14" title="14 Pseudospin pairs"/>
+        </tab>
       </tab>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Analysis" title="Analysis"/>

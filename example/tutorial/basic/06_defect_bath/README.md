@@ -11,7 +11,7 @@ nitrogen in diamond, each an electron spin 1/2. Three things change:
 - A P1 is not an isotope. The gyro file gives it as a spin 1/2 with the electron's gyromagnetic ratio. The `Defect`
   block gives the shift of its electron by its own ¹⁴N, one of 12 values set by its bond axis and the ¹⁴N state. The
   ¹⁴N can also be a spin of its own in every cluster, so that a pair is two electrons and two ¹⁴N; see
-  `cCCE2_Hahn_onsite14N` in [Advanced 01](../../advanced/01_P1/README.md).
+  `cCCE2_Hahn_onsite14N` in [Advanced 05](../../advanced/05_P1/README.md).
 - The bath is computed in sampled pure states (`s_range`, Basic 02) instead of the ensemble. Each P1 is then up or
   down, and the P1 outside a cluster set a static field on those inside it (section 2).
 
@@ -82,6 +82,8 @@ Input: [`ccein.jsonc`](cCCE2_Hahn_meanField/ccein.jsonc)
 
 ## Next
 
-The basic tutorials end here. More on the P1 bath (the ¹⁴N as a spin of its own, order 4, gCCE, a DEER pump) is in
-[Advanced 01](../../advanced/01_P1/README.md); the [Examples](../../../../docs/user/Examples.md) page lists all advanced
-tutorials by topic.
+The basic tutorials end here. The advanced ones start with
+[Advanced 01: Automatic convergence](../../advanced/01_auto_convergence/README.md), which does the checks of Basic 03
+by itself. More on the P1 bath (the ¹⁴N as a spin of its own, order 4, gCCE, a DEER pump) is in
+[Advanced 05](../../advanced/05_P1/README.md). The [Examples](../../../../docs/user/Examples.md) page lists all
+advanced tutorials by topic.

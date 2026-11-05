@@ -168,7 +168,7 @@ merge.
 
 `main.out` exits with the status above, so a script should not treat 2 as a crash. With `configuration.k_range` the
 next configuration is not started after a non-zero status.
-`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_adaptive/run.sh` shows how to read it.
+`example/tutorial/advanced/11_cluster_shapes/cCCE2_Hahn_adaptive/run.sh` shows how to read it.
 
 <a id="adaptive_outputs"></a>
 <a id="adaptive_cost"></a>
@@ -201,7 +201,7 @@ Check its effect on your system against a calculation without it.
 The other statuses are `no_positive_culprit`, `no_candidate`, `budget_limited`, `change_limit` (exit 2) and `failed`
 (exit 1). `physical` means bounded, not accurate.
 
-`example/tutorial/advanced/07_pCCE_and_bundle/cCCE2_Hahn_regroup/` runs it. `regroup_factors` and `regroup_whole`
+`example/tutorial/advanced/11_cluster_shapes/cCCE2_Hahn_regroup/` runs it. `regroup_factors` and `regroup_whole`
 choose how the culprit values and the whole curves are obtained. The second needs a build whose long double is the x87
 80-bit type.
 

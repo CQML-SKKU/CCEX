@@ -34,7 +34,7 @@ them directly; `example/tutorial/plot_coherence.py` is such a script.
 
 ## Who calls it
 
-[Advanced 08: Analysis of the output](../tutorial/advanced/08_analysis/README.md) and
-[Advanced 13: Runs on a cluster](../tutorial/advanced/13_server_runs/README.md) run it on their results. The other
+[Advanced 02: Analysis of the output](../tutorial/advanced/02_analysis/README.md) and
+[Advanced 03: Runs on a cluster](../tutorial/advanced/03_server_runs/README.md) run it on their results. The other
 tutorials plot the raw `_wiDiv` files with `example/tutorial/plot_coherence.py`. The check
 `test/code_verification/check_input_forms/errcorr.sh` calls `run.py -err`.

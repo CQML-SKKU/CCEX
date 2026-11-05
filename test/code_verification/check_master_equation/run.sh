@@ -189,7 +189,7 @@ chk "meCCE rate 0 == cCCE (pure bath state, p1_cce2_single, complex)" "$W/me_r0_
 # megCCE with two qubits (the docs say one or more): at rate 0 the gCCE on check_refusals' S5 system (two NV with their
 # ZFS as intmap tensors, two 13C, order 1, one state; written as check_input_forms/legacy.sh writes it), quantity
 # coherence and deltat 1e-4 ms (S5's 1e-7 keeps the curve within 7e-7 of 1; here it reaches 0.43)
-E5="$REPO/example/tutorial/advanced/03_multiNV/gCCE2_HahnRamsey_NV2"
+E5="$REPO/example/tutorial/advanced/08_multi_qubits/gCCE2_HahnRamsey_NV2"
 python3 - "$E5" "$W" <<'PY'
 import json, re, sys; from input_layout import flat, nest
 E, w = sys.argv[1:3]

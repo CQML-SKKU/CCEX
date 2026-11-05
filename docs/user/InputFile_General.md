@@ -526,7 +526,7 @@ The section `hamiltonian.cCCE`, read by cCCE and meCCE.
 | `knight` | boolean, in `hamiltonian.cCCE` | `false` | The Knight-field shift of the bath spins under a field across the qubit axis. It needs a qubit with a zero-field splitting. |
 
 The terms are in [cCCE and gCCE](../methods/cce.md), and
-[Advanced 06](../../example/tutorial/advanced/06_terms_and_models/README.md) runs them.
+[Advanced 10](../../example/tutorial/advanced/10_cCCE_corrections/README.md) runs them.
 
 ```json
 "hamiltonian": {"cCCE": {"hfmedi": true}}
@@ -584,7 +584,7 @@ The section `hamiltonian.noise`, read by method noise.
 | `"bath"`, or a model object, in `hamiltonian.noise` | `"bath"` |
 
 Where the noise of the qubit frequency comes from, for method noise. The coherence is exp(−χ) in the Gaussian
-approximation ([Gaussian phase noise](../methods/noise.md)), which needs many weakly coupled spins.
+approximation ([Semiclassical noise](../methods/noise.md)), which needs many weakly coupled spins.
 
 | Value | Noise |
 |---|---|

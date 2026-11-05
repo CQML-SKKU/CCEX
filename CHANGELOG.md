@@ -34,7 +34,7 @@
   `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
   computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `hamiltonian.noise.fft` is optional:
   `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and an independent semi-classical CCE code
-  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/09_noise`: method noise against cCCE2 for a
+  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/13_noise`: method noise against cCCE2 for a
   1 ppm P1 bath, and an OU model spectrum without the bath keys.
   `noise` was a reserved name refused as not implemented (A49).
 - **method `pseudospin`**: the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops, alone (Seo et
@@ -123,20 +123,20 @@
 ### Tutorials, documentation and checks
 
 - **Tutorials.** `example/tutorial/` is split into `basic/` (01 first run, 02 bath and states, 03 checking convergence,
-  04 pulses, 05 cCCE against gCCE, 06 an electron-spin bath) and `advanced/` (01 P1 further, 02 hBN, 03 several NVs, 04 DFT tensors, 05
-  coordinate rotation, 06 terms and models, 07 pCCE and bundles, 08 analysis, 09 noise, 10 pseudospin, 11 GPU, 12
-  automatic convergence, 13 runs on a cluster); `example/tutorial/README.md` lists the calculations of each, and
+  04 pulses, 05 cCCE against gCCE, 06 an electron-spin bath) and `advanced/` (01 automatic convergence, 02 analysis, 03 runs on a
+  cluster, 04 GPU, 05 P1 further, 06 hBN, 07 DFT tensors, 08 multiple qubits, 09 coordinate rotation, 10 corrections
+  to cCCE, 11 cluster shapes, 12 dissipation, 13 semiclassical noise, 14 pseudospin); `example/tutorial/README.md` lists the calculations of each, and
   `git show v2.0.1:example/tutorial/README.md` the folders of 2.0. Every tutorial input explains each key in a comment
   (its meaning, unit and why this value); the JSON of the inputs did not change except where noted here. New:
-  `advanced/10_pseudospin/pseudospin2_Hahn_vsCCE`, `advanced/09_noise/noiseSpectrum_13C` (`compute` spectrum: C(t),
-  S(f)), `advanced/11_GPU/cCCE5_Hahn_autoOptions` (the automatic `gpu_options`), `advanced/04_DFT_tensors/makeTensors_hBN`
-  (SpinTensorReader on a VASP run), `advanced/08_analysis/cCCE2_Hahn_analyzer` (error correction, average, T2 fit) and
-  `advanced/13_server_runs/cCCE2_Hahn_slurm` (sizing a run, a Slurm job, a job array). `04_hBN/cCCE2_Hahn_ensemble` is
-  `advanced/04_DFT_tensors/cCCE2_Hahn_tensors`. `advanced/02_hBN/gCCE2_Hahn_states` has the V_B⁻ zero-field splitting
+  `advanced/14_pseudospin/pseudospin2_Hahn_vsCCE`, `advanced/13_noise/noiseSpectrum_13C` (`compute` spectrum: C(t),
+  S(f)), `advanced/04_GPU/cCCE5_Hahn_autoOptions` (the automatic `gpu_options`), `advanced/07_DFT_tensors/makeTensors_hBN`
+  (SpinTensorReader on a VASP run), `advanced/02_analysis/cCCE2_Hahn_analyzer` (error correction, average, T2 fit) and
+  `advanced/03_server_runs/cCCE2_Hahn_slurm` (sizing a run, a Slurm job, a job array). `04_hBN/cCCE2_Hahn_ensemble` is
+  `advanced/07_DFT_tensors/cCCE2_Hahn_tensors`. `advanced/06_hBN/gCCE2_Hahn_states` has the V_B⁻ zero-field splitting
   it lacked (T2 0.25 µs, with a 1 ns step; 0.44 µs before), `04_hBN/gCCE2_Hahn_OH` is `gCCE2_Hahn_Overhauser`,
   `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job with nothing visible in its 4.9 ns) is
-  `advanced/03_multiNV/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs), and the 50 ppm input of
-  `advanced/01_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `advanced/11_GPU` has its `expected.png`, made on idm4-gpu; `plot_coherence.py --log-time` draws a log time axis.
+  `advanced/08_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs), and the 50 ppm input of
+  `advanced/05_P1/cCCE2_Hahn_VpBath` takes a 10 ns step. `advanced/04_GPU` has its `expected.png`, made on idm4-gpu; `plot_coherence.py --log-time` draws a log time axis.
 - **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`, with each key's explanation on the lines above it.
   The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
   plain-text formulas are TeX. The automatic convergence has a key page, `docs/user/InputFile_AutoConvergence.md`, and a method page,

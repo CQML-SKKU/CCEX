@@ -7,7 +7,7 @@ picks the interpreter). The runner chooses the time window, rdip, rbath and the 
 runs the production. Every calculation it makes is an ordinary CCEX run in its own folder under `workdir`, with the
 `mpirun -n N` that `main.out` was started with. The keys are in
 [Automatic convergence tags](../user/InputFile_AutoConvergence.md), and
-[Advanced 12](../../example/tutorial/advanced/12_auto_convergence/README.md) runs it.
+[Advanced 01](../../example/tutorial/advanced/01_auto_convergence/README.md) runs it.
 
 1. [The steps](#tag_ac_steps): what the runner does, step by step.
 2. [When two settings agree](#tag_ac_fits): the comparison every step uses.

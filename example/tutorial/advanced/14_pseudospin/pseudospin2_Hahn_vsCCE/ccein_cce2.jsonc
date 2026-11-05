@@ -1,0 +1,28 @@
+{
+    // V_B- in hexagonal BN (spin 1, ms +1 / 0) with natural-abundance 10B, 11B and 14N at 3 T: the Hahn echo by
+    // cCCE to order 2, one bath configuration, the bath in its unpolarised (ensemble) state, with the DFT hyperfine
+    // and quadrupole tensors of advanced/06_hBN. This is the reference the pseudospin runs are compared with.
+    // ccein_cce1.jsonc is the same input with order 1 (the single spins alone); cCCE2 / cCCE1 is then the exact
+    // product of the pair terms, which is what method pseudospin approximates.
+
+    "Qubit"         : {"qubit": [{"file": "../../06_hBN/bath/flat/bath_hBN_VB_flat_Defect"}]},
+                                      // the defect's position (first line of the defect file); spin 1 and the
+                                      // states ms +1 / 0 are the defaults
+    "configuration" : {"gyrofile": "../../06_hBN/bath/hBN_natab_gyro",
+                                      // spin and gyromagnetic ratio of 10B (I = 3), 11B (I = 3/2) and 14N (I = 1)
+                       "bathfile": ["../../06_hBN/bath/flat/bath_hBN_VB_flat_1"]},
+                                      // one configuration of the flat layer (advanced/06_hBN/bath/flat holds 50)
+    "order"         : 2,              // single spins and pairs
+    "bfield"        : 30000,          // Gauss along z, the defect axis (normal to the layer): 3 T
+    "rbath"         : 20,             // Angstrom: the nuclei within 20 A of the defect
+    "rdip"          : 10,             // Angstrom: two nuclei closer than this form a pair cluster
+    "deltat"        : 0.001,          // ms (1 us) per point
+    "nstep"         : 150,            // 150 points: 0 .. 0.149 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "hamiltonian"   : {"common": {
+            "hyperfine"  : {"dipole": "dft", "contact": true,         // the DFT hyperfine tensors (dipolar and contact)
+                            "file": "../../06_hBN/bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
+            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients (I > 1/2)
+                            "file": "../../06_hBN/bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}
+        }}
+}
