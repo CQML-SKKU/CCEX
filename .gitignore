@@ -81,6 +81,7 @@ example/tutorial/**/*_ErrCorr
 example/tutorial/**/*EnsAvg*
 example/tutorial/**/*.png
 !example/tutorial/**/expected.png
+!example/tutorial/**/expected_*.png
 !example/tutorial/**/step*.png
 example/tutorial/**/outfile
 example/tutorial/**/process*

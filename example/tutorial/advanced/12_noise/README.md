@@ -123,10 +123,25 @@ and `results/ccein_spectrum_noise_spectrum` (f in kHz, S in kHz²/kHz, two-sided
 <a id="a12_spectrum_result"></a>
 ### 2.3 The result
 
+The run writes three figures.
+
+**The coherence.** Both routes give T2 0.973 ms, and the two curves are within 1e-10 of each other, which checks the
+FFT grid.
+
 ![noiseSpectrum_13C: expected result](noiseSpectrum_13C/expected.png)
 
-The figure shows the two coherences, C(t) over its first 10 µs and |S(f)| up to 1.5 MHz. T2 is 0.973 ms from both,
-and the coherences are within 1e-10 of each other, which checks the FFT grid.
+**The correlation C(t).** It stays near 3816 kHz² over the whole run, from 3825 kHz² at t = 0 to 3810 kHz² at 2 ms,
+so the noise of this bath changes little in 2 ms. A small oscillation, ±8 kHz² with a period of 1.94 µs, rides on it
+(right, the first 10 µs). In the whole run (left) it is too fast to resolve and looks like a band.
+
+![noiseSpectrum_13C: the correlation C(t)](noiseSpectrum_13C/expected_correlation.png)
+
+**The spectrum S(f).** Nearly all its weight is at f ≈ 0, 3816 of the 3821 kHz² of its integral within ±50 kHz. That
+is the slow part of the noise. A group of lines between 500 and 560 kHz (right), the strongest at 516 kHz, holds
+4 kHz² and gives the oscillation of C(t). They lie near the ¹³C Larmor frequency at 500 G, 535 kHz. The integral of
+S(f) over f, 3821 kHz², equals C(0), 3825 kHz², to 0.1 %.
+
+![noiseSpectrum_13C: the spectrum S(f)](noiseSpectrum_13C/expected_spectrum.png)
 
 Next, try `"fft": {"window": "hann"}` in `hamiltonian.noise`, a window on C(t) before the FFT
 ([fft](../../../../docs/user/InputFile_General.md#tag_noise_fft)), or `pulse.count` 4, another filter on the same
