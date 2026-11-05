@@ -92,7 +92,10 @@ $\Delta_\alpha$ and $\Delta_\beta$ (the level gap), in kHz.
 | pseudospin × cCCE1, `grouped` and `pairwise` | 58.1 µs, within 2.3e-3 of cCCE2 |
 | pseudospin, the pairs alone | 58.2 µs, within 3.9e-2 of cCCE2 |
 
-At 3 T the pairs alone give nearly all of the decay, and `grouped` and `pairwise` agree.
+The left panel shows the curves, which lie on top of each other, and the right panel their difference from cCCE2.
+The pairs alone stay above cCCE2 by up to 0.039, in sharp spikes in the first 60 µs, since they leave out the ESEEM
+dips of the single nuclei. Multiplied by cCCE1 they come within 2.3e-3 of cCCE2, and the `grouped` and `pairwise`
+lines lie on each other. At 3 T the pairs alone give nearly all of the decay.
 
 The channel table shows which pairs can flip. A channel moves its two states into each other only when its gap
 $\Delta$ is not much larger than its coupling $\Omega$, as in any two-level system. In this table:
