@@ -25,6 +25,8 @@ This page has two cases:
 1. [The hyperfine-mediated coupling](#corr_hfmedi) (`cCCE2_Hahn_hfMediated/`).
 2. [The Knight shift in a tilted field](#corr_knight) (`cCCE2_Hahn_knightShift/`).
 
+Section 3 is about the other terms the cluster Hamiltonian can hold, the mean fields of the spins outside a cluster.
+
 <a id="corr_hfmedi"></a>
 ## 1. The hyperfine-mediated coupling
 
@@ -134,3 +136,20 @@ With the Knight shift cCCE has the T2 of gCCE. The curves still differ by up to 
 Next, lower `bfield`, where `delta_A` matters more.
 
 Inputs: [`ccein_gcce.jsonc`](cCCE2_Hahn_knightShift/ccein_gcce.jsonc), [`ccein_wi_knight.jsonc`](cCCE2_Hahn_knightShift/ccein_wi_knight.jsonc), [`ccein_wo_knight.jsonc`](cCCE2_Hahn_knightShift/ccein_wo_knight.jsonc), [`ccein_wi_knight_deltaA.jsonc`](cCCE2_Hahn_knightShift/ccein_wi_knight_deltaA.jsonc)
+
+<a id="corr_meanfield"></a>
+## 3. The mean fields of the spins outside a cluster
+
+With sampled bath states (`s_range`), every bath spin outside a cluster sits in a fixed sublevel, and its static field
+still acts on the cluster. Two keys of `hamiltonian.common` add that field as a mean field
+([mean fields](../../../../docs/user/InputFile_General.md#gen_mf)). In the ensemble neither is used.
+
+| Key | Adds the field of the outside spins to | Methods | Default |
+|---|---|---|---|
+| `bath_bath_mean_field` | The bath spins of the cluster, through the bath-bath coupling. | Every method. | `"z"` |
+| `qubit_bath_mean_field` | The qubit, through the hyperfine coupling (the Overhauser field). | gCCE and megCCE. | `false` |
+
+In the P1 bath of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md), section 2,
+`bath_bath_mean_field` `"off"` gives T2 62 µs against 235 µs with `"z"`. On the P1 bath of
+`advanced/05_P1/gCCE2_Hahn_DEER` (gCCE2, ten sampled states) `qubit_bath_mean_field` true and false gave curves within
+1.3e-4 for the Hahn echo and within 3.3e-6 for Ramsey, so this page has no case for it.
