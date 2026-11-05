@@ -19,11 +19,11 @@ key not written in an input has its default (`main.out -e`). Times are for 4 ran
 
 This page has two cases:
 
-1. [One NV against two in the same bath](#mq_one_two) (`gCCE2_Hahn_oneVsTwoNV/`).
-2. [Three NVs and the coupling between them](#mq_nv3) (`gCCE2_HahnRamsey_NV3/`).
+1. [One NV against two in a ¹³C bath](#mq_one_two) (`gCCE2_Hahn_oneVsTwoNV/`).
+2. [Three NVs and the coupling between them, with almost no bath](#mq_nv3) (`gCCE2_HahnRamsey_NV3/`).
 
 <a id="mq_one_two"></a>
-## 1. One NV against two
+## 1. One NV against two in a ¹³C bath
 
 Folder: `gCCE2_Hahn_oneVsTwoNV/`
 
@@ -74,7 +74,7 @@ Next, move the second NV further away (`xyz`), or choose another pair of registe
 Inputs: [`ccein_multi2.jsonc`](gCCE2_Hahn_oneVsTwoNV/ccein_multi2.jsonc), [`ccein_single.jsonc`](gCCE2_Hahn_oneVsTwoNV/ccein_single.jsonc)
 
 <a id="mq_nv3"></a>
-## 2. Three NVs and the coupling between them
+## 2. Three NVs and the coupling between them, with almost no bath
 
 Folder: `gCCE2_HahnRamsey_NV3/`
 
