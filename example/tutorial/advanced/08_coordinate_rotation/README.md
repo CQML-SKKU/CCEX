@@ -2,17 +2,18 @@
 
 Folder: `example/tutorial/advanced/08_coordinate_rotation/`
 
-CCEX takes the qubit's axis as z. It builds the Hamiltonian in that frame and reads `bfield` along it. Without a
-rotation this z is the z of the bath file. In a bath written in the conventional cubic cell of diamond, the NV axis
-points along [111] instead.
+A bath file, the qubit positions and the position columns of a tensor file are written in the lab or crystal frame
+(the file frame). CCEX builds the Hamiltonian in the computational frame, whose z is the qubit's axis, and reads
+`bfield` in it. Without a rotation the two frames are the same. In a bath written in the conventional cubic cell of
+diamond the NV axis points along [111], so the qubit's frame is tilted from the file frame.
 
-The `frame.rotation` block rotates such a bath, and it is on when it is written:
+The `frame.rotation` block turns the file frame onto the computational one, and it is on when it is written:
 
-- `qubit_axis` is the qubit's axis in the bath file's frame. CCEX turns every position about the qubit so that this
+- `qubit_axis` is the qubit's axis in the file frame. CCEX turns every position about the qubit so that this
   axis becomes z.
 - `bfield` is then read along `qubit_axis`, so `"bfield": 500` is 500 G along the NV axis.
-- A tensor or `Defect` species written in the input says with its key `"frame"` whether it is in the bath file's frame
-  or already in the turned one. This example has none.
+- A tensor or `Defect` species written in the input says in which frame it is with its key `"frame"`, `"file"` for
+  the file frame (it is turned with the positions) and `"qubit"` for the computational one. This example has none.
 
 [The coordinate frame rotation](../../../../docs/methods/coordinate-frame-rotation.md) explains what is turned and what
 is not.
