@@ -2,11 +2,11 @@
 
 Folder: `example/tutorial/advanced/08_coordinate_rotation/`
 
-CCEX builds the Hamiltonian in a frame whose z is the qubit's axis, and reads `bfield` in that frame. Without a
-rotation that frame is the bath file's own. A bath written in the conventional cubic cell of diamond, however, has the
-NV axis along [111], not z.
+CCEX takes the qubit's axis as z. It builds the Hamiltonian in that frame and reads `bfield` along it. Without a
+rotation this z is the z of the bath file. In a bath written in the conventional cubic cell of diamond, the NV axis
+points along [111] instead.
 
-The `frame.rotation` block turns such a bath. Writing the block turns it on:
+The `frame.rotation` block rotates such a bath, and it is on when it is written:
 
 - `qubit_axis` is the qubit's axis in the bath file's frame. CCEX turns every position about the qubit so that this
   axis becomes z.
@@ -69,8 +69,8 @@ It runs the three inputs and plots them together. It takes 1.8 s and 0.05 GB per
 
 ![cCCE2_Hahn_rotation: expected result](cCCE2_Hahn_rotation/expected.png)
 
-The rotated run reproduces the aligned one, with a largest difference of 1e-10 and T2 1.084 ms. Without the rotation
-the field is off the NV axis, T2 is 1.154 ms and the curve differs by up to 0.20.
+The aligned and the rotated run give the same curve, T2 1.084 ms, within 1e-10 (the dashed line on the thick one).
+Without the rotation the field is off the NV axis, T2 is 1.154 ms and the curve differs by up to 0.20.
 
 Next, give `bfield` as a vector to tilt the field on purpose. This works without the rotation only, since with it a
 transverse field is refused. Or use a bath with DFT tensors (`hamiltonian.common.hyperfine.frame`, `quadrupole.frame`).

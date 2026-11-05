@@ -9,5 +9,5 @@ mkdir -p results
 for name in aligned cubic_rotated cubic_norotation; do
   mpirun -n $NP $CCEX -f ccein_$name.jsonc -o results > results/ccein_$name.log
 done
-python3 $PLOT results/coherence.png "aligned=results/ccein_aligned_wiDiv" "cubic, rotation on=results/ccein_cubic_rotated_wiDiv" \
+python3 $PLOT results/coherence.png --dashed "aligned=results/ccein_aligned_wiDiv" "cubic, rotation on=results/ccein_cubic_rotated_wiDiv" \
   "cubic, rotation off=results/ccein_cubic_norotation_wiDiv"
