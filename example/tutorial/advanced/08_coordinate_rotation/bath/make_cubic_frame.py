@@ -9,13 +9,16 @@ undoes exactly this (R below is its matrix), so the rotated bath with the rotati
 reproduce the original bath.
 
     python3 make_cubic_frame.py           # writes bath_Diamond_NV_natab_cubic_1 next to this script
+    python3 make_cubic_frame.py SRC DST X Y Z     # another bath file SRC, turned about the qubit at X Y Z, to DST
 """
-import math, os
+import math, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 SRC = os.path.join(HERE, '..', '..', '..', 'basic', '01_first_run', 'bath', 'bath_Diamond_NV_natab_1')
 DST = os.path.join(HERE, 'bath_Diamond_NV_natab_cubic_1')
 R0 = [73.73895, 75.72808, 73.97033]          # the NV site (bath_Diamond_NV_natab_defect)
+if len(sys.argv) == 6:                       # another bath: its file, the output, and the qubit position
+    SRC, DST, R0 = sys.argv[1], sys.argv[2], [float(x) for x in sys.argv[3:6]]
 
 def unit(v):
     n = math.sqrt(sum(c * c for c in v)); return [c / n for c in v]

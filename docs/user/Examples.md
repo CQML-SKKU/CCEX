@@ -40,7 +40,7 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 | [Advanced 05: Electron-spin baths further](../../example/tutorial/advanced/05_P1/README.md) | Making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4 and a DEER pump. |
 | [Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) | Making an h-BN bath, the tensor files from a VASP run (`example/tools/SpinTensorReader`), and the coherence without and with them. |
 | [Advanced 07: Multiple qubits](../../example/tutorial/advanced/07_multi_qubits/README.md) | Two and three NVs as one register. |
-| [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) | A bath written in another frame (`frame.rotation`). |
+| [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) | A bath written in another frame (`frame.rotation`), and a `Defect` species in that frame. |
 
 <a id="ex_adv_cce"></a>
 ### 2.3 Hamiltonian terms and cluster shapes
