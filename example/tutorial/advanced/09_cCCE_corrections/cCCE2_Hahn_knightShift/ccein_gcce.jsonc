@@ -1,0 +1,32 @@
+{
+    // The gCCE reference of the three cCCE inputs: the NV of basic/01_first_run in the tilted field [50, 0, 100] G,
+    // gCCE2, the ensemble. gCCE has the qubit in every cluster's Hamiltonian, so the mixing of its levels by the
+    // transverse field, which cCCE adds back with knight, is in it already.
+    //
+    // Writes results/ccein_gcce_wiDiv and _noDiv. It differs from ccein_wo_knight.jsonc in "method" and in the
+    // qubit states.
+    "method"        : "gCCE",         // the qubit and the cluster in one Hamiltonian
+    "Qubit"         : {"qubit": [{"file": "../../../basic/01_first_run/bath/bath_Diamond_NV_natab_defect"}],
+                       "intmap" : [{"between": ["q0", "q0"],
+                                    "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]], "unit": "kHz"}],
+                       "alpha_state": {"index": 0}, "beta_state": {"index": 2}},
+                                      // the NV: its position from the first line of the defect file (73.74 75.73
+                                      // 73.97 A); spin 1, the electron's gyromagnetic ratio, alpha and beta the
+                                      // eigenstates 0 and 2 of the qubit Hamiltonian (by descending energy, the
+                                      // levels of ms +1 and 0 in this field): in a tilted field "ms" +1 and 0 are
+                                      // not eigenstates, and gCCE with them diverges. intmap: the self term of "q0" (the default name of the first
+                                      // qubit) is the zero-field splitting, diag(-D/3, -D/3, 2D/3) with D = 2.88 GHz,
+                                      // in kHz. gCCE needs it
+    "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                       "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]},
+                                      // basic/01_first_run's bath: gyro_13C (name, spin, rad kHz/G) and a 150 A cube of
+                                      // diamond with 1.1 % 13C
+    "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
+    "bfield"        : [50, 0, 100],   // Gauss, [Bx, By, Bz] with z the NV axis: 112 G, tilted 27 degrees towards x.
+                                      // The bare 13C precession is 120 kHz. A number is Bz alone (no Knight shift)
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
+    "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
+}

@@ -6,7 +6,9 @@ CCEX=${CCEX_BIN:-$ROOT/bin/main.out}
 PLOT=$ROOT/example/tutorial/plot_coherence.py
 NP=${NP:-4}
 mkdir -p results
-for name in wi_knight wo_knight wi_knight_deltaA; do
+for name in gcce wi_knight wi_knight_deltaA wo_knight; do
   mpirun -n $NP $CCEX -f ccein_$name.jsonc -o results > results/ccein_$name.log
 done
-python3 $PLOT results/coherence.png "with Knight shift=results/ccein_wi_knight_wiDiv" "without=results/ccein_wo_knight_wiDiv" "Knight and delta_A=results/ccein_wi_knight_deltaA_wiDiv"
+python3 $PLOT results/coherence.png --dashed "gCCE (reference)=results/ccein_gcce_wiDiv" \
+    "cCCE with knight=results/ccein_wi_knight_wiDiv" "cCCE with knight and delta_A=results/ccein_wi_knight_deltaA_wiDiv" \
+    "cCCE without=results/ccein_wo_knight_wiDiv"
