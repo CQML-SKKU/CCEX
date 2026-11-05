@@ -2,18 +2,21 @@
 
 Folder: `example/tutorial/advanced/10_cluster_modes/`
 
-The standard clusters of CCE are every set of up to `order` bath spins linked by pairs within `rdip`. The modes of
-`cluster.mode` cut the bath in other ways, so that strongly coupled spins are computed together:
+At order 2, CCE computes every bath spin and every pair of spins within `rdip` on its own. Three spins that couple
+strongly to each other are then seen only as pairs, and computing them together needs order 3, with all the clusters
+of three spins in the bath. The modes of `cluster.mode` put strongly coupled spins into one unit first and compute
+that unit exactly. pCCE and bundles then run the expansion over these units, so the order need not grow:
 
 - **dsj** (cCCE only) splits the bath into disjoint groups of at most `order` spins, joining the most strongly coupled
-  pairs first, and computes each group as one cluster. It needs far fewer clusters than the standard expansion.
+  pairs first, and computes each group as one cluster. It leaves out the couplings between groups and needs far fewer clusters than
+the standard expansion.
 - **pCCE** cuts the bath into partitions of `partition_size` spins close in space (k-means on the positions) and runs
   the expansion over partitions. A partition enters a cluster whole, so order 2 means pairs of partitions.
 - **Bundles** join strongly coupled spins into bundles, from the coupling strengths and up to the dimension
   `cluster.bundle.max_dim`, and run the expansion over bundles. `order` counts bundles.
 
-The `cluster.adaptive` block works on the bundles. It repeats the bundled calculation, measures the error of the
-expansion at the bundle boundaries and changes the bundles where it is large
+The `cluster.adaptive` block then checks the bundles. It repeats the bundled calculation, finds where the error at
+the bundle boundaries is large, and changes the bundles there
 ([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)).
 
 The cluster reports (the contribution of each cluster, the plan) are in
