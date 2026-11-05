@@ -1,0 +1,24 @@
+{
+    // ccein_gCCE.jsonc with a jump operator on the qubit: megCCE, the gCCE with a Lindblad master equation in each
+    // cluster. S- on the NV at rate 1.5915e-4 MHz, gamma = 1 rad/ms, relaxes ms +1 towards 0 and 0 towards -1.
+    // Writes results/ccein_megCCE_wiDiv and _noDiv.
+    // Every key not written here has its default (main.out -e writes them all).
+
+    "method"        : "megCCE",       // gCCE with Lindblad dissipation; the qubit jump needs it
+    "Qubit"         : {"qubit": [{"file": "../../../basic/01_first_run/bath/bath_Diamond_NV_natab_defect"}],
+                       "intmap": [{"between": ["q0", "q0"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]], "unit": "kHz"}]},
+                                      // the NV position from the defect file, and its zero-field splitting
+                                      // D = 2.88 GHz as diag(-D/3, -D/3, 2D/3) in kHz; alpha ms +1, beta ms 0 by default
+    "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C", "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]},
+    "order"         : 2,              // gCCE2: the NV with single 13C and with pairs
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 20,             // Angstrom: a small bath, so that megCCE runs in about a minute
+    "rdip"          : 8,              // Angstrom
+    "deltat"        : 0.01,           // ms: the time step, 10 us
+    "nstep"         : 200,            // 200 points: t = 0 .. 1.99 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "hamiltonian"   : {"megCCE": {"jump_operators": [{"bath_name": "qubit", "operator": "-", "rate": 1.5915e-4}]}}
+                                      // bath_name "qubit": the jump acts on the qubit. operator "-": S-. rate in MHz,
+                                      // times 2 pi 1e3 = 1 rad/ms
+}

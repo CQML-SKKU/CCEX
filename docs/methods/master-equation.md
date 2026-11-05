@@ -2,7 +2,7 @@
 
 `method` meCCE and megCCE run the cluster-correlation expansion with Lindblad dissipation, on the CPU. The jump
 operators are given in [hamiltonian.\<method\>.jump_operators](../user/InputFile_General.md#tag_jump_operators),
-[Advanced 11: Dissipation](../../example/tutorial/advanced/11_dissipation/README.md) runs meCCE, and
+[Advanced 11: Dissipation](../../example/tutorial/advanced/11_dissipation/README.md) runs meCCE and megCCE, and
 `test/code_verification/check_master_equation/` compares both methods with the cCCE and gCCE at rate 0, with PyCCE and
 with closed forms.
 

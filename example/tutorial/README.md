@@ -53,7 +53,7 @@ matter, how to run it (time, ranks, memory), the expected result and what to try
 
 | Folder | Topic | Calculations |
 |---|---|---|
-| `11_dissipation/` | dissipation: meCCE, Lindblad relaxation of the bath spins | `meCCE2_Hahn_bathRelaxation` |
+| `11_dissipation/` | dissipation: Lindblad relaxation of the bath spins (meCCE) and of the qubit (megCCE) | `meCCE2_Hahn_bathRelaxation`, `megCCE2_Hahn_qubitRelaxation` |
 | `12_noise/` | method `noise`: the Gaussian coherence of the phase noise, from the bath or from a model spectrum; C(t) and S(f) | `noise2_Hahn_vsCCE`, `noiseModel_OU`, `noiseSpectrum_13C` |
 | `13_pseudospin/` | method `pseudospin`: the pairs of a nuclear bath in the pseudospin model, against cCCE2 | `pseudospin2_Hahn_vsCCE` |
 

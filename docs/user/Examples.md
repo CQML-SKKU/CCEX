@@ -55,7 +55,7 @@ minute, so read it in order. `advanced/` builds on it, so pick the topic you nee
 
 | Page | What it covers |
 |---|---|
-| [Advanced 11: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/11_dissipation/README.md) | Lindblad relaxation of the bath spins in every cluster. |
+| [Advanced 11: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/11_dissipation/README.md) | Lindblad relaxation of the bath spins (meCCE) and of the qubit (megCCE) in every cluster. |
 | [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md) | The Gaussian coherence of the phase noise, from the bath or from a model spectrum, and its correlation C(t) and spectrum S(f). |
 | [Advanced 13: Pseudospin pairs](../../example/tutorial/advanced/13_pseudospin/README.md) | The pairs of a nuclear bath in the pseudospin model, against cCCE2. |
 

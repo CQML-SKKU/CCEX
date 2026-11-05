@@ -2,19 +2,38 @@
 
 Folder: `example/tutorial/advanced/11_dissipation/`
 
-The master-equation CCE adds Lindblad dissipation to every cluster. meCCE is the cCCE with jump operators on the bath
-spins, and megCCE the gCCE with jump operators on the bath spins and on the qubit. How they work is in
-[Master-equation CCE](../../../../docs/methods/master-equation.md).
+The usual CCE treats the qubit and its bath as a closed system. The master-equation CCE adds dissipation, a spin
+relaxing or dephasing through its surroundings, to every cluster. Each cluster's density matrix then follows the
+Lindblad equation
+
+$$\dot\rho=-i[H,\rho]+\sum_k\Big(C_k\rho C_k^\dagger-\tfrac12\{C_k^\dagger C_k,\rho\}\Big),\qquad C_k=\sqrt{\gamma_k}\,S^{(k)}_{op},$$
+
+with one jump operator $C_k$ per entry of `jump_operators`:
+
+- `bath_name` names the spins it acts on, every spin of a cluster with that name, or `"qubit"` for the qubit.
+- `operator` is $S_{op}$, one of `"-"`, `"+"`, `"z"`, `"x"` and `"y"` ($S_-$, $S_+$, $S_z$, $S_x$, $S_y$).
+- `rate` is in MHz. $\gamma_k$ is the rate times $2\pi\cdot10^3$, in rad/ms, so `rate` 1.5915e-4 is
+  $\gamma$ = 1 rad/ms.
+
+There are two methods ([Master-equation CCE](../../../../docs/methods/master-equation.md)):
+
+| `method` | Built on | Jumps on |
+|---|---|---|
+| `meCCE` | cCCE, the qubit projected out. | Bath spins. |
+| `megCCE` | gCCE, the qubit in the cluster. | Bath spins and the qubit. |
+
+Without jump operators meCCE gives the cCCE curve and megCCE the gCCE curve.
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
-This page has one case:
+This page has two cases:
 
-1. [The relaxation of the bath spins against cCCE](#ds_bath) (`meCCE2_Hahn_bathRelaxation/`).
+1. [The relaxation of the bath spins, meCCE against cCCE](#ds_bath) (`meCCE2_Hahn_bathRelaxation/`).
+2. [The relaxation of the qubit, megCCE against gCCE](#ds_qubit) (`megCCE2_Hahn_qubitRelaxation/`).
 
 <a id="ds_bath"></a>
-## 1. The bath spins relax
+## 1. The relaxation of the bath spins
 
 Folder: `meCCE2_Hahn_bathRelaxation/`
 
@@ -30,9 +49,7 @@ The system is that of Basic 01, with 500 points of 4 µs. `ccein_cCCE.jsonc` is 
                                               {"bath_name": "13C", "operator": "+", "rate": 1.5915e-06}]}}
 ```
 
-meCCE is the cCCE with a Lindblad master equation in each cluster. The jump operators S₋ and S₊ act on every ¹³C at
-γ = 0.01 rad/ms each (`rate` 1.5915e-6 MHz × 2π·10³) and relax the bath spins. Without jump operators meCCE gives the
-cCCE curve.
+$S_-$ and $S_+$ act on every ¹³C with $\gamma$ = 0.01 rad/ms each, and relax the bath spins.
 
 <a id="a11_bath_run"></a>
 ### 1.2 Running it
@@ -41,16 +58,55 @@ cCCE curve.
 NP=4 bash run.sh
 ```
 
-It runs both inputs and plots them. It takes 18–20 s, nearly all of it meCCE, and 0.06 GB per rank.
+It runs both inputs and plots them. It takes 21 s, nearly all of it meCCE, and 0.09 GB per rank.
 
 <a id="a11_bath_result"></a>
 ### 1.3 The result
 
 ![meCCE2_Hahn_bathRelaxation: expected result](meCCE2_Hahn_bathRelaxation/expected.png)
 
-T2 is 1.08 ms with cCCE and 0.57 ms with meCCE. The rates of all the ¹³C add up, so even this small rate halves T2.
+T2 is 1.08 ms with cCCE and 0.57 ms with meCCE.
 
-Next, try `operator` "z" (pure dephasing of the ¹³C), or `method` megCCE with a qubit jump (`bath_name` "qubit", in
-`hamiltonian.megCCE`).
+Next, try `operator` "z", a pure dephasing of the ¹³C.
 
 Inputs: [`ccein_cCCE.jsonc`](meCCE2_Hahn_bathRelaxation/ccein_cCCE.jsonc), [`ccein_meCCE.jsonc`](meCCE2_Hahn_bathRelaxation/ccein_meCCE.jsonc)
+
+<a id="ds_qubit"></a>
+## 2. The relaxation of the qubit
+
+Folder: `megCCE2_Hahn_qubitRelaxation/`
+
+<a id="a11_qubit_input"></a>
+### 2.1 The input
+
+A jump on the qubit needs megCCE, which has the qubit in every cluster. The system is the NV of Basic 01 with its
+zero-field splitting in a small ¹³C bath (`rbath` 20 Å, `rdip` 8 Å), over 2 ms. `ccein_gCCE.jsonc` is the plain gCCE
+run, and `ccein_megCCE.jsonc` adds the method and one jump on the qubit:
+
+```jsonc
+"method"      : "megCCE",
+"hamiltonian" : {"megCCE": {"jump_operators": [{"bath_name": "qubit", "operator": "-", "rate": 1.5915e-4}]}}
+```
+
+$S_-$ on the NV with $\gamma$ = 1 rad/ms takes ms +1 towards 0 and 0 towards −1. A qubit jump needs a single qubit.
+
+<a id="a11_qubit_run"></a>
+### 2.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+It runs both inputs and plots them. It takes 84 s, nearly all of it megCCE, and 0.09 GB per rank. megCCE evolves
+each cluster in the Liouville space, of dimension $(d_q d_B)^2$, which is why it is much slower than gCCE.
+
+<a id="a11_qubit_result"></a>
+### 2.3 The result
+
+![megCCE2_Hahn_qubitRelaxation: expected result](megCCE2_Hahn_qubitRelaxation/expected.png)
+
+T2 is 1.93 ms with gCCE and 0.44 ms with the qubit jump.
+
+Next, add a bath jump beside the qubit one, or try `operator` "z" on the qubit, a pure dephasing of the NV.
+
+Inputs: [`ccein_gCCE.jsonc`](megCCE2_Hahn_qubitRelaxation/ccein_gCCE.jsonc), [`ccein_megCCE.jsonc`](megCCE2_Hahn_qubitRelaxation/ccein_megCCE.jsonc)
