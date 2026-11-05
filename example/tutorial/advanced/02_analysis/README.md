@@ -2,20 +2,22 @@
 
 Folder: `example/tutorial/advanced/02_analysis/`
 
-This topic is about what to do with the output of a run. The analyzer of `example/analysis`
-([Analysis](../../../../docs/user/Analysis.md)) corrects, averages and fits the curves, and the run itself can report
-which clusters matter.
+A run writes one coherence curve for each bath configuration and sampled state, so a run of many states ends with many
+files rather than one T2. This page shows what to do with these files.
 
 In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. Every
 key not written in an input has its default (`main.out -e`). Times are for 4 ranks of a desktop CPU.
 
 This page has two cases:
 
-1. [The error correction, the average and the T2 fit](#a02_analyzer) (`cCCE2_Hahn_analyzer/`).
-2. [What a run reports about its clusters](#a02_report) (`cCCE2_Hahn_clusterReport/`).
+1. [Turning many curves into one T2](#a02_analyzer) (`cCCE2_Hahn_analyzer/`). A P1 bath is computed for 20 sampled
+   states, and the analyzer of `example/analysis` ([Analysis](../../../../docs/user/Analysis.md)) repairs, averages
+   and fits the 20 curves.
+2. [Finding which clusters cause the decay](#a02_report) (`cCCE2_Hahn_clusterReport/`). CCEX reports how much each
+   cluster of bath spins contributes, which shows the spin pairs that drive the decoherence.
 
 <a id="a02_analyzer"></a>
-## 1. The error correction, the average and the T2 fit
+## 1. Turning many curves into one T2
 
 Folder: `cCCE2_Hahn_analyzer/`
 
@@ -67,7 +69,7 @@ Next, `-pl -fit` draws the analyzer's own figure, and a smaller `-err_tol` shows
 Input: [`ccein.jsonc`](cCCE2_Hahn_analyzer/ccein.jsonc)
 
 <a id="a02_report"></a>
-## 2. What a run reports about its clusters
+## 2. Finding which clusters cause the decay
 
 Folder: `cCCE2_Hahn_clusterReport/`
 
