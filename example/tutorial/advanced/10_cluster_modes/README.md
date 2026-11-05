@@ -15,9 +15,16 @@ that unit exactly. pCCE and bundles then run the expansion over these units, so 
 - **Bundles** join strongly coupled spins into bundles, from the coupling strengths and up to the dimension
   `cluster.bundle.max_dim`, and run the expansion over bundles. `order` counts bundles.
 
-The `cluster.adaptive` block then checks the bundles. It repeats the bundled calculation, finds where the error at
-the bundle boundaries is large, and changes the bundles there
-([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)).
+The `cluster.adaptive` block then changes the bundles from the results. It repeats the bundled calculation, changes
+the bundles where they do badly, and runs again ([Cluster tags](../../../../docs/user/InputFile_Cluster.md#tag_adaptive)).
+It has two policies, case 4 and case 5:
+
+| | Merge (the default, case 4) | Regroup (`"regroup": true`, case 5) |
+|---|---|---|
+| What it looks for | A large error at the bundle boundaries. A few neighbouring bundles are computed exactly as one cluster and compared with the expansion over them. | An unphysical curve, with \|L\| > 1. At the worst point it finds the bundle pairs that cause the excess. |
+| What it changes | It merges two bundles. | It merges, splits, moves or exchanges sites around those pairs. |
+| When it stops | Every patch passes, no merge helps, or `max_rounds` is reached. | Every state and time point has \|L\| ≤ 1.01. |
+| What it needs | Bundles. | cCCE, `order` 2 and the links by distance (`rdip`). |
 
 The cluster reports (the contribution of each cluster, the plan) are in
 [Advanced 02: Analysis of the output](../02_analysis/README.md).
