@@ -107,8 +107,29 @@ The three values of `compute` are:
   two-sided spectrum S(f) (negative and positive f) by FFT, and the coherence from S(f).
 - `"correlation"` writes C(t) alone, at the run's times.
 
-`hamiltonian.noise.fft` is left out, so its defaults hold. The grid ends at the run's last time and has 8 points per
-period of the fastest bath mode.
+The rest of the input is the cCCE2 system of Basic 01: `rbath` 50 Å, `rdip` 10 Å, `deltat` 1 µs × `nstep` 2000 and
+`pulse.count` 1. `deltat` and `nstep` set the times of the coherence, and the grid of C(t) is set apart, by the block
+`hamiltonian.noise.fft` ([fft](../../../../docs/user/InputFile_General.md#tag_noise_fft)):
+
+| Key | Meaning | Default |
+|---|---|---|
+| `time_max` | The end of the grid of C(t), in ms. | The run's last time. |
+| `nstep` | The number of intervals of the grid. | 8 points per period of the fastest bath mode kept. |
+| `window` | A window on C(t) before the FFT, `"none"`, `"hann"`, `"tukey"` or `"exp"`. | `"none"` |
+| `pad_factor` | The FFT length in units of the grid. | 1 |
+| `subtract_mean` | Subtract the mean of the tail of C(t) before the FFT. | `false` |
+| `clamp_negative` | Set S(f) < 0 to 0. | `false` |
+
+The input leaves the block out, and the log line `hamiltonian.noise.fft:` gives what the run chose, `time_max`
+1.999 ms and `nstep` 9560 (the fastest mode kept is 597.8 kHz). The grid then sets the spectrum. Its step is
+$\Delta t$ = `time_max`/`nstep` = 0.209 µs, so S(f) reaches $f_\text{max} = 1/(2\Delta t)$ = 2391 kHz, and its
+resolution is $\Delta f = 1/(2\,$`time_max`$)$ = 0.25 kHz. The block written out with these values gives the same
+files, to rounding:
+
+```jsonc
+"hamiltonian" : {"noise": {"compute": "spectrum",
+                           "fft": {"time_max": 1.999, "nstep": 9560, "window": "none", "pad_factor": 1}}}
+```
 
 <a id="a12_spectrum_run"></a>
 ### 2.2 Running it
