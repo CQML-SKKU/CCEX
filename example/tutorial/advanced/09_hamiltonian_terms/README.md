@@ -35,7 +35,8 @@ This page has two sections:
 1. [The corrections to cCCE, against gCCE](#corr_cases), with two cases:
    [the hyperfine-mediated coupling](#corr_hfmedi) (`cCCE2_Hahn_hfMediated/`) and
    [the Knight shift in a tilted field](#corr_knight) (`cCCE2_Hahn_knightShift/`).
-2. [The mean fields of the spins outside a cluster](#corr_meanfield), the other terms the cluster Hamiltonian can hold.
+2. [The mean fields of the spins outside a cluster](#corr_meanfield) (`gCCE2_Hahn_meanField/`), the other terms the cluster
+   Hamiltonian can hold.
 
 <a id="corr_cases"></a>
 ## 1. The corrections to cCCE, against gCCE
@@ -154,6 +155,11 @@ Inputs: [`ccein_gcce.jsonc`](cCCE2_Hahn_knightShift/ccein_gcce.jsonc), [`ccein_w
 <a id="corr_meanfield"></a>
 ## 2. The mean fields of the spins outside a cluster
 
+Folder: `gCCE2_Hahn_meanField/`
+
+<a id="a09_meanfield_input"></a>
+### 2.1 The input
+
 With sampled bath states (`s_range`), every bath spin outside a cluster sits in a fixed sublevel, and its static field
 still acts on the cluster. Two keys of `hamiltonian.common` add that field as a mean field
 ([mean fields](../../../../docs/user/InputFile_General.md#gen_mf)). In the ensemble neither is used.
@@ -163,7 +169,44 @@ still acts on the cluster. Two keys of `hamiltonian.common` add that field as a 
 | `bath_bath_mean_field` | The bath spins of the cluster, $\sum_{j \notin C} J^{zz}_{nj}\, m_j\, I_{z,n}$ (`"z"`), or the whole vector $\mathsf{J}_{nj}(0,0,m_j)$ (`"xyz"`). | Every method. | `"z"` |
 | `qubit_bath_mean_field` | The qubit, the Overhauser field $\sum_{j \notin C} A_{zz,j}\, m_j\, S_z$. | gCCE and megCCE. | `false` |
 
-In the P1 bath of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md), section 2,
-`bath_bath_mean_field` `"off"` gives T2 62 µs against 235 µs with `"z"`. On the P1 bath of
-`advanced/05_P1/gCCE2_Hahn_DEER` (gCCE2, ten sampled states) `qubit_bath_mean_field` true and false gave curves within
-1.3e-4 for the Hahn echo and within 3.3e-6 for Ramsey, so this page has no case for it.
+The run is the NV in the 1 ppm P1 bath of
+[Advanced 05: Electron-spin baths further](../05_P1/README.md) (`gCCE2_Hahn_DEER/ccein_nopump.jsonc`), gCCE2 Hahn echo
+with ten sampled states. gCCE is needed for `qubit_bath_mean_field`, which acts on the qubit. The three inputs write
+both keys and differ only in them:
+
+```jsonc
+"hamiltonian" : {"common": {"bath_bath_mean_field": "z",   "qubit_bath_mean_field": false}}   // ccein_default.jsonc
+"hamiltonian" : {"common": {"bath_bath_mean_field": "off", "qubit_bath_mean_field": false}}   // ccein_bath_off.jsonc
+"hamiltonian" : {"common": {"bath_bath_mean_field": "z",   "qubit_bath_mean_field": true}}    // ccein_qubit_on.jsonc
+```
+
+`ccein_default.jsonc` writes the defaults, so it gives the curve of an input without the block.
+
+<a id="a09_meanfield_run"></a>
+### 2.2 Running it
+
+```sh
+NP=4 bash run.sh
+```
+
+It runs the three inputs and plots the mean of the ten states of each. It takes 14 s and 0.09 GB per rank.
+
+<a id="a09_meanfield_result"></a>
+### 2.3 The result
+
+![gCCE2_Hahn_meanField: expected result](gCCE2_Hahn_meanField/expected.png)
+
+| Input | T2 |
+|---|---|
+| Defaults (`bath_bath_mean_field` `"z"`, `qubit_bath_mean_field` false) | 149.9 µs |
+| `bath_bath_mean_field` `"off"` | 20.9 µs |
+| `qubit_bath_mean_field` true | 149.9 µs, within 1.3e-4 of the defaults |
+
+Without the field on the bath spins the P1 pairs flip-flop freely and the echo decays seven times faster. The field
+on the qubit changes the curve by at most 1.3e-4 here, and the dotted line lies on the thick one.
+
+Next, try `bath_bath_mean_field` `"xyz"`, which adds the whole field vector.
+[Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md) compares `"z"`, `"xyz"` and `"off"` with
+cCCE.
+
+Inputs: [`ccein_default.jsonc`](gCCE2_Hahn_meanField/ccein_default.jsonc), [`ccein_bath_off.jsonc`](gCCE2_Hahn_meanField/ccein_bath_off.jsonc), [`ccein_qubit_on.jsonc`](gCCE2_Hahn_meanField/ccein_qubit_on.jsonc)
