@@ -10,7 +10,7 @@ nitrogen in diamond, each an electron spin 1/2. Three things change:
   microseconds instead of milliseconds.
 - A P1 is not an isotope. The gyro file gives it as a spin 1/2 with the electron's gyromagnetic ratio. The `Defect`
   block gives the shift of its electron by its own ¹⁴N, one of 12 values set by its bond axis and the ¹⁴N state. The
-  ¹⁴N can also be a spin of its own in every cluster, so that a pair is two electrons and two ¹⁴N; see
+  ¹⁴N can also be a spin of its own in every cluster, so that a pair is two electrons and two ¹⁴N. See
   `cCCE2_Hahn_onsite14N` in [Advanced 05](../../advanced/05_P1/README.md).
 - The bath is computed in sampled pure states (`s_range`, Basic 02) instead of the ensemble. Each P1 is then up or
   down, and the P1 outside a cluster set a static field on those inside it (section 2).
@@ -77,7 +77,7 @@ xyz: 100 file(s), T2 235.4 us, max |L - L(z (default))| = 5.952e-04
 ```
 
 Without the field (`"off"`) the pairs flip-flop freely, and T2 drops from 235 to 62 µs. `"z"` and `"xyz"` give the
-same curve, within 6e-4; in the figure the dotted xyz line lies on the thick z line. Here the transverse part of the
+same curve, within 6e-4. In the figure the dotted xyz line lies on the thick z line. Here the transverse part of the
 field makes almost no difference. The time axis is logarithmic so that both decays show.
 
 ![cCCE2_Hahn_meanField: expected result](cCCE2_Hahn_meanField/expected.png)

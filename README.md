@@ -4,7 +4,7 @@ CCEX computes the decoherence of spin qubits in a bath of nuclear and electron s
 expansion (CCE). The input file names the qubits, the bath and the pulse sequence. CCEX builds the spin Hamiltonian,
 splits the bath into clusters, solves each cluster exactly and multiplies the cluster terms into the qubit coherence
 L(t), or into the density matrix with gCCE. It is written in C++17 with MPI and an optional CUDA backend by the CQML
-group at Sungkyunkwan University. This is version 2.1.0, released 2026-11-04.
+group at Sungkyunkwan University. This is version 2.1.0, released 2026-11-06.
 
 Documentation: <https://cqml-skku.github.io/CCEX/>. The same pages are in [docs/user/](docs/user/).
 
@@ -27,7 +27,7 @@ together.
 ```
 bash do_compile.sh wsl-gnu                     # build bin/main.out (presets below)
 cd example/tutorial/basic/01_first_run
-NP=4 bash run.sh                               # about 1 s: results/ccein_wiDiv and coherence.png (T2 1.084 ms)
+NP=4 bash run.sh                               # a few seconds: results/ccein_wiDiv and coherence.png (T2 1.084 ms)
 ```
 
 To run your own input, use `mpirun -n 4 bin/main.out -f ccein.jsonc -o results`. `bin/main.out -e` writes
@@ -37,7 +37,7 @@ To run your own input, use `mpirun -n 4 bin/main.out -f ccein.jsonc -o results`.
 
 `bash do_compile.sh <preset>` writes `bin/main.out`, and also `bin/main_gpu.out` when CUDA is enabled. The presets are
 `wsl-gnu`, `wsl-icpx`, `mac` and `generic` (any MPI C++ wrapper), and presets for the developers' clusters. CMake
-also works: `cmake -B build && cmake --build build -j 8` puts everything in `build/`.
+also works. `cmake -B build && cmake --build build -j 8` puts everything in `build/`.
 
 You need a C++17 compiler behind an MPI wrapper. Eigen, uthash and SQLite are included in `external/`, and MKL is used
 when the build finds it. [Building and running](docs/user/BuildingAndRunning.md#Building) covers the build options, the CUDA
@@ -46,7 +46,7 @@ versions and the environment variables.
 ## Where to start
 
 - [Tutorials](example/tutorial/README.md): `basic/` (six topics, the input itself, seconds to a minute each) and `advanced/`
-  (fourteen topics: other baths, DFT tensors, analysis, GPU, automatic convergence, noise, pseudospin, cluster runs).
+  (thirteen topics: other baths, DFT tensors, analysis, GPU, automatic convergence, noise, pseudospin, cluster runs).
   Each has commented inputs, a `run.sh` and an `expected.png`.
 - [Input file](docs/user/InputFile.md): every key by block, with its unit and default.
 - [Output files](docs/user/OutputFiles.md) and the [analyzer](docs/user/Analysis.md).
@@ -57,11 +57,11 @@ versions and the environment variables.
 
 | Folder | Contents |
 |---|---|
-| `src/`, `include/` | the code ([src/README.md](src/README.md)) |
-| `example/` | the tutorials, the analyzer and the tools (bath generator, tensor reader, automatic convergence, input keys) |
-| `test/` | the checks ([test/README.md](test/README.md)) |
-| `docs/` | the manual, the method notes and the website ([docs/README.md](docs/README.md)) |
-| `external/` | Eigen, uthash and SQLite |
+| `src/`, `include/` | The code ([src/README.md](src/README.md)). |
+| `example/` | The tutorials, the analyzer and the tools (bath generator, tensor reader, automatic convergence, input keys). |
+| `test/` | The checks ([test/README.md](test/README.md)). |
+| `docs/` | The manual, the method notes and the website ([docs/README.md](docs/README.md)). |
+| `external/` | Eigen, uthash and SQLite. |
 
 ## For developers
 

@@ -4,10 +4,10 @@
 This page lists the files a run writes and what is in them. The keys that choose the files are in
 [Output tags](InputFile_Output.md).
 
-Below, `<file>` is the start of every name: [output.file](InputFile_Output.md#tag_outfile), or by default the input
-file's name without `.json` or `.jsonc`. The folder is `-o DIR`, else [output.path](InputFile_Output.md#tag_output_path),
-else the working directory. The run log is not a file; it goes to standard output
-([The run log](BuildingAndRunning.md#RunLog)).
+Below, `<file>` is the start of every name. It is [output.file](InputFile_Output.md#tag_outfile), or by default the
+input file's name without `.json` or `.jsonc`. The folder is `-o DIR`, else
+[output.path](InputFile_Output.md#tag_output_path), else the working directory. The run log is not a file. It goes to
+standard output ([The run log](BuildingAndRunning.md#RunLog)).
 
 Sections 1 and 2 apply to every run. The other sections cover files that only some keys write.
 
@@ -45,7 +45,7 @@ clusters. Each contribution is the coherence of a cluster divided by those of it
 $$L(t) = \prod_{C} \tilde L_C(t), \qquad \tilde L_C = \frac{L_C}{\prod_{C' \subset C} \tilde L_{C'}} .$$
 
 Where a sub-cluster's coherence passes near zero, the division can blow up. A value with |L| > 1 is the sign of
-this; it is not physical.
+this. It is not physical.
 
 `_noDiv` is the same product without the division. It cannot blow up, but it is not a coherence. The analyzer's error
 correction compares `_wiDiv` with it to find the points that blew up ([Analysis](Analysis.md)). `output.savemode`
@@ -58,7 +58,7 @@ complex array. Elsewhere, split each line at the tab and read the second field a
 <a id="out_names"></a>
 ## 2. Names
 
-A name is built from these parts, in this order; each part appears only when it applies:
+A name is built from these parts, in this order. Each part appears only when it applies:
 
 ```
 <file>[_k<k>][_<cluster>][_full][_state<s>]_wiDiv     (and _noDiv)
@@ -66,17 +66,17 @@ A name is built from these parts, in this order; each part appears only when it 
 
 | Part | When |
 |---|---|
-| `_k<k>` | with [configuration.k_range](InputFile_General.md#tag_configuration_k_range): one set of files per configuration k |
-| `_<cluster>` | with `output.savemode` `cluster_coherence` or `cluster_density_matrix`: the bath indices of the cluster, joined by `_` |
-| `_full` | with `cluster_density_matrix`: the density matrix of the whole qubit + cluster space |
-| `_state<s>` | with [configuration.s_range](InputFile_General.md#tag_s_range): the sampled state s; absent for the ensemble |
+| `_k<k>` | With [configuration.k_range](InputFile_General.md#tag_configuration_k_range), one set of files per configuration k. |
+| `_<cluster>` | With `output.savemode` `cluster_coherence` or `cluster_density_matrix`, the bath indices of the cluster, joined by `_`. |
+| `_full` | With `cluster_density_matrix`, the density matrix of the whole qubit + cluster space. |
+| `_state<s>` | With [configuration.s_range](InputFile_General.md#tag_s_range), the sampled state s. It is absent for the ensemble. |
 
 For an input `ccein.jsonc`:
 
-- the ensemble writes `ccein_wiDiv`;
-- `s_range` [1, 20] writes `ccein_state1_wiDiv` ... `ccein_state20_wiDiv`;
-- `k_range` [1, 10] writes `ccein_k1_wiDiv` ... `ccein_k10_wiDiv`;
-- both write `ccein_k1_state1_wiDiv` and so on.
+- The ensemble writes `ccein_wiDiv`.
+- `s_range` [1, 20] writes `ccein_state1_wiDiv` ... `ccein_state20_wiDiv`.
+- `k_range` [1, 10] writes `ccein_k1_wiDiv` ... `ccein_k10_wiDiv`.
+- Both write `ccein_k1_state1_wiDiv` and so on.
 
 CCEX does not average over states or configurations. Average the files afterwards, as complex numbers
 ([Analysis](Analysis.md)).
@@ -89,10 +89,10 @@ qubits at each time step. It is D × D, where D is the qubit dimension: 3 for on
 
 Each time step is one block of lines. The first line of a block starts with the time, and the following lines with an
 empty time field. The elements follow row by row ($\rho_{00}, \rho_{01}, \ldots$), three to a line. The basis is the
-$S_z$ basis of each qubit from m = +S down to −S; for an NV that is $m_s$ = +1, 0, −1. For several qubits the basis is
+$S_z$ basis of each qubit from m = +S down to −S. For an NV that is $m_s$ = +1, 0, −1. For several qubits the basis is
 their product, with the last qubit changing fastest.
 
-The cluster expansion is applied element by element. An element that the free evolution keeps at zero stays zero; if
+The cluster expansion is applied element by element. An element that the free evolution keeps at zero stays zero. If
 clusters would put a value into it, the run prints a `[dm]` line with the largest such value.
 
 `example/tutorial/plot_coherence.py` reads these blocks with its `read` function. The analyzer's `read_coherence`
@@ -120,7 +120,7 @@ whole qubit + cluster space at every time step, in blocks as in [the density mat
 matrix, so there this mode writes what `cluster_coherence` writes.
 
 <a id="out_plan"></a>
-## 6. The cluster plan (<file>.clusters.json)
+## 6. The cluster plan (the .clusters.json file)
 
 [output.cluster_only](InputFile_Output.md#tag_cluster_only) writes the list of clusters and stops before the dynamics.
 The log prints a `[cluster-plan]` line with the number of sites and clusters and the path of the file. The file is one
@@ -128,15 +128,15 @@ JSON object. Its main keys are:
 
 | Key | Value |
 |---|---|
-| `sites` | one object per bath spin: `id`, `name`, `xyz` (Å), `spin` |
-| `bundles` | the groups of sites that enter a cluster together (one site each in `standard` mode; `null` for pCCE) |
-| `clusters` | one object per cluster: `sites` (site indices) and `power` (its power in the product) |
+| `sites` | One object per bath spin: `id`, `name`, `xyz` (Å), `spin`. |
+| `bundles` | The groups of sites that enter a cluster together (one site each in `standard` mode, `null` for pCCE). |
+| `clusters` | One object per cluster: `sites` (site indices) and `power` (its power in the product). |
 
 The other keys record how the run was set up: the method and cluster mode, the order, the number of sites read and
 kept, and the qubit dimension.
 
 <a id="out_contributions"></a>
-## 7. Cluster contributions (.contributions.state-<s>.tsv)
+## 7. Cluster contributions (the .tsv files)
 
 [output.cluster_contributions](InputFile_Output.md#tag_cluster_contributions) works with cCCE and gCCE and `quantity`
 coherence. It writes a table per state, `<file>.contributions.state-<s>.tsv`, with s = 0 for the ensemble and the
@@ -148,13 +148,13 @@ method. Then come the column names and one tab-separated row per cluster:
 
 | Column | Meaning |
 |---|---|
-| `sites` | the bath indices of the cluster, comma-separated |
-| `bundles` | the bundles it is made of (in `standard` mode, each site is its own bundle) |
-| `production_power` | its power in the result; 0 for a sub-cluster added only for this table |
-| `dimension` | the Hilbert dimension of the cluster (with the qubit for gCCE) |
-| `max_abs_log_tilde` | the largest $\lvert\log \tilde L_C(t)\rvert$ over time: how much this cluster's own contribution changes the coherence; `nan` if any point is undefined |
-| `undefined_points` | the number of time points where it is not finite |
-| `worst_step` | the time index of the largest value |
+| `sites` | The bath indices of the cluster, comma-separated. |
+| `bundles` | The bundles it is made of (in `standard` mode, each site is its own bundle). |
+| `production_power` | Its power in the result. It is 0 for a sub-cluster added only for this table. |
+| `dimension` | The Hilbert dimension of the cluster (with the qubit for gCCE). |
+| `max_abs_log_tilde` | The largest $\lvert\log \tilde L_C(t)\rvert$ over time, which is how much this cluster's own contribution changes the coherence. It is `nan` if any point is undefined. |
+| `undefined_points` | The number of time points where it is not finite. |
+| `worst_step` | The time index of the largest value. |
 
 The clusters with the largest `max_abs_log_tilde` dominate the decay, or blow up. `sort -k5 -g -r` on the table lists
 them first (the columns are tab-separated and hold no spaces).
@@ -171,9 +171,9 @@ options), the request (`request.json`), its log (`run.log`) and its coherence (`
 
 | File | Content |
 |---|---|
-| `summary.json` | the report, rewritten after every step: the status, the input and the settings, one record per step and per round, `final_directory`, `final_bundles`, the probe cache counts, the checksums of the input files and `limitations` |
-| `final-bundles.json` | the bundles of the final step |
-| `final-input.json`, `final-request.json` | an input and its request that rerun the final bundles as one calculation |
+| `summary.json` | The report, rewritten after every step: the status, the input and the settings, one record per step and per round, `final_directory`, `final_bundles`, the probe cache counts, the checksums of the input files and `limitations`. |
+| `final-bundles.json` | The bundles of the final step. |
+| `final-input.json`, `final-request.json` | An input and its request that rerun the final bundles as one calculation. |
 
 The final curve is `<final_directory>/coherence_wiDiv`. The last line of the run log, before the wall time, prints the
 status and the path of `summary.json`. The status sets the exit code of `main.out`:
@@ -181,7 +181,7 @@ status and the path of `summary.json`. The status sets the exit code of `main.ou
 | Status | Exit code |
 |---|---|
 | `validated_full_bath_model`, `passed_convergence_checks` (merge), `physical` (regroup) | 0 |
-| `round_limit`, `no_feasible_improving_merge`, `probe_budget_limited` (merge); `no_candidate`, `no_positive_culprit`, `budget_limited`, `change_limit` (regroup) | 2 |
+| `round_limit`, `no_feasible_improving_merge`, `probe_budget_limited` (merge), `no_candidate`, `no_positive_culprit`, `budget_limited`, `change_limit` (regroup) | 2 |
 | an error during the refinement | 1 |
 
 With exit code 2 the refinement stopped at that status, and its last step is still the result.
@@ -194,15 +194,15 @@ With an [auto_convergence](InputFile_AutoConvergence.md) block, everything goes 
 
 | Path | Content |
 |---|---|
-| `result/summary.txt`, `result/json/summary.json` | the status, the values chosen, the production result (A with its standard error, T2, n), the core-hours and every warning |
-| `result/coherence_mean.txt` | the production mean: columns t (ms), Re, Im, \|L\| |
-| `result/1_window.png` ... `result/6_converged_coherence.png` | the figures of the steps and of the converged coherence |
-| `result/progress.txt`, `result/json/progress.json` | where the run is, rewritten at every step |
-| `runs/<step>/<k>-<key>/` | one folder per CCEX run, with its `input.json`, its outputs and `done.json` once finished |
-| `decisions.jsonl` | one line per decision |
-| `split.json` | the test and production configurations, when they were found from the files |
-| `pcce_cache/` | the partition cache of pCCE runs |
-| `lock` | held while a runner works in the folder |
+| `result/summary.txt`, `result/json/summary.json` | The status, the values chosen, the production result (A with its standard error, T2, n), the core-hours and every warning. |
+| `result/coherence_mean.txt` | The production mean: columns t (ms), Re, Im, \|L\|. |
+| `result/1_window.png` ... `result/6_converged_coherence.png` | The figures of the steps and of the converged coherence. |
+| `result/progress.txt`, `result/json/progress.json` | Where the run is, rewritten at every step. |
+| `runs/<step>/<k>-<key>/` | One folder per CCEX run, with its `input.json`, its outputs and `done.json` once finished. |
+| `decisions.jsonl` | One line per decision. |
+| `split.json` | The test and production configurations, when they were found from the files. |
+| `pcce_cache/` | The partition cache of pCCE runs. |
+| `lock` | Held while a runner works in the folder. |
 
 The exit code says how the run ended ([Exit codes](BuildingAndRunning.md#ExitCodes)).
 [Results and exit codes](../methods/auto-convergence.md#tag_ac_results) explains each status and how to continue a
@@ -212,14 +212,14 @@ stopped job.
 ## 10. Analyzer outputs
 
 The analyzer (`example/analysis/Analyzer/CoherenceAnalyzer.v1/run.py`, see [Analysis](Analysis.md)) names its files
-after its `-fo` option. They have the two-column format of the coherence files, with one difference: the time is in
+after its `-fo` option. They have the two-column format of the coherence files, with one difference. The time is in
 the unit of `-uc`, not always in ms.
 
 | Option | File |
 |---|---|
-| `-err` | one error-corrected curve per input file: the `-fo` name with the variable names replaced by their values (`-fo results/ccein_kCONF_ErrCorr` gives `results/ccein_k1_ErrCorr`, ...) |
-| `-ea` | the average of all files read: `<-fo>_conv<N>`, where N is the number of curves averaged |
-| `-fit_w` | `<-fo>_params`: one row per variable value with the value, T2 (in the `-uc` unit) and the power n; with `-ea`, one row for the average |
-| `-pl` | one figure per value, the `-fo` name with the variable replaced by the value, `.png`; with `-ea`, `<-fo>_conv<N>.png` |
+| `-err` | One error-corrected curve per input file, named as the `-fo` name with the variable names replaced by their values (`-fo results/ccein_kCONF_ErrCorr` gives `results/ccein_k1_ErrCorr`, ...). |
+| `-ea` | The average of all files read, `<-fo>_conv<N>`, where N is the number of curves averaged. |
+| `-fit_w` | `<-fo>_params`, one row per variable value with the value, T2 (in the `-uc` unit) and the power n. With `-ea`, one row for the average. |
+| `-pl` | One figure per value, the `-fo` name with the variable replaced by the value, `.png`. With `-ea`, `<-fo>_conv<N>.png`. |
 | `-pl_m`, `-pl_i` | `<-fo>.png` |
-| `-pl_T`, `-pl_p` | with `-fit_w`: `<-fo>_T2.png` and `<-fo>_Power.png` |
+| `-pl_T`, `-pl_p` | With `-fit_w`, `<-fo>_T2.png` and `<-fo>_Power.png`. |

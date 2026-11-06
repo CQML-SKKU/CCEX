@@ -86,7 +86,7 @@ the mean closer.
 ![cCCE2_Hahn_states: expected result](cCCE2_Hahn_states/expected.png)
 
 The states can also come from files, for example for a polarised bath or for states from another program.
-`configuration.bath_state_file` names the files. `make_state_files.py` writes 20 example files; each has a count line
+`configuration.bath_state_file` names the files. `make_state_files.py` writes 20 example files. Each has a count line
 and then one m_s per spin of the bath file.
 
 ```sh

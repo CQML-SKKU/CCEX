@@ -1,11 +1,11 @@
 # example/analysis/
 
-One Python tool that post-processes the coherence files CCEX writes; it does not run CCEX. This page says which parts
+One Python tool that post-processes the coherence files CCEX writes. It does not run CCEX. This page says which parts
 to call as they are and which are fine to write yourself.
 
 | Tool | Answers | Entry point | Needs |
 |---|---|---|---|
-| `Analyzer/` | make the raw `_noDiv`/`_wiDiv` files usable: correct the division errors, average over bath configurations and states, fit T2, plot | `Analyzer/CoherenceAnalyzer.v1/coherence.py` (library) and `run.py` (CLI) | numpy; the CLI and plots also scipy and matplotlib |
+| `Analyzer/` | Make the raw `_noDiv`/`_wiDiv` files usable. It corrects the division errors, averages over bath configurations and states, fits T2 and plots. | `Analyzer/CoherenceAnalyzer.v1/coherence.py` (library) and `run.py` (CLI) | numpy, and for the CLI and plots also scipy and matplotlib |
 
 Without a display, set `MPLBACKEND=Agg` for the plots.
 
@@ -30,11 +30,11 @@ recorded ones.
 
 **Plots and fits.** `DataSpace` and `CoherencePlot_v2` draw and fit (a stretched exponential: T2 and the power) the
 way the group's 2023 figures were made. For a new figure it is simpler to read the curves with `coherence.py` and draw
-them directly; `example/tutorial/plot_coherence.py` is such a script.
+them directly. `example/tutorial/plot_coherence.py` is such a script.
 
 ## Who calls it
 
 [Advanced 02: Analysis of the output](../tutorial/advanced/02_analysis/README.md) and
-[Advanced 03: Runs on a cluster](../tutorial/advanced/03_server_runs/README.md) run it on their results. The other
+[Advanced 03: Runs on a cluster (Slurm)](../tutorial/advanced/03_server_runs/README.md) run it on their results. The other
 tutorials plot the raw `_wiDiv` files with `example/tutorial/plot_coherence.py`. The check
 `test/code_verification/check_input_forms/errcorr.sh` calls `run.py -err`.

@@ -20,17 +20,17 @@ difference from the first curve.
 
 | Option | Does |
 |---|---|
-| `--unit ms`, `us`, `ns` | the time unit of the figure and of the numbers printed |
-| `--fit` | fits $\exp(-(t/T_2)^n)$ to the tops of the curve and draws the fit ([Basic 01](../../example/tutorial/basic/01_first_run/README.md)) |
-| `--members` | draws every averaged file as a thin grey line under the mean ([Basic 02](../../example/tutorial/basic/02_bath_and_states/README.md)) |
-| `--spread` | prints the T2 of every averaged file, their deviation and the standard error of their mean ([Basic 03](../../example/tutorial/basic/03_convergence/README.md)) |
-| `--dashed` | draws the first curve thick and the others dashed on top, so that curves on top of each other stay visible |
-| `--bold-first` | draws the first curve thick and the others faint |
-| `--log-time` | a logarithmic time axis, for decays of very different lengths |
+| `--unit ms`, `us`, `ns` | The time unit of the figure and of the numbers printed. |
+| `--fit` | Fits $\exp(-(t/T_2)^n)$ to the tops of the curve and draws the fit ([Basic 01](../../example/tutorial/basic/01_first_run/README.md)). |
+| `--members` | Draws every averaged file as a thin grey line under the mean ([Basic 02](../../example/tutorial/basic/02_bath_and_states/README.md)). |
+| `--spread` | Prints the T2 of every averaged file, their deviation and the standard error of their mean ([Basic 03](../../example/tutorial/basic/03_convergence/README.md)). |
+| `--dashed` | Draws the first curve thick and the others dashed on top, so that curves on top of each other stay visible. |
+| `--bold-first` | Draws the first curve thick and the others faint. |
+| `--log-time` | A logarithmic time axis, for decays of very different lengths. |
 
-`plot_convergence.py` draws a convergence scan: the curves of one input key at several values, and how far each is
-from the curve of the last value. [Basic 03: Checking convergence](../../example/tutorial/basic/03_convergence/README.md)
-uses it for `rbath`, `rdip`, `order` and the number of configurations.
+`plot_convergence.py` draws a convergence scan. It shows the curves of one input key at several values, and how far
+each is from the curve of the last value.
+[Basic 03: Checking convergence](../../example/tutorial/basic/03_convergence/README.md) uses it for `rbath`, `rdip`, `order` and the number of configurations.
 
 A density-matrix file (`quantity` dm) is read too. `plot_coherence.py` then takes the element between the two levels
 that are coherent at t = 0, divided by its value there. When the qubit starts in one level, it takes that level's
@@ -76,7 +76,7 @@ cat results/ccein_EnsAvg_params
 ```
 
 The first call writes `results/ccein_k1_ErrCorr` ... `ccein_k10_ErrCorr`. The second writes the average,
-`results/ccein_EnsAvg_conv10`, and its fit, `results/ccein_EnsAvg_params`: one row with N, T2 in ms and n.
+`results/ccein_EnsAvg_conv10`, and its fit, `results/ccein_EnsAvg_params`, which holds one row with N, T2 in ms and n.
 
 With sampled states, the files are `ccein_state<s>_wiDiv`, or `ccein_k<k>_state<s>_wiDiv` together with `k_range`.
 Configurations and states can be averaged in one call with two variables, every curve with the same weight:

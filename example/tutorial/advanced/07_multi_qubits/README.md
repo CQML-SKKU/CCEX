@@ -9,7 +9,7 @@ and the input writes them as follows:
 - `Qubit.intmap` gives each qubit its zero-field splitting, as a tensor between the qubit and itself (in kHz).
 - Two qubits not paired in `intmap` couple through the point dipole of their positions.
 
-In these examples every NV has its axis along z, the same for all: each ZFS tensor is diag(−D/3, −D/3, 2D/3) with
+In these examples every NV has its axis along z, the same for all. Each ZFS tensor is diag(−D/3, −D/3, 2D/3) with
 D = 2.88 GHz. All qubits share one frame and one `bfield`. A qubit whose axis is tilted is written with its ZFS
 tensor turned to that axis, and its states with `"index"` or `"vector"`, since `"ms"` counts along the common z
 ([alpha_state](../../../../docs/user/InputFile_Qubit.md#tag_alpha_state)).

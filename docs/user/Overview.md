@@ -22,11 +22,11 @@ exactly and combines the results into the qubit coherence `L(t)`, or with gCCE t
 | Choice | Options | Key |
 |---|---|---|
 | Method | conventional CCE (cCCE), generalized CCE (gCCE), and their master-equation versions meCCE and megCCE | `method` |
-| Clusters | by order and distance; partitions (pCCE); bundles of strongly coupled spins; the variants dsj, itb and dsjitb; an adaptive refinement | `cluster.mode`, `cluster.adaptive` |
-| Sequence | Hahn echo, Ramsey, CPMG, or any sequence written pulse by pulse; DEER pulses on the bath | `pulse` |
+| Clusters | by order and distance, partitions (pCCE), bundles of strongly coupled spins, the variants dsj, itb and dsjitb, or an adaptive refinement | `cluster.mode`, `cluster.adaptive` |
+| Sequence | Hahn echo, Ramsey, CPMG, or any sequence written pulse by pulse, and DEER pulses on the bath | `pulse` |
 | Bath | nuclear spins with point-dipole or DFT tensors, electron-spin defects such as P1 centres with their own nuclei and axes, or both | `configuration`, `Defect` |
 | Bath state | the unpolarised ensemble, or sampled product states (usual for electron-spin baths) | `configuration.s_range` |
-| Hardware | CPU with MPI; the cluster propagation also on a GPU | `execution.backend` |
+| Hardware | CPU with MPI, and the cluster propagation also on a GPU | `execution.backend` |
 
 Two more methods interpret a decay rather than compute it cluster by cluster. `noise` gives the Gaussian coherence
 exp(−χ) of the qubit's phase noise, and can write the noise spectrum. `pseudospin` keeps only the pairs of bath
@@ -45,11 +45,11 @@ computes and saves each bath state in turn:
 CCE writes the qubit coherence in the whole bath as a product over clusters $C$ of bath spins. The clusters are those
 of up to `order` spins that the clustering keeps, and each contributes its irreducible part $\tilde L_C$:
 
-$$L(t) = \prod_{C} \tilde L_C(t), \qquad \tilde L_C(t) = \frac{L_C(t)}{\prod_{C' \subset C} \tilde L_{C'}(t)},$$
+$$L(t) = \prod_{C} \tilde L_C(t), \qquad \tilde L_C(t) = \frac{L_C(t)}{\prod_{C' \subset C} \tilde L_{C'}(t)}.$$
 
 Here $L_C$ is the coherence computed exactly with only the spins of $C$ in the bath, and the product in the denominator
 runs over the proper sub-clusters of $C$. Order 1 keeps single spins, order 2 adds pairs, and so on. A result can be
-trusted once it stops changing when the order, `rbath` or `rdip` is raised; the two radii decide which spins and which
+trusted once it stops changing when the order, `rbath` or `rdip` is raised. The two radii decide which spins and which
 pairs are included ([Basic 03](../../example/tutorial/basic/03_convergence/README.md)).
 
 A run writes two files. `_wiDiv` is this product, the CCE coherence. Written out, it is a product of the cluster
@@ -62,8 +62,8 @@ each state s is a product state of the bath spins, drawn from `configuration.see
 output. The mean over many states approaches the ensemble result.
 
 A physical coherence has $|L| \le 1$. A product with $|L| > 1$ or nan means the expansion did not converge in that
-run: a sub-cluster term in a denominator came close to zero, or a strongly coupled group of spins was split between
-clusters. A higher order, gCCE, pCCE or bundles usually help, and the analyzer's error correction repairs single
+run, because a sub-cluster term in a denominator came close to zero or a strongly coupled group of spins was split
+between clusters. A higher order, gCCE, pCCE or bundles usually help, and the analyzer's error correction repairs single
 points. The methods pages have the details: [cCCE and gCCE](../methods/cce.md), [pCCE](../methods/pcce.md),
 [bundles and the adaptive refinement](../methods/bundle-adaptive.md).
 
@@ -85,8 +85,8 @@ Each entry says where a `method` runs with a `cluster.mode`:
 | `noise` (semiclassical noise) | CPU, GPU² | refused | refused | refused |
 | `pseudospin` (the pairs in the pseudospin model) | CPU | refused | refused | refused |
 
-¹ With `execution.propagator` `eigen` (the default); `expm` runs on the CPU.
-² With `backend` `cuda`, the sums over the bath's modes run on the GPU and the eigensystems on the CPU; `auto` runs on
+¹ With `execution.propagator` `eigen` (the default). `expm` runs on the CPU.
+² With `backend` `cuda`, the sums over the bath's modes run on the GPU and the eigensystems on the CPU. `auto` runs on
 the CPU.
 
 Further limits:
@@ -110,8 +110,8 @@ method and an example for your system, see [What should I use for my case?](Exam
 - [Theory and implementation](../methods/Methods.md): what each method computes and how CCEX does it.
 - [Input file](InputFile.md): every key by group, and the unit of every number.
 - [Output files](OutputFiles.md): every file a run writes, with its columns.
-- [Examples](Examples.md): the tutorials, with their inputs and expected figures. The six basic ones run in seconds;
-  the fourteen advanced ones cover other baths, DFT tensors, the analysis, the GPU, the automatic convergence, the
+- [Examples](Examples.md): the tutorials, with their inputs and expected figures. The six basic ones run in seconds.
+  The thirteen advanced ones cover other baths, DFT tensors, the analysis, the GPU, the automatic convergence, the
   noise and pseudospin models and runs on a cluster.
 - [Analysis](Analysis.md): the scripts that average, fit and plot the output.
 - [Tools](Tools.md): the programs that prepare the inputs.

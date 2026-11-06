@@ -13,7 +13,7 @@ on the GPU ([GPU execution](gpu.md)). The partition search and the cluster list 
 
 1. [The spins that do not fill a partition](#pcce_rest): which spins are dropped.
 2. [The partition search](#pcce_search): the k-means search and its random numbers.
-3. [Which partitions are connected](#pcce_connections): the two rules, centers and spins.
+3. [Which partitions are connected](#pcce_connections): the two rules, `centers` and `spins`.
 4. [The partition cache](#pcce_cache): when a stored partition is reused.
 
 <a id="pcce_rest"></a>

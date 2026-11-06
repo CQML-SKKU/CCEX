@@ -5,7 +5,7 @@ the CCEX repository lists every change, with its details and measurements.
 
 ## 2.1.0
 
-This section lists what changed in 2.1.0 (released 2026-11-04) since 2.0.1. Version 2.0.1 (2026-10-22) fixed GPU gCCE
+This section lists what changed in 2.1.0 (released 2026-11-06) since 2.0.1. Version 2.0.1 (2026-10-22) fixed GPU gCCE
 and the builds of 2.0.0.
 
 - **Two new methods.**
@@ -33,8 +33,8 @@ and the builds of 2.0.0.
   - `cluster.mode` itb and dsjitb give each inter-bath pair the right spins' powers. dsjitb at order 2 is now the
     standard CCE2, as it should be.
 - **Tutorials and documentation.** The tutorials are split into `basic/` (the input itself, six topics to read in
-  order) and `advanced/` (fourteen topics); [Examples](Examples.md) lists both. Every tutorial input explains its keys
-  in comments. New: the pseudospin tutorial, and calculations for the noise spectrum, the automatic GPU options, the
+  order) and `advanced/` (thirteen topics), and [Examples](Examples.md) lists both. Every tutorial input explains its
+  keys in comments. New: the pseudospin tutorial, and calculations for the noise spectrum, the automatic GPU options, the
   tensor files from a VASP run, the analyzer and a run on a Slurm cluster. The site is reorganized: one page per input
   block with a small table per key, a page for the old names ([Upgrading old inputs](InputFile_OldNames.md)), and the
   method pages under [Theory and implementation](../methods/Methods.md), new for noise, pseudospin and the automatic

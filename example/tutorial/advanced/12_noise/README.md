@@ -27,7 +27,7 @@ it is meant for many weakly coupled noise sources. Strongly coupled spins need c
 are in
 [General tags](../../../../docs/user/InputFile_General.md#tag_noise_spectrum).
 
-In each folder run `cd <folder> && NP=4 bash run.sh`, then compare `results/coherence.png` with `expected.png`. In the
+In each folder run `cd <folder> && NP=4 bash run.sh` (case 1 runs on one rank), then compare `results/coherence.png` with `expected.png`. In the
 legends, a number in brackets is the number of curves averaged. Times are for 4 ranks of a desktop CPU.
 
 This page has three cases:
@@ -44,7 +44,7 @@ Folder: `noiseModel_OU/`
 <a id="a12_ou_input"></a>
 ### 1.1 The input
 
-The noise is Ornstein–Uhlenbeck noise with σ = 10 kHz and τ_c = 50 µs. No bath is read, so `order`, `bfield`, `rbath`, `rdip` and `Qubit` are left out:
+The noise is Ornstein–Uhlenbeck noise with σ = 10 kHz and $\tau_c$ = 50 µs. No bath is read, so `order`, `bfield`, `rbath`, `rdip` and `Qubit` are left out:
 
 ```jsonc
 "method"      : "noise",
@@ -54,7 +54,7 @@ The noise is Ornstein–Uhlenbeck noise with σ = 10 kHz and τ_c = 50 µs. No b
 "pulse"       : {"count": 1}
 ```
 
-σ is in kHz and τ_c in ms, and both take a unit.
+σ is in kHz and $\tau_c$ in ms, and both take a unit.
 
 <a id="a12_ou_run"></a>
 ### 1.2 Running it
@@ -75,7 +75,7 @@ T2 is 24 µs for Ramsey, 62 µs for the Hahn echo and 138 µs for CPMG-4. The ec
 the slow noise out. For OU noise χ is computed exactly for any sequence of ideal π pulses.
 
 For $\tau_c \gg T$ the Hahn echo goes to the slow-noise limit $\chi \approx (2\pi\sigma)^2 T^3 / (12 \tau_c)$. With
-`tau_c` 50 ms this input gives χ within 0.3 % of it up to 0.3 ms.
+`tau_c` set to 50 ms, this input gives χ within 0.3 % of it up to 0.3 ms.
 
 Next, try `{"model": "power", "amplitude": 50, "beta": 1, "f_min": 0.01, "f_max": 200}`, 1/f noise between f_min and
 f_max (kHz).
@@ -102,7 +102,7 @@ The two inputs differ only in what is computed:
 The three values of `compute` are:
 
 - `"coherence"` (the default) takes χ straight from the clusters' eigenmodes, with no time grid.
-- `"spectrum"` writes the correlation $C(t) = \operatorname{Re}\operatorname{Tr}[\rho\{B(t), B\}]/2$ of
+- `"spectrum"` writes the correlation $C(t) = \operatorname{Re}\operatorname{Tr}[\rho\lbrace B(t), B\rbrace ]/2$ of
   $B = \sum_i A_{zz,i} I_{z,i}$ (in kHz, $\delta\omega$ without its factor $m_\alpha - m_\beta$) on a time grid, its
   two-sided spectrum S(f) (negative and positive f) by FFT, and the coherence from S(f).
 - `"correlation"` writes C(t) alone, at the run's times.
@@ -123,7 +123,7 @@ The rest of the input is the cCCE2 system of Basic 01: `rbath` 50 Å, `rdip` 10 
 The input leaves the block out, and the log line `hamiltonian.noise.fft:` gives what the run chose, `time_max`
 1.999 ms and `nstep` 9560 (the fastest mode kept is 597.8 kHz). The grid then sets the spectrum. Its step is
 $\Delta t$ = `time_max`/`nstep` = 0.209 µs, so S(f) reaches $f_\text{max} = 1/(2\Delta t)$ = 2391 kHz, and its
-resolution is $\Delta f = 1/(2\,$`time_max`$)$ = 0.25 kHz. The block written out with these values gives the same
+resolution is $\Delta f = 1/(2 t_\text{max})$ = 0.25 kHz, with $t_\text{max}$ = `time_max`. The block written out with these values gives the same
 files, to rounding:
 
 ```jsonc
@@ -144,7 +144,7 @@ and `results/ccein_spectrum_noise_spectrum` (f in kHz, S in kHz²/kHz, two-sided
 <a id="a12_spectrum_result"></a>
 ### 2.3 The result
 
-The run writes three figures.
+The run writes three figures, plus `coherence_only.png`.
 
 **The coherence.** Both routes give T2 0.973 ms, and the two curves are within 1e-10 of each other, which checks the
 FFT grid.
@@ -204,7 +204,7 @@ It runs both inputs and plots the mean of the 10 states of each. It takes 8 s fo
 
 T2 of the mean of 10 states is 56 µs by `noise` and 150 µs by cCCE2. The two methods compute different quantities:
 
-- `noise` averages every cluster at infinite temperature with the one bath Hamiltonian of the opening, and keeps only
+- `noise` averages every cluster at infinite temperature with the single bath Hamiltonian of the introduction, and keeps only
   the Gaussian part of the noise. A sampled state enters only through the static field of the other bath spins.
 - cCCE2 evolves each sampled state as a pure state under the two Hamiltonians of the qubit's branches.
 

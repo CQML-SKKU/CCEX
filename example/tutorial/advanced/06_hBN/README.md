@@ -56,7 +56,7 @@ The run takes a second.
 <a id="a06_makebath_result"></a>
 ### 1.3 The result
 
-The bath has 1293 nuclei, 123 ¹⁰B, 511 ¹¹B, 652 ¹⁴N and 6 ¹⁵N, and the defect sits at (30.0, 30.0, 7.5) Å.
+The bath has 1292 nuclei, 123 ¹⁰B, 511 ¹¹B, 652 ¹⁴N and 6 ¹⁵N, and the defect sits at (30.0, 30.0, 7.5) Å.
 
 This bath and the tensor files of case 2 come from the same VASP cell, so CCEX can read them together. In
 `cCCE2_Hahn_tensors/ccein_hf3_qd2.jsonc` of case 3, change the bath and the two tensor files and leave out
@@ -95,7 +95,7 @@ python3 $STR/main.py VASP $EX/VASP_CONTCAR_flat VB --A $EX/VASP_OUTCAR_flat --Q 
 ### 2.2 Running it
 
 ```sh
-sh run.sh
+bash run.sh
 ```
 
 It takes under a second and needs python3 with numpy, pandas and psutil, but not CCEX. It checks that
@@ -109,7 +109,7 @@ It takes under a second and needs python3 with numpy, pandas and psutil, but not
 - The name of the DFT code (`VASP`) on the first line.
 - On the second line, which CCEX reads, what the values are
   (`# CCEX-tensor v3: values = hyperfine of the spin-S defect (MHz), source = VASP OUTCAR, S = 1`).
-- The gyromagnetic g-factors and the corners `v1` .. `v8` of the cell (Å from the defect, the range of the rows).
+- The g-factors of each isotope and the corners `v1` .. `v8` of the cell (Å from the defect, the range of the rows).
 - One row per atom, with the position from the defect, the isotropic (contact) term and the nine components, in MHz.
   Here there are 53 B and 54 N, and the three ¹⁴N next to the vacancy have a contact term of 121 MHz.
 

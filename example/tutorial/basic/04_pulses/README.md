@@ -24,7 +24,7 @@ There are two ways to give the pulses in the input:
 
 Folder: `cCCE2_CPMG_ensemble/`
 
-CPMG-N puts N equally spaced π pulses in the total time t (at t/(2N), 3t/(2N), ...); N = 1 is the Hahn echo.
+CPMG-N puts N equally spaced π pulses in the total time t (at t/(2N), 3t/(2N), ...). N = 1 is the Hahn echo.
 
 The time points are chosen so that the fast ¹³C ripple of Basic 01 drops out. At 500 G the ¹³C precess at
 ν_L = 535.4 kHz. When every free period t/(2N) is a whole number of ¹³C periods, the ¹³C are back where they started,

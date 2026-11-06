@@ -28,7 +28,7 @@ NP=4 sh ../../make_natab_baths.sh 1 results/bath
 head -3 results/bath/config_1
 ```
 
-The first line holds the number of spins. Each following line is one spin, `x y z isotope`, in Å.
+The first line is a header, which CCEX does not read. Each following line is one spin, `x y z isotope`, in Å.
 `results/bath/config_defect` holds the NV position.
 
 ```
@@ -50,7 +50,7 @@ head -3 results/ccein_wiDiv
 
 CCEX splits the bath into clusters: every ¹³C on its own and every pair of ¹³C closer than 10 Å. It solves each
 cluster exactly and multiplies the results. `results/ccein_wiDiv` holds the coherence L(t). Each line has the time in
-ms and L as a complex number; L starts at 1 and decays. `results/ccein_noDiv` holds the same product before the
+ms and L as a complex number. L starts at 1 and decays. `results/ccein_noDiv` holds the same product before the
 division by the sub-clusters, which the analyzer uses for its error correction. `results/ccein.log` is the log.
 
 ```
@@ -80,21 +80,21 @@ gives T2 = 1.116 ms and n = 2.56. The first number printed, 1.084 ms, is a simpl
 
 ![NV in ¹³C: expected result](expected.png)
 
-## The input
+## 4. The input
 
 `ccein.jsonc` sets nine keys. Each is explained in a comment above it.
 
 | Key | Value | Meaning |
 |---|---|---|
-| `Qubit.qubit[].file` | `bath/bath_Diamond_NV_natab_defect` | the NV position |
-| `configuration.gyrofile` | `bath/gyro_13C` | spin and gyromagnetic ratio of ¹³C |
-| `configuration.bathfile` | `bath/bath_Diamond_NV_natab_1` | the bath |
-| `order` | 2 | the largest cluster: pairs |
-| `bfield` | 500 | the field in G, along the NV axis |
-| `rbath` | 50 | the bath reaches 50 Å from the NV |
-| `rdip` | 10 | pairs closer than 10 Å are kept |
-| `deltat`, `nstep` | 0.001, 2000 | 2000 points, 1 µs apart |
-| `pulse.count` | 1 | one π pulse: the Hahn echo |
+| `Qubit.qubit[].file` | `bath/bath_Diamond_NV_natab_defect` | The NV position. |
+| `configuration.gyrofile` | `bath/gyro_13C` | Spin and gyromagnetic ratio of ¹³C. |
+| `configuration.bathfile` | `bath/bath_Diamond_NV_natab_1` | The bath. |
+| `order` | 2 | The largest cluster: pairs. |
+| `bfield` | 500 | The field in G, along the NV axis. |
+| `rbath` | 50 | The bath reaches 50 Å from the NV. |
+| `rdip` | 10 | Pairs closer than 10 Å are kept. |
+| `deltat`, `nstep` | 0.001, 2000 | 2000 points, 1 µs apart. |
+| `pulse.count` | 1 | One π pulse: the Hahn echo. |
 
 Every other key has its default. `main.out -e` writes all of them.
 

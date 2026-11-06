@@ -61,7 +61,7 @@ Such a run reads no bath, and `order`, `bfield`, `rbath`, `rdip` and `Qubit` may
 `hamiltonian.noise.compute` chooses what is computed from the bath:
 
 - `"coherence"` (default) gives $\chi$ straight from each cluster's eigenmodes, with no time grid.
-- `"spectrum"` gives the correlation $C(t) = \operatorname{Re}\operatorname{Tr}[\rho\{B(t), B\}]/2$ on the grid of
+- `"spectrum"` gives the correlation $C(t) = \operatorname{Re}\operatorname{Tr}[\rho\lbrace B(t), B\rbrace ]/2$ on the grid of
   `hamiltonian.noise.fft`, its two-sided spectrum $S(f)$ by FFT, and $\chi$ from $S(f)$. By default the grid ends at the
   run's last time and has 8 points per period of the fastest bath mode kept.
 - `"correlation"` gives $C(t)$ alone at the run's times. With `s_range` the cluster starts in its sampled pure state,

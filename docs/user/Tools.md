@@ -19,7 +19,7 @@ one tool.
 
 BathGenerator repeats the unit cell to the requested size and draws the isotope of every site with the probabilities
 in a `prob` file. It has options for a 2D material, a defect, an inserted relaxed cell and a deformation. It sets no
-random seed itself, so two runs give the same sites with different isotopes; `make_natab_baths.sh` (below) fixes the
+random seed itself, so two runs give the same sites with different isotopes. `make_natab_baths.sh` (below) fixes the
 seed.
 
 ```
@@ -29,9 +29,9 @@ mpirun -n 4 python3 BathGenerator.py -o OUT -i POSCAR -p PROB --size 30 --Defect
 <a id="tag_prob_file"></a>
 **The `prob` file** has three lines for every isotope that can sit on a site:
 
-1. its name, the element symbol with the mass number;
-2. its nuclear spin;
-3. its abundance in %.
+1. Its name, the element symbol with the mass number.
+2. Its nuclear spin.
+3. Its abundance in %.
 
 The isotopes of one element are drawn together. The element is the name without its digits. Every atom name of the
 POSCAR except the `--Defect` one must have an isotope in the file. When the abundances of an element add up to less than 100 %, the rest of its sites hold no spin and
@@ -42,6 +42,9 @@ are left out of the bath. More than 100 % is refused. The natural-abundance diam
 13C
 0.5
 1.1
+N
+1.0
+0.0
 ```
 
 so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/advanced/06_hBN/bath/prob_hBN`) the file lists ¹⁰B (3,
@@ -49,19 +52,19 @@ so 1.1 % of the carbon sites hold a ¹³C. For h-BN (`example/tutorial/advanced/
 
 | Option | Meaning |
 |---|---|
-| `-o OUT` | the output bath file; the defect position goes to `OUT_defect` |
-| `-i POSCAR` | the unit cell of the pure crystal (or, with `--convert`, a bath file) |
-| `-p PROB` | the `prob` file |
-| `--size L` | the edge of the bath cell in Å (a cube; with `--opt2D` the z extent is the unit cell's) |
-| `--Defect NAME` | the atom name of the defect site: of the sites with that name, the one closest to `--Defect_center` is the defect, the centre of the bath, written to `OUT_defect` |
-| `--Defect_center x y z` | the fractional point (each between 0 and 1) the defect site is chosen near (default 0.5 0.5 0.5) |
-| `-I POSCAR` | a relaxed supercell with the defect, inserted around it |
-| `-D POSCAR ... --axis AX ...` | deformed cells and their axes (`x`, `y`, `z`: plane shape; `xy`, `xz`, `yz`: line shape) |
-| `--opt2D` | a two-dimensional bath (one layer, as h-BN) |
-| `--convert` | convert a bath file (`-i`) to a POSCAR (`-o`) to look at it |
-| `--test` | also write a POSCAR of the bath, to check it |
+| `-o OUT` | The output bath file. The defect position goes to `OUT_defect`. |
+| `-i POSCAR` | The unit cell of the pure crystal (or, with `--convert`, a bath file). |
+| `-p PROB` | The `prob` file. |
+| `--size L` | The edge of the bath cell in Å (a cube, and with `--opt2D` the z extent is the unit cell's). |
+| `--Defect NAME` | The atom name of the defect site. Of the sites with that name, the one closest to `--Defect_center` is the defect, the centre of the bath, written to `OUT_defect`. |
+| `--Defect_center x y z` | The fractional point (each between 0 and 1) the defect site is chosen near (default 0.5 0.5 0.5). |
+| `-I POSCAR` | A relaxed supercell with the defect, inserted around it. |
+| `-D POSCAR ... --axis AX ...` | Deformed cells and their axes (`x`, `y`, `z` for a plane shape, `xy`, `xz`, `yz` for a line shape). |
+| `--opt2D` | A two-dimensional bath (one layer, as h-BN). |
+| `--convert` | Convert a bath file (`-i`) to a POSCAR (`-o`) to look at it. |
+| `--test` | Also write a POSCAR of the bath, to check it. |
 
-`-h` lists every option. `do_BathGenerator` has four worked cases: three make a bath, one converts a bath to POSCAR.
+`-h` lists every option. `do_BathGenerator` has four worked cases. Three make a bath, and one converts a bath to POSCAR.
 
 The baths of the tutorials were made with this copy. `example/tutorial/make_natab_baths.sh N OUTDIR [SIZE [RMIN]]`
 calls it for natural-abundance ¹³C around an NV. It makes N configurations with the seeds 1 ... N, so the same call
@@ -85,17 +88,17 @@ python3 main.py QE   POSCAR DEFECT --A hyperfine.out --spin S --Q efg.out [--ran
 
 | Value | Writes |
 |---|---|
-| `vertex` (default) | the eight corners of the supercell relative to the defect (lines `v1` to `v8`, Å) |
-| `coord` | the smallest and largest relative coordinates along x, y and z (lines `MinDif[A]`, `MaxDif[A]`) |
+| `vertex` (default) | The eight corners of the supercell relative to the defect (lines `v1` to `v8`, Å). |
+| `coord` | The smallest and largest relative coordinates along x, y and z (lines `MinDif[A]`, `MaxDif[A]`). |
 
 A bath spin inside that region must have a row in the file
 ([hyperfine.missing_row](InputFile_General.md#tag_hyperfine_missing_row)).
 
 Every hyperfine file (`Afile`) is in tensor format v3:
 
-- line 1 is `VASP` or `QUANTUMESPRESSO`;
-- line 2 is `# CCEX-tensor v3: values = hyperfine of the spin-S defect (MHz), source = ..., S = ...`;
-- the numbers are the hyperfine of the spin-S defect, which CCEX reads as written.
+- Line 1 is `VASP` or `QUANTUMESPRESSO`.
+- Line 2 is `# CCEX-tensor v3: values = hyperfine of the spin-S defect (MHz), source = ..., S = ...`.
+- The numbers are the hyperfine of the spin-S defect, which CCEX reads as written.
 
 The two DFT codes differ:
 
@@ -115,9 +118,9 @@ tensors of the h-BN tutorials came from this tool, and
 <a id="tag_tool_isotopetable"></a>
 ## 3. IsotopeTable
 
-`make_isotope_table.py` writes `src/input/isotope_table.cpp`: the nuclear isotopes, with spin and gyromagnetic ratio in
-rad/ms/G. CCEX uses them for a bath species the gyrofile does not name, or for every species when the input has no
-gyrofile ([gyrofile](InputFile_General.md#tag_gyrofile)).
+`make_isotope_table.py` writes the nuclear isotopes, with spin and gyromagnetic ratio in rad/ms/G, to
+`src/input/isotope_table.cpp`. CCEX uses them for a bath species the gyrofile does not name, or for every species
+when the input has no gyrofile ([gyrofile](InputFile_General.md#tag_gyrofile)).
 
 The source is the EasySpin isotope database in
 `example/tools/SpinTensorReader/spHamilReader/spin_database/isotopedata.txt`, with
@@ -144,11 +147,11 @@ changed. What it maps is the table of [old names](InputFile_OldNames.md).
 
 `set_input_keys.py` writes a copy of `IN` with keys set:
 
-- `KEY` is a key or a dotted path into a block (`configuration.s_range=[1,5]`; the block has to exist in `IN`). It is
-  matched without regard to case.
+- `KEY` is a key or a dotted path into a block (`configuration.s_range=[1,5]`, and the block has to exist in `IN`).
+  It is matched without regard to case.
 - `VALUE` is read as JSON when it is JSON (`50`, `true`, `["bath_1"]`), and as a string otherwise.
-- `null` removes the key (`configuration.s_range=null`: the ensemble).
-- `OUT` is plain JSON; the comments are not kept.
+- `null` removes the key (`configuration.s_range=null` gives the ensemble).
+- `OUT` is plain JSON. The comments are not kept.
 
 The tutorials use it to run one input with other values, for example in the scans of
 [Basic 03](../../example/tutorial/basic/03_convergence/README.md).
@@ -170,12 +173,12 @@ the input names ([file formats](InputFile_General.md#tag_configuration_files)). 
 
 | Key | Each line after the first (one per line of the bath file) | Drawn with numpy |
 |---|---|---|
-| `bath_state_file` | m of the spin, uniform over its 2S+1 levels (S from the gyrofile, else the built-in isotope table) | `default_rng([seed, k, s])` |
-| `defect_axis_file` | the axis state, uniform over 1..`n_axis_states` of its Defect species; 0 for another species (CCEX reads an axis file only when every spin is a Defect species with axis states) | `default_rng([seed, k, 0])` |
-| `defect_state_file` | the m of each on-site spin of its Defect species (uniform over 2I+1, `spins`), space-separated; 0 for another species | `default_rng([seed, k, s, 1])` |
+| `bath_state_file` | The m of the spin, uniform over its 2S+1 levels (S from the gyrofile, else the built-in isotope table). | `default_rng([seed, k, s])` |
+| `defect_axis_file` | The axis state, uniform over 1..`n_axis_states` of its Defect species. It is 0 for another species (CCEX reads an axis file only when every spin is a Defect species with axis states). | `default_rng([seed, k, 0])` |
+| `defect_state_file` | The m of each on-site spin of its Defect species (uniform over 2I+1, `spins`), space-separated. It is 0 for another species. | `default_rng([seed, k, s, 1])` |
 
 The first line of each file is the first field of its bath file's first line. `seed` is the number given, its entry for k when it
-is a list, or 1 when absent; without `k_range`, k is 0. A file that exists is overwritten only with `--force`.
+is a list, or 1 when absent. Without `k_range`, k is 0. A file that exists is overwritten only with `--force`.
 
 The automatic convergence makes the files it needs with the same functions, so the two give the same states.
 [Basic 02](../../example/tutorial/basic/02_bath_and_states/README.md) uses this tool in section 2.

@@ -135,4 +135,4 @@ For gCCE and megCCE the initial state can also be given.
 
 | Key | Type | Default | Meaning |
 |---|---|---|---|
-| `psi0` | list of numbers or `[re, im]` | (\|α⟩ + \|β⟩), normalized | The initial state over the whole qubit space, for another superposition. |
+| `psi0` | list of numbers or `[re, im]` | (\|α⟩ + \|β⟩), normalised | The initial state over the whole qubit space, for another superposition. |

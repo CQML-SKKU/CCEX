@@ -42,7 +42,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | `"method": "pgCCE"` / `"pmeCCE"` / `"pmegCCE"` | `"method": "gCCE"` / `"meCCE"` / `"megCCE"` with `"cluster": {"mode": "pcce"}` |
 | `cluster_mode` | `cluster.mode` |
 | `"cluster_mode": "adaptive"` | `"cluster": {"mode": "bundle"}` |
-| `Adaptive` block, top-level `adaptive` block | `cluster.adaptive` block (keys unchanged, `cluster.mode` bundle). Keys are read without regard to case, so `Adaptive` inside `cluster` is read. |
+| `Adaptive` block, top-level `adaptive` block | `cluster.adaptive` block (keys as in the last table, `cluster.mode` bundle). Keys are read without regard to case, so `Adaptive` inside `cluster` is read. |
 | `Refine` block | `cluster.adaptive` block |
 | `adaptive_work_file` | `cluster.adaptive.work_file` (written by the refinement driver) |
 | `probe_memory_gb` | `cluster.adaptive.probe_memory_gb` (the converter removes it from an input without an `adaptive` block, since it was read with the refinement only) |
@@ -78,8 +78,8 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | a `configuration.seed` number with `k_range` | The number is now the seed of the first configuration, and configuration k takes seed + k − first. For the old meaning, the same seed for every k, give a list of that number. The converter writes it. |
 | `bathadjust`, `bath_shift` (top level) | `configuration.bath_shift` |
 | `statefile`, `bath_state_file: "prefix"` (top level) | `configuration.bath_state_file: ["prefix"]`, one name per bath file. The converter removes a single prefix beside several bath files, which the old run did not read. |
-| `avaaxfile`, `Defect.axis_file: "file"` | `configuration.defect_axis_file: ["file"]`, one per bath file |
-| `exstatefile`, `Defect.state_file: "prefix"` | `configuration.defect_state_file: ["prefix"]`, one per bath file |
+| `avaaxfile`, `Defect.axis_file: "file"` | `configuration.defect_axis_file: ["file"]`, one per bath file. |
+| `exstatefile`, `Defect.state_file: "prefix"` | `configuration.defect_state_file: ["prefix"]`, one per bath file. |
 
 <a id="old_qubit"></a>
 ### Qubit
@@ -87,8 +87,8 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | Old | Now |
 |---|---|
 | `qubitfile` | `Qubit.qubit: [{"file": ...}]` (as `Qubit.file` below) |
-| `qspin`, `qzfs`, `qalphams`, `qbetams` | the entry's `spin`, then as `Qubit.zfs`, `Qubit.alphams`, `Qubit.betams` below |
-| `Qubit.file`, `Qubit.spin`, `Qubit.name` (the one-qubit file form) | an entry of `Qubit.qubit`, `[{"file": ..., "spin": ..., "name": ...}]` (`file` in place of `xyz`) |
+| `qspin`, `qzfs`, `qalphams`, `qbetams` | The entry's `spin`, then as `Qubit.zfs`, `Qubit.alphams`, `Qubit.betams` below. |
+| `Qubit.file`, `Qubit.spin`, `Qubit.name` (the one-qubit file form) | An entry of `Qubit.qubit`, `[{"file": ..., "spin": ..., "name": ...}]` (`file` in place of `xyz`). |
 | `Qubit.qubit[].detuning: [x]` | `x` (a number, or `{"value", "unit"}`) |
 | `Qubit.nqubit` | Removed. The number of qubits is the length of `Qubit.qubit`. |
 | `Qubit.overhaus` | `hamiltonian.common.qubit_bath_mean_field` |
@@ -96,8 +96,8 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | `Qubit.psia`, `Qubit.psib` | `Qubit.alpha_state: {"vector": [...]}`, `Qubit.beta_state: {"vector": [...]}`. |
 | `Qubit.qubit[].alphams`, `Qubit.qubit[].betams` | `Qubit.alpha_state: {"ms": [m_1, m_2, ...]}`, `Qubit.beta_state: {"ms": [...]}`, one m<sub>s</sub> per qubit. The converter writes +1 / 0 for a qubit that gave none. |
 | `Qubit.alphams`, `Qubit.betams` (with `Qubit.file`) | `Qubit.alpha_state: {"ms": [m]}`, `Qubit.beta_state: {"ms": [m]}` |
-| `Qubit.zfs` (with `Qubit.file`, kHz) | a `Qubit.intmap` self entry, `{"between": ["q0", "q0"], "tensor": ..., "unit": "kHz"}` (`q0` the qubit's name, its default) |
-| `Qubit.frame` (with `Qubit.file`, development versions) | the `frame` of that self entry |
+| `Qubit.zfs` (with `Qubit.file`, kHz) | A `Qubit.intmap` self entry, `{"between": ["q0", "q0"], "tensor": ..., "unit": "kHz"}` (`q0` the qubit's name, its default). |
+| `Qubit.frame` (with `Qubit.file`, development versions) | The `frame` of that self entry. |
 | `Qubit.intmap[].tensor_frame` | `Qubit.intmap[].frame` |
 
 <a id="old_ham"></a>
@@ -110,7 +110,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | `hf_tensorfile` | `hamiltonian.common.hyperfine.file` |
 | `hf_ignore_oor` 0 / 1 | `hamiltonian.common.hyperfine.missing_row` `"stop"` / `"point_dipole"` |
 | `qd_readmode` 0 | `hamiltonian.common.quadrupole: "off"` (the default) |
-| `qd_readmode` 1 | not available (experimental constants) |
+| `qd_readmode` 1 | Not available (experimental constants). |
 | `qd_readmode` 2 / 3 / 4 | `hamiltonian.common.quadrupole.structure` `"plain"` / `"strained"` / `"bubble"` |
 | `qd_tensorfile` | `hamiltonian.common.quadrupole.file` |
 | `qd_tensorfile_woqubit` | `hamiltonian.common.quadrupole.file_without_defect` |
@@ -121,7 +121,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | (none) | `hamiltonian.cCCE.delta_A` (new: Maze's second-order δA term, default `false` = the old calculation) |
 | `DefectTotSpin` | Removed. The qubit spin is used (also for the S of a v3 tensor file). |
 | `CorrTotSpin` | Removed. It served old-format VASP tensor files only. Remake such a file with `example/tools/SpinTensorReader` (format v3). |
-| `jump_operators` (top level) | `hamiltonian.meCCE.jump_operators` or `hamiltonian.megCCE.jump_operators`, the section of the run's method (not rewritten by the converter) |
+| `jump_operators` (top level) | `hamiltonian.meCCE.jump_operators` or `hamiltonian.megCCE.jump_operators`, the section of the run's method (not rewritten by the converter). |
 | `hamiltonian.corrections`, `hamiltonian.dissipation` (development versions only) | `hamiltonian.cCCE`, or `hamiltonian.meCCE` / `hamiltonian.megCCE` (the section of the run's method) |
 | jump `operator` `"+-"` / `"-+"` | `"-"` / `"+"` |
 
@@ -136,7 +136,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | `pulseiter` | `pulse.per_qubit` |
 | `pulse_time` | `pulse.duration` |
 | `detuning_factor` | `pulse.detuning_factor` |
-| `bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams` | `pulse.bath.count`, `pulse.bath.sequence`, `pulse.bath.defect`, `pulse.bath.energy_shift`, then as below (not rewritten by the converter) |
+| `bnpulse`, `bsequence`, `bpulse_defect`, `bpulse_energy_shift`, `bspin`, `balphams`, `bbetams` | `pulse.bath.count`, `pulse.bath.sequence`, `pulse.bath.defect`, `pulse.bath.energy_shift`, then as below (not rewritten by the converter). |
 | `pulse.bath.spin` | Removed. The driven spins' own S is used (it had to be the same). |
 | `pulse.bath.alphams`, `pulse.bath.betams` | `pulse.bath.levels: [alphams, betams]` |
 
@@ -177,7 +177,7 @@ Defect species' `types`, `spins`, `gyros`, `efg`, `zfs` and `detuning`.
 | `Defect.species[].coordinate_frame` | `Defect.species[].frame` |
 | `Defect.species[].axis` | `Defect.species[].zfs.axis`, as in `"zfs": {"D": ..., "axis": [...], "unit": ...}`. Only the D form used it, and the converter drops it elsewhere. |
 | `Defect.species[].zfs.E` (it took 0 only) | Removed. The D form has no E. Use `zfs.tensor` for an E other than 0. |
-| a Defect or `Qubit.intmap` unit in another case, e.g. `"mhz"` | the table's spelling, `"MHz"` (units are case-sensitive) |
+| a Defect or `Qubit.intmap` unit in another case, e.g. `"mhz"` | The table's spelling, `"MHz"` (units are case-sensitive). |
 | the frame value `"bath"` | `"file"` |
 | no frame with the rotation on, for a Defect species, a single qubit's `Qubit.intmap` entry, `Qubit.zfs` (read as written before) | Refused. The converter writes the old meaning, `"frame": "qubit"` (for `Qubit.zfs` in its intmap self entry). |
 | `magnetic_field_axis` | Removed. Write `bfield` as [0, 0, Bz] and turn the bath with `frame.rotation`. |

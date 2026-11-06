@@ -27,12 +27,12 @@ Some variables of `main.out` turn an optimisation off for a comparison, or serve
 
 | Variable | Effect |
 |---|---|
-| `CCEX_CPU_BATCH=0` | computes the small cCCE clusters (bath dimension 2 and 4) one by one instead of in batches; both give the same bits, and where they would not, the batch turns itself off at start |
-| `CCEX_SMALL_EIG=0` | lets Eigen diagonalise the same small clusters instead of the fixed-sweep Jacobi solver |
-| `CCEX_CHECK_DISORDER=1` | with sampled states, also builds the static mean field of the bath the old way on one rank and stops on any bit that differs |
-| `CCEX_SMALL_CLUSTER_DUMP=FILE`, `CCEX_SMALL_CLUSTER_DUMP_N=N` | cCCE: writes the first N (400) small clusters with their CPU result to FILE |
-| `CCEX_WARP_CLUSTER_DUMP=FILE`, `CCEX_WARP_CLUSTER_DUMP_N=N` | gCCE: the same for the clusters of the GPU warp kernel |
-| `CCEX_TEST_GPU_OOM_BYTES=N` | GPU build: every GPU allocation of N bytes or more fails, to test the fall-back to the CPU |
+| `CCEX_CPU_BATCH=0` | Computes the small cCCE clusters (bath dimension 2 and 4) one by one instead of in batches. Both give the same bits, and where they would not, the batch turns itself off at start. |
+| `CCEX_SMALL_EIG=0` | Lets Eigen diagonalise the same small clusters instead of the fixed-sweep Jacobi solver. |
+| `CCEX_CHECK_DISORDER=1` | With sampled states, also builds the static mean field of the bath the old way on one rank and stops on any bit that differs. |
+| `CCEX_SMALL_CLUSTER_DUMP=FILE`, `CCEX_SMALL_CLUSTER_DUMP_N=N` | In cCCE, writes the first N (400) small clusters with their CPU result to FILE. |
+| `CCEX_WARP_CLUSTER_DUMP=FILE`, `CCEX_WARP_CLUSTER_DUMP_N=N` | In gCCE, the same for the clusters of the GPU warp kernel. |
+| `CCEX_TEST_GPU_OOM_BYTES=N` | In a GPU build, every GPU allocation of N bytes or more fails, to test the fall-back to the CPU. |
 
 What a check writes goes to its `_work/` (or `cpp/out/`) folder, which git ignores and the check wipes. The reference
 outputs under `code_verification/check_numerics/reference/` and the adaptive golden answers are committed on purpose
@@ -45,18 +45,18 @@ floating-point values (every decision stays exact).
 On macOS the checks run with the system's bash 3.2, and use perl where `timeout` is missing. `check_numerics` compares
 with references recorded on x86, and a Mac build differs from them in the last digits (below 1e-8 in noDiv), since
 `long double` is `double` on arm64. Record a reference on the Mac (`make_reference.sh current`) and compare later Mac
-builds with it, but do not commit it: the newest `head-*` folder is the reference for everyone.
+builds with it, but do not commit it, because the newest `head-*` folder is the reference for everyone.
 
 `.github/workflows/ci.yml` runs the fast, machine-independent checks on every push: the unit tests, `check_analytic`,
 `check_rotation`, `check_mean_field`, `check_deer`, `check_master_equation`, `check_noise` (without the reference code and
 PyCCE), `check_pseudospin`, `check_tutorials`, `check_refusals`, `check_input_forms` and `check_rdip_ladder` (quick
 sizes). `check_numerics`, the long adaptive suites and the GPU checks are run by hand.
 
-## code_verification/: does the code still give what it gave, and what it says
+## code_verification/
 
-`bash test/code_verification/run.sh` runs all twelve at once (about 8 minutes on 28 cores) and prints their logs in
-the order below. `check_refusals` and `check_input_forms` run one after the other, since both write
-`check_input_forms/_work`.
+These checks ask whether the code still gives what it gave, and what it says. `bash test/code_verification/run.sh` runs
+all twelve at once (about 8 minutes on 28 cores) and prints their logs in the order below. `check_refusals` and
+`check_input_forms` run one after the other, since both write `check_input_forms/_work`.
 
 | Check | Question |
 |---|---|
@@ -65,26 +65,28 @@ the order below. `check_refusals` and `check_input_forms` run one after the othe
 | `check_master_equation/` | Do meCCE and megCCE reduce to cCCE and gCCE at rate 0, and match PyCCE's curves and the closed forms with jumps? |
 | `check_numerics/` | Are the numbers the ones recorded before? 27 calculations against this branch's newest reference (≤ 1e-9) and the releases v1.1.0, v1.2.2 and v2.0.1, with the known differences named in `expected.json`. |
 | `check_rotation/` | Does the coordinate-frame rotation do what it says? A unit test and runs against hand-rotated inputs. |
-| `check_refusals/` | Are the inputs that must be refused refused, most of them before anything is read? |
+| `check_refusals/` | Are the inputs that must be refused actually refused, most of them before anything is read? |
 | `check_input_forms/` | Do the input forms of the current and older layouts give the same physics, and do the template (`-e`), the command line, units, comments and the other input stages work? |
 | `check_mean_field/` | Does the vector mean field give the z mean field's curve where the two must agree? |
 | `check_rdip_ladder/` | Does each `rdip_ladder` rung equal a separate run at that rdip? |
 | `check_noise/` | Does method noise match the OU closed forms, quadrature, an independent semi-classical CCE code and PyCCE? |
 | `check_pseudospin/` | Is method pseudospin exact where it has to be (two spins on the qubit axis, Seo's eq. 23)? |
 | `check_tutorials/` | Does every tutorial input still run (with `nstep` cut to 3)? |
-| `bath_data/` | not a check: the frozen baths, tensors and state files the checks read |
+| `bath_data/` | Not a check. The frozen baths, tensors and state files the checks read. |
 
-## cluster_verification/: the clustering methods
+## cluster_verification/
+
+These folders check the clustering methods.
 
 | Folder | Contents | Run |
 |---|---|---|
-| `check_adaptive/` | the adaptive refinement (`src/clustering/algo_adaptive/`): unit tests, 33 recorded runs with their golden answers, fuzz and fault-injection scripts | `sh check_adaptive/verify.sh unit\|regress\|inprocess\|sanitize\|fuzz` |
-| `check_bundle/` | the records of the bundle clustering experiments; the bundle code is checked by the unit tests in `make cpu-test` and by `check_adaptive` | — |
-| `check_pcce/` | pCCE: the partition search, its cache, reproducibility across ranks | `python3 check_pcce/check_reproducibility.py --cpu bin/main.out --output DIR` and the others |
+| `check_adaptive/` | The adaptive refinement (`src/clustering/algo_adaptive/`): unit tests, 33 recorded runs with their golden answers, fuzz and fault-injection scripts. | `sh check_adaptive/verify.sh unit\|regress\|inprocess\|sanitize\|fuzz` |
+| `check_bundle/` | The records of the bundle clustering experiments. The bundle code is checked by the unit tests in `make cpu-test` and by `check_adaptive`. | — |
+| `check_pcce/` | pCCE: the partition search, its cache, reproducibility across ranks. | `python3 test/cluster_verification/check_pcce/check_reproducibility.py --cpu bin/main.out --output DIR` and the others |
 
-## gpu_verification/: the CUDA backend
+## gpu_verification/
 
-`check_gpu/` has the unit tests (`make numeric-test` and `make cpu-test` run the ones that need no GPU, `make
-gpu-test` the rest inside a GPU job) and the `check_*.py` scripts that run the CPU and CUDA builds on the same inputs.
-`gpu_benchmarks/` times the CPU against the GPU. `server/` holds the Slurm jobs for idm4-gpu; its README records their
-last runs and the commits they ran on.
+These folders check the CUDA backend. `check_gpu/` has the unit tests (`make numeric-test` and `make cpu-test` run the
+ones that need no GPU, `make gpu-test` the rest inside a GPU job) and the `check_*.py` scripts that run the CPU and CUDA
+builds on the same inputs. `gpu_benchmarks/` times the CPU against the GPU. `server/` holds the Slurm jobs for idm4-gpu.
+Its README records their last runs and the commits they ran on.

@@ -163,9 +163,9 @@ $w_{ab} = \sum_{i \in a,\, j \in b} 3\, I_i I_j\, \lVert \mathsf{J}_{ij} \rVert_
 ([Bundle clustering](../../../../docs/methods/bundle-adaptive.md#bundle_partition)):
 
 1. Every spin starts as its own bundle, of dimension $2I+1$.
-2. The pairs within `rdip` are taken from the largest $w_{ab}$ down (with `rdip` written, as here; without it CCEX
-   checks the links itself). A pair joins the two bundles that hold its spins when the product of their dimensions is
-   at most `max_dim`.
+2. The pairs within `rdip` are taken from the largest $w_{ab}$ down, when `rdip` is written as here. Without it
+   CCEX checks the links itself. A pair joins the two bundles that hold its spins when the product of their
+   dimensions is at most `max_dim`.
 3. Two bundles are linked, and can be in one cluster, when such a pair joins them. The expansion then runs over the
    bundles, and `order` counts bundles.
 
@@ -230,7 +230,7 @@ This case is the bundled calculation of section 3 with `rbath` 20 Å over 2 ms, 
 steps. A round of the merge goes through four steps
 ([a round of the merge policy](../../../../docs/methods/bundle-adaptive.md#adaptive_round)):
 
-1. **Run.** The current bundles are computed, as in case 3.
+1. **Run.** The current bundles are computed, as in section 3.
 2. **Patches.** Small sets of neighbouring bundles are chosen, at order 2 a bundle with its two most strongly linked
    neighbours.
 3. **Local error.** Each patch is computed directly as one cluster and compared with the expansion over its bundles,

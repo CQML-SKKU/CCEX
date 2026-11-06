@@ -6,7 +6,7 @@ The usual CCE treats the qubit and its bath as a closed system. The master-equat
 relaxing or dephasing through its surroundings, to every cluster. Each cluster's density matrix then follows the
 Lindblad equation
 
-$$\dot\rho=-i[H,\rho]+\sum_k\Big(C_k\rho C_k^\dagger-\tfrac12\{C_k^\dagger C_k,\rho\}\Big),\qquad C_k=\sqrt{\gamma_k}\,S^{(k)}_{op},$$
+$$\dot\rho=-i[H,\rho]+\sum_k\Big(C_k\rho C_k^\dagger-\tfrac12\lbrace C_k^\dagger C_k,\rho\rbrace \Big),\qquad C_k=\sqrt{\gamma_k}\,S^{(k)}_{op},$$
 
 with one jump operator $C_k$ per entry of `jump_operators`:
 
@@ -100,7 +100,7 @@ NP=4 bash run.sh
 
 It runs both inputs and plots them. It takes 84 s and 0.09 GB per rank. The gCCE run takes 0.02 s of it and megCCE
 81 s, since megCCE evolves each cluster in the Liouville space, of dimension $(d_q d_B)^2$, with a matrix exponential,
-since the eigendecomposition of gCCE does not apply there.
+because the eigendecomposition of gCCE does not apply there.
 
 <a id="a11_qubit_result"></a>
 ### 2.3 The result

@@ -41,21 +41,21 @@ Optional libraries:
 
 | Preset | Machine |
 |---|---|
-| `generic` | any machine with an MPI C++ wrapper on `PATH`. It reads `CXX` (default `mpicxx`), `CC` and `CXXFLAGS`, and for the GPU binary `CUDA_HOME` (or nvcc on `PATH`) and `CUDA_ARCH` |
-| `wsl-gnu` | WSL or Ubuntu with Intel oneAPI: Intel MPI's `mpicxx` with g++ |
-| `wsl-icpx` | the same with icpx behind Intel MPI |
-| `mac` | macOS with an MPI wrapper from Homebrew: Apple clang with `-O3` and `-mcpu=native` (`-march=native` on an Intel Mac), and Apple's Accelerate |
+| `generic` | Any machine with an MPI C++ wrapper on `PATH`. It reads `CXX` (default `mpicxx`), `CC` and `CXXFLAGS`, and for the GPU binary `CUDA_HOME` (or nvcc on `PATH`) and `CUDA_ARCH`. |
+| `wsl-gnu` | WSL or Ubuntu with Intel oneAPI. It uses Intel MPI's `mpicxx` with g++. |
+| `wsl-icpx` | The same with icpx behind Intel MPI. |
+| `mac` | macOS with an MPI wrapper from Homebrew. It uses Apple clang with `-O3` and `-mcpu=native` (`-march=native` on an Intel Mac), and Apple's Accelerate. |
 
-The header of `do_compile.sh` lists further presets for the clusters of the developers' group; each loads its own
+The header of `do_compile.sh` lists further presets for the clusters of the developers' group. Each loads its own
 modules. A preset for another machine can be added in the same way.
 
 `do_compile.sh` also reads these variables:
 
 | Variable | Effect |
 |---|---|
-| `CCEX_JOBS` | the number of parallel compile jobs (default 5) |
-| `CCEX_BLAS` | `auto` (default), `mkl`, `accelerate` or `off` ([below](#BuildBlas)) |
-| `CXXFLAGS_EXTRA`, `LIBRARY_EXTRA` | extra compiler flags and libraries |
+| `CCEX_JOBS` | The number of parallel compile jobs (default 5). |
+| `CCEX_BLAS` | `auto` (default), `mkl`, `accelerate` or `off` ([below](#BuildBlas)). |
+| `CXXFLAGS_EXTRA`, `LIBRARY_EXTRA` | Extra compiler flags and libraries. |
 
 ### CMake
 
@@ -75,7 +75,7 @@ modules. A preset for another machine can be added in the same way.
 ### MKL and Accelerate
 
 The build links Intel MKL when `$MKLROOT` is set (by `setvars.sh` or an intel module), and uses it for the large
-clusters. On macOS, Apple's Accelerate takes its place; the `mac` preset and CMake link it by default. The results
+clusters. On macOS, Apple's Accelerate takes its place. The `mac` preset and CMake link it by default. The results
 change only in the last digits. The build says which one it linked, and so does the header of every run log.
 `CCEX_BLAS=off` (CMake `-DCCEX_BLAS=OFF`) builds without either.
 
@@ -92,8 +92,8 @@ The GPU binary `bin/main_gpu.out` needs nvcc, cuSOLVER, cuBLAS and cudart. Set t
 
 ### macOS
 
-Do not build in a folder that iCloud Drive syncs, such as Desktop or Documents: iCloud makes copies of build files,
-and the build fails. A CMake build folder elsewhere (`cmake -B ~/build/ccex`) also avoids this.
+Do not build in a folder that iCloud Drive syncs, such as Desktop or Documents, because iCloud makes copies of build
+files and the build fails. A CMake build folder elsewhere (`cmake -B ~/build/ccex`) also avoids this.
 
 <a id="HowToRun"></a>
 ## 2. Command line
@@ -103,7 +103,7 @@ the GPU. The input is JSON with `//`, `#` or `!` comments ([Input file](InputFil
 
 | Option | Meaning |
 |---|---|
-| `-f FILE` | the [input file](InputFile.md); required for a calculation |
+| `-f FILE` | the [input file](InputFile.md), required for a calculation |
 | `-o DIR` | the output folder, made when it is missing (below) |
 | `-v` | verbose output (a longer log) |
 | `-e` | write the input template `ccex_example.jsonc` and stop (below) |
@@ -125,7 +125,7 @@ together with `-f` is refused.
 - An `auto_convergence` block runs the automatic convergence
   ([Automatic convergence tags](InputFile_AutoConvergence.md)). It takes no option but `-f FILE`.
 - A `cluster.adaptive` block runs the adaptive refinement ([cluster.adaptive](InputFile_Cluster.md#tag_adaptive)).
-  `-o` and `output.path` are refused with it; its steps go to `cluster.adaptive.workdir`.
+  `-o` and `output.path` are refused with it. Its steps go to `cluster.adaptive.workdir`.
 
 <a id="ExitCodes"></a>
 ## 3. Exit codes
@@ -134,14 +134,14 @@ together with `-f` is refused.
 |---|---|---|---|
 | 0 | finished | finished with a converged or physical status | converged |
 | 1 | input refused | error | error |
-| 2 | | stopped at another status; its last step is the result | refused |
+| 2 | | stopped at another status, and its last step is the result | refused |
 | 3 | | | unresolved |
 | 4 | | | stopped |
 | other, from `mpirun` | error during the calculation | | |
 
 A refusal is decided on every rank before anything is calculated, so all ranks stop together, and rank 0 prints one
 `Error: ...` line on standard error. With `execution.backend` `cuda`, a method the GPU does not take, a CPU-only binary
-or a card that cannot be opened stops the run differently: every rank prints `Error: GPU backend: ...` and aborts, so
+or a card that cannot be opened stops the run differently. Every rank prints `Error: GPU backend: ...` and aborts, so
 the code comes from `mpirun`. An error during the calculation, such as a file that cannot be written, aborts
 every rank through MPI, and `mpirun` returns a nonzero code of its own. The statuses are explained in
 [Adaptive refinement](OutputFiles.md#out_adaptive) and in [Automatic convergence](../methods/auto-convergence.md#tag_ac_results).
@@ -214,18 +214,18 @@ A line that starts with a tag in brackets reports a decision or a measurement. B
 
 | Tag | When | What it says |
 |---|---|---|
-| `[backend]` | `execution.backend` `auto` or `cuda` | which device each rank uses, or why the CPU is used |
-| `[gpu-memory-fallback]` | `auto` | the GPU ran out of memory; this cluster and the larger ones go to the CPU on that rank |
-| `[dm]` | `quantity` dm | clusters put values into density-matrix elements the free evolution keeps at zero ([The density matrix](OutputFiles.md#out_dm)) |
-| `[seed]` | a generated seed (standard error) | the seed to write into the input to replay the run |
-| `[numerical-invalid]` | a cluster term is not finite (standard error) | the first such value on a rank: the state, time step, cluster order and value |
-| `[partition-cache]` | `cluster.pcce.cache` | `hit`, `miss` (with the reason) or `stored`, and the file |
-| `[cluster-plan]` | `output.cluster_only` | the sites, the clusters and the path of `.clusters.json` |
-| `[cluster-contributions]` | `output.cluster_contributions` | how many rows the table has and how many were added for it, the time and the memory per rank; the rows are in the `.tsv` file ([Cluster contributions](OutputFiles.md#out_contributions)) |
-| `[auto]` | an `auto_convergence` block | the runner, the Python and the binary used |
+| `[backend]` | `execution.backend` `auto` or `cuda` | Which device each rank uses, or why the CPU is used. |
+| `[gpu-memory-fallback]` | `auto` | The GPU ran out of memory. This cluster and the larger ones go to the CPU on that rank. |
+| `[dm]` | `quantity` dm | Clusters put values into density-matrix elements the free evolution keeps at zero ([The density matrix](OutputFiles.md#out_dm)). |
+| `[seed]` | a generated seed (standard error) | The seed to write into the input to replay the run. |
+| `[numerical-invalid]` | a cluster term is not finite (standard error) | The first such value on a rank, with the state, time step, cluster order and value. |
+| `[partition-cache]` | `cluster.pcce.cache` | `hit`, `miss` (with the reason) or `stored`, and the file. |
+| `[cluster-plan]` | `output.cluster_only` | The sites, the clusters and the path of `.clusters.json`. |
+| `[cluster-contributions]` | `output.cluster_contributions` | How many rows the table has and how many were added for it, the time and the memory per rank. The rows are in the `.tsv` file ([Cluster contributions](OutputFiles.md#out_contributions)). |
+| `[auto]` | an `auto_convergence` block | The runner, the Python and the binary used. |
 
 Other tags report the details of pCCE partitions, bundles and the adaptive refinement, the GPU kernels, and the
-timings of [execution.profile](InputFile_Backend.md#tag_profile); they matter mostly for performance studies.
+timings of [execution.profile](InputFile_Backend.md#tag_profile). They matter mostly for performance studies.
 
 <a id="EnvironmentVariables"></a>
 ## 5. Environment variables
@@ -235,9 +235,9 @@ An ordinary run needs none of them. Set them in front of the command
 
 | Variable | Read by | Effect |
 |---|---|---|
-| `CUDA_VISIBLE_DEVICES` | GPU build (`main_gpu.out`) | the cards the run may use. Empty, or matching no card, hides them all, and `execution.backend` `auto` then stays on the CPU |
-| `CCEX_PYTHON` | a run with an `auto_convergence` block | the Python that runs the automatic-convergence tool (default `python3`; it needs numpy, scipy, matplotlib) |
-| `CCEX_AUTOCONV_DIR` | a run with an `auto_convergence` block | the tool's folder, used in place of the `example/tools/AutoConvergence` next to the binary. A folder others can write to is refused |
+| `CUDA_VISIBLE_DEVICES` | GPU build (`main_gpu.out`) | The cards the run may use. Empty, or matching no card, hides them all, and `execution.backend` `auto` then stays on the CPU. |
+| `CCEX_PYTHON` | a run with an `auto_convergence` block | The Python that runs the automatic-convergence tool (default `python3`). It needs numpy, scipy and matplotlib. |
+| `CCEX_AUTOCONV_DIR` | a run with an `auto_convergence` block | The tool's folder, used in place of the `example/tools/AutoConvergence` next to the binary. A folder others can write to is refused. |
 
 The memory check also reads the memory Slurm gives the job (`SLURM_MEM_PER_NODE`, `SLURM_MEM_PER_CPU`,
 `SLURM_CPUS_ON_NODE`), and a `MKL_CBWR` set by the user is kept. Variables that turn optimisations off for a comparison, or serve the checks, are listed in
@@ -255,8 +255,8 @@ The memory check also reads the memory Slurm gives the job (`SLURM_MEM_PER_NODE`
 - **No GPU.** With `execution.backend` `auto`, every cluster stays on the CPU when the binary is CPU-only, a card cannot
   be opened, or `CUDA_VISIBLE_DEVICES` hides all cards. The `[backend]` lines say why. With `cuda` the run stops
   instead, with an `Error: GPU backend: ...` line from every rank. The GPU binary is `bin/main_gpu.out` ([GPU execution](../methods/gpu.md)).
-- **`Error: input key "..." is not read, did you mean "..."?`** A misspelled key; the run stops before the calculation starts. `Warning: input key ... is not read by this run` only means that this run does not use the key.
+- **`Error: input key "..." is not read, did you mean "..."?`** A misspelled key. The run stops before the calculation starts. `Warning: input key ... is not read by this run` only means that this run does not use the key.
 - **A key of an older version** is refused with the name that replaced it ([old names](InputFile_OldNames.md)).
   `python3 example/tools/InputKeys/convert_input_keys.py OLD.json` rewrites such an input.
-- **A curve above 1** ($|L| > 1$ in `_wiDiv`). A cluster term near zero was divided by; the value is an artefact.
+- **A curve above 1** ($|L| > 1$ in `_wiDiv`). A cluster term near zero was divided by, so the value is an artefact.
   See [The coherence files](OutputFiles.md#out_coherence) and the analyzer's error correction ([Analysis](Analysis.md)).

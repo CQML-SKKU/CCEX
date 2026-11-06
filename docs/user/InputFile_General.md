@@ -39,7 +39,7 @@ with cCCE and gCCE, and `dsj`, `itb` and `dsjitb` with cCCE only.
 | `meCCE` | cCCE with Lindblad jump operators on the bath spins, on the CPU and for one qubit ([master-equation CCE](../methods/master-equation.md)). |
 | `megCCE` | gCCE with jump operators on the bath spins and on the qubit, on the CPU. |
 | `noise` | The Gaussian coherence exp(−χ) of the qubit's phase noise, for one qubit and `cluster.mode` standard ([spectrum](#tag_noise_spectrum)). |
-| `pseudospin` | The pairs of cCCE in the pseudospin model of nuclear flip-flops. It needs one qubit, the ensemble, order 2, `bfield` `[0, 0, B]` and `execution.propagator` eigen, and runs on the CPU ([channels](#tag_pseudospin_channels)). |
+| `pseudospin` | The pairs of cCCE in the pseudospin model of nuclear flip-flops. It needs one qubit, the ensemble, order 2, `bfield` `[0, 0, B]` and `execution.propagator` eigen and `cluster.mode` standard, and runs on the CPU ([channels](#tag_pseudospin_channels)). |
 
 ```json
 "method": "gCCE"
@@ -144,7 +144,7 @@ configuration k uses the [seed](#tag_seed) + (k − first). It does not run with
 ### {k} and {s} in file names
 
 With `k_range`, `{k}` in the entries of `bathfile`, `bath_state_file`, `defect_axis_file`, `defect_state_file` and
-`pcce.cache.file` (and in `gyrofile`) is replaced by k. An entry without `{k}` is the same for every k, so a common bath file is merged
+`cluster.pcce.cache.file` (and in `gyrofile`) is replaced by k. An entry without `{k}` is the same for every k, so a common bath file is merged
 into every configuration. `{s}` in the state file names is the state s of `s_range`, and a name without `{s}` has s
 appended.
 `{{k}}` and `{{s}}` give the literal text.
@@ -181,7 +181,7 @@ P1  0.5 -17608.597050
 
 | Type | Default |
 |---|---|
-| list of strings (files), also for one file | required |
+| list of strings (files), also for one file | none (an empty bath, L(t) = 1) |
 
 The files of the bath's spins. Several files are merged into one bath. Each file starts with a line of four fields
 (not read), then one line per spin with x, y, z in Å and the species name.
@@ -247,8 +247,8 @@ is a pure bath state, from [bath_state_file](#tag_bath_state_file) or drawn from
 | integer, or a list (one per configuration) | generated and printed in the log when the run draws random numbers |
 
 The seed of the random numbers. The same seed draws the same states. With [k_range](#tag_configuration_k_range) a
-number is the first configuration's seed, and a list gives each configuration its own. Before 2.0.0 a number was every
-configuration's seed ([Upgrading old inputs](InputFile_OldNames.md)).
+number is the first configuration's seed, and a list gives each configuration its own. In the development versions before 2.0.0 a number was
+every configuration's seed ([Upgrading old inputs](InputFile_OldNames.md)).
 
 ```json
 "configuration": {"seed": 1241798, ...}
@@ -340,17 +340,17 @@ The block of the terms of the Hamiltonian, in one section per method.
 |---|---|
 | object of sections | every key at its default without the block |
 
-The terms of the Hamiltonian that are chosen, not given by the files. A setting that is on in the section of another
+This block holds the terms of the Hamiltonian that the input chooses, not those the files give. A setting that is on in the section of another
 method is refused (a `hamiltonian.cCCE` section in a gCCE or megCCE run, for example).
 
 | Section | Read by | Holds |
 |---|---|---|
 | `common` | every method | The [mean fields](#gen_mf), the [hyperfine](#gen_hf) and the [quadrupole](#gen_qd) tensors. |
-| `cCCE` | cCCE and meCCE | [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A) |
-| `gCCE` | gCCE | nothing yet |
-| `meCCE`, `megCCE` | that method | [jump_operators](#tag_jump_operators) |
-| `noise` | method noise | [spectrum](#tag_noise_spectrum) and the other noise keys |
-| `pseudospin` | method pseudospin | [channels](#tag_pseudospin_channels) |
+| `cCCE` | cCCE and meCCE | [knight](#tag_knight), [hfmedi](#tag_hfmedi), [delta_A](#tag_delta_A). |
+| `gCCE` | gCCE | Nothing yet. |
+| `meCCE`, `megCCE` | that method | [jump_operators](#tag_jump_operators). |
+| `noise` | method noise | [spectrum](#tag_noise_spectrum) and the other noise keys. |
+| `pseudospin` | method pseudospin | [channels](#tag_pseudospin_channels). |
 
 ```json
 "hamiltonian": {

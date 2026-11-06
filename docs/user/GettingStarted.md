@@ -54,7 +54,7 @@ brew install open-mpi
 bash do_compile.sh mac
 ```
 
-Do not build in a folder that iCloud Drive syncs, such as Desktop or Documents: the build fails there.
+Do not build in a folder that iCloud Drive syncs, such as Desktop or Documents, because the build fails there.
 
 ### A cluster with environment modules
 
@@ -111,7 +111,7 @@ NP=4 bash run.sh
 ```
 
 It prints T2 and writes `results/coherence.png`. The figure should match `expected.png` in the same folder. The log
-is `results/ccein.log`; it ends with a `JOB DONE` line when the run finished. A run that stops prints `Error: ...` on the
+is `results/ccein.log`. It ends with a `JOB DONE` line when the run finished. A run that stops prints `Error: ...` on the
 terminal.
 
 [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) explains this run step by
@@ -126,10 +126,10 @@ To write an input template, run
 bin/main.out -e
 ```
 
-This writes `ccex_example.jsonc`: the input of the first calculation, with every other key as a comment that gives its
+This writes `ccex_example.jsonc`, the input of the first calculation, with every other key as a comment that gives its
 meaning and default. To use it:
 
-1. Set `configuration.bathfile` to a bath file. The template does not run without one;
+1. Set `configuration.bathfile` to a bath file. The template does not run without one.
    `example/tutorial/basic/01_first_run/bath/bath_Diamond_NV_natab_1` is one, and [Tools](Tools.md) makes others.
 2. Change the keys you need ([Input file](InputFile.md)).
 3. Run it: `mpirun -n 4 bin/main.out -f ccex_example.jsonc`.

@@ -37,7 +37,7 @@ With no jump operators, or an empty list, the rate is 0. meCCE then gives the cC
 
 **Lindblad equation.** With the jump operators $C_k=\sqrt{\gamma_k}\,S^{(k)}_{op}$ of the list,
 
-$$\dot\rho=-i[H,\rho]+\sum_k\Big(C_k\rho C_k^\dagger-\tfrac12\{C_k^\dagger C_k,\rho\}\Big).$$
+$$\dot\rho=-i[H,\rho]+\sum_k\Big(C_k\rho C_k^\dagger-\tfrac12\lbrace C_k^\dagger C_k,\rho\rbrace \Big).$$
 
 - $S_{op}$ is $S_-$, $S_+$, $S_z$, $S_x=(S_++S_-)/2$ or $S_y=(S_+-S_-)/2i$ (`"-"`, `"+"`, `"z"`, `"x"`, `"y"`) of the
   named spin, of dimension $2S+1$.
@@ -59,7 +59,7 @@ not Hermitian, so the eigendecomposition used by the cCCE and gCCE does not appl
 **ME-CCE** (PRL2024 Eq. 2). The bath operator $\tilde\rho=\langle\alpha\vert\rho\vert\beta\rangle$ evolves under the two
 conditional Hamiltonians of the cCCE,
 
-$$\dot{\tilde\rho}=-iH^{(\alpha)}\tilde\rho+i\tilde\rho H^{(\beta)}+\sum_i\gamma_i\,\mathcal D[L_i](\tilde\rho),\qquad
+$$\dot{\tilde\rho}=-iH^{(\alpha)}\tilde\rho+i\tilde\rho H^{(\beta)}+\sum_k\mathcal D[C_k](\tilde\rho),\qquad
 \mathcal L_{\alpha\beta}=-i\big(H^{(\alpha)}\otimes\mathbb 1-\mathbb 1\otimes H^{(\beta)T}\big)+\mathcal L_{\text{bath}},$$
 
 with jumps on bath spins only. After an odd number of $\pi$ pulses, $\alpha$ and $\beta$ are exchanged
@@ -88,7 +88,7 @@ $$\mathrm{vec}\,\rho(t)=e^{\mathcal L\tau_N}\prod_{i=N-1}^{0}\big(U_i\otimes U_i
 L_C(t)=\langle\alpha\vert\,\mathrm{Tr}_B\,\rho(t)\,\vert\beta\rangle .$$
 
 The 0th cluster (the qubit alone, with its own jumps) is computed and every cluster is divided by it,
-$L=L_\emptyset\prod_C(L_C/L_\emptyset)^{p_C}$. The result is normalized by $L(0)$, as in the gCCE.
+$L=L_\emptyset\prod_C(L_C/L_\emptyset)^{p_C}$. The result is normalised by $L(0)$, as in the gCCE.
 
 <a id="me_qubit"></a>
 ## 3. Qubit jumps
@@ -153,7 +153,7 @@ PyCCE 1.1.1 has the same three calculations, the conventional CCE with Lindblad 
    $\pi$ pulses the two are complex conjugates, so gCCE and ME-gCCE give conj(PyCCE) with the same $\vert L\vert$. The
    PyCCE paper writes both (Eq. 5 and Eq. 20).
 2. **The π pulse of an S ≥ 1 qubit.** CCEX applies the unitary pulse of the two-level subspace,
-   $e^{-i\pi\sigma_x/2}=(\mathbb 1-P)-i\sigma_x$, with $P$ the projector on $\{\alpha,\beta\}$. PyCCE applies
+   $e^{-i\pi\sigma_x/2}=(\mathbb 1-P)-i\sigma_x$, with $P$ the projector on $\lbrace \alpha,\beta\rbrace $. PyCCE applies
    $-i\sigma_x$, which removes what is outside the subspace. They agree for S = ½ and differ with leakage to the third
    level.
 

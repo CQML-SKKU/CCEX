@@ -1,5 +1,5 @@
 #!/bin/sh
-# basic/03_convergence/cCCE_Hahn_order: cCCE Hahn echo at order 1 to 4, configuration 1 (order 4 takes about 85 s)
+# basic/03_convergence/cCCE_Hahn_order: cCCE Hahn echo at order 1 to 4, configuration 1 (order 4 takes about 21 s on 4 ranks)
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

@@ -31,8 +31,7 @@ Folder: `cCCE5_Hahn_autoOptions/`
 
 The system is the cCCE5 Hahn echo of the NV in five P1, with the `Defect` block of the P1 (¹⁵N, four Jahn-Teller
 axes). `../bath/` holds the five P1 (`bath_p1_5`), the last four of them (`bath_p1_4`, section 3), the NV position
-(`qubit_p1`) and the P1 gyromagnetic ratio (`gyro_P1`). One cluster has dimension 1024, and the run takes about a
-minute of CPU.
+(`qubit_p1`) and the P1 gyromagnetic ratio (`gyro_P1`). One cluster has dimension 1024, and the `cpu` run takes 24 s on 4 ranks.
 
 To run on the GPU, the input needs one key, `execution.backend`:
 
@@ -64,7 +63,7 @@ For cCCE, CCEX chooses at the start the GPU options the input leaves out, and pr
 
 `auto` is within 1.0e-10 of `cpu`. With 32 ranks on an RTX PRO 6000 the log line is
 `[gpu-auto] ranks_per_gpu=4 min_dim=256 evolution_batch_size=32 cluster_batch_mb=16208`. With 4 ranks it has no
-`ranks_per_gpu`, which is chosen only with more than four ranks a GPU. Section 2 explains these keys.
+`ranks_per_gpu`, which is chosen only with more than four ranks per GPU. Section 2 explains these keys.
 
 The bath has only five P1, so |L| does not decay to zero. The cases of this page are made to compare the backends on
 a large cluster, and the P1 bath of [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md) gives
@@ -106,7 +105,7 @@ The keys of `execution.gpu_options` used most are below, and all of them are in
 | Key | Default | What it sets |
 |---|---|---|
 | `min_dim` | `768` (`256` with `ranks_per_gpu`) | With `auto`, the smallest cluster dimension sent to the GPU. |
-| `ranks_per_gpu` | `0` (`4` with `auto`, cCCE standard or pcce, and more than four ranks a GPU) | How many ranks per GPU send clusters to it. With `0` every rank does. |
+| `ranks_per_gpu` | `0` (`4` with `auto`, cCCE standard or pcce, and more than four ranks per GPU) | How many ranks per GPU send clusters to it. With `0` every rank does. |
 | `evolution_batch_size` | `8` (`32` for cCCE) | The most clusters of one dimension evolved together. |
 | `evolution_batch_steps` | `64` | The most time points evolved together. |
 | `cluster_batch_mb` | `64` (for cCCE, two thirds of the card shared by its ranks) | The GPU memory in MiB one batch of a rank may hold. |

@@ -15,6 +15,6 @@ mkdir -p results/bath
     $ROOT/example/tools/BathGenerator/BathGenerator.py -o results/bath/bath_P1_100ppm -i POSCAR_pure_P -I POSCAR_NV_P \
     -p prob_P1_100ppm --size 300 --Defect V || true ) > results/bath/generator.log 2>&1
 [ -s results/bath/bath_P1_100ppm ] || { echo "the bath was not made: see results/bath/generator.log"; exit 1; }
-echo "P1 in the cube: $(head -1 results/bath/bath_P1_100ppm | awk '{printf "%d", $1}')"
+echo "P1 in the cube: $(tail -n +2 results/bath/bath_P1_100ppm | grep -c .)"
 mpirun -n $NP $CCEX -f ccein.jsonc -o results > results/ccein.log
 python3 $PLOT results/coherence.png --unit us "mean of 10=results/ccein_state*_wiDiv"

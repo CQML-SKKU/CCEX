@@ -7,19 +7,19 @@ average, fitting and plots. Nothing here runs CCEX.
 
 | File | Holds |
 |---|---|
-| `CoherenceAnalyzer.v1/coherence.py` | the part worth reusing: read and write a coherence file, the error-correction rule, the ensemble average, the file-naming convention. Needs numpy only |
-| `CoherenceAnalyzer.v1/DataSpace.py` | the `DataSpace` class the CLI works on: collects files by variable, fits (scipy), draws (matplotlib). Its reading, correction and averaging call `coherence.py` |
-| `CoherenceAnalyzer.v1/CoherencePlot_v2.py` | the plot classes |
-| `CoherenceAnalyzer.v1/run.py` | the command line (`python3 run.py -h`) |
-| `do_*.sh` | one example call each: ensemble average, error correction, single and multi plot, intensity plot, fitting table |
-| `data/` | the example results the `do_*.sh` read: P1 1 ppm, CCE2, pulse counts 1 to 128 |
+| `CoherenceAnalyzer.v1/coherence.py` | The part worth reusing: read and write a coherence file, the error-correction rule, the ensemble average, the file-naming convention. Needs numpy only. |
+| `CoherenceAnalyzer.v1/DataSpace.py` | The `DataSpace` class the CLI works on. It collects files by variable, fits (scipy) and draws (matplotlib). Its reading, correction and averaging call `coherence.py`. |
+| `CoherenceAnalyzer.v1/CoherencePlot_v2.py` | The plot classes. |
+| `CoherenceAnalyzer.v1/run.py` | The command line (`python3 run.py -h`). |
+| `do_*.sh` | One example call each, for the ensemble average, error correction, single and multi plot, intensity plot and fitting table. |
+| `data/` | The example results the `do_*.sh` read, for P1 1 ppm, CCE2 and pulse counts 1 to 128. |
 
 ## The file format
 
 One line per time step: the time in ms, a tab, the complex coherence written as
 `+re+imj`. Two real columns (`re  im`) are also read. CCEX writes `_noDiv` (the
 product of cluster coherences before the sub-cluster division) and `_wiDiv`
-(after it); the analyzer writes `_ErrCorr` and `..._EnsAvg_conv<N>`.
+(after it). The analyzer writes `<name>_conv<N>`, with `<name>` given by `-fo`.
 
 ## The error-correction rule
 
@@ -30,12 +30,12 @@ tolerance (default 2.0):
 
 1. A point where |wiDiv − noDiv| ≥ tolerance is a divergence.
 2. Before the loop, a divergent last point is pulled to noDiv + tolerance − 1e-6,
-   so that step 4 always finds a next good point; it then stays at that value.
+   so that step 4 always finds a next good point. It then stays at that value.
 3. A divergent first point becomes 0.
 4. Any other divergent point becomes the mean of the previous corrected value and
    the next non-divergent wiDiv value.
 
-This is the group's convention, not a physical law. Recorded results were made with it, so it must not change; the one
+This is the group's convention, not a physical law. Recorded results were made with it, so it must not change. The one
 implementation is `coherence.error_correct`.
 
 ## Using it from Python
@@ -67,7 +67,7 @@ run.py -d DIR -fi PATTERN_ErrCorr -vn CONF -v 1 2 3 -uc ms -ea -ntn -fo DIR/NAME
 each variable name in the pattern is replaced by each value. Plots need a display
 or `MPLBACKEND=Agg`.
 
-## File names in `data/`
+## File names in data/
 
 `wD` is the divided result (the final one), `nD` the undivided one used to correct
-it; `EC` is error-corrected; `conv<N>` an average over N samples.
+it. `EC` is error-corrected, and `conv<N>` is an average over N samples.

@@ -13,6 +13,6 @@ mkdir -p results
     $ROOT/example/tools/BathGenerator/BathGenerator.py -o results/bath_hBN -i POSCAR_pure_flat -I POSCAR_VB_flat \
     -p ../bath/prob_hBN --size 60 --Defect VB --opt2D || true ) > results/generator.log 2>&1
 [ -s results/bath_hBN ] || { echo "the bath was not made: see results/generator.log"; exit 1; }
-echo "spins in the bath: $(head -1 results/bath_hBN | awk '{printf "%d", $1}')"
+echo "spins in the bath: $(tail -n +2 results/bath_hBN | grep -c .)"
 awk 'NR > 1 {print $4}' results/bath_hBN | sort | uniq -c
 echo "the defect position (x y z): $(head -1 results/bath_hBN_defect)"

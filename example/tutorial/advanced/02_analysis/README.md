@@ -29,7 +29,8 @@ In a P1 bath every P1 points up or down. CCEX computes the bath in a few such st
 
 The input is `cCCE2_Hahn_states` of
 [Basic 06: An electron-spin bath (P1)](../../basic/06_defect_bath/README.md) cut to two bath configurations of ten
-sampled states each, so the run writes 20 curves:
+sampled states each, so the run writes 20 curves. It also uses `deltat` 0.01 and `nstep` 300, the seed 1 for both
+configurations and `alpha_state` ms 1, so its T2 differs from that of Basic 06:
 
 ```jsonc
 "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",

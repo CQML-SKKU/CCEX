@@ -46,7 +46,7 @@ out (the values in brackets).
 | Key | Default | Meaning |
 |---|---|---|
 | `min_dim` | `768` (`256` with `ranks_per_gpu`) | With `auto`, the smallest cluster dimension sent to the GPU. |
-| `ranks_per_gpu` | `0` (`4` with `auto`, cCCE standard or pcce, and more than four ranks a GPU) | How many ranks per GPU send clusters to it. With `0` every rank does. Written in the input it needs cCCE standard. |
+| `ranks_per_gpu` | `0` (`4` with `auto`, cCCE standard or pcce, and more than four ranks per GPU) | How many ranks per GPU send clusters to it. With `0` every rank does. Written in the input it needs `backend` auto and cCCE standard. |
 | `packed_max_dim` | `4` for cCCE standard or bundle, else `0` | Small cCCE clusters up to this bath dimension go to a kernel that packs many of them together. `0` turns it off. |
 | `warp_max_dim` | `27` for cCCE and gCCE (not pcce), else `0` | Small clusters up to this dimension go to a kernel that runs one cluster per warp. `0` turns it off. |
 | `evolution_batch_size` | `8` (`32` for cCCE) | The most clusters of one dimension evolved together. |

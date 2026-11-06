@@ -24,12 +24,12 @@ How the bath is divided into clusters. The `pcce` and `bundle` blocks belong to 
 
 | Value | Clusters | Methods |
 |---|---|---|
-| `standard` | up to `order` spins connected within `rdip` | cCCE, gCCE, meCCE, megCCE |
-| `pcce` | up to `order` partitions of [partition_size](#tag_pcce_partition_size) spins | cCCE, gCCE, meCCE, megCCE |
-| `bundle` | up to `order` bundles of strongly coupled spins (it needs [bundle.max_dim](#tag_bundle_max_dim)) | cCCE, gCCE |
-| `dsj` | disjoint groups of at most `order` spins, each computed exactly as one cluster, and no other cluster | cCCE |
-| `itb` | only the factor that the pairs between different groups add | cCCE |
-| `dsjitb` | both, the groups and the pairs between them ([dsj, itb and dsjitb](../methods/cce.md#cce_dsj)) | cCCE |
+| `standard` | Up to `order` spins connected within `rdip`. | cCCE, gCCE, meCCE, megCCE, noise, pseudospin |
+| `pcce` | Up to `order` partitions of [partition_size](#tag_pcce_partition_size) spins. | cCCE, gCCE, meCCE, megCCE |
+| `bundle` | Up to `order` bundles of strongly coupled spins (it needs [bundle.max_dim](#tag_bundle_max_dim)). | cCCE, gCCE |
+| `dsj` | Disjoint groups of at most `order` spins, each computed exactly as one cluster, and no other cluster. | cCCE |
+| `itb` | Only the factor that the pairs between different groups add. | cCCE |
+| `dsjitb` | Both, the groups and the pairs between them ([dsj, itb and dsjitb](../methods/cce.md#cce_dsj)). | cCCE |
 
 With `bundle`, a bundle is a set of sites (a bath spin, or a defect with its on-site spins) that always enters a
 cluster whole. Without `rdip`, a coherence check chooses which bundles are connected
@@ -118,9 +118,9 @@ cCCE. `file` is required with a mode other than `off`, and needs `{k}` with
 
 | mode | Does |
 |---|---|
-| `off` | search every time |
-| `readwrite` | reuse a matching stored partition, otherwise search and store it |
-| `read` | require a matching stored partition |
+| `off` | Search every time. |
+| `readwrite` | Reuse a matching stored partition, otherwise search and store it. |
+| `read` | Require a matching stored partition. |
 
 ```json
 "cluster": {"pcce": {"partition_size": 2, "cache": {"mode": "readwrite", "file": "results/partition_{k}.cache"}}}
@@ -164,9 +164,9 @@ How bundles are connected into clusters ([checked connections](../methods/bundle
 
 | Value | Connections |
 |---|---|
-| `distance` | the pairs within `rdip` (`rdip` required) |
-| `checked` | every link, except the weakest that a local coherence check allows to leave out (no `rdip`) |
-| `auto` | the weakest pairs are left out up to [connection_budget](#tag_bundle_connection_budget) |
+| `distance` | The pairs within `rdip` (`rdip` required). |
+| `checked` | Every link, except the weakest that a local coherence check allows to leave out (no `rdip`). |
+| `auto` | The weakest pairs are left out up to [connection_budget](#tag_bundle_connection_budget). |
 
 ```json
 "cluster": {"bundle": {"max_dim": 8, "connections": "auto", "connection_budget": 0.01}}
@@ -181,7 +181,7 @@ How bundles are connected into clusters ([checked connections](../methods/bundle
 | Key | Type | Default | Meaning |
 |---|---|---|---|
 | `merge_cutoff` | number, 0 or more (rad/ms, or `{"value", "unit"}`) | `0` | The smallest [coupling strength](../methods/bundle-adaptive.md#bundle_coupling) that puts two sites into one bundle within `max_dim`. With `0` only `max_dim` limits. |
-| `connection_budget` | number, 0 or more (rad) | required with `connections` `auto` | The coupling the left-out pairs may carry, the last time times the sum of their coupling strengths. It is not an error bound. |
+| `connection_budget` | number, 0 or more (rad) | required with `connections` `auto` | The coupling the left-out pairs may carry, the last time point multiplied by the sum of their coupling strengths. It is not an error bound. |
 | `max_clusters` | positive integer | `200000` | The most bundle sets the expansion may list. More stops the run. |
 | `max_work` | positive integer | `20000000` | The most steps the expansion may take to list them. More stops the run. |
 
@@ -202,7 +202,7 @@ Turns on the adaptive refinement. The run calculates, checks a few patches of th
 bundles there, until `atol` and `rtol` are met or `max_rounds` is reached
 ([adaptive refinement](../methods/bundle-adaptive.md#adaptive_round)). It needs `cluster.mode` bundle with
 `bundle.max_dim`, `rdip` (or an explicit `bundle.connections`), method cCCE or gCCE with `quantity` coherence,
-`nstep` 2 or more, a given [configuration.seed](InputFile_General.md#tag_seed), and one configuration (no `k_range`).
+`nstep` 2 or more, an integer [configuration.seed](InputFile_General.md#tag_seed) (not a list), and one configuration (no `k_range`).
 Every step goes into `workdir`, not into `-o` or `output.path`.
 
 ```json

@@ -79,7 +79,7 @@ time grows with the volume of the cube.
 
 ![cCCE2_Hahn_makeBath: expected result](cCCE2_Hahn_makeBath/expected.png)
 
-The cube holds 444 P1, 192 of them within `rbath`, and T2 of the mean of the 10 states is 6.9 µs. The bath is small
+The cube holds 443 P1, 192 of them within `rbath`, and T2 of the mean of the 10 states is 6.9 µs. The bath is small
 for the example, so this T2 is not converged. A converged run needs a cube that covers `rbath` at the concentration of
 interest, as the ready-made baths of Basic 06 do (cubes of 2248 Å at 1 ppm).
 
@@ -139,7 +139,7 @@ It runs both inputs and plots the mean of the 20 curves of each. It takes 71 s, 
 
 ![cCCE2_Hahn_onsite14N: expected result](cCCE2_Hahn_onsite14N/expected.png)
 
-T2 is 307 µs in the 2e form, the value of Basic 06, and 266 µs in the 2e2n form. The curves differ by up to 0.17.
+T2 is 307 µs in the 2e form and 266 µs in the 2e2n form. The curves differ by up to 0.17.
 
 Next, the on-site states can be read from a file (`configuration.defect_state_file`).
 

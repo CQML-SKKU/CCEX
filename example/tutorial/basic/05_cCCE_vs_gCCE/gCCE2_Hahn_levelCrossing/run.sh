@@ -1,5 +1,5 @@
 #!/bin/sh
-# basic/04_cCCE_vs_gCCE/gCCE2_Hahn_levelCrossing: the NV ms -1 / 0 at 1024 G, near the level crossing, by cCCE2 and gCCE2, ten configurations
+# basic/05_cCCE_vs_gCCE/gCCE2_Hahn_levelCrossing: the NV ms -1 / 0 at 1024 G, near the level crossing, by cCCE2 and gCCE2, ten configurations
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

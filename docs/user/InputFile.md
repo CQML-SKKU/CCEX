@@ -36,10 +36,10 @@ A whole input, the one of the first tutorial (run from its folder,
 
 The run checks the input before it reads the bath:
 
-- a value of the wrong type stops the run and names the key (`"nstep": 10.5`, `"knight": "true"`);
-- a key one or two letters away from a real key stops the run (`"s_rang"`);
-- a key the run does not read is reported in the log and ignored;
-- a key of an old version is refused with its current name ([Upgrading old inputs](InputFile_OldNames.md)).
+- A value of the wrong type stops the run and names the key (`"nstep": 10.5`, `"knight": "true"`).
+- A key one or two letters away from a real key stops the run (`"s_rang"`).
+- A key the run does not read is reported in the log and ignored.
+- A key of an old version is refused with its current name ([Upgrading old inputs](InputFile_OldNames.md)).
 
 <a id="CommonKeys"></a>
 ## 2. The keys most runs need

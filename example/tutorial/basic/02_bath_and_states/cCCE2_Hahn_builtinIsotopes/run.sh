@@ -11,5 +11,5 @@ for name in gyrofile builtin; do
 done
 # where the 13C spin and gamma came from (the run log says it per species)
 grep -H -E 'built-in isotope table|Read GyroFile' results/ccein_builtin.log results/ccein_gyrofile.log || true
-# the gammas differ by 2e-7 (relative): over 2 ms at 500 G about 1e-3 rad of 13C precession, so the curves differ by about 1e-4
+# the gammas differ by 2e-7 (relative): over 2 ms at 500 G about 1e-3 rad of 13C precession, so the curves differ by about 2e-5
 python3 $PLOT results/coherence.png "gyro file=results/ccein_gyrofile_wiDiv" "built-in table=results/ccein_builtin_wiDiv"

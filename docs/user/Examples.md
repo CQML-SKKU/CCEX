@@ -4,7 +4,7 @@ The tutorials are in `example/tutorial/`, in two levels. `basic/` covers the inp
 minute, so read it in order. `advanced/` builds on it, so pick the topic you need.
 
 1. [Basic](#ex_basic): the input, six topics in order.
-2. [Advanced](#ex_advanced): fourteen topics in four groups, each on its own.
+2. [Advanced](#ex_advanced): thirteen topics in four groups, each on its own.
 3. [What should I use for my case?](#WhatToUse): the method and the tutorial for a situation.
 
 <a id="ex_basic"></a>

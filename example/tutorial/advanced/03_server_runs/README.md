@@ -38,7 +38,7 @@ Two keys of the input let the run be split into jobs that still give the same fi
 ### 1.2 Running it
 
 Size the run first, then submit it as one job (step 2) or as a job array (step 3). The folder has a script for each.
-`CCEX_BIN` names another binary and `CCEX_ROOT` the repository in all of them.
+`CCEX_BIN` names another binary in all of them. `CCEX_ROOT` names the repository in the two `.sbatch` files, and `analyse.sh` takes it as its argument.
 
 <a id="a03_step1"></a>
 #### Step 1. Sizing the run

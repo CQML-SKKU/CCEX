@@ -40,7 +40,7 @@ cCCE2: 10 file(s), T2 0.8892 ms
 gCCE2: 10 file(s), T2 0.8892 ms, max |L - L(cCCE2)| = 3.685e-04
 ```
 
-The two curves lie on top of each other; they differ by less than 4e-4. At this field cCCE is enough.
+The two curves lie on top of each other, and they differ by less than 4e-4. At this field cCCE is enough.
 
 ![gCCE2_Hahn_vsCCE: expected result](gCCE2_Hahn_vsCCE/expected.png)
 
@@ -71,7 +71,7 @@ gCCE2: 10 file(s), T2 0.7401 ms, max |L - L(cCCE2)| = 2.166e-01
 
 cCCE gives the same T2 as at 500 G, 0.89 ms. It does not see the NV levels, so it cannot see the crossing. gCCE
 decays faster, with T2 = 0.74 ms, and the two curves differ by up to 0.22. Right at the crossing, at 1028 G, the gCCE
-curve diverges; this tutorial does not cover that case.
+curve diverges. This tutorial does not cover that case.
 
 ![gCCE2_Hahn_levelCrossing: expected result](gCCE2_Hahn_levelCrossing/expected.png)
 

@@ -34,7 +34,7 @@ message.
 <a id="tag_ac_pcce_cache"></a>
 <a id="tag_ac_rdip_ladder"></a>
 The runner sets `cluster.pcce.cache` and [rdip_ladder](InputFile_General.md#tag_rdip_ladder) in its runs itself, so an
-input given to it may not hold them, nor `output.path` or `output.file`.
+input given to it must not hold them, nor `output.path` or `output.file`.
 
 <a id="tag_ac_configurations"></a>
 ## 2. The bath configurations

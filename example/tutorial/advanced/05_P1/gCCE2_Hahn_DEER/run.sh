@@ -1,5 +1,5 @@
 #!/bin/sh
-# advanced/05_P1/gCCE2_Hahn_DEER: the NV Hahn echo in 10 ppm P1 (gCCE2) with and without a DEER pump on the central P1 line
+# advanced/05_P1/gCCE2_Hahn_DEER: the NV Hahn echo in 1 ppm P1 (gCCE2) with and without a DEER pump on the central P1 line
 set -e
 ROOT=$(git rev-parse --show-toplevel)
 CCEX=${CCEX_BIN:-$ROOT/bin/main.out}

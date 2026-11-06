@@ -8,11 +8,11 @@ system you study.
 
 | Value | What it sets | Cost of a larger value |
 |---|---|---|
-| `rbath` | the ¹³C within this distance of the NV are in the bath | more spins and clusters |
-| `rdip` | two ¹³C closer than this form a pair cluster | more pairs |
-| `order` | the largest cluster: 2 for pairs, 3 for triples | many more clusters, each larger |
-| `k_range` | the number of bath configurations | one run per configuration |
-| `deltat`, `nstep` | the time step and the number of points | more points |
+| `rbath` | The ¹³C within this distance of the NV are in the bath. | More spins and clusters. |
+| `rdip` | Two ¹³C closer than this form a pair cluster. | More pairs. |
+| `order` | The largest cluster: 2 for pairs, 3 for triples. | Many more clusters, each larger. |
+| `k_range` | The number of bath configurations. | One run per configuration. |
+| `deltat`, `nstep` | The time step and the number of points. | More points. |
 
 To check a value, scan it in small steps and keep everything else fixed. For each step, compare the curve with the
 curve of the largest value. The value is large enough once the difference stays below a limit. Here the limit is 0.01
@@ -145,7 +145,7 @@ order 4: 1 file(s), max |L - L(last)| = 0, from the previous = 0.00357
 | 4 | 150337 | 21 s |
 
 At order 1 the curve does not decay at all. In cCCE the decay comes from pairs of ¹³C that flip each other, and
-order 1 has no pairs. Order 2 is 0.012 from order 4, just above the limit. Order 3 is 0.004 from it. Each step up
+order 1 has no pairs. Order 2 is 0.012 from order 4, just above the limit. Order 3 is 0.004 from it. From order 2 on, each step up
 costs 10 to 20 times more. The other tutorials use order 2 to stay fast.
 
 ![cCCE_Hahn_order: expected result](cCCE_Hahn_order/expected.png)
@@ -183,7 +183,7 @@ configurations 20: 20 file(s), max |L - L(last)| = 0, from the previous = 0.0208
 20 configurations: 20 file(s), T2 0.9096 ms; T2 of the 20 files: mean 0.9286 ms, deviation 0.156, standard error 0.0349
 ```
 
-Here the difference does not fall steadily. One more configuration can move the mean either way: the mean of 10 is
+Here the difference does not fall steadily. One more configuration can move the mean either way. The mean of 10 is
 farther from the mean of 20 than the mean of 7 is. The T2 of single configurations varies by 17 % (0.16 ms), so the
 mean of N configurations is uncertain by about 17 %/√N. That is 5 % for 10 configurations and 4 % for 20. Even 15
 configurations are still 0.02 from the mean of 20, and halving the error takes four times as many configurations.
@@ -232,7 +232,7 @@ before the decay, so it gives no T2.
 
 Input: [`ccein.jsonc`](cCCE2_Hahn_timeAxis/ccein.jsonc)
 
-## Summary
+## 6. Summary
 
 | Value | Scanned | Below 0.01 from | Used in the other tutorials |
 |---|---|---|---|
@@ -240,7 +240,7 @@ Input: [`ccein.jsonc`](cCCE2_Hahn_timeAxis/ccein.jsonc)
 | `rdip` | 4 to 14 Å | 8 Å | 10 Å |
 | `order` | 1 to 4, one configuration | 3 | 2, which is 0.012 from order 4 |
 | configurations | 1 to 20 | not reached by 20 | 10, T2 uncertain by 5 % |
-| time axis | 1 µs, 10 µs, revivals; 0.3 and 2 ms | revivals or 1 µs, 2 ms | revivals or 1 µs |
+| time axis | 1 µs, 10 µs, revivals, and windows of 0.3 and 2 ms | revivals or 1 µs, 2 ms | revivals or 1 µs |
 
 These values hold for this system: ¹³C at natural abundance, 500 G, Hahn echo. Another bath, field or pulse sequence
 needs its own check. [Advanced 01: Automatic convergence](../../advanced/01_auto_convergence/README.md) runs the same

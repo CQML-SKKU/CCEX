@@ -4,7 +4,7 @@ An ordinary CCEX input with an `auto_convergence` block makes `main.out -f input
 rbath and the number of configurations (and states) of a coherence calculation by itself, then run the production.
 Supported: cCCE with `cluster.mode` standard or pcce (order ≥ 2), gCCE (order ≥ 1), fixed bundles (`cluster.mode`
 bundle without a `cluster.adaptive` block), CPU or GPU backends. You prepare the bath files (and, if you like, state
-files with `configuration.s_range`); almost everything else is found. Every calculation is an ordinary CCEX run in its
+files with `configuration.s_range`). Almost everything else is found. Every calculation is an ordinary CCEX run in its
 own folder under `workdir`.
 
 The full reference (the steps and their rules, every key and default, what is refused, the analysis commands) is
@@ -22,8 +22,8 @@ The full reference (the steps and their rules, every key and default, what is re
 }
 ```
 
-`bathfile` is one name with `{k}`; every k whose bath file exists is a configuration (or those of
-`configuration.k_range`). `rbath`, `rdip`, `nstep` and `deltat` are found; `nstep` of the input is the number of time
+`bathfile` is one name with `{k}`. Every k whose bath file exists is a configuration (or those of
+`configuration.k_range`). `rbath`, `rdip`, `nstep` and `deltat` are found, and `nstep` of the input is the number of time
 points of every run (150 when absent).
 
 ## Running it
@@ -33,11 +33,11 @@ mpirun -n 8 main.out -f input.json   # every CCEX run with mpirun -n 8 (rank 0 a
 main.out -f input.json               # every CCEX run on one rank
 ```
 
-- `main.out` starts the Python runner: Python 3.10 or newer with numpy, scipy and matplotlib; `CCEX_PYTHON` picks the
-  interpreter.
-- The automatic run takes only `-f FILE`; other options are refused (set them in the input).
+- `main.out` starts the Python runner, which needs Python 3.10 or newer with numpy, scipy and matplotlib.
+  `CCEX_PYTHON` picks the interpreter.
+- The automatic run takes only `-f FILE`. Other options are refused (set them in the input).
 - `"enabled": false` in the block runs the ordinary calculation instead.
-- To resume after a cut job, call the same command again: finished runs whose inputs, files and binary are unchanged
+- To resume after a cut job, call the same command again. Finished runs whose inputs, files and binary are unchanged
   are reused. `"resume": "fresh"` starts over (the earlier workdir is kept as `<workdir>.old<n>`).
 - Where a run is (nothing computed, no mpirun): `python -m autoconv status input.json`, from this folder or with it on
   `PYTHONPATH`.
@@ -54,7 +54,7 @@ run is, and `result/` holds the figures of every step.
 | 0 | converged |
 | 3 | unresolved: `window-unresolved`, `truncation-unresolved` (make larger baths), `sampling-unresolved`, `numerical-failure` |
 | 2 | refused |
-| 4 | stopped (walltime or a signal); call again to continue |
+| 4 | stopped (walltime or a signal), so call again to continue |
 | 1 | error |
 
 The runner does not make baths. When they are too small or too few, the message says what to add.

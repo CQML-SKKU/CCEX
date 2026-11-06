@@ -18,7 +18,7 @@ CCEX has an optional NVIDIA CUDA backend. It runs in the GPU binary `bin/main_gp
 
 | Method | Ensemble (no `configuration.s_range`) | Sampled states (`configuration.s_range`) |
 |---|---|---|
-| cCCE, `cluster.mode` standard, pcce or bundle | The normalized bath trace of each cluster. | The two conditional state vectors. |
+| cCCE, `cluster.mode` standard, pcce or bundle | The normalised bath trace of each cluster. | The two conditional state vectors. |
 | gCCE with `propagator` eigen, `cluster.mode` standard or bundle | The density-matrix evolution. | The vector or density-matrix evolution. |
 | noise with `backend` `cuda` | The sums over the bath's modes. | The same. |
 
@@ -129,8 +129,8 @@ line gives how many ranks use the GPU. With 0 (the default unless chosen at the 
 
 The GPU memory of one time batch of `evolution_batch_steps` points is about:
 
-- gCCE with `evolution` matrix: two complex-double buffers of 16 D² × `evolution_batch_steps` bytes;
-- cCCE ensemble: three such buffers;
+- gCCE with `evolution` matrix: two complex-double buffers of 16 D² × `evolution_batch_steps` bytes,
+- cCCE ensemble: three such buffers,
 - a pure state: buffers of D × `evolution_batch_steps` elements.
 
 The eigensystems, the solver workspace and the cache of `cache_mb` come on top, per rank. `cluster_batch_mb` limits
@@ -144,7 +144,7 @@ lower `evolution_batch_steps`, `cluster_batch_mb` or `cache_mb`, or use fewer ra
 **cCCE.** The CPU builds the two conditional Hamiltonians of each cluster. cuSOLVER diagonalizes them, for a batch of
 clusters of one dimension in one call (one cluster alone in its own call). The GPU forms the overlap of the two
 eigenbases and evolves many time points as the columns of one matrix with cuBLAS. A reduction returns the overlap of
-the conditional states (sampled state) or its normalized trace (ensemble). The sampled-state path evolves two state
+the conditional states (sampled state) or its normalised trace (ensemble). The sampled-state path evolves two state
 vectors instead of the full propagators of the CPU path.
 
 **gCCE.** The CPU builds each Hamiltonian and pulse operator. cuSOLVER diagonalizes the Hamiltonian once per cluster,

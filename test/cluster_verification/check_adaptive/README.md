@@ -19,9 +19,9 @@ on `PATH`.
 | Case | Compared with | Tolerance |
 |---|---|---|
 | `cpp/test_*.cpp`: policy functions, JSON reader and writer, NaN, inf, zero, ties | unit tests | — |
-| `cpp/test_regroup.cpp`: method D (`--regroup`) on a bath with a closed-form expansion | the closed form | P_K × N_c 1e-12; except path 1e-13 of `__float128`, 1e-15 with powers near −1000 |
-| `regress`: 14 merge, cache and fault cases, 19 regroup cases (`--atol 1e-3 --rtol 0`) | `regression/golden/` | decisions exact (exit status, patches, rounds, every string, integer and boolean); floats 1e-9 relative; times not compared |
-| The same with an MKL `bin/main.out` (log: `MKL for large clusters : on`) | `regression/golden/` | decisions exact; floats 1e-5 relative, at least 1e-12 absolute |
+| `cpp/test_regroup.cpp`: method D (`--regroup`) on a bath with a closed-form expansion | the closed form | P_K × N_c 1e-12, except path 1e-13 of `__float128`, 1e-15 with powers near −1000 |
+| `regress`: 14 merge, cache and fault cases, 19 regroup cases (`--atol 1e-3 --rtol 0`) | `regression/golden/` | decisions exact (exit status, patches, rounds, every string, integer and boolean), floats 1e-9 relative, times not compared |
+| The same with an MKL `bin/main.out` (log: `MKL for large clusters : on`) | `regression/golden/` | decisions exact, floats 1e-5 relative, at least 1e-12 absolute |
 | `inprocess`: 11 cases, and `probe_rotation.py` across ranks and states | the separate driver | — |
 | regroup factors and except paths, 1 and 3 ranks | the probe path | the same decisions |
 
@@ -38,12 +38,12 @@ MKL.
 
 | File | Contents |
 |---|---|
-| `verify.sh` | runs `unit`, `regress`, `inprocess`, `sanitize` or `fuzz` |
-| `cpp/` | the unit tests and the Makefile that builds them and the driver; `regroup_replay` is built but not run by `unit` |
-| `regression/` | `cases.json`, `inputs/`, `golden/` |
-| `reference/` | the JSON round-trip cases and the number-text boundaries of the reader and writer |
-| `regress.py`, `inprocess_compare.py`, `json_expect.py`, `json_roundtrip.py`, `compare_summaries.py`, `config_verdicts.py`, `test_adaptive_tools.py`, `probe_rotation.py` | the comparisons |
-| `fuzz_json.py`, `fault_mpiexec.py`, `hang.py` | the fuzzer and a fake `mpiexec` that fails, hangs or drops a response |
-| `regroup_parity.py` | a study, not a standing check: method D against its prototype on stored probes |
+| `verify.sh` | Runs `unit`, `regress`, `inprocess`, `sanitize` or `fuzz`. |
+| `cpp/` | The unit tests and the Makefile that builds them and the driver. `regroup_replay` is built but not run by `unit`. |
+| `regression/` | `cases.json`, `inputs/`, `golden/`. |
+| `reference/` | The JSON round-trip cases and the number-text boundaries of the reader and writer. |
+| `regress.py`, `inprocess_compare.py`, `json_expect.py`, `json_roundtrip.py`, `compare_summaries.py`, `config_verdicts.py`, `test_adaptive_tools.py`, `probe_rotation.py` | The comparisons. |
+| `fuzz_json.py`, `fault_mpiexec.py`, `hang.py` | The fuzzer and a fake `mpiexec` that fails, hangs or drops a response. |
+| `regroup_parity.py` | A study, not a standing check. Method D against its prototype on stored probes. |
 
-`cpp/bin*/` and `cpp/out/` are what a run writes; both are ignored.
+`cpp/bin*/` and `cpp/out/` are what a run writes. Both are ignored.

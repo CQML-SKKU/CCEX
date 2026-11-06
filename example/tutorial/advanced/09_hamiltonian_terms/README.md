@@ -8,7 +8,7 @@ $$H_C = H_q + H_{\rm bath} + \sum_{n \in C} \mathbf{S}\cdot\mathsf{A}_n\cdot\mat
 
 with $H_q$ the qubit's Zeeman term and zero-field splitting and $\mathsf{A}_n$ the hyperfine tensor of bath spin $n$.
 Its cluster Hamiltonian is complete, so it is the reference for cCCE
-([Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md)). cCCE puts the qubit in one of its two states, $k \in \{\alpha, \beta\}$ with $S_z$ sublevel $m_k$, and solves only the bath in that state:
+([Basic 05: cCCE against gCCE](../../basic/05_cCCE_vs_gCCE/README.md)). cCCE puts the qubit in one of its two states, $k \in \lbrace \alpha, \beta\rbrace $ with $S_z$ sublevel $m_k$, and solves only the bath in that state:
 
 $$H_C^{(k)} = H_{\rm bath} + m_k \sum_{n \in C} \mathbf{A}_{z,n}\cdot\mathbf{I}_n ,$$
 
@@ -89,7 +89,7 @@ It runs the three inputs and plots them together. It takes 13 s, most of it gCCE
 |---|---|
 | gCCE (reference) | 84.7 ns |
 | cCCE with `hfmedi` | 86.1 ns |
-| cCCE without | \|L\| is still 0.66 at 245 ns |
+| cCCE without | \|L\| is still 0.66 at 245 ns. |
 
 With the term cCCE decays as gCCE does, although the two curves still differ by up to 0.45 at single points.
 

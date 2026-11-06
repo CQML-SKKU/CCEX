@@ -23,20 +23,20 @@ read or the grids differ. The jump rate is 1.5915e-4 MHz (1 rad/ms).
 | meCCE with bath jumps | PyCCE | 1e-7 |
 | meCCE, one bath spin on the z axis, FID, two rates | PRL 132, 250401, Eq. 6 | 1e-8 |
 | megCCE at rate 0, also two NV qubits (S5) | gCCE | 1e-6 |
-| gCCE; megCCE with bath jumps; megCCE with bath and qubit `z` jumps | conj(PyCCE) | 1e-7 |
+| gCCE, megCCE with bath jumps, megCCE with bath and qubit `z` jumps | conj(PyCCE) | 1e-7 |
 | megCCE order 0, qubit `z` or `-` jump | exp(−g t/2) | 1e-9 |
 
 The PyCCE tolerance is about five times the floor the input sets (bath coordinates to 5 decimals, `H_BAR` in
 the ninth digit). PyCCE and CCEX are complex conjugates after an odd number of π pulses, hence `conj`. Only the
-branch's meCCE output is a reference: its gCCE keeps the qubit gyromagnetic ratio and deltat in float.
+branch's meCCE output is a reference, because its gCCE keeps the qubit gyromagnetic ratio and deltat in float.
 
 ## Files
 
 | File | Contents |
 |---|---|
-| `run.sh` | writes the cases from the template and runs the comparisons |
-| `compare.py` | max \|A − B\| on a shared grid (`--conj-b`, `--subset-b`, `--scale-exp RATE`) |
-| `test_superoperator_unit.cpp` | the unit test of `src/calculation/superoperator.cpp` |
-| `inputs/` | the branch's qubit, bath and gyro files, and `bath_1e_z` (one electron at (0, 0, 500 Å)) |
-| `reference/branch-2c63eac52/` | the branch's meCCE output, with `MD5SUMS` |
-| `reference/pycce/` | PyCCE coherences of the same system, how they were made (`README.md`), `MD5SUMS` |
+| `run.sh` | Writes the cases from the template and runs the comparisons. |
+| `compare.py` | Max \|A − B\| on a shared grid (`--conj-b`, `--subset-b`, `--scale-exp RATE`). |
+| `test_superoperator_unit.cpp` | The unit test of `src/calculation/superoperator.cpp`. |
+| `inputs/` | The branch's qubit, bath and gyro files, and `bath_1e_z` (one electron at (0, 0, 500 Å)). |
+| `reference/branch-2c63eac52/` | The branch's meCCE output, with `MD5SUMS`. |
+| `reference/pycce/` | PyCCE coherences of the same system, how they were made (`README.md`), `MD5SUMS`. |

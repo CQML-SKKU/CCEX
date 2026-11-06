@@ -8,7 +8,7 @@
   model spectrum, the semi-classical CCE (its mode sums also run on the GPU). `pseudospin` gives the pair clusters in the
   pseudospin model of nuclear flip-flops, for reading a decay rather than for the best curve.
 - **GPU runs on a full node.** `gpu_options.ranks_per_gpu` lets some of a node's ranks use the GPU and the others the
-  CPU; a GPU batch of cCCE clusters is diagonalized in one call; with `backend` `auto` or `cuda` the `gpu_options` an
+  CPU. A GPU batch of cCCE clusters is diagonalized in one call. With `backend` `auto` or `cuda` the `gpu_options` an
   input leaves out are chosen at the start.
 - **Builds.** An nvcc older than 13.2 is accepted for cards below compute capability 12.0 (CUDA 12.8 with MPS on a GH200).
 - **Fixed.** The MKL builds write the same last digits from run to run.
@@ -20,31 +20,31 @@
 
 - **method `noise`**: the Gaussian coherence exp(−χ) of the qubit's phase noise (`src/calculation/noise.cpp`, the
   semi-classical CCE). `hamiltonian.noise.spectrum` `"bath"` (the default) sums each cCCE cluster's eigenmodes (for a Hahn echo
-  the mode sum; the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
-  only); a model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath (`order`, `bfield`,
-  `rbath`, `rdip` and `Qubit` may be left out then; given, they and `configuration` and `Defect` are reported as not
-  used, and no file they name is opened). cluster.mode
-  standard, one qubit, ideal π pulses (FID, Hahn, CPMG, Manual); `savemode` `cluster_coherence` and
+  the mode sum, the bath under p = (|m_α| + |m_β|)/2, infinite temperature, the bath state in the mean field
+  only). A model spectrum, `{"model": "OU", ...}` or `{"model": "power", ...}`, runs without a bath (`order`, `bfield`,
+  `rbath`, `rdip` and `Qubit` may be left out then, and if given, they and `configuration` and `Defect` are reported as
+  not used and no file they name is opened). It needs `cluster.mode`
+  standard, one qubit and ideal π pulses (FID, Hahn, CPMG, Manual). `savemode` `cluster_coherence` and
   `cluster_density_matrix`, `rdip_ladder`, `cluster_contributions` and `gpu_options.ranks_per_gpu` are
-  refused with it. `hamiltonian.noise.pseudo_secular` (default false: the noise
+  refused with it. `hamiltonian.noise.pseudo_secular` (default false, in which case the noise
   is the secular A_zz I_z) adds the pseudo-secular A_zx I_x + A_zy I_y to the noise. `hamiltonian.noise.compute` chooses what is computed
-  from the bath: `"coherence"` (default; χ from the clusters' eigenmodes, no time grid), `"spectrum"` (C(t)
+  from the bath: `"coherence"` (default, χ from the clusters' eigenmodes, no time grid), `"spectrum"` (C(t)
   on the grid of `hamiltonian.noise.fft`, S(f) by FFT with its `window`, `pad_factor`, `subtract_mean`,
-  `clamp_negative`, and the coherence; writes `_noise_correlation` and `_noise_spectrum`) or `"correlation"` (PyCCE's
-  `CCENoise`: C(t) alone, a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
-  computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `hamiltonian.noise.fft` is optional:
-  `time_max` defaults to the run's last time, `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and an independent semi-classical CCE code
-  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/12_noise`: method noise against cCCE2 for a
+  `clamp_negative`, and the coherence, writing `_noise_correlation` and `_noise_spectrum`) or `"correlation"` (PyCCE's
+  `CCENoise`, with C(t) alone and a sampled state as the pure initial state with the mean field). `execution.backend` `cuda`
+  computes the sums over the bath's modes on the card (`src/calculation/gpu/noise_gpu.cu`). `hamiltonian.noise.fft` is optional.
+  `time_max` defaults to the run's last time, and `nstep` follows from the bath's modes. `check_noise` compares it with closed forms, quadrature and an independent semi-classical CCE code
+  (P1 and 13C baths, FID, Hahn and CPMG). Tutorial `example/tutorial/advanced/12_noise` runs method noise against cCCE2 for a
   1 ppm P1 bath, and an OU model spectrum without the bath keys.
-  `noise` was a reserved name refused as not implemented (A49).
+  `noise` was a reserved name refused as not implemented.
 - **method `pseudospin`**: the pair clusters of the cCCE in the pseudospin model of nuclear flip-flops, alone (Seo et
-  al. 2016, Supplementary eqs. 20-24; Lee, Park, Seo 2022), for any nuclear spin: the output is the product of the pairs'
+  al. 2016, Supplementary eqs. 20-24; Lee, Park, Seo 2022), for any nuclear spin. The output is the product of the pairs'
   terms, without the single spins' ESEEM (cCCE order 1). A pair's Hamiltonian in each qubit state is written in the
   basis of the two spins' own eigenstates in that state (Zeeman, hyperfine, the whole quadrupole) and cut there to the
   diagonal and every nonzero element between product states that differ in both spins, the channels: the flip-flops
   |m1,m2> <-> |m1-1,m2+1>, the flip-flips |m1,m2> <-> |m1+1,m2+1>, and with a quadrupole that mixes the |m> the
   double-quantum ones such as |m1,m2> <-> |m1-2,m2+2>. `hamiltonian.pseudospin.channels` "grouped" (default) evolves
-  every block of states joined by channels (a chain) whole, with weight k/d; "pairwise" every channel alone as a
+  every block of states joined by channels (a chain) whole, with weight k/d, and "pairwise" every channel alone as a
   two-level system of its Omega and Delta_alpha, Delta_beta, with weight 2/d, missing the coupling of a chain (both
   CCEX's generalization of the papers' single flip-flop, equal when no two channels share a state). The channels'
   Omega_alpha, Omega_beta, Delta_alpha, Delta_beta go to `{output.file}_pseudospin_channels`. Order 2 only (the default
@@ -54,39 +54,39 @@
   points), the pairs' product times cCCE order 1 is within 2.0e-3, 2.2e-2 and 4.2e-2 of cCCE order 2 at 3, 0.3 and 0.03 T.
 
 - **`execution.gpu_options.ranks_per_gpu`: GPU ranks under `backend` = `auto` (cCCE, `cluster.mode` standard).** Every rank
-  that meets a cluster of `min_dim` or above opened a CUDA context of its own; without MPS a GH200 node admitted 16 per
-  GPU, which held its 288 cores to 64 ranks. With k, only the first k × (visible GPUs) ranks of a node use the GPU, the
+  that meets a cluster of `min_dim` or above opened a CUDA context of its own. Without MPS a GH200 node admitted 16 per
+  GPU, which held its 288 cores to 64 ranks. With `ranks_per_gpu` k, only the first k × (visible GPUs) ranks of a node use the GPU, the
   others never start CUDA. Before the clusters are split over the ranks, each dimension of `min_dim` and above is timed
   on a made-up cluster of that dimension, on the CPU by every rank at once and on the GPU by every GPU rank at once (k
-  on a card, taking turns without MPS, together with it), so as loaded as in the run; such a cluster then goes to a GPU
+  on a card, taking turns without MPS, together with it), so as loaded as in the run. Such a cluster then goes to a GPU
   rank, counted at its cost times the GPU/CPU time, or to a CPU rank at its cost, whichever would finish it first, and
   every other cluster to the least-loaded rank of all. The split follows
   the timings, so outputs agree within rounding from run to run, not bit for bit. Without the key nothing changes.
-  Measured on one GH200 node (288 Grace cores, four GPUs, driver 570, CUDA 12.8, no MPS; a bath of transition-metal spins,
-  cCCE2, two states, 601 points, about 980,000 pairs, one run each): with ranks_per_gpu 4 the 1 atm case took 477 s
+  Measured on one GH200 node (288 Grace cores, four GPUs, driver 570, CUDA 12.8, no MPS, a bath of transition-metal spins,
+  cCCE2, two states, 601 points, about 980,000 pairs, one run each). With ranks_per_gpu 4 the 1 atm case took 477 s
   against 767 s on 288 CPU ranks and 2,104 s with backend auto on 64 ranks, and the O-rich case 155 s against 316 s and
-  259 s (ranks_per_gpu 16: 530 s and 166 s; 32 with MPS: 543 s and 186 s), the GPU and the CPU ranks busy for about
-  as long; the outputs agreed with the CPU run to 1.7e-6 (`max|dL|`).
+  259 s (530 s and 166 s with ranks_per_gpu 16, 543 s and 186 s with 32 and MPS), the GPU and the CPU ranks busy for
+  about as long. The outputs agreed with the CPU run to 1.7e-6 (`max|dL|`).
 - **CUDA 12.8 with the system MPS on a GH200 node.** Built with CUDA 12.8 (below) against the driver's own library, 128
-  ranks connected to MPS there (through CUDA 13.2's forward-compatibility library they had not connected): backend
+  ranks connected to MPS there (through CUDA 13.2's forward-compatibility library they had not connected). Backend
   auto took 1,074 s on the 1 atm case and 199 s on the O-rich one. `make gpu-test` passed (CUDA 12.8, sm_90).
 
 - **A GPU batch of cCCE clusters is diagonalized in one call** (`cusolverDnXsyevBatched`) instead of matrix by matrix, and
   with `cluster_batch_mb` above its default, a rank that uses the GPU goes through its clusters by size, so that clusters
   of one dimension meet. `cluster_batch_mb`
   now also counts the eigensolver's workspace, so the default batches at D = 256 hold 2 clusters instead of 7. The
-  defaults of `evolution_batch_size` and `cluster_batch_mb` are unchanged and leave most of the gain out: on the GH200
+  defaults of `evolution_batch_size` and `cluster_batch_mb` are unchanged and leave most of the gain out. On the GH200
   node above, with `ranks_per_gpu` 4, `evolution_batch_size` 32 and `cluster_batch_mb` 8192 took the 1 atm case to 328 s and
   the O-rich case to 137 s (477 s and 155 s without), one run each, `max|dL|` against the CPU run 1.7e-6. With the
   defaults the same cases took 487 s and 170 s, one run each, 2 % and 10 % above the times without the batched
-  eigensolver; the cause was not found and may be the spread between runs.
+  eigensolver. The cause was not found and may be the spread between runs.
 
 - **Automatic `gpu_options` for cCCE on the GPU.** With `backend` `auto` or `cuda` in `bin/main_gpu.out` and a GPU
   visible, the keys the input leaves out are set at the start (a `[gpu-auto]` line): `ranks_per_gpu` 4 when a node has
-  more than 4 ranks a GPU (`backend` `auto`, `cluster.mode` standard), `min_dim` 256 with `ranks_per_gpu`,
+  more than 4 ranks per GPU (`backend` `auto`, `cluster.mode` standard or pcce), `min_dim` 256 with `ranks_per_gpu`,
   `evolution_batch_size` 32, `cluster_batch_mb` two thirds of the smallest card over the ranks that open a card. Given keys
-  are used as given; gCCE keeps the fixed defaults. On an RTX PRO 6000 with 32 ranks (test2 of the GH200 cases, one run
-  each) CPU only took 616 s, `backend` `auto` with the fixed defaults 887 s, and 4 ranks a card with batches of 32 490 s,
+  are used as given. gCCE keeps the fixed defaults. On an RTX PRO 6000 with 32 ranks (one of the GH200 cases, one run
+  each) CPU only took 616 s, `backend` `auto` with the fixed defaults 887 s, and 4 ranks per card with batches of 32 490 s,
   the fastest of `ranks_per_gpu` 0, 4, 8, 16 with and without batches, as on the GH200 node.
 
 ### Fixed
@@ -95,7 +95,7 @@
   starts unless its reproducible mode is on, so with MKL 2026.2 two runs that take the same path differed by 1e-10 in
   the written values (`check_input_forms` column_evolution C1-C3: `{"enabled": false}` against a `min_dim` no cluster
   reaches). The MKL builds now set `MKL_CBWR_AUTO | MKL_CBWR_STRICT` at start (the CPU's fastest code path, independent
-  of the alignment); an `MKL_CBWR` in the environment is left to MKL.
+  of the alignment). An `MKL_CBWR` in the environment is left to MKL.
 - **`hamiltonian.common.quadrupole.structure` `"strained"` took the wrong tensor for a far spin.** A spin outside the
   defect file's range, folded back by the cell, was looked up in the defect file again instead of in
   `file_without_defect`. It now takes the tensor of `file_without_defect`, as `"bubble"` does.
@@ -107,7 +107,7 @@
 - **`cluster.mode` itb and dsjitb took the power of each inter-bath pair from the wrong spin.** The single spins are
   rows 1..N of the cluster list, and the pairs took theirs from row s instead of s + 1, the spin before. A pair on spin 0
   shortened the list itself, so the last spins dropped out (two of 978 in the dsj tutorial). dsjitb at order 2 now
-  gives the standard CCE2 exactly; it differed by up to 0.06 there. `check_input_forms` has a `dsjitb` stage.
+  gives the standard CCE2 exactly. It differed by up to 0.06 there. `check_input_forms` has a `dsjitb` stage.
 - **The `cluster.adaptive` block with `cluster.mode` pcce is refused at the input.** The input check let pcce
   through, and the refinement then stopped with "ValueError: input must use cluster.mode=bundle". The refinement
   changes bundles only, and the message now says so (`check_refusals` case `rj_adaptive_pcce`).
@@ -125,13 +125,13 @@
 ### Builds
 
 - **CUDA 13.2 is required only for compute capability 12.0 and above.** 2.0.1 refused every nvcc older than 13.2
-  because 12.8 miscompiles `applyPulse` for the RTX PRO 6000 (compute capability 12.0, A97 below). That also refused
-  the toolkit of a driver for CUDA 12.x on other cards: on a GH200 (compute capability 9.0) with driver 570, CUDA 13.2
+  because 12.8 miscompiles `applyPulse` for the RTX PRO 6000 (compute capability 12.0, see 2.0.1 below). That also refused
+  the toolkit of a driver for CUDA 12.x on other cards. On a GH200 (compute capability 9.0) with driver 570, CUDA 13.2
   ran only through the forward-compatibility library, and MPS clients did not connect there, so the GPU runs were
   limited to 16 ranks per GPU. `do_compile.sh` now takes an older nvcc when `CUDA_ARCH` is below 120, and CMake when
   `CMAKE_CUDA_ARCHITECTURES` names only capabilities below 120 (`native`, `all` or none named still need 13.2, since
   the architecture is not known at configure time). Whether 12.x compiles `applyPulse` right for such a card is not
-  known: `make gpu-test` (`test_gcce_cuda`'s q = 9 case) on that card checks it.
+  known. `make gpu-test` (`test_gcce_cuda`'s q = 9 case) on that card checks it.
 
 ### Tutorials, documentation and checks
 
@@ -139,22 +139,22 @@
   04 pulses, 05 cCCE against gCCE, 06 an electron-spin bath) and `advanced/` (01 automatic convergence, 02 analysis, 03 runs on a
   cluster, 04 GPU, 05 electron-spin baths, 06 V_B⁻ in h-BN with DFT tensors, 07 multiple qubits, 08 coordinate
   rotation, 09 the terms of the cluster Hamiltonian, 10 the cluster modes and adaptive refinement, 11 dissipation,
-  12 semiclassical noise, 13 pseudospin); `example/tutorial/README.md` lists the calculations of each, and
+  12 semiclassical noise, 13 pseudospin). `example/tutorial/README.md` lists the calculations of each, and
   `git show v2.0.1:example/tutorial/README.md` the folders of 2.0. Every tutorial input explains each key in a comment
-  (its meaning, unit and why this value); the JSON of the inputs did not change except where noted here. New:
+  (its meaning, unit and why this value). The JSON of the inputs did not change except where noted here. New:
   `advanced/13_pseudospin/pseudospin2_Hahn_vsCCE`, `advanced/12_noise/noiseSpectrum_13C` (`compute` spectrum: C(t),
   S(f)), `advanced/04_GPU/cCCE5_Hahn_autoOptions` (the automatic `gpu_options`), `advanced/06_hBN/makeTensors_hBN`
   (SpinTensorReader on a VASP run), `advanced/02_analysis/cCCE2_Hahn_analyzer` (error correction, average, T2 fit) and
   `advanced/03_server_runs/cCCE2_Hahn_slurm` (sizing a run, a Slurm job, a job array). `04_hBN/cCCE2_Hahn_ensemble` is
   `advanced/06_hBN/cCCE2_Hahn_tensors`. The h-BN topic is one page, `advanced/06_hBN` (the tensor files and what they change),
-  without `04_hBN/single-sample_gCCE` and `gCCE2_Hahn_OH`, and the Advanced topics after it are one number lower;
+  without `04_hBN/single-sample_gCCE` and `gCCE2_Hahn_OH`, and the Advanced topics after it are one number lower.
   `05_multiNV/gCCE2_HahnRamsey_NV6` (six NVs, a server's job with nothing visible in its 4.9 ns) is
   `advanced/07_multi_qubits/gCCE2_HahnRamsey_NV3` (three NVs, 1 s, over 3 µs). `advanced/05_P1` makes a P1 bath with BathGenerator
   (`cCCE2_Hahn_makeBath`) and runs the ¹⁴N as a detuning and as a spin side by side, and order 2 beside order 4.
   `advanced/05_P1/cCCE2_Hahn_VpBath`, `gCCE2_Hahn_zfs` and `gCCE2_Ramsey_population` (with the 10 ppm and Vp baths of
-  `basic/06_defect_bath/bath/`) and `advanced/04_GPU/pCCE2_Hahn_backends` are removed. `advanced/04_GPU` has its `expected.png`, made on a GPU node; `plot_coherence.py --log-time` draws a log time axis.
+  `basic/06_defect_bath/bath/`) and `advanced/04_GPU/pCCE2_Hahn_backends` are removed. `advanced/04_GPU` has its `expected.png`, made on a GPU node, and `plot_coherence.py --log-time` draws a log time axis.
 - **Documentation.** The input template (`main.out -e`) describes noise, pseudospin and the automatic `gpu_options`, with each key's explanation on the lines above it.
-  The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin; the
+  The site's Overview, Changes and Examples pages cover 2.1.0, with method pages for noise and pseudospin. The
   plain-text formulas are TeX. The automatic convergence has a key page, `docs/user/InputFile_AutoConvergence.md`, and a method page,
   `docs/methods/auto-convergence.md` (its steps, results and exit codes). The input pages describe each key in a
   type/default table with an example, the old names have their own page (`docs/user/InputFile_OldNames.md`), and the

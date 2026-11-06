@@ -16,10 +16,10 @@ The information on a defect comes from four places, and the `Defect` block is on
 
 | Where | What | For a P1 |
 |---|---|---|
-| the bath file ([configuration.bathfile](InputFile_General.md#tag_bathfile)) | the position and the name of each spin | `1317.8 159.4 1842.6 P1` |
-| the gyrofile ([configuration.gyrofile](InputFile_General.md#tag_gyrofile)) | the spin and γ of each name | `P1 0.5 -17608.597050` |
-| the `Defect` block | what a defect of that name is, with its axis states, the tensors or the detuning of each, and the nuclear spins on its site | four Jahn-Teller axes and one ¹⁴N |
-| [defect_axis_file](InputFile_General.md#tag_defect_axis_file), [defect_state_file](InputFile_General.md#tag_defect_state_file), or the seed | the axis state of each defect, and the states of its on-site spins | this P1 on axis 2, that one on axis 4 |
+| the bath file ([configuration.bathfile](InputFile_General.md#tag_bathfile)) | The position and the name of each spin. | `1317.8 159.4 1842.6 P1` |
+| the gyrofile ([configuration.gyrofile](InputFile_General.md#tag_gyrofile)) | The spin and γ of each name. | `P1 0.5 -17608.597050` |
+| the `Defect` block | What a defect of that name is, with its axis states, the tensors or the detuning of each, and the nuclear spins on its site. | Four Jahn-Teller axes and one ¹⁴N. |
+| [defect_axis_file](InputFile_General.md#tag_defect_axis_file), [defect_state_file](InputFile_General.md#tag_defect_state_file), or the seed | The axis state of each defect, and the states of its on-site spins. | This P1 on axis 2, that one on axis 4. |
 
 A bath spin whose name in the bath file is the `name` of a species is that defect. It is an electron spin, with its
 spin and γ from the gyrofile. The defect sits in one of several *axis states*, for example the four Jahn-Teller axes
@@ -57,7 +57,7 @@ The three forms of `zfs`. The two object forms need `n_axis_states` of 1 or more
 
 | Form | Meaning |
 |---|---|
-| `{"D": D, "axis": [x, y, z], "unit": ...}` | The axial tensor D (n̂ n̂<sup>T</sup> − 1/3) about the normalized `axis` n̂, for every axis state. |
+| `{"D": D, "axis": [x, y, z], "unit": ...}` | The axial tensor D (n̂ n̂<sup>T</sup> − 1/3) about the normalised `axis` n̂, for every axis state. |
 | `{"tensor": [[...], [...], [...]], "unit": ...}` | One tensor, 3 × 3 or 9 numbers row by row, for every axis state. |
 | `[[state, "e", [9 numbers]], ...]` | A tensor per axis state, in MHz. |
 
@@ -140,9 +140,9 @@ The lists of `types`, `spins`, `gyros` and `quadrupole_moments` have one entry p
 The units of the object form:
 
 - `gyros`: `radkHz/G`, `rad/ms/G`, `kHz/G`, `MHz/G`, `MHz/T`, `Hz/T`, `radMHz/T`, `rad/us/T`, `rad/s/T` (those
-  without `rad` are γ/2π);
-- `quadrupole_moments`: `fm^2`, `m^2`, `cm^2`, `barn`, `mbarn`;
-- `hyperfine`: `Hz`, `kHz`, `MHz`, `GHz`;
+  without `rad` are γ/2π).
+- `quadrupole_moments`: `fm^2`, `m^2`, `cm^2`, `barn`, `mbarn`.
+- `hyperfine`: `Hz`, `kHz`, `MHz`, `GHz`.
 - `efg`: `Hartree/Bohr^2` (`a.u.`), `V/m^2`, `V/A^2`.
 
 [Advanced 05](../../example/tutorial/advanced/05_P1/README.md) runs the same P1 bath this way, with 4 axis states

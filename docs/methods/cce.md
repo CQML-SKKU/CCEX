@@ -89,7 +89,7 @@ Sampled states are the usual choice for electron-spin baths, where one bath stat
 
 **cCCE** (conventional CCE, the default `method`). The qubit is not in the cluster. It is projected onto its two
 states, and each spin of the cluster sees the field the qubit sets in that state (secular approximation, pure
-dephasing). For branch $k \in \{\alpha, \beta\}$, with $m_k$ the $S_z$ sublevel of the branch state, the cluster
+dephasing). For branch $k \in \lbrace \alpha, \beta\rbrace $, with $m_k$ the $S_z$ sublevel of the branch state, the cluster
 Hamiltonian is
 
 $$H_C^{(k)} = H_{\rm bath} + m_k \sum_{n \in C} \mathbf{A}_{z,n} \cdot \mathbf{I}_n \;+\; \text{(corrections below)},$$
