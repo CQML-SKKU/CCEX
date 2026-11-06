@@ -31,7 +31,8 @@ status=0; deciding=""
 for ref in "$HERE"/reference/head-*/; do [ -d "$ref" ] && deciding="$ref"; done
 [ -n "$deciding" ] || for ref in "$HERE"/reference/*/; do deciding="$ref"; done
 for ref in "$HERE"/reference/*/; do
-  echo; python3 "$HERE/compare.py" "$WORK" "$ref" --expected "$HERE/expected.json"; rc=$?
+  history=--history; [ "$ref" = "$deciding" ] && history=""    # a case newer than a reference of the past is "new"
+  echo; python3 "$HERE/compare.py" "$WORK" "$ref" --expected "$HERE/expected.json" $history; rc=$?
   [ "$ref" = "$deciding" ] && status=$rc
 done
 # a case that did not finish (exit or timeout) fails the run whatever the tables say

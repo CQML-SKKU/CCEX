@@ -1,0 +1,38 @@
+{
+    // the input of ccein_wi_knight.jsonc with delta_A as well (hamiltonian.cCCE.delta_A)
+    //
+    // The physics: delta_A adds, for each bath spin, the part of the second-order transverse hyperfine that is linear
+    // in its spin, -m_s (A_x x A_y) . I / (2 Delta). It matters for 13C close to the NV at low field; here the bath
+    // and the field are those of the Knight-shift input (README).
+    //
+    // Writes results/ccein_wi_knight_deltaA_wiDiv and _noDiv (t in ms, L(t) per line).
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "Qubit"         : {"qubit": [{"file": "../../../basic/01_first_run/bath/bath_Diamond_NV_natab_defect"}],
+                       "intmap" : [{"between": ["q0", "q0"],
+                                    "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]], "unit": "kHz"}]},
+                                      // the NV: its position from the first line of the defect file (73.74 75.73
+                                      // 73.97 A); spin 1, the electron's gyromagnetic ratio, alpha ms +1, beta ms 0
+                                      // by default. intmap: the self term of "q0" (the default name of the first
+                                      // qubit) is the zero-field splitting, diag(-D/3, -D/3, 2D/3) with D = 2.88 GHz,
+                                      // in kHz. knight needs it (it divides by Delta = 3/2 Dzz; a qubit without one is
+                                      // refused)
+    "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                       "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]},
+                                      // basic/01_first_run's bath: gyro_13C (name, spin, rad kHz/G) and a 150 A cube of
+                                      // diamond with 1.1 % 13C
+    "order"         : 2,              // the largest cluster: single 13C and pairs (cCCE2)
+    "bfield"        : [50, 0, 100],   // Gauss, [Bx, By, Bz] with z the NV axis: 112 G, tilted 27 degrees towards x.
+                                      // The bare 13C precession is 120 kHz. A number is Bz alone (no Knight shift)
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
+    "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "hamiltonian"   : {"cCCE": {"knight": true, "delta_A": true}}
+                                      // cCCE terms. delta_A true adds the term above (not with hfmedi,
+                                      // which holds it). knight true adds, for each bath spin and qubit branch, the Knight
+                                      // shift H_K = -(3|m_s| - 2) (gamma_e / Delta) B.A~.I, A~ its hyperfine tensor
+                                      // with the z row set to zero, Delta = 3/2 Dzz of the intmap. Zero when the
+                                      // field is along z. Default false (ccein_wo_knight); gCCE has no such key (the
+                                      // qubit is in its Hamiltonian)
+}

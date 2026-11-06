@@ -10,7 +10,7 @@ lanes of a warp, so that a lane takes two points). The inputs:
   gcce_natab_*  test/code_verification/check_input_forms/inputs/Diamond_NV_natab_gcce (13C bath, NV qubit): dimension 6, 12
                 and, with order 3, 24;
   gcce_p1n14_*  .../Diamond_NV_P1_10ppm_gcce with its P1 nitrogen made 14N (spin 1): dimension 18;
-  gcce_hbn_*    example/tutorial/04_hBN/gCCE2_Hahn_states (until A66 07_hBN_VB_natab/single-sample_gCCE; 10B, 11B, 14N; the tutorial's quantity dm): 9, 12, 21, 27;
+  gcce_hbn_*    example/tutorial/advanced/06_hBN/gCCE2_Hahn_states (a tutorial until 2026-11-05; until A66 07_hBN_VB_natab/single-sample_gCCE; 10B, 11B, 14N; the tutorial's quantity dm): 9, 12, 21, 27;
   cce_natab_*   .../Diamond_NV_natab_cce with order 4: bath dimension 8 and 16.
 CLUSTERS.BIN is the A40 step-0 dump of the production P1 CR60 sigma4 gCCE2 input (rank 0, 2 states, dimension 12, Hahn,
 151 points; idm4-gpu job 698, (internal notes)): its first 64 clusters are rewritten
@@ -21,7 +21,7 @@ import json, os, shutil, struct, subprocess, sys, tempfile
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.normpath(os.path.join(HERE, '../../../../..'))
 FORMS = os.path.join(ROOT, 'test/code_verification/check_input_forms/inputs')
-HBN = os.path.join(ROOT, 'example/tutorial/04_hBN')
+HBN = os.path.join(ROOT, 'example/tutorial/advanced/06_hBN')
 
 # name: (input folder, input file, changes)
 NATAB_G = ('Diamond_NV_natab_gcce', 'ccein_nstate1.json')

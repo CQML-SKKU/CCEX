@@ -10,6 +10,8 @@
 //    pages; the rail shows the path of the page being read and unfolds on click.
 // 3. The sidebar's dragged width goes into the theme's width variable, so that
 //    the sidebar, the header, the search box and the page follow it together.
+// 4. The table of contents beside a page opens, at every level, only the entry that
+//    holds the section being read (the theme marks its link "active").
 (function () {
   function fileOf(href) { return (href || '').split('#')[0].split('/').pop(); }
   function rootEntry() { return document.querySelector('#nav-tree-contents > ul > li'); }
@@ -104,5 +106,33 @@
     var timer = setInterval(function () {
       if (openSelected() || ++tries > 50) clearInterval(timer);
     }, 100);
+  });
+})();
+
+// 4. (above) the table of contents opens the section being read and folds the others
+(function () {
+  // at every level, the entry that holds the section being read is open and its siblings are folded
+  function sync(toc) {
+    var lists = [toc.querySelector(':scope > ul')];
+    while (lists.length) {
+      var ul = lists.pop();
+      if (!ul) continue;
+      var items = ul.querySelectorAll(':scope > li');
+      var open = null;
+      for (var i = 0; i < items.length; i++) if (items[i].querySelector('a.active')) { open = items[i]; break; }
+      if (!open && ul.parentNode === toc && items.length) open = items[0];
+      for (var j = 0; j < items.length; j++) {
+        items[j].classList.toggle('ccex-open', items[j] === open);
+        var sub = items[j].querySelector(':scope > ul');
+        if (sub) lists.push(sub);
+      }
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function () {
+    var toc = document.querySelector('.contents > .toc');
+    if (!toc) return;
+    sync(toc);
+    new MutationObserver(function () { sync(toc); })
+      .observe(toc, {subtree: true, attributes: true, attributeFilter: ['class']});
   });
 })();

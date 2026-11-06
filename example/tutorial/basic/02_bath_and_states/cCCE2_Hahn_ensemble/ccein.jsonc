@@ -1,0 +1,34 @@
+// Basic 02, cCCE2_Hahn_ensemble: the Hahn echo of Basic 01 in ten bath configurations, ten random placements of the
+// 1.1 % 13C around the NV (no 13C within 5 A of it), each in the ensemble (unpolarised) state.
+//
+// Writes results/ccein_k1_wiDiv ... ccein_k10_wiDiv, one curve per configuration; run.sh plots them and their mean.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position, made by run.sh next to the bath files (the NV is at the centre of every cell).
+                "file" : "results/bath/config_defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        // {k} is replaced by each k of k_range: results/bath/config_1 ... config_10 (run.sh makes them).
+        "bathfile" : ["results/bath/config_{k}"],
+        // The configurations, one run each, one after another; the outputs are named _k<k>_.
+        "k_range"  : [1, 10]
+    },
+
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

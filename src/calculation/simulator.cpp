@@ -9,6 +9,7 @@
 #include "../../include/input/reader.h"
 #include "../../include/calculation/gpu/compute_backend.h"
 #include "../../include/calculation/scaled_product.h"
+#include "../../include/calculation/noise.h"
 #include "../../include/auto_convergence/rdip_ladder.h"
 #include "../../include/clustering/bundle/bundle_work.h"
 #include "../../include/clustering/bundle/bundle_connection_check.h"
@@ -115,7 +116,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
     SmallClusterBatch smallGpu(qa,ba,dfa,cnf,pls,isGCCE,localclusters,order,savemode);   // A26: small cCCE clusters on the GPU; A40: the warp kernel (off: nothing)
     // A30: small cCCE clusters batched on the CPU (A48: also beside the GPU batch); the cCCE kernel only: never a gCCE or
     // master-equation cluster
-    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE);
+    CceBatchWindow cpuBatch(qa,ba,dfa,cnf,pls,isGCCE || isMECCE || isMEGCCE || cnf->noise);   // noise: its own kernel too
     // A68: the log of a state. Rank 0 reports its own clusters at every tenth of them (-v: the per-cluster lines of
     // before, every 5000/nprocess clusters of an order), and a state ends with one line: its index, the number of
     // clusters of every rank and its time. The bath states, mean fields, qubit states and the steps of a state are
@@ -360,6 +361,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             const bool stableProduct=!strcasecmp(quantity,"coherence") &&
                 (qubitInMatrix || isMECCE || !strcasecmp(method,"cce") || !strcasecmp(method,"pcce"));
             std::vector<ScaledComplex> stableWith(stableProduct ? nstep : 0);
+            // method noise: every cluster's values times its power, summed (noise.cpp); without: the positive powers
+            std::vector<double> noiseWith(cnf->noise ? noiseLength(cnf) : 0), noiseWithout(noiseWith.size());
             std::vector<ScaledComplex> stableWithout(stableProduct ? nstep : 0);
             // mode "except" (adaptive-regroup-stage3b.md 1절): the run's own product is untouched; beside it P_K, the
             // product of every term not in the except list, and the raw curves of the excepted terms as probes.
@@ -438,7 +441,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
             // gathered[istep*gatherMax + k]), and multiplied in with assembleRun - each product sees the same factors in the
             // same order as before. Off where the per-cluster factors are used elsewhere (savemode cluster_coherence, except, the rdip
             // ladder, cluster contributions).
-            const bool gather=stableProduct && !saveAll && !exceptMode && !ladder.on && !cnf->cluster_contributions;
+            const bool gather=stableProduct && !saveAll && !exceptMode && !ladder.on && !cnf->cluster_contributions && !cnf->noise;
             // A30: the batched small clusters only where nothing but the product uses a cluster's factors
             const bool cpuBatchUse=!saveAll && !exceptMode && !ladder.on && !cnf->cluster_contributions;
             const int gatherMax=32;
@@ -512,7 +515,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     const int qubitFactor=isGCCE ? QubitArray_dim(qa) : 1;
                     // P1-05: a dimension the packed batch does not take keeps this batching (its look-ahead takes only clusters
                     // of the same dimension, so none of them is the packed batch's)
-                    if(!small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
+                    if(!cnf->noise && !small && !smallGpu.packs(qubitFactor*BathArray_dim(ba_cluster)) && batchResults.empty() &&
                        (!isGCCE || strcasecmp(savemode,"cluster_density_matrix")) &&
                        cnf->gpu_batch_clusters>1 && computeUseCuda(cnf,qubitFactor*BathArray_dim(ba_cluster))){
                         const int d=qubitFactor*BathArray_dim(ba_cluster);
@@ -520,7 +523,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         // A conservative buffer estimate limits bundleing. A single
                         // cluster still follows the existing allocation/error path.
                         const bool vectorState=isGCCE ? !strcasecmp(cnf->evolution,"vector") : cnf->nstate>0;
-                        const long double bytes=gpuClusterMemoryEstimate(d,qubitFactor,timeBatch,pls->npulse,isGCCE,vectorState);
+                        const long double bytes=gpuClusterMemoryEstimate(d,qubitFactor,timeBatch,pls->npulse,isGCCE,vectorState)
+                                                +(isGCCE ? 0 : gpuCceBatchWorkspaceEstimate(d));
                         const long double budget=1048576.0L*cnf->gpu_cluster_batch_mb;
                         batchBaths.push_back(ba_cluster);
                         while(batchBaths.size()<(size_t)cnf->gpu_batch_clusters &&
@@ -559,6 +563,10 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                         ownedResult = false;
                     }else if(!batchResults.empty()){
                         result_nth=batchResults[ic-batchFirst];
+                    }else if (cnf->noise){     // method noise: the cluster's values, summed with its power (noise.cpp)
+                        noiseCluster(qa, ba_cluster, cnf, pls, power, noiseWith, noiseWithout);
+                        result_nth = cceResult.get();
+                        ownedResult = false;
                     }else if (isMECCE){        // meCCE: a new array (the kernel's own), deleted below
                         result_nth = calCoherenceMecce(qa, ba_cluster, cnf, pls);
                         ownedResult = true;
@@ -595,7 +603,7 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                     ladder.add(cluster,n,power,result_nth,inverseZero,unitZero);
                     if(gather && power!=1 && ngathered>0)flushGathered();
                     const std::complex<double>* direct=(small && smallPer==1 && gather) ? small : nullptr;   // X6
-                    for (int istep=0; istep<nstep; istep++){
+                    for (int istep=0; istep<nstep && !cnf->noise; istep++){
                         if((cnf->cluster_contributions || ladder.on) && power==0)continue;
                         if(stableProduct){
                             const auto raw=direct ? direct[istep] : result_nth[istep](0,0),zero=result_0th[istep](0,0);
@@ -794,6 +802,9 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 err = MPI_Reduce(result_nD[istep].data(),result_nD_all[istep].data(),dim*dim,MPI_DOUBLE_COMPLEX,MPI_PROD,0,MPI_COMM_WORLD);
             }
 
+            // method noise: its sums, not the product above, make the outputs
+            const bool saveCoherence=!cnf->noise ||
+                noiseFinish(qa,cnf,pls,op,istate,noiseWith,noiseWithout,result_wD_all,result_nD_all);
             MPI_Barrier(MPI_COMM_WORLD);
             lap(PH_REDUCE);
 
@@ -831,7 +842,8 @@ void calculate(QubitArray* qa, BathArray* ba, DefectArray* dfa, Config* cnf, Pul
                 if(verbosity)printSubTitle("Save the results...");
                 adaptiveWriteCurve(cnf,result_wD_all,istate);
                 
-                if (strcasecmp(savemode,"coherence")==0){
+                if (!saveCoherence){   // method noise, compute correlation: its file alone (noiseFinish)
+                }else if (strcasecmp(savemode,"coherence")==0){
                     Output_save(op,result_wD_all,result_nD_all,nstep,deltat,istate);
                 }else if (strcasecmp(savemode,"cluster_coherence")==0 || strcasecmp(savemode,"cluster_density_matrix")==0){
                     Output_save(op,result_wD_all,result_nD_all,nstep,deltat,istate);

@@ -3,7 +3,8 @@
 # 2026-10-13: one job took over 40 minutes): unit (a CMake build of the CPU binary, a second build whose defect warnings stop
 # it, the numeric and CPU regression unit tests with the bundle unit tests, the refinement driver's unit tests, the pCCE
 # partition unit tests), python (the Python unit tests; no build), checks (the closed-form coherence of one 13C, the
-# coordinate-rotation suite, the vector mean field), refusals (the refusals, about 7 minutes, alone so no job waits
+# coordinate-rotation suite, the vector mean field, DEER, the master-equation methods, methods noise and pseudospin, the
+# tutorial inputs), refusals (the refusals, about 7 minutes, alone so no job waits
 # for them; user 2026-10-16), forms (the input-form stages in three parts) and ladder (the
 # rdip ladder check in two parts). The CMake builds keep their objects in ccache between runs. Not here, because they need
 # a particular machine or a long run: check_numerics (exact against references recorded on one machine), the adaptive
@@ -93,6 +94,20 @@ jobs:
           python3 -m unittest discover -s example/tools/InputKeys/tests   # the input-key converter (review 20261013-180049 C1)
           python3 -m unittest discover -s example/tools/StateFiles/tests  # the state and axis file writer (A94; its CCEX run is skipped without a build)
 
+      - name: The forms job runs every stage of check_input_forms once
+        run: |
+          python3 - <<'PY'
+          import re
+          stages = re.search(r'^STAGES=\((.*)\)', open('test/code_verification/check_input_forms/run.sh').read(), re.M).group(1).split()
+          ci = open('.github/workflows/ci.yml').read()
+          parts = re.findall(r'"([a-z0-9_ ]+)"', re.search(r'stages: \[(.*?)\]', ci, re.S).group(1))
+          given = [x for p in parts for x in p.split()]
+          missing, twice = sorted(set(stages) - set(given)), sorted({x for x in given if given.count(x) > 1})
+          unknown = sorted(set(given) - set(stages))
+          print(f"{len(stages)} stages, {len(parts)} parts; missing {missing}, twice {twice}, unknown {unknown}")
+          assert not (missing or twice or unknown)
+          PY
+
   checks:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -106,7 +121,7 @@ jobs:
       - name: Packages
         run: |
           sudo apt-get update
-          sudo apt-get install -y --no-install-recommends cmake g++ ccache libopenmpi-dev openmpi-bin python3-numpy
+          sudo apt-get install -y --no-install-recommends cmake g++ ccache libopenmpi-dev openmpi-bin python3-numpy python3-scipy
 
       - uses: actions/cache@v4
         with:
@@ -128,6 +143,21 @@ jobs:
 
       - name: Vector mean field (same binary, z vs vector curve)
         run: bash test/code_verification/check_mean_field/run.sh
+
+      - name: DEER bath pulses (closed form, identities)
+        run: bash test/code_verification/check_deer/run.sh
+
+      - name: Master-equation CCE (rate 0 against cCCE/gCCE, recorded PyCCE curves, closed forms)
+        run: bash test/code_verification/check_master_equation/run.sh
+
+      - name: Method noise (closed forms and quadrature; the reference-code and PyCCE parts are skipped here)
+        run: bash test/code_verification/check_noise/run.sh
+
+      - name: Method pseudospin (exact cases, Seo eq. 23, refusals)
+        run: bash test/code_verification/check_pseudospin/run.sh
+
+      - name: Every tutorial input still runs (nstep 3)
+        run: bash test/code_verification/check_tutorials/run.sh
 
   # The refusals (about 7 minutes on a runner) in a job of their own, so that no job waits for them after another check.
   refusals:
@@ -160,7 +190,8 @@ jobs:
       - name: Refusals
         run: bash test/code_verification/check_refusals/run.sh
 
-  # The input-form stages in three parts (check_input_forms/run.sh takes the stages to run).
+  # The input-form stages in four parts (check_input_forms/run.sh takes the stages to run); the python job checks that
+  # the four hold every stage of its STAGES list once.
   forms:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -169,7 +200,8 @@ jobs:
       matrix:
         stages: ["legacy axis2 errcorr",
                  "gyro comments nodiv allfull evolution_update",
-                 "gpu_options propagator tensor_format cli autoconv"]
+                 "column_evolution gpu_options propagator tensor_format cli",
+                 "configuration autoconv units pcce_rest dsjitb"]
     env:
       CCEX_BIN: ${{ github.workspace }}/build/bin/main.out
       CCEX_BUILD_DIR: ${{ github.workspace }}/build

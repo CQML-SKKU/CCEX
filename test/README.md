@@ -1,69 +1,92 @@
 # test/
 
-Three folders, named by what they verify; each has a README. Every suite needs
-`bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`; the Python ones need what
-`test/requirements.txt` lists - numpy, scipy (the analyzer imports it) and matplotlib -
-on `python3` (on WSL: `PATH=~/anaconda3/bin:$PATH`; elsewhere `pip install -r test/requirements.txt`).
-A CMake build keeps its binary in its own folder: `CCEX_BIN=<build>/bin/main.out` tells
-the suites which binary to run, and `CCEX_BUILD_DIR=<build>` tells `check_rotation` and
-the `check_pcce` unit-test drivers whose objects to link (the `do_compile.sh` build otherwise). Both ask
-`unit_build_env.sh` here, which brings that build up to date and prints its compiler, flags and objects as the
-build writes them: the `unit-env` target of the generated Makefile, or the `unit-build.env` of a CMake build of any
-generator (until 2026-10-02 the drivers read `flags.make` and so needed the Unix Makefiles generator, D26).
-`mpirun` is `CCEX_MPI` when set, else the Intel MPI of the loaded module, else the one
-on `PATH`. `.github/workflows/ci.yml` runs the fast, machine-independent part on every
-push and pull request (with `check_analytic`, the closed form); `check_numerics` (exact against
-references recorded on one machine), the long adaptive suites and the GPU checks stay manual.
-What a suite writes goes to a `_work/` or `cpp/out/` folder, which is gitignored;
-the regression references under `code_verification/check_numerics/reference/` are committed on purpose.
-They were recorded with builds without MKL. A binary built with MKL (A46; the build turns it on when it finds MKL,
-and every run log's header says `MKL for large clusters : on` or `off`) changes the last digits of the large
-clusters, so the checks read that line: `check_numerics` then judges
-within 1e-12 relative to the reference (`check_input_forms`' tensor_format T2 does so with either build, A93), and `check_adaptive`'s regress keeps every decision exact but lets a float
-of the golden answers move by 1e-5 relative (their READMEs say why).
+The checks, in three folders by what they verify. Each check folder has its own README with the details.
 
-## code_verification/ — does the code still do what it did, and what it says
+## Which check for which change
 
-`bash test/code_verification/run.sh` runs the nine in order.
+| Change | Run |
+|---|---|
+| anything under `src/` or `include/` (except `clustering/algo_adaptive/`) | `bash test/code_verification/run.sh` and `make numeric-test cpu-test` |
+| `src/clustering/algo_adaptive/` | `sh test/cluster_verification/check_adaptive/verify.sh unit`, `regress`, `inprocess` (and `sanitize` for memory-sensitive changes) |
+| `src/clustering/bundle/` | the above, plus `make cpu-test` (its unit tests are there) |
+| `src/calculation/gpu/` or the CUDA path | `make gpu-test` inside a GPU job, and the jobs of `gpu_verification/server/` |
+| `example/tools/AutoConvergence/` | `python -m pytest -q -n 8 tests` in that folder |
 
-| Folder | Answers | Run |
+## Requirements
+
+Every check needs `bin/main.out` (`bash do_compile.sh wsl-gnu`) and `mpirun`. The Python parts need numpy, scipy and
+matplotlib (`pip install -r test/requirements.txt`). Environment variables:
+
+- `CCEX_BIN`: the binary to test, for example `CCEX_BIN=$PWD/build/bin/main.out` for a CMake build.
+- `CCEX_BUILD_DIR`: the CMake build whose objects the unit tests link (`check_rotation`, `check_deer`,
+  `check_master_equation`, the `check_pcce` drivers). Without it they use the `do_compile.sh` build.
+  `unit_build_env.sh` brings that build up to date first.
+- `CCEX_MPI`: the `mpirun` to use. Without it, the Intel MPI of the loaded module, else the one on `PATH`.
+
+Some variables of `main.out` turn an optimisation off for a comparison, or serve only the checks:
+
+| Variable | Effect |
+|---|---|
+| `CCEX_CPU_BATCH=0` | Computes the small cCCE clusters (bath dimension 2 and 4) one by one instead of in batches. Both give the same bits, and where they would not, the batch turns itself off at start. |
+| `CCEX_SMALL_EIG=0` | Lets Eigen diagonalise the same small clusters instead of the fixed-sweep Jacobi solver. |
+| `CCEX_CHECK_DISORDER=1` | With sampled states, also builds the static mean field of the bath the old way on one rank and stops on any bit that differs. |
+| `CCEX_SMALL_CLUSTER_DUMP=FILE`, `CCEX_SMALL_CLUSTER_DUMP_N=N` | In cCCE, writes the first N (400) small clusters with their CPU result to FILE. |
+| `CCEX_WARP_CLUSTER_DUMP=FILE`, `CCEX_WARP_CLUSTER_DUMP_N=N` | In gCCE, the same for the clusters of the GPU warp kernel. |
+| `CCEX_TEST_GPU_OOM_BYTES=N` | In a GPU build, every GPU allocation of N bytes or more fails, to test the fall-back to the CPU. |
+
+What a check writes goes to its `_work/` (or `cpp/out/`) folder, which git ignores and the check wipes. The reference
+outputs under `code_verification/check_numerics/reference/` and the adaptive golden answers are committed on purpose
+and change only in the commit that is meant to change them.
+
+A build with MKL changes the last digits of large clusters. The checks read the `MKL for large clusters : on` line of
+the run log and then compare relatively: `check_numerics` within 1e-12, `check_adaptive`'s `regress` within 1e-5 for
+floating-point values (every decision stays exact).
+
+On macOS the checks run with the system's bash 3.2, and use perl where `timeout` is missing. `check_numerics` compares
+with references recorded on x86, and a Mac build differs from them in the last digits (below 1e-8 in noDiv), since
+`long double` is `double` on arm64. Record a reference on the Mac (`make_reference.sh current`) and compare later Mac
+builds with it, but do not commit it, because the newest `head-*` folder is the reference for everyone.
+
+`.github/workflows/ci.yml` runs the fast, machine-independent checks on every push: the unit tests, `check_analytic`,
+`check_rotation`, `check_mean_field`, `check_deer`, `check_master_equation`, `check_noise` (without the reference code and
+PyCCE), `check_pseudospin`, `check_tutorials`, `check_refusals`, `check_input_forms` and `check_rdip_ladder` (quick
+sizes). `check_numerics`, the long adaptive suites and the GPU checks are run by hand.
+
+## code_verification/
+
+These checks ask whether the code still gives what it gave, and what it says. `bash test/code_verification/run.sh` runs
+all twelve at once (about 8 minutes on 28 cores) and prints their logs in the order below. `check_refusals` and
+`check_input_forms` run one after the other, since both write `check_input_forms/_work`.
+
+| Check | Question |
+|---|---|
+| `check_analytic/` | Does CCEX match the closed-form coherence of one ¹³C beside the NV (FID and Hahn)? Also `delta_A` against gCCE order 1, and `bath_bath_mean_field` "off". |
+| `check_deer/` | Do DEER bath pulses act as the closed form says, on every gCCE and megCCE path, whatever the order of the bath file? |
+| `check_master_equation/` | Do meCCE and megCCE reduce to cCCE and gCCE at rate 0, and match PyCCE's curves and the closed forms with jumps? |
+| `check_numerics/` | Are the numbers the ones recorded before? 27 calculations against this branch's newest reference (≤ 1e-9) and the releases v1.1.0, v1.2.2 and v2.0.1, with the known differences named in `expected.json`. |
+| `check_rotation/` | Does the coordinate-frame rotation do what it says? A unit test and runs against hand-rotated inputs. |
+| `check_refusals/` | Are the inputs that must be refused actually refused, most of them before anything is read? |
+| `check_input_forms/` | Do the input forms of the current and older layouts give the same physics, and do the template (`-e`), the command line, units, comments and the other input stages work? |
+| `check_mean_field/` | Does the vector mean field give the z mean field's curve where the two must agree? |
+| `check_rdip_ladder/` | Does each `rdip_ladder` rung equal a separate run at that rdip? |
+| `check_noise/` | Does method noise match the OU closed forms, quadrature, an independent semi-classical CCE code and PyCCE? |
+| `check_pseudospin/` | Is method pseudospin exact where it has to be (two spins on the qubit axis, Seo's eq. 23)? |
+| `check_tutorials/` | Does every tutorial input still run (with `nstep` cut to 3)? |
+| `bath_data/` | Not a check. The frozen baths, tensors and state files the checks read. |
+
+## cluster_verification/
+
+These folders check the clustering methods.
+
+| Folder | Contents | Run |
 |---|---|---|
-| `check_analytic/` | CCEX gives the closed-form coherence of one 13C beside the NV (free induction and Hahn echo, order 1, ensemble), within the 10 decimals it writes; machine-independent, so the CI runs it (the CI does not run `check_deer`, whose closed-form part is the other comparison here not of CCEX with CCEX, nor `check_master_equation`). A self-test requires a 1 % wrong gyro to fail; `hfmedi` runs at zero field check degenerate qubit levels (finite where uncoupled - by S or by a zero hyperfine -, refused where coupled, the same decision after an energy shift of the ZFS); `hamiltonian.cCCE.delta_A` (A83) against gCCE order 1 for a 13C close to the NV, and `hamiltonian.common.bath_bath_mean_field` "off" (A47) against what it must give | `bash check_analytic/run.sh` |
-| `check_deer/` | DEER bath pulses (`pulse.bath`): the qubit/bath sequence merge (unit test), `pulse.bath.count` 0 byte-identical to no block, and the six cases of the adding_MECCE branch (12 P1, gCCE order 1, ensemble) against the closed form (2e-4) and its identities (off-resonant pump = no pump, a second far tone changes nothing, a pump 0.005 beside the qubit pi applied once); on one pure state the evolution vector = matrix, recursive = exact (1e-9) with the pump acting; megCCE at rate 0 with the pump (at and beside the qubit pi) = gCCE (1e-6), `cluster_mode` pcce with `partition_size` 1 = standard (gCCE and megCCE, 1e-9; gCCE at order 2, 1e-8), gCCE with `propagator` expm = eigen with the pump (1e-9), the tones in the other order, and the bath file reordered (order 2 reversed, gCCE and megCCE; order 3 rotated, gCCE) giving the same curves (1e-8); refusals of a `pulse.bath` that does not fit the driven spins | `bash check_deer/run.sh` |
-| `check_master_equation/` | ME-CCE (`method` meCCE, `hamiltonian.meCCE.jump_operators` on bath spins): the Liouville-space superoperators and jump operators (unit test); at rate 0 the cCCE curve (Hahn `_noDiv` and `_wiDiv`, Ramsey with its imaginary part (1e-8), CPMG with 2 and 3 pulses, a pure bath state on `check_numerics/cases/p1_cce2_single`, and the knight term on `check_numerics/cases/natab_knight_shift`; 1e-6); with S+ and S- jumps on an electron-spin bath (S=1/2 electron qubit, CCE2, Hahn) the adding_MECCE branch's output and PyCCE's (1e-6, `reference/`, md5 against the branch in `MD5SUMS`); one bath spin on the qubit's z axis, order 1, FID against PRL 132, 250401 Eq. 6 for 2g < a and 2g > a (1e-8). ME-gCCE (`method` megCCE): at rate 0 the gCCE curve (one qubit, and two NV qubits), with bath jumps (and with a qubit `z` jump beside them) conj(PyCCE) and the gCCE itself against conj(PyCCE) (1e-6; PyCCE measures the pulse-turned qubit states), and the 0th cluster alone (order 0) with a qubit `z` or `-` jump against exp(-g t/2) (1e-9). Judged by `compare.py` (exit 2 when a file is missing or the grids differ) | `bash check_master_equation/run.sh` |
-| `check_numerics/` | this build gives the numbers earlier builds gave: 25 calculations cut from the tutorials (CCE, gCCE, pCCE, dsj; ensemble and single approaches; Hahn, Ramsey, CPMG, manual sequences; ¹³C, P1, Vp, h-BN baths; coherence and density matrices), compared against outputs recorded on the same machine from this branch (`reference/head-*`, largest difference of `_noDiv`/dm ≤ 1e-9; `_wiDiv` is not judged) and from the tagged releases v1.1.0 and v1.2.2 (1e-4, the known differences named in `expected.json`). `make_reference.sh` records a reference, `make_cases.py` wrote the cases. Its `test_fixed_size.cpp` (in `make cpu-test`) holds the fixed-size single-state evolution of dimension 2 and 4 to the dynamic one's bits with `evolution_update: exact` (on the builds where the bits were seen to agree; elsewhere within 1e-12 relative, A56), and its `test_cce_batch.cpp` (same target) holds the batched small-cluster evolution (A30, with A42's grouped eigensolves) to the scalar path's bits on dumped clusters, and its `test_small_eigensolver.cpp` (same target) holds the dim-2/4 Jacobi of A42 to Eigen (eigenvalues, residual, orthonormality) and its lanes to one matrix alone, bit for bit, and its `test_cce_columns.cpp` (same target) holds the column-block one-state evolution (A62, `column_evolution`) to the one-time-point path within 1e-12 relative, and its phase rule | `bash check_numerics/run.sh` |
-| `check_rotation/` | the coordinate-frame rotation does what it says: the matrix and its fixed point (a unit test), then real runs against a hand-rotated input, the same transform for every bath file, the DFT tensor files moving with the positions; 148 checks (149 until A63 took `-B` away) | `bash check_rotation/run.sh` |
-| `check_refusals/` | 259 input combinations that must be refused, most before anything is read (a tensor file without its frame, a tilted field with the rotation on, the removed `frame.rotation` keys (A90), `zfs` in D/E form without an axis, both rotation keys at once, an `adaptive` block with cluster_mode standard given as `-fFILE`, ...), and six that must run, on the real inputs (among them an `adaptive` block given as `-f FILE` and `-fFILE` refining alike and the `savemode`/`propagator`/`adaptive` keys in another case, review 20261013-180049; the command-line options removed in A63 are refused naming their input keys) | `bash check_refusals/run.sh` |
-| `check_mean_field/` | `hamiltonian.common.bath_bath_mean_field` "xyz" (`vector_mean_field` until 2026-10-13, D45) against the default z mean field where the answer is known: one P1 with its <sup>14</sup>N sub-spin and no other bath spin inside rbath has no mean field, so both modes must give the same curve byte for byte (it failed before review 158861 R1) | `bash check_mean_field/run.sh` |
-| `check_rdip_ladder/` | `rdip_ladder` (auto-truncation-plan.md, improvements.md A23): one order-2 run writes the curve of every smaller rdip; each rung must equal a separate run at that rdip and the main output the run without the ladder (≤ 1e-9; cCCE P1 1 ppm with 2 states and <sup>13</sup>C ensemble; gCCE ensemble, vector and matrix on <sup>13</sup>C, h-BN and P1 10 ppm; pCCE2 centers and spins on <sup>13</sup>C, h-BN and P1 1 ppm), and inputs it does not cover (order 3 of cCCE and pCCE, a rung at or above rdip, unsorted rungs, savemode cluster_coherence, gCCE dm) are refused; about 7 min | `bash check_rdip_ladder/run.sh` |
-| `check_input_forms/` | the new input forms this branch added say the same physics as the legacy forms (32 comparisons under one binary: 22 byte-identical, 8 numeric where a unit conversion sits between them, 2 that must differ; then the stages `gyro`, `comments`, `nodiv`, `allfull`, `evolution_update`, `column_evolution` (on by default, A62), `gpu_options`, `tensor_format`, `cli` (the command line of A63: `-e` writes an example that runs and names every input key, the `-o DIR` rules, `cluster_only`), `autoconv` and `pcce_rest` (A80: pCCE with left-over spins and state files)), and the analyzer reads the outputs. Its `inputs/` are the four legacy inputs the old regression suite used; `legacy.sh` writes every system's legacy form first | `bash check_input_forms/run.sh` |
-| `bath_data/` | not a check: the frozen baths, DFT tensors and state files the checks above and `cluster_verification/check_pcce/check_baths.py` read (its README says who reads what) | — |
+| `check_adaptive/` | The adaptive refinement (`src/clustering/algo_adaptive/`): unit tests, 33 recorded runs with their golden answers, fuzz and fault-injection scripts. | `sh check_adaptive/verify.sh unit\|regress\|inprocess\|sanitize\|fuzz` |
+| `check_bundle/` | The records of the bundle clustering experiments. The bundle code is checked by the unit tests in `make cpu-test` and by `check_adaptive`. | — |
+| `check_pcce/` | pCCE: the partition search, its cache, reproducibility across ranks. | `python3 test/cluster_verification/check_pcce/check_reproducibility.py --cpu bin/main.out --output DIR` and the others |
 
-## gpu_verification/ — the CUDA backend
+## gpu_verification/
 
-`check_gpu/` holds the checks: 15 `test_*.cpp` unit tests (`make numeric-test`
-runs three on a CPU - the third is `test_small_cluster_cuda` without the card, `test_small_cluster_host`, `make cpu-test` four more on a CPU and on 1 and 4 ranks, `make gpu-test`
-the numeric two and the CUDA ones inside a GPU job, among them `test_small_cluster_cuda`, the packed kernel against
-CPU-dumped clusters (A26), and `test_warp_cluster_cuda`, the warp kernel likewise for every compiled dimension (A40); CMake has the same targets; `check_gpu/README.md`
-lists them), and ten `check_*.py` that run CPU and CUDA builds on the same
-inputs and compare (pulses, gCCE4 accuracy and batching, pCCE, seeds and sampled
-states, options, host leaks, the packed batch on a host stand-in for the card). Most need a CUDA build; five run on CPU
-builds (`check_gpu/README.md` says which and with what; `check_packed_emulation.py` builds its own binary from the CPU
-build's objects).
-`gpu_benchmarks/` times CPU against CUDA, `server/` holds the three standing Slurm
-jobs for idm4-gpu and two measurement jobs (`min_dim`, `gpu_sharing`); their last runs and the commits they ran on are in `server/README.md` (it is the record; a
-run on an older commit does not check a later change). The dated `validation-*.json` under `check_gpu/` are the recorded
-results (internal notes) cites.
-
-## cluster_verification/ — the clustering methods
-
-(internal notes) names the two methods this branch added.
-
-| Folder | Method | What is here | Run |
-|---|---|---|---|
-| `check_adaptive/` | **adaptive refinement** (적응형): the partition is rebuilt from measured error by the merge policy in `src/clustering/algo_adaptive/` (the only one since 2026-10-10). The driver is `ccex-adaptive`; the input block is `"adaptive"` (`"Adaptive"` until 2026-10-13, `"Refine"` until 2026-09-23) | `cpp/` unit tests, `regression/` 33 recorded runs with their golden answers, `reference/` JSON and number-text cases, fuzz and fault-injection scripts | `sh check_adaptive/verify.sh unit\|regress\|inprocess\|sanitize\|fuzz` |
-| `check_bundle/` | **bundle clustering** (가변형): sites tied into bundles once, by coupling strength (`cluster_mode=bundle`, `src/clustering/bundle/`) | the records of the 2026-09-12..16 experiments and two historical `check_*.py` that no longer run with the current build (its README); what a change here has to pass is the three bundle unit tests of `check_pcce/` and the recorded runs of `check_adaptive/` | `make cpu-test` (CMake: `--target cpu-test`) runs the three unit tests since 2026-10-02 (D31), then `sh check_adaptive/verify.sh regress\|inprocess` |
-| `check_pcce/` | **pCCE**: partition cache, cycle skipping and search, reproducibility across ranks, the PL6 product-convergence diagnostics | eight `check_*.py`, seven `test_*.cpp` (four built by `make cpu-test`, three by the `check_*.py` through `unit_build.py`), three benchmarks, and (still) the sweep tools and records of the PL6 work | `python3 check_pcce/check_reproducibility.py --cpu bin/main.out --output DIR` and the others |
-
-`check_adaptive/verify.sh` is what a change to `src/clustering/algo_adaptive/` has to pass;
-`code_verification/run.sh` is what any change to the core has to pass.
+These folders check the CUDA backend. `check_gpu/` has the unit tests (`make numeric-test` and `make cpu-test` run the
+ones that need no GPU, `make gpu-test` the rest inside a GPU job) and the `check_*.py` scripts that run the CPU and CUDA
+builds on the same inputs. `gpu_benchmarks/` times the CPU against the GPU. `server/` holds the Slurm jobs for idm4-gpu.
+Its README records their last runs and the commits they ran on.

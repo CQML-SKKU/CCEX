@@ -1,46 +1,54 @@
-# check_gpu/ — the CUDA backend gives the CPU's numbers
+# check_gpu/
 
-| script | checks | run |
+Checks that the CUDA backend gives the CPU's numbers. The unit tests check the kernels, batching and host-side
+bookkeeping. The `check_*.py` scripts run CPU and CUDA builds on the same inputs. Most need `bin/main_gpu.out` and a
+GPU, so they run in a job on idm4-gpu.
+
+```
+make numeric-test      # CPU only
+make cpu-test          # CPU and mpirun (MPIRUN=... picks another); also in CI
+make gpu-test          # CUDA build and the GPU, inside a job
+# CMake: cmake --build build --target numeric-test | cpu-test | gpu-test
+```
+
+`bash do_compile.sh gpu` builds only `bin/main.out` and `bin/main_gpu.out`, not the tests. Build the tests through
+these targets, which use the build's own flags (and `-UNDEBUG` for `cpu-test`).
+
+## What it checks
+
+| Case | Compared with | Tolerance |
 |---|---|---|
-| `test_*.cpp` (14) | unit tests of the kernels, the batching, the scaled product, the Hamiltonian check before the CUDA cCCE path, the seed sharing and the host-side lifetimes | `make numeric-test`, `cpu-test`, `gpu-test` (not `bash do_compile.sh gpu`, which builds `bin/main.out` and `bin/main_gpu.out` only): see "Unit tests" below |
-| `check_cce_pulses.py --cpu BIN --cuda BIN --output DIR` | cCCE with every pulse count, CPU against CUDA | CUDA build |
-| `check_auto_k_range.py --cuda BIN --output DIR [--mpirun M]` | `backend` `auto` with `configuration.k_range` on two ranks, only one of which opens the card (A73): the run ends (the build before A73 hung in the second configuration, 180 s limit), both configurations written | CUDA build, a GPU (RTX 3050 is enough, a few seconds) |
-| `check_acceleration.py`, `check_pcce.py`, `check_options.py` | gCCE4 accuracy and batching, pCCE, `execution.backend` and the `execution.gpu_options` block, CPU against CUDA. `check_options.py` also (review 20261013-221715, ④): X13 `cce3-ready-packed-warp` — three states and nstep 3000, so states 2–3 run after the card is up and an order fills several 131-cluster windows; packed and warp counts must both be > 0 and more than two windows must pass the feeder (the earlier `cce3-auto-packed-warp` may legitimately finish on the CPU); X12 `*-oom-late-*` — `CCEX_TEST_GPU_OOM_BYTES=8192` fails a cluster after its first allocations, and the `[gpu-memory]` line must show allocations > 0 and `cached_bytes=0`. The hidden-card cases run with `CUDA_VISIBLE_DEVICES=-1` everywhere (CCEX answers "no GPU" without the driver) and `=99` only off WSL: WSL's CUDA driver 577.00 crashes inside `cuInit` for an index it does not have, with or without CCEX (A55) | CUDA build |
-| `check_warp_spread.py REFINED WARP` (`--spread ICPX GCC WARP`) | the warp kernel's whole production curves (A50b (iii), user decision 2026-10-13): against `main.out` with `gcce_refinement` on (and `evolution_update` exact), in the A40 verdict region (outside \|CPU\| > 1 and between), 1e-8 + 2e-6 \|CPU\| per value. Why the refined curve: every code's double eigenvalues are rounded at an ulp of \|H\| (~2.4e7 on P1 gCCE2) and the product amplifies it to 1e-6 - 1e-5 relative; two refined CPU builds agree to 2.5e-7 (CR60), and the warp kernel is as close to the refined curve as the production CPU ((internal notes)). `--spread`: A50 (a), \|warp − icpx\| ≤ max(3 \|gcc − icpx\|, 2e-6 \|CPU\|, 1e-12). Strict reading (review 20261013-180049 G1): time column and every complex value; nan/inf, an empty file, a line that does not parse, a missing file, different times or row/value counts, or nothing judged FAIL; `test_check_warp_spread.py` (CI python job) checks those. `test_warp_cluster_cuda` and `check_options.py` keep 1e-8 + 2e-6: per cluster the warp kernel is 5-9 orders inside it | output folders of server runs |
-| `check_packed_emulation.py --output DIR` | the packed batch (`execution.gpu_options.packed_max_dim`) end to end on 3 ranks with `small_cluster_host_emulation.cpp` for the card: a card that cannot be opened (auto: all on the CPU, byte-identical; cpu with an explicit value: refused; fast, late and without clusters), the 6 MiB window budget, the batch off without clusters or beyond the budget, the batch on within 1e-8 + 2e-6 \|CPU\| (review 20261012-233058-452278 P3-01, P3-04); about 15 s | CPU build is enough (it links the build's objects, `CCEX_BUILD_DIR` for CMake) |
-| `check_seed_states.py --cpu BIN --output DIR` | seeds and sampled bath states are reproduced across ranks | CPU build is enough |
-| `check_review_controls.py --cpu BIN --output DIR` | the controls the 2026-09-12 review asked for | CPU build is enough |
-| `check_review_supplement.py --cpu BIN --cuda BIN --before-cuda BIN --output DIR` | the review's supplement | CUDA build, and the CUDA binary from before the review |
-| `check_review_baseline.py --baseline BIN --results DIR` | the review's baseline: reruns the CPU inputs of an earlier `check_acceleration`/`check_cce_pulses`/`check_pcce` results folder with a frozen pre-review binary | a CPU binary (`--baseline`) and that results folder |
-| `check_host_leaks.py --binary BIN --baseline BIN --output DIR [--cuda BIN]` | host memory over repeated runs | CPU build is enough (the current and a baseline binary); `--cuda` adds the CUDA variants |
+| `numeric-test`: `test_scaled_product`, `test_hamiltonian_check`, `test_small_cluster_host` (Hamiltonians of scale 1e±200 included) | the CPU | right, or back to the CPU |
+| `cpu-test`: `test_cluster_log`, `test_review_controls`, `test_mpi_seed`, `test_host_lifetimes` (1 and 4 ranks) | unit tests | — |
+| `gpu-test`: the numeric tests, `test_gcce_*`, `test_cce_cuda`, `test_review_failure`, `test_review_memory` | the CPU | unit tests |
+| `test_small_cluster_cuda`: the packed kernel (`gpu_options.packed_max_dim`) on `data/small_cluster/` | CPU coherences | 1e-8 + 2e-6 \|CPU\| per point, and both lanes the same bits |
+| `test_warp_cluster_cuda`: the warp kernel (`gpu_options.warp_max_dim`) on `data/warp_cluster/` | CPU coherences | 1e-8 + 2e-6 \|CPU\|, and both lanes the same bits |
+| `check_cce_pulses.py --cpu BIN --cuda BIN --output DIR`: cCCE with every pulse count | the CPU | 1e-8 + 2e-6 \|CPU\| |
+| `check_acceleration.py`, `check_pcce.py`, `check_options.py`: gCCE4 accuracy and batching, pCCE, `execution.backend` and `execution.gpu_options` | the CPU | 1e-8 + 2e-6 \|CPU\|, and in `check_options.py` 1e-11 + 1e-11 \|reference\| where the run stays on the CPU |
+| `check_auto_k_range.py --cuda BIN --output DIR [--mpirun M]`: `backend` auto with `k_range` on two ranks, one opening the card | both configurations written | within 180 s |
+| `check_warp_spread.py REFINED WARP` | `main.out` with `gcce_refinement` on and `evolution_update` exact, in the verdict region | 1e-8 + 2e-6 \|CPU\| per value |
+| `check_warp_spread.py --spread ICPX GCC WARP` | the spread of two CPU builds | \|warp − icpx\| ≤ max(3 \|gcc − icpx\|, 2e-6 \|CPU\|, 1e-12) |
+| `check_packed_emulation.py --output DIR` (about 15 s, CPU build): the packed batch on 3 ranks, emulated card | the CPU | 1e-8 + 2e-6 \|CPU\|, 6 MiB window budget, auto with no card same bytes |
+| `check_seed_states.py --cpu BIN --output DIR` (CPU build): seeds and sampled states across ranks | the expected random stream and a replay of the same seed | the same sampled states, 1e-8 + 2e-6 \|CPU\| |
+| `check_review_controls.py --cpu BIN --output DIR`, `check_review_supplement.py --cpu BIN --cuda BIN --before-cuda BIN --output DIR`, `check_review_baseline.py --baseline BIN --results DIR` (needs the `--before-cuda` / `--baseline` binaries): the controls, supplement and baseline of the 2026-09-12 review | replays, the CPU and the frozen baseline binary | 1e-10 + 1e-10 \|reference\| for replays and the baseline, 1e-8 + 2e-6 \|CPU\| for CUDA |
+| `check_host_leaks.py --binary BIN --baseline BIN --output DIR [--cuda BIN]` (CPU build): host memory over repeated runs | the `--baseline` binary | 1e-10 + 1e-10 \|baseline\|, 1e-8 + 2e-6 \|baseline\| for CUDA or `--sanitize` |
 
-## Unit tests: which command builds and runs which
+`check_warp_spread.py` fails on nan, inf, unreadable files, different grids or nothing judged. In `check_options.py`,
+`cce3-ready-packed-warp` needs packed and warp counts above 0 and more than two windows through the feeder. The
+`*-oom-late-*` cases set `CCEX_TEST_GPU_OOM_BYTES=8192`, and the `[gpu-memory]` line must show allocations above 0 and
+`cached_bytes=0`. Hidden cards are `CUDA_VISIBLE_DEVICES=-1`, and `=99` only off WSL (its driver crashes in `cuInit`).
+A `check_seed_states.py` failure in `benchmark.parse_profiles` can be two ranks' interleaved `[profile]` lines, so
+rerun it.
 
-After `bash do_compile.sh <preset>` has written the Makefile (or a CMake configure):
+## Files
 
-| tests | built and run by | needs |
-|---|---|---|
-| `test_scaled_product`, `test_hamiltonian_check`, `test_small_cluster_host` (`test_small_cluster_cuda.cpp` with `-DSMALL_CLUSTER_HOST_ONLY`: the packed arithmetic on the 11 dumps, the dump reader on cut copies, Hamiltonians of scale 1e±200 that must come out right or go back to the CPU) | `make numeric-test` (CMake: `cmake --build build --target numeric-test`) | a CPU |
-| `test_cluster_log`, `test_review_controls`, `test_mpi_seed` (1 and 4 ranks), `test_host_lifetimes` (1 and 4 ranks) | `make cpu-test` (CMake: `--target cpu-test`; also in the CI workflow) | a CPU and `mpirun` (`make cpu-test MPIRUN=...` picks another; CMake uses the launcher FindMPI found) |
-| the numeric two and `test_gcce_cuda`, `test_cce_cuda`, `test_gcce_accuracy` (twice: built-in case and `data/gcce_scale_separation_three_spins.txt`), `test_gcce_refinement` (the parallel refinement at dim 192, 15, 2 and 1), `test_gcce_batch`, `test_review_failure`, `test_review_memory` (also X12: after an out-of-memory part way, `gpuOutOfMemoryRecovery` empties the cache, a work released afterwards is freed, and caching resumes), `test_small_cluster_cuda` (the packed kernel of `execution.gpu_options.packed_max_dim`, A26: the same arithmetic on the host and on the card against the CPU coherences of the 11 files in `data/small_cluster/`, 1e-8 + 2e-6 |CPU| per point, both lanes the same bits; `data/small_cluster/make_dumps.py` writes the files again with a CPU build, byte for byte; `small_cluster_host_emulation.cpp` stands in for the card so the node feeder and shared-memory windows can be run end to end without CUDA, as its header says), `test_warp_cluster_cuda` (the warp kernel of `execution.gpu_options.warp_max_dim`, A40: through the batch API on the CPU-dumped clusters of the 15 files in `data/warp_cluster/` — every compiled dimension, gCCE 6–27 and cCCE 8, 16, single state and ensemble, coherence and dm, Hahn, CPMG, Ramsey, 64 production P1 clusters; gCCE dimension 12 Hahn goes through the X11 pulse-in-eigenbasis variant — 1e-8 + 2e-6 \|CPU\| per value, both lanes the same bits; a file cut short anywhere (header, plan, body, one byte) is refused, and every file is also read cut in memory at those places (review 20261013-180049 G2, as `test_small_cluster_cuda`); `data/warp_cluster/make_dumps.py` writes them with a CPU build; the host emulation has no warp kernel) | `make gpu-test` (CMake: `--target gpu-test`) | a CUDA build and the GPU, so inside a job; `server/build.sbatch` builds `test_cce_cuda` and `test_gcce_cuda`, and `server/measure.sbatch` runs those two only |
-
-`cpu-test` compiles the four with the build's own flags and `-UNDEBUG` for their asserts;
-`test_host_lifetimes` links the objects of `bin/main.out` but `main.o` (CMake compiles those
-sources again for it). Until 2026-10-02 these four and the two CUDA review tests had no target
-and were built by hand (D17); built without `-march=native` against objects built with it,
-`test_host_lifetimes` crashed (exit 139) on 2026-10-01.
-
-On 2026-09-24 `check_review_controls.py --cpu` passed on the CPU build;
-`check_seed_states.py` wrote `adaptive_cluster_max_dim` in its adaptive cases until
-2026-09-24; it wrote `bundle_max_dim` from then on (`bundle.max_dim` since 2026-10-13) and its nine cases pass on the CPU build.
-One run in two failed in `benchmark.parse_profiles` because MPI interleaved two
-ranks' `[profile]` lines in the p1 case; that is the output forwarding, not the
-code, and a rerun passed.
-
-`benchmark.py` is the helper the checks and `../gpu_benchmarks/` import: it runs a
-build on the four standard calculations of `code_verification/check_input_forms/inputs`
-and reads what it wrote. `examples/` holds the P1 and pCCE inputs the checks use, `data/` the gCCE accuracy
-test's files and, in `data/small_cluster/`, the 11 `.bin` dumps of `test_small_cluster_cuda` with `make_dumps.py`. The seven `validation-*.json` files are the
-results recorded on idm4-gpu and the RTX 3050 on 2026-09-08..11 that (internal notes)
-cites; the other records of 2026-09-12 and the probe that led to `scaled_product.h`
-were removed on 2026-09-24 (git history up to 8f2bcbd75).
+| File | Contents |
+|---|---|
+| `test_*.cpp` | The unit tests (`test_small_cluster_host` is `test_small_cluster_cuda.cpp` built with `-DSMALL_CLUSTER_HOST_ONLY`). |
+| `small_cluster_host_emulation.cpp` | Stands in for the card in `check_packed_emulation.py`. |
+| `check_*.py` | The CPU against CUDA checks above. |
+| `test_check_warp_spread.py` | The unit test of `check_warp_spread.py`. |
+| `benchmark.py` | The helper the checks and `../gpu_benchmarks/` import. |
+| `examples/` | The P1 and pCCE inputs. |
+| `data/` | The gCCE accuracy files, `small_cluster/` and `warp_cluster/` dumps, each with `make_dumps.py` (see `data/README.md`). |
+| `validation-*.json` | Recorded results of the checks. |

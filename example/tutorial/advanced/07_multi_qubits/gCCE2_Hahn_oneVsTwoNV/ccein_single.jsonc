@@ -1,0 +1,33 @@
+{
+    // basic/01_first_run's NV as a spin 1 with its zero-field splitting (kHz), gCCE2 Hahn echo of the ensemble: the one-NV
+    // reference for ccein_multi2.jsonc.
+    //
+    // The physics: gCCE puts the NV into every cluster's Hamiltonian, so it needs the NV's own levels: the zero-field
+    // splitting D = 2.88 GHz (intmap) and the Zeeman term of bfield. The 13C bath and every other key are those of
+    // basic/01_first_run. T2 1.084 ms here (README).
+    //
+    // Writes results/ccein_single_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_multi2.jsonc adds a
+    // second NV 25 A above this one in the same bath.
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "method"        : "gCCE",         // generalized CCE: the qubit is in every cluster's Hamiltonian (qubit-bath
+                                      // flip-flops kept); the default cCCE treats it as fixed in ms +1 or 0
+    "Qubit"         : {"qubit": [{"file": "../../../basic/01_first_run/bath/bath_Diamond_NV_natab_defect"}],
+                       "intmap" : [{"between": ["q0", "q0"],
+                                    "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]], "unit": "kHz"}]},
+                                      // qubit: one NV, its position the first line of the defect file (73.74 75.73
+                                      // 73.97 A); spin 1, the electron's gyromagnetic ratio, alpha ms +1 and beta ms 0
+                                      // by default. intmap: the self term of "q0" (the default name of the first
+                                      // qubit) is the zero-field splitting S.D.S = diag(-D/3, -D/3, 2D/3) with D =
+                                      // 2.88 GHz, here in kHz ("unit")
+    "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                       "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]},
+                                      // basic/01_first_run's bath: gyro_13C (name, spin, rad kHz/G) and a 150 A cube of
+                                      // diamond with 1.1 % 13C
+    "order"         : 2,              // the largest cluster: single 13C and pairs, each with the NV (gCCE2)
+    "bfield"        : 500,            // Gauss along z, the NV axis (the 13C precess at 535 kHz)
+    "rbath"         : 50,             // Angstrom: the 978 13C within 50 A of the NV
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
+    "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1}    // one pi pulse: the Hahn echo
+}

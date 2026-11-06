@@ -1,0 +1,445 @@
+/**
+ * @file noise.cpp
+ * @brief method noise: the Gaussian coherence W(T) = exp(-chi(T)) of the qubit's phase noise, the semi-classical CCE.
+ *
+ * The phase is phi = int_0^T f(t) dw(t) dt, f = +-1 flipped by every ideal pi pulse, dw the qubit frequency noise (rad/ms),
+ * and chi = <phi^2> / 2. With Y(w) = int_0^T f(t) exp(i w t) dt:
+ *  - a model spectrum S(f) of the frequency noise (kHz^2/kHz, two-sided): chi = 4 pi^2 int_0^inf S(f) |Y(2 pi f)|^2 df;
+ *  - a cluster: dw = Delta m_s sum_i A_zz,i I_z,i, the secular hyperfine term, with
+ *    hamiltonian.noise.pseudo_secular also A_zx,i I_x,i + A_zy,i I_y,i; the bath under H = H_bath + p sum_i (A_z,i . I_i) with
+ *    p = (|m_alpha| + |m_beta|) / 2 (the projection of the semi-classical CCE; user decision 2026-10-28), infinite temperature:
+ *    chi_C = (1 / 2D) sum_ab |<a|dw|b>|^2 |Y(E_a - E_b)|^2. For a Hahn echo this is the mode sum of the semi-classical CCE.
+ * hamiltonian.noise.compute chooses what a cluster gives (noiseCluster) and what the run writes (noiseFinish):
+ *  - "coherence": -chi_C at the run's times; the coherence exp(-chi).
+ *  - "spectrum" (the spectral route): the correlation C_C(t) of B = sum_i A_zz,i I_z,i (kHz) at infinite temperature on the
+ *    grid of hamiltonian.noise.fft, C = (1/D) sum_ab |<a|B|b>|^2 cos(w_ab t); then S(f) by FFT of C (the reference code's
+ *    psd_from_corr, its window, pad_factor, subtract_mean) and chi = Delta m_s^2 2 int S(f) 2 pi^2 |Y(2 pi f)|^2 df by the
+ *    trapezoid rule (coherence_from_psd, clamp_negative): C(t), S(f) and the coherence are written.
+ *  - "correlation" (PyCCE's CCENoise): C_C(t) = Re Tr[rho {B(t), B} / 2] at the run's times, rho the cluster's pure
+ *    initial state with configuration.s_range (and the mean field of the other spins, as PyCCE's external_spins_field)
+ *    or 1/D: C(t) alone is written.
+ * Each adds over the CCE terms: a cluster's values times its power are summed (simulator.cpp), not multiplied, and the
+ * sum is turned into the outputs once, so no exp(-chi_C) of one cluster can underflow (a FID chi_C passes 745 within
+ * microseconds).
+ */
+#include "../../include/calculation/noise.h"
+#include "../../include/calculation/hamiltonian.h"
+#include <cmath>
+#include <complex>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <vector>
+#include <unsupported/Eigen/FFT>
+#ifdef CCEX_USE_CUDA
+#include "../../include/calculation/gpu/noise_gpu.h"
+#endif
+
+namespace {
+// the interval lengths as fractions of T; interval j has the sign (-1)^j (every pulse an X or Y pi flip,
+// validatePulsesForMethod)
+std::vector<double> intervalFractions(Pulse* pls){
+    std::vector<double> frac(Pulse_getNpulse(pls)+1);
+    double** sequence = Pulse_getSequence(pls);
+    for (size_t j=0; j<frac.size(); ++j) frac[j] = sequence[j][2];
+    return frac;
+}
+
+// Y(w) = sum_j s_j L_j sinc(w L_j / 2) exp(i w (centre of j)): no division, exact at w = 0
+std::complex<double> phaseIntegral(double w, double T, const std::vector<double>& frac){
+    std::complex<double> y = 0;
+    double start = 0, sign = 1;
+    for (double fj : frac){
+        const double L = fj*T, x = 0.5*w*L;
+        const double sinc = std::fabs(x) < 1e-4 ? 1 - x*x/6 : std::sin(x)/x;
+        y += sign*L*sinc*std::polar(1.0, w*(start + 0.5*L));
+        start += L;
+        sign = -sign;
+    }
+    return y;
+}
+
+// OU, C(t) = (2 pi sigma)^2 exp(-|t| / tau): chi = 2 pi^2 sigma^2 sum_ij s_i s_j int_i int_j exp(-|t1 - t2| / tau), exact
+double ouChi(double sigma, double tau, double T, const std::vector<double>& frac){
+    const size_t n = frac.size();
+    double sum = 0, start_i = 0;
+    for (size_t i=0; i<n; ++i){
+        const double Li = frac[i]*T, x = Li/tau;
+        // int_i int_i = 2 tau^2 (x + expm1(-x)); its series below 1e-3, where the two terms cancel
+        sum += 2*tau*tau*(x < 1e-3 ? x*x*(0.5 - x*(1.0/6 - x*(1.0/24 - x/120))) : x + std::expm1(-x));
+        double start_j = start_i + Li;
+        for (size_t j=i+1; j<n; ++j){
+            const double Lj = frac[j]*T, sign = ((j-i) % 2) ? -1 : 1;
+            sum += 2*sign*tau*tau*std::exp(-(start_j - start_i - Li)/tau)*std::expm1(-Li/tau)*std::expm1(-Lj/tau);
+            start_j += Lj;
+        }
+        start_i += Li;
+    }
+    return 2*M_PI*M_PI*sigma*sigma*sum;
+}
+
+// S(f) = A (f / 1 kHz)^-beta on [f_min, f_max]: 8-point Gauss-Legendre on panels no wider than 5 % of f (the spectrum)
+// and 1/(8T) (the oscillation of |Y|^2). shortcut: the panels number about 8 T f_max, slow for f_max T >> 1e6
+double powerChi(double A, double beta, double fmin, double fmax, double T, const std::vector<double>& frac){
+    if (T <= 0) return 0;
+    static const double x[4] = {0.1834346424956498, 0.5255324099163290, 0.7966664774136267, 0.9602898564975363};
+    static const double w[4] = {0.3626837833783620, 0.3137066458778873, 0.2223810344533745, 0.1012285362903763};
+    double sum = 0;
+    for (double a = fmin; a < fmax;){
+        const double b = std::min(fmax, a + std::min(0.05*a, 0.125/T)), mid = 0.5*(a+b), half = 0.5*(b-a);
+        for (int k=0; k<4; ++k)
+            for (double f : {mid - half*x[k], mid + half*x[k]})
+                sum += w[k]*half*A*std::pow(f,-beta)*std::norm(phaseIntegral(2*M_PI*f,T,frac));
+        a = b;
+    }
+    return 4*M_PI*M_PI*sum;
+}
+}
+
+double noiseModelChi(Config* cnf, Pulse* pls, double T){
+    const std::vector<double> frac = intervalFractions(pls);
+    if (!strcmp(cnf->noise_model,"OU")) return ouChi(cnf->noise_sigma,cnf->noise_tau_c,T,frac);
+    return powerChi(cnf->noise_amplitude,cnf->noise_beta,cnf->noise_f_min,cnf->noise_f_max,T,frac);
+}
+
+void noiseModelRun(Config* cnf, Pulse* pls, Output* op){
+    if (rank != 0) return;
+    const int nstep = Config_getNstep(cnf);
+    const double deltat = Config_getDeltat(cnf);
+    std::vector<MatrixXcd> result(nstep);
+    for (int i=0; i<nstep; ++i) result[i] = MatrixXcd::Constant(1,1,std::exp(-noiseModelChi(cnf,pls,i*deltat)));
+    Output_save(op,result.data(),result.data(),nstep,deltat,0);
+}
+
+namespace {
+// the cluster's Hamiltonian with p = (|m_alpha| + |m_beta|) / 2 (HamilBath has the mean field unless it is off), and
+// B = sum_i A_z,i . I_i (rad/ms) with A_zz alone unless pseudo_secular
+void clusterOperators(QubitArray* qa, BathArray* ba, Config* cnf, MatrixXcd& H, MatrixXcd& B){
+    const int nspin = BathArray_getNspin(ba), bdim = BathArray_dim(ba);
+    auto cleanup = [nspin](MatrixXcd** p){ if(p){ for(int i=0;i<nspin;++i) delete[] p[i]; delete[] p; } };
+    std::unique_ptr<MatrixXcd*,decltype(cleanup)> sigmas(BathArray_PauliOperators(ba),cleanup);
+    const double msa = findZbasisSubLevel(qa->psia), msb = findZbasisSubLevel(qa->psib);
+    const double p = 0.5*(std::fabs(msa) + std::fabs(msb));
+    H = HamilBath(ba,sigmas.get(),cnf);
+    B = MatrixXcd::Zero(bdim,bdim);
+    for (int ib=0; ib<nspin; ++ib){
+        const MatrixXcd tensor = BathArray_getBath_i_hypf_j(ba,ib,0);
+        MatrixXcd v = MatrixXcd::Zero(1,3);
+        for (int c=0; c<3; ++c) v(0,c) = p*tensor(2,c).real();
+        addExpandedHamiltonian(H,sigmas.get(),calHamiltonianSingleInt(v,sigmas.get()[ib]),nspin,ib);
+        v.setZero();
+        for (int c = cnf->noise_pseudo_secular ? 0 : 2; c<3; ++c) v(0,c) = tensor(2,c).real();
+        addExpandedHamiltonian(B,sigmas.get(),calHamiltonianSingleInt(v,sigmas.get()[ib]),nspin,ib);
+    }
+}
+
+double deltaMs(QubitArray* qa){ return findZbasisSubLevel(qa->psia) - findZbasisSubLevel(qa->psib); }
+
+std::string outputName(Output* op, int istate, const char* suffix){
+    std::string name = Output_getOutfile(op);
+    if (istate) name += "_state" + std::to_string(istate);
+    return name + suffix;
+}
+
+void writeColumns(const std::string& name, const char* header, const std::vector<double>& x, const std::vector<double>& y){
+    FILE* fp = fopen(name.c_str(),"w");
+    if (!fp){ fprintf(stderr,"Error: cannot open file %s\n",name.c_str()); ccexFatal(1); }
+    fprintf(fp,"# %s\n",header);
+    for (size_t i=0; i<x.size(); ++i) fprintf(fp,"%.12e\t%+.12e\n",x[i],y[i]);
+    if (fclose(fp)){ fprintf(stderr,"Error: cannot write file %s\n",name.c_str()); ccexFatal(1); }
+}
+
+// as the reference code's psd_from_corr: S(f) = dt Re FFT of C made even (length M = 2N - 1, or pad_factor times that, odd), the
+// padding at C's tail mean (0 with subtract_mean); f = k / (M dt), k = 0 .. M/2
+void spectrumOf(std::vector<double> C, double dt, Config* cnf, std::vector<double>& f, std::vector<double>& S){
+    const int N = int(C.size());
+    const int tail = std::max(1, N/5);
+    double Cinf = 0;
+    for (int n=N-tail; n<N; ++n) Cinf += C[n];
+    Cinf /= tail;
+    if (cnf->noise_fft_subtract_mean) for (double& c : C) c -= Cinf;
+    if (!strcmp(cnf->noise_fft_window,"hann"))
+        for (int n=0; n<N; ++n) C[n] *= 0.5*(1 + std::cos(M_PI*n/(N-1)));
+    else if (!strcmp(cnf->noise_fft_window,"tukey")){   // alpha 0.5: the last half tapered
+        const int ts = int(N*0.5);
+        for (int n=ts; n<N; ++n) C[n] *= 0.5*(1 + std::cos(M_PI*(n-ts)/(N-ts)));
+    }else if (!strcmp(cnf->noise_fft_window,"exp"))
+        for (int n=0; n<N; ++n) C[n] *= std::exp(-3.0*n/(N-1));
+    const int Mmin = 2*N - 1;
+    int Mpad = Mmin*cnf->noise_fft_pad_factor;
+    if (Mpad % 2 == 0) ++Mpad;
+    const int M = std::max(Mmin,Mpad);
+    std::vector<double> x(M, cnf->noise_fft_subtract_mean ? 0 : Cinf);
+    x[0] = C[0];
+    for (int n=1; n<N; ++n) x[n] = x[M-n] = C[n];
+    Eigen::FFT<double> fft;
+    std::vector<std::complex<double>> X;
+    fft.fwd(X,x);
+    f.resize(M/2+1);
+    S.resize(M/2+1);
+    for (int k=0; k<=M/2; ++k){ f[k] = k/(M*dt); S[k] = dt*X[k].real(); }
+}
+}
+
+// the time points of a cluster's values
+static std::vector<double> valueTimes(Config* cnf){
+    const double dt = !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_time_max/cnf->noise_fft_nstep : Config_getDeltat(cnf);
+    std::vector<double> t(noiseLength(cnf));
+    for (size_t i=0; i<t.size(); ++i) t[i] = i*dt;
+    return t;
+}
+
+#ifdef CCEX_USE_CUDA
+namespace {
+// the modes of the clusters waiting for the card: index 0 powers above 0 (they go into with and without), 1 below 0
+struct ModeBatch { std::vector<double> omega, re, im; };
+// As many modes as a kernel may hold, 5e7 phases: short enough for a driver's watchdog (WDDM under WSL, about 2 s), and each
+// transfer of the host's batches then carries many modes.
+size_t batchModes(size_t ntime, size_t nfraction){
+    return std::min<size_t>(size_t(1)<<20, std::max<size_t>(1024, size_t(50000000)/(ntime*nfraction)));
+}
+size_t batchLimit = 0;
+GpuNoise* noiseCard = nullptr;
+ModeBatch waiting[2];
+std::vector<double> cardSum;
+
+void flushModes(Config* cnf, int which, std::vector<double>& with, std::vector<double>& without){
+    ModeBatch& b = waiting[which];
+    if (b.omega.empty()) return;
+    cardSum.assign(with.size(),0.0);
+    try {
+        if (!strcmp(cnf->noise_compute,"coherence")) gpuNoisePhase(noiseCard,b.omega.size(),b.omega.data(),b.re.data(),cardSum.data());
+        else gpuNoiseCosine(noiseCard,b.omega.size(),b.omega.data(),b.re.data(),b.im.data(),cardSum.data());
+    } catch (const std::exception& e){
+        fprintf(stderr,"Error: %s\n",e.what());
+        ccexFatal(1);
+    }
+    for (size_t k=0; k<with.size(); ++k){
+        with[k] += cardSum[k];
+        if (which == 0) without[k] += cardSum[k];
+    }
+    b.omega.clear(); b.re.clear(); b.im.clear();
+}
+void addMode(Config* cnf, int power, double omega, double re, double im, std::vector<double>& with, std::vector<double>& without){
+    if (re == 0 && im == 0) return;
+    const int which = power > 0 ? 0 : 1;
+    ModeBatch& b = waiting[which];
+    b.omega.push_back(omega); b.re.push_back(power*re); b.im.push_back(power*im);
+    if (b.omega.size() >= batchLimit) flushModes(cnf,which,with,without);
+}
+}
+#endif
+
+namespace {
+// compute spectrum without fft.nstep: the clusters' modes, kept until noiseFinish knows the grid.
+// shortcut: all of them in memory (24 B each, dim^2 a cluster), give fft.nstep for a run with too many.
+std::vector<double> keptOmega, keptRe, keptIm;
+
+// The intervals that resolve the bath's modes but for a share eps of their weight, the fastest ones; on all ranks. By a
+// histogram of log |w|, as a threshold per mode would depend on how many modes the bath has. The weight is C(t)'s, not
+// chi's (divided by w^2): a dropped mode folds into the low frequencies, where the filter is large (13C, 2026-11-02). The static part (w = 0) has
+// no period and does not count.
+int autoNstep(Config* cnf){
+    const int perOctave = 8, nbin = 1601, centre = nbin/2;
+    std::vector<double> hist(nbin,0.0);
+    for (size_t k=0; k<keptOmega.size(); ++k)
+        if (keptOmega[k] != 0){
+            const int bin = centre + int(std::floor(perOctave*std::log2(std::fabs(keptOmega[k]))));
+            hist[std::min(nbin-1,std::max(0,bin))] += keptRe[k];   // signed: the CCE terms of one mode cancel
+        }
+    MPI_Allreduce(MPI_IN_PLACE,hist.data(),nbin,MPI_DOUBLE,MPI_SUM,MPI_COMM_WORLD);
+    double total = 0, above = 0, fastest = 0;
+    for (double& h : hist) total += h = std::fabs(h);
+    const double eps = 1e-3, pointsPerPeriod = 8;   // coherence within 5e-7 on 1 ppm P1, 2e-10 on 13C (2026-11-02)
+    for (int bin=nbin-1; bin>=0; --bin){
+        above += hist[bin];
+        if (above > eps*total){ fastest = std::pow(2.0,double(bin+1-centre)/perOctave); break; }
+    }
+    const double nstep = std::max(2.0,std::ceil(cnf->noise_fft_time_max*fastest/(2*M_PI)*pointsPerPeriod));
+    if (nstep > 1e8){
+        if (rank == 0) fprintf(stderr,"Error: hamiltonian.noise.fft.nstep would be %.3g (fastest mode %.4g rad/ms over time_max %g ms): give fft.nstep\n",
+                               nstep,fastest,cnf->noise_fft_time_max);
+        ccexFatal(1);
+    }
+    if (rank == 0) printf("      hamiltonian.noise.fft: time_max %g ms, nstep %d (fastest mode kept %.6g kHz)\n",
+                          cnf->noise_fft_time_max,int(nstep),fastest/(2*M_PI));
+    return int(nstep);
+}
+}
+
+int noiseLength(Config* cnf){
+    return !strcmp(cnf->noise_compute,"spectrum") ? cnf->noise_fft_nstep + 1 : Config_getNstep(cnf);
+}
+
+void noiseCluster(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* pls, int power, std::vector<double>& with,
+                  std::vector<double>& without){
+    if (power == 0) return;
+    const int bdim = BathArray_dim(ba);
+    MatrixXcd H, B;
+    clusterOperators(qa,ba,cnf,H,B);
+    Eigen::SelfAdjointEigenSolver<MatrixXcd> es(H);
+    const MatrixXcd& U = es.eigenvectors();
+    const Eigen::VectorXd& E = es.eigenvalues();
+    const MatrixXcd M = U.adjoint()*B*U;
+    const bool keepModes = cnf->noise_fft_auto_nstep;
+    const std::vector<double> times = keepModes ? std::vector<double>() : valueTimes(cnf);
+#ifdef CCEX_USE_CUDA
+    const bool onCard = !strcasecmp(cnf->backend,"cuda");
+    if (onCard && !noiseCard && !keepModes){
+        const std::vector<double> frac = intervalFractions(pls);
+        batchLimit = batchModes(times.size(),!strcmp(cnf->noise_compute,"coherence") ? frac.size() : 1);
+        try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
+        catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+    }
+#endif
+    const auto add = [&](size_t i, double value){
+        with[i] += power*value;
+        if (power > 0) without[i] += power*value;
+    };
+
+    if (!strcmp(cnf->noise_compute,"coherence")){
+        const Eigen::MatrixXd M2 = M.cwiseAbs2()*(deltaMs(qa)*deltaMs(qa));
+#ifdef CCEX_USE_CUDA
+        if (onCard){
+            addMode(cnf,power,0.0,-0.5*M2.diagonal().sum()/bdim,0.0,with,without);   // the static part (FID only)
+            for (int a=0; a<bdim; ++a)
+                for (int b=a+1; b<bdim; ++b) addMode(cnf,power,E(a)-E(b),-M2(a,b)/bdim,0.0,with,without);
+            return;
+        }
+#endif
+        const std::vector<double> frac = intervalFractions(pls);
+        for (size_t i=0; i<times.size(); ++i){
+            const double T = times[i];
+            double chi = 0.5*M2.diagonal().sum()*std::norm(phaseIntegral(0,T,frac));   // the static part (FID only)
+            for (int a=0; a<bdim; ++a)
+                for (int b=a+1; b<bdim; ++b) chi += M2(a,b)*std::norm(phaseIntegral(E(a)-E(b),T,frac));
+            add(i,-chi/bdim);
+        }
+        return;
+    }
+    // C(t) = Re sum_ab G_ab exp(i w_ab t), G_ab = M_ab ((M R)_ba + (R M)_ba) / 2 in kHz^2 (B / 2 pi), R the initial state
+    const bool pure = !strcmp(cnf->noise_compute,"correlation") && Config_getNstate(cnf) > 0;
+    MatrixXcd G;
+    if (pure){
+        const MatrixXcd psi = U.adjoint()*BathArray_Psi0(ba);
+        const MatrixXcd R = psi*psi.adjoint();
+        const MatrixXcd MR = M*R, RM = R*M;
+        G = M.cwiseProduct((MR + RM).transpose())*(0.5/(4*M_PI*M_PI));
+    }else
+        G = M.cwiseAbs2().cast<std::complex<double>>()*(1.0/(4*M_PI*M_PI*bdim));
+    if (keepModes){
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b)
+                if (G(a,b) != 0.0){
+                    keptOmega.push_back(E(a)-E(b));
+                    keptRe.push_back(power*G(a,b).real());
+                    keptIm.push_back(power*G(a,b).imag());
+                }
+        return;
+    }
+#ifdef CCEX_USE_CUDA
+    if (onCard){
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b) addMode(cnf,power,E(a)-E(b),G(a,b).real(),G(a,b).imag(),with,without);
+        return;
+    }
+#endif
+    for (size_t i=0; i<times.size(); ++i){
+        double c = 0;
+        for (int a=0; a<bdim; ++a)
+            for (int b=0; b<bdim; ++b) c += (G(a,b)*std::polar(1.0,(E(a)-E(b))*times[i])).real();
+        add(i,c);
+    }
+}
+
+bool noiseFinish(QubitArray* qa, Config* cnf, Pulse* pls, Output* op, int istate,
+                 std::vector<double>& with, std::vector<double>& without, MatrixXcd* wD, MatrixXcd* nD){
+    if (cnf->noise_fft_auto_nstep){   // the grid is known now; a state has its own (its mean field moves the modes)
+        cnf->noise_fft_nstep = autoNstep(cnf);
+        with.assign(noiseLength(cnf),0.0);
+        without.assign(with.size(),0.0);
+        const std::vector<double> times = valueTimes(cnf);
+#ifdef CCEX_USE_CUDA
+        if (!strcasecmp(cnf->backend,"cuda")){
+            batchLimit = batchModes(times.size(),1);
+            const std::vector<double> frac = intervalFractions(pls);
+            try { noiseCard = gpuNoiseCreate(int(times.size()),times.data(),int(frac.size()),frac.data()); }
+            catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+            for (size_t k=0; k<keptOmega.size(); ++k) addMode(cnf,1,keptOmega[k],keptRe[k],keptIm[k],with,without);
+        }else
+#endif
+        for (size_t i=0; i<times.size(); ++i)
+            for (size_t k=0; k<keptOmega.size(); ++k)
+                with[i] += (std::complex<double>(keptRe[k],keptIm[k])*std::polar(1.0,keptOmega[k]*times[i])).real();
+        keptOmega.clear(); keptRe.clear(); keptIm.clear();
+    }
+#ifdef CCEX_USE_CUDA
+    if (noiseCard){   // this state's modes that still wait, and a card without work for the next state's grid
+        flushModes(cnf,0,with,without);
+        flushModes(cnf,1,with,without);
+        gpuNoiseDestroy(noiseCard);
+        noiseCard = nullptr;
+    }
+#endif
+    const int n = int(with.size());
+    std::vector<double> sumWith(n), sumWithout(n);
+    MPI_Reduce(with.data(),sumWith.data(),n,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    MPI_Reduce(without.data(),sumWithout.data(),n,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD);
+    if (rank != 0) return true;
+    const int nstep = Config_getNstep(cnf);
+    const double deltat = Config_getDeltat(cnf);
+    if (!strcmp(cnf->noise_compute,"coherence")){
+        for (int i=0; i<nstep; ++i){
+            wD[i] = MatrixXcd::Constant(1,1,std::exp(sumWith[i]));
+            nD[i] = MatrixXcd::Constant(1,1,std::exp(sumWithout[i]));
+        }
+        return true;
+    }
+    const bool spectrum = !strcmp(cnf->noise_compute,"spectrum");
+    const double dt = spectrum ? cnf->noise_fft_time_max/cnf->noise_fft_nstep : deltat;
+    std::vector<double> t(n);
+    for (int i=0; i<n; ++i) t[i] = i*dt;
+    writeColumns(outputName(op,istate,"_noise_correlation"),
+                 "t (ms)  C(t) (kHz^2): the correlation of sum_i A_zz,i I_z,i (with pseudo_secular A_z,i . I_i), Re <{B(t), B}>/2",
+                 t,sumWith);
+    if (!spectrum) return false;
+    std::vector<double> f, S;
+    spectrumOf(sumWith,dt,cnf,f,S);
+    writeColumns(outputName(op,istate,"_noise_spectrum"),"f (kHz)  S(f) (kHz^2/kHz, two-sided): dt Re FFT of C(t)",f,S);
+    if (cnf->noise_fft_clamp_negative) for (double& s : S) s = std::max(s,0.0);
+    const std::vector<double> frac = intervalFractions(pls);
+    const double dm2 = deltaMs(qa)*deltaMs(qa);
+#ifdef CCEX_USE_CUDA
+    if (!strcasecmp(cnf->backend,"cuda")){   // the same trapezoid, as modes: weight S(f) 2 pi^2 (its share of the f grid)
+        std::vector<double> T(nstep), chi(nstep,0.0);
+        for (int i=0; i<nstep; ++i) T[i] = i*deltat;
+        std::vector<double> omega, weight;
+        try {
+            GpuNoise* card = gpuNoiseCreate(nstep,T.data(),int(frac.size()),frac.data());
+            for (size_t k=0; k<f.size(); ++k){
+                const double width = 0.5*((k+1<f.size() ? f[k+1]-f[k] : 0) + (k ? f[k]-f[k-1] : 0));
+                omega.push_back(2*M_PI*f[k]);
+                weight.push_back(S[k]*2*M_PI*M_PI*width);
+                if (omega.size() == batchModes(T.size(),frac.size()) || k+1 == f.size()){
+                    gpuNoisePhase(card,omega.size(),omega.data(),weight.data(),chi.data());
+                    omega.clear(); weight.clear();
+                }
+            }
+            gpuNoiseDestroy(card);
+        } catch (const std::exception& e){ fprintf(stderr,"Error: %s\n",e.what()); ccexFatal(1); }
+        for (int i=0; i<nstep; ++i) wD[i] = nD[i] = MatrixXcd::Constant(1,1,std::exp(-2*dm2*chi[i]));
+        return true;
+    }
+#endif
+    for (int i=0; i<nstep; ++i){
+        const double T = i*deltat;
+        double chi = 0, prev = 0;
+        for (size_t k=0; k<f.size(); ++k){   // trapezoid of S(f) F(2 pi f T) / f^2, F / f^2 = 2 pi^2 |Y(2 pi f)|^2
+            const double g = S[k]*2*M_PI*M_PI*std::norm(phaseIntegral(2*M_PI*f[k],T,frac));
+            if (k) chi += 0.5*(g + prev)*(f[k] - f[k-1]);
+            prev = g;
+        }
+        wD[i] = nD[i] = MatrixXcd::Constant(1,1,std::exp(-2*dm2*chi));
+    }
+    return true;
+}

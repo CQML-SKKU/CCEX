@@ -1,0 +1,34 @@
+{
+    // Method pseudospin on the bath of ccein_cce2.jsonc: every pair of nuclei in the pseudospin model of nuclear
+    // flip-flops (Seo et al., Nat. Commun. 7, 12935 (2016)). Each pair's Hamiltonian is written in the basis of the
+    // two nuclei's own eigenstates and cut to its diagonal and the elements that change both spins (the channels).
+    // The output is the product of the pair terms alone, without the single spins' ESEEM: compare it with
+    // cCCE2 / cCCE1. Also writes results/ccein_pairwise_pseudospin_channels: every channel's splitting Omega and level
+    // gap Delta (kHz) in the qubit's two states, for reading which pairs drive the decay.
+
+    "method"        : "pseudospin",   // the pairs in the pseudospin model; order 2 is its default (others refused)
+    "Qubit"         : {"qubit": [{"file": "../../06_hBN/bath/flat/bath_hBN_VB_flat_Defect"}]},
+                                      // the defect's position (first line of the defect file); spin 1 and the
+                                      // states ms +1 / 0 are the defaults
+    "configuration" : {"gyrofile": "../../06_hBN/bath/hBN_natab_gyro",
+                                      // spin and gyromagnetic ratio of 10B (I = 3), 11B (I = 3/2) and 14N (I = 1)
+                       "bathfile": ["../../06_hBN/bath/flat/bath_hBN_VB_flat_1"]},
+                                      // one configuration of the flat layer (advanced/06_hBN/bath/flat holds 50)
+    "bfield"        : 30000,          // Gauss along z, the defect axis (normal to the layer): 3 T
+    "rbath"         : 20,             // Angstrom: the nuclei within 20 A of the defect
+    "rdip"          : 10,             // Angstrom: two nuclei closer than this form a pair cluster
+    "deltat"        : 0.001,          // ms (1 us) per point
+    "nstep"         : 150,            // 150 points: 0 .. 0.149 ms
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "hamiltonian"   : {
+        "common"     : {
+            "hyperfine"  : {"dipole": "dft", "contact": true,         // the DFT hyperfine tensors (dipolar and contact)
+                            "file": "../../06_hBN/bath/flat/hBN_VB_flat_ATensor_HSE_CellPBE_v3"},
+            "quadrupole" : {"structure": "plain",                     // the DFT electric-field gradients (I > 1/2)
+                            "file": "../../06_hBN/bath/flat/hBN_VB_flat_QTensor_HSE_CellPBE"}
+        },
+        "pseudospin" : {"channels": "pairwise"}
+                                      // pairwise: every channel alone as a two-level system (the papers' picture);
+                                      // it misses the coupling of a chain
+    }
+}

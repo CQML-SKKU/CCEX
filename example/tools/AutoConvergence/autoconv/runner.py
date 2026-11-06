@@ -2285,6 +2285,10 @@ class Runner:
             vs = r.get("vs_reference", [])
             L += table((name, "|ΔA/A|"), [x["value"] for x in vs], [x["rel"] for x in vs])
             L.append(f"  chosen {r['chosen']:g} (threshold {100 * tol:g} %)" if r.get("chosen") is not None else f"  not converged (threshold {100 * tol:g} %)")
+            final = (tr or {}).get(name)
+            if r.get("chosen") is not None and final is not None and final != r["chosen"]:
+                # the rdip of this step was raised when it was checked again at the final rbath (step 3), 2026-11-05
+                L.append(f"  final {name} {final:g}: {r['chosen']:g} did not hold at the larger rbath (step 3)")
             raw = sorted({(lo, hi) for lo, hi, _ in raw_area_pairs(r)})
             if raw:                              # user 2026-10-12: a failed T2 fit is judged on the raw area
                 L.append("  judged on the raw area of |L| on [0, T_d] (a T2 fit failed): " + ", ".join(f"{a:g} vs {b:g}" for a, b in raw))

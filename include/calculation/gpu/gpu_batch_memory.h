@@ -17,4 +17,10 @@ inline long double gpuClusterMemoryEstimate(int dimension,int qubitDimension,
     const long double realEntries=2*d+t*(gcce ? 1 : p+1);
     return 16*complexEntries+8*realEntries+sizeof(void*)*(8+4*t);
 }
+// The workspace of the batched eigensolver for one cCCE cluster (its two Hamiltonians): cusolverDnXsyevBatched asked for
+// 7 complex numbers per matrix element from D = 256 to 1296 (56 MiB for 8 at 256, 3377 MiB for 32 at 1296).
+inline long double gpuCceBatchWorkspaceEstimate(int dimension) {
+    const long double d=dimension;
+    return 16*14*d*d;
+}
 #endif

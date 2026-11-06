@@ -1,0 +1,50 @@
+{
+    // 3 NV centres 50 A apart (each a spin 1 with its zero-field splitting, ms +1 / 0) and a pair of 13C near the
+    // first: the Ramsey (free) evolution of the 3-qubit density matrix (quantity dm), gCCE2, the bath in the state
+    // of the file state1.
+    //
+    // The physics: the three NVs form one register of dimension 3^3 = 27, coupled to each other by the point dipole
+    // of their positions; with the two 13C a cluster has dimension 108. The bath is two 13C only, so the
+    // decay is small and the qubits' dipolar coupling shows as an oscillation of L.
+    //
+    // Writes results/ccein_ramsey_state1_wiDiv and _noDiv: per time step a block of the 27 x 27 density matrix,
+    // basis kron(q1, q2, q3), each qubit ms +1, 0, -1 (q3 the fast index; docs/user/OutputFiles.md). The sibling
+    // ccein_hahn.jsonc is the same with pulse.count 1.
+    // Sampled bath states: configuration.s_range [1, 1], each state s its own output _state<s>.
+    "method"        : "gCCE",         // generalized CCE: the qubits are in every cluster's Hamiltonian (quantity dm
+                                      // needs it)
+    "quantity"      : "dm",           // write the density matrix of the qubits at every time (gCCE only)
+    "Qubit"         : {"qubit" : [
+                                  {"name": "q1", "xyz": [75.663000, 74.262800, 74.134800]},
+                                  {"name": "q2", "xyz": [75.663000, 74.262800, 124.134800]},
+                                  {"name": "q3", "xyz": [75.663000, 124.262800, 74.134800]}],
+                       "intmap": [
+                                  {"between": ["q1", "q1"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]},
+                                  {"between": ["q2", "q2"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]},
+                                  {"between": ["q3", "q3"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]}]},
+                                      // qubit: one entry per NV, its name and position xyz (Angstrom): q1 and q2
+                                      // 50 A apart along z, q3 50 A from q1 along y. Not written:
+                                      // spin 1 and the electron's gyromagnetic ratio for each. intmap: a pair of one
+                                      // name twice is that qubit's zero-field splitting, diag(-D/3, -D/3, 2D/3) with
+                                      // D = 2.88 GHz, in kHz (no "unit"). The pairs of different qubits not written
+                                      // get the point dipole of the positions. alpha_state and beta_state are not
+                                      // written: the defaults {"ms": [1, 1, 1]} and {"ms": [0, 0, 0]}, so L is
+                                      // between |+1,+1,+1> and |0,0,0>
+    "configuration" : {"gyrofile": "gyro_13C", "bathfile": ["bath"],
+                       "bath_state_file": ["state"], "s_range": [1, 1]},
+                                      // the hand-written files of this folder. gyro_13C: name, spin,
+                                      // gyromagnetic ratio (rad kHz/G). bath: a count line, then x y z name (two
+                                      // 13C). bath_state_file with s_range [1, 1]: the sampled state 1 is read from
+                                      // state1 (the state number is appended): one m per bath spin (both +0.5)
+    "order"         : 2,              // the largest cluster: one 13C or the pair, each with all three qubits (gCCE2)
+    "bfield"        : 500,            // Gauss along z, the NV axis of every qubit (the 13C precess at 535 kHz)
+    "rbath"         : 10000,          // Angstrom: far larger than the system, so both 13C are kept
+    "rdip"          : 50000,          // Angstrom: far larger than the system, so the two 13C form a pair cluster
+    "deltat"        : 0.00001,        // the time step in ms: 1e-5 ms = 10 ns
+    "nstep"         : 300,            // 300 time points: t = 0 .. 2.99 us, about three periods of the qubits'
+                                      // coupling
+    "pulse"         : {"count": 0}    // no pulse: Ramsey, the free evolution (1 is the Hahn echo of ccein_hahn)
+}

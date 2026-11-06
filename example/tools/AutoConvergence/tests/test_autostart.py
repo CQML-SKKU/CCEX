@@ -219,7 +219,25 @@ class TestAutostartRuns(unittest.TestCase):
         first = s["rdip_at_final_rbath"][0]
         self.assertEqual(first["top_neighbours"], ["pass", "fail"])         # one pass at the top is not enough
         self.assertIn("reconverged", first)
-        self.assertIn("rdip rechecked at rbath", (inp.parent / "auto/result/summary.txt").read_text())
+        text = (inp.parent / "auto/result/summary.txt").read_text()
+        self.assertIn("rdip rechecked at rbath", text)
+        # step 2 of summary.txt names the final rdip when the recheck at the larger rbath raised it (2026-11-05)
+        final, chosen = (s.get("truncation") or {}).get("chosen", {}).get("rdip"), s["rdip"].get("chosen")
+        self.assertEqual("final rdip" in text, final is not None and chosen is not None and final != chosen, text)
+
+    def test_summary_names_the_final_rdip_when_the_recheck_raised_it(self):   # 2026-11-05: step 2 read only "chosen"
+        inp, fake = make_auto(self.tmp, num_candi_rdip=5, num_candi_rbath=3)
+        code, out = call(inp, fake)
+        self.assertEqual(code, 0, out)
+        s = summary(inp)
+        from autoconv.runner import Runner
+        r = Runner(inp, fake)
+        r.resolve()
+        lines = lambda: [l for l in r._summary_lines(s, "converged", None, None) if "final rdip" in l]
+        self.assertEqual(lines(), [])                                      # the recheck kept the rdip of step 2
+        s["truncation"]["chosen"]["rdip"] = s["rdip"]["chosen"] * 1.25     # as if the recheck at the larger rbath raised it
+        self.assertEqual(lines(), [f"  final rdip {s['rdip']['chosen'] * 1.25:g}: {s['rdip']['chosen']:g} did not hold "
+                                   "at the larger rbath (step 3)"])
 
     def test_the_window_is_found_again_when_the_decay_time_moves(self):   # #3 (a full step after rounding) and #12
         inp, fake = make_auto(self.tmp, num_candi_rdip=5, num_candi_rbath=3)

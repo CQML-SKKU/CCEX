@@ -53,7 +53,7 @@ typedef struct {
     char method[MAX_CHARARRAY_LENGTH];
     struct JumpOperatorArray* jump_operators;   /**< hamiltonian.meCCE / megCCE.jump_operators; NULL: none (ME methods then run at rate 0) */
     char jump_operators_section[MAX_CHARARRAY_LENGTH];   /**< "meCCE" or "megCCE": the hamiltonian section it came from ("" if none) */
-    char quantity[MAX_CHARARRAY_LENGTH];  /**< Measurement : coherence | dm (noise is refused: not implemented) */
+    char quantity[MAX_CHARARRAY_LENGTH];  /**< Measurement : coherence | dm (noise is refused: method noise is the noise calculation) */
     char propagator[MAX_CHARARRAY_LENGTH];/**< free-evolution propagator : eigen | expm (gCCE) | sparse */
     long sparse_min_dim;                  /**< propagator sparse: clusters of this Hilbert dimension and above take it (default 4096) */
     double sparse_tol;                    /**< propagator sparse: the Krylov expansion tolerance (default 1e-12) */
@@ -73,6 +73,20 @@ typedef struct {
     bool bath_mean_field_off;             /**< no static mean field of the other bath spins at all (hamiltonian.common.bath_bath_mean_field "off") */
     bool hamiltonian_ccce_given;          /**< hamiltonian.cCCE has a setting: refused in a gCCE run (validateHamiltonianForMethod, main.cpp) */
     bool delta_A;                         /**< hamiltonian.cCCE.delta_A: the second-order term delta_A(m_s).I of each bath spin (Maze 2008 eq. A3, A83) */
+    bool noise;                           /**< method noise: the Gaussian coherence exp(-chi) of the phase noise (noise.cpp); inside, method is CCE */
+    char noise_model[8];                  /**< hamiltonian.noise.spectrum: "bath" (default, the cluster mode sum), "OU" or "power" (a model, no bath) */
+    double noise_sigma, noise_tau_c;      /**< OU: rms of the qubit frequency noise (kHz) and its correlation time (ms) */
+    char noise_compute[16];               /**< hamiltonian.noise.compute: "coherence" (default), "spectrum" (C(t), S(f) by FFT, the coherence) or "correlation" (PyCCE's: C(t) alone) */
+    double noise_fft_time_max;            /**< hamiltonian.noise.fft.time_max: the correlation window of compute spectrum (ms) */
+    int noise_fft_nstep;                  /**< hamiltonian.noise.fft.nstep: its intervals (nstep + 1 points) */
+    bool noise_fft_auto_nstep;            /**< nstep not given: noiseFinish sets it from the bath's modes */
+    char noise_fft_window[8];             /**< hamiltonian.noise.fft.window: none (default), hann, tukey, exp */
+    int noise_fft_pad_factor;             /**< hamiltonian.noise.fft.pad_factor (default 1) */
+    bool noise_fft_subtract_mean, noise_fft_clamp_negative;   /**< hamiltonian.noise.fft.subtract_mean, clamp_negative (default false) */
+    bool noise_pseudo_secular;            /**< hamiltonian.noise.pseudo_secular: the noise is Delta m_s sum (A_zx I_x + A_zy I_y + A_zz I_z); false (default): A_zz I_z only */
+    double noise_amplitude, noise_beta, noise_f_min, noise_f_max;   /**< power: S(f) = amplitude (f / 1 kHz)^-beta (kHz^2/kHz, two-sided) on [f_min, f_max] (kHz) */
+    bool pseudospin;                      /**< method pseudospin: the cCCE with its pair clusters in the pseudospin model (pseudospin.cpp) */
+    bool pseudospin_grouped;              /**< hamiltonian.pseudospin.channels "grouped" (default: the states joined by channels as one block); false: "pairwise" (every channel alone) */
     int pcce_detail_limit;                /**< rank-zero trial details, 0 disables */
     int gpu_cache_mb;                      /**< reusable device-buffer cache per rank; 0 disables */
     double probe_memory_gb;                /**< node budget for the probes running at once; 0: 80 % of RAM (and of the GPU) */
@@ -83,6 +97,7 @@ typedef struct {
     int gpu_warp_max_dim;                  /**< gpu_options.warp_max_dim: clusters of a compiled total dimension up to this value to the warp kernel; 0 off; -1 until Config_resolveWarpMaxDim */
     char gpu_warp_source[64];              /**< "given", or the default and why (Config_resolveWarpMaxDim) */
     int gpu_ranks_per_gpu;                 /**< gpu_options.ranks_per_gpu (A98): backend auto, only this many ranks per GPU open it; 0: every rank may */
+    unsigned gpu_options_given;            /**< bit k: key k of option.cpp's gpuKeys given in the input; computeGpuAutoSettings sets the others */
     bool profile;                         /**< print per-rank, per-dimension timing totals */
     bool cluster_only;                    /**< write OUTFILE.clusters.json and stop before the dynamics (output.cluster_only) */
     bool cluster_contributions;           /**< record irreducible cluster log importance over all input times */

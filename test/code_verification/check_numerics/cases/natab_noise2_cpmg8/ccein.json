@@ -1,0 +1,43 @@
+{
+  "method": "noise",
+  "quantity": "coherence",
+  "Qubit": {
+    "qubit": [
+      {
+        "file": "../../inputs/natab/bath_Diamond_NV_natab_defect"
+      }
+    ],
+    "alpha_state": {
+      "ms": [
+        1
+      ]
+    },
+    "beta_state": {
+      "ms": [
+        0
+      ]
+    }
+  },
+  "configuration": {
+    "gyrofile": "../../inputs/natab/gyro_13C",
+    "bathfile": [
+      "../../inputs/natab/bath_Diamond_NV_natab_1"
+    ],
+    "seed": 19
+  },
+  "order": 2,
+  "bfield": 500,
+  "rbath": 30,
+  "rdip": 10,
+  "deltat": 0.001,
+  "nstep": 400,
+  "pulse": {
+    "count": 8
+  },
+  "hamiltonian": {
+    "noise": {
+      "spectrum": "bath",
+      "pseudo_secular": true
+    }
+  }
+}

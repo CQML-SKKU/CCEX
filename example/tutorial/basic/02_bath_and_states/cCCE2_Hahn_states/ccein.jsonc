@@ -1,0 +1,36 @@
+// Basic 02, cCCE2_Hahn_states: the Hahn echo of Basic 01 (the same bath file) with the bath in 20 sampled pure states
+// instead of the ensemble. Each state gives every 13C a definite m_I (+1/2 or -1/2).
+//
+// Writes results/ccein_state1_wiDiv ... ccein_state20_wiDiv, one curve per state; run.sh plots their mean against the
+// ensemble (this input without s_range).
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), as in Basic 01.
+                "file" : "../../01_first_run/bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        "bathfile" : ["../../01_first_run/bath/bath_Diamond_NV_natab_1"],
+        // The sampled states, each its own output _state<s>. Without s_range: the ensemble.
+        "s_range"  : [1, 20],
+        // The random seed the states are drawn from: the same seed, the same states.
+        "seed"     : 1
+    },
+
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

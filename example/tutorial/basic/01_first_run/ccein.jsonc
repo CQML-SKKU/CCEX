@@ -1,0 +1,47 @@
+// basic/01_first_run: the Hahn echo of an NV centre in diamond with natural-abundance 13C (1.1 %),
+// conventional CCE to order 2 (cCCE2), the bath unpolarised (the ensemble).
+//
+// Writes results/ccein_wiDiv: one line per time, t in ms and L(t) as a complex number.
+// Every key not written here has its default; main.out -e writes them all.
+{
+    // ---- the qubit ----
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position: the first line of this file (x y z, Angstrom).
+                // Defaults: spin 1, the electron's gyromagnetic ratio, L(t) between ms +1 and ms 0.
+                "file" : "bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        // Name, spin and gyromagnetic ratio (rad kHz/G) of each isotope.
+        "gyrofile" : "bath/gyro_13C",
+        // The bath spins: a count line, then x y z isotope per spin (Angstrom). A 150 A cube of diamond.
+        "bathfile" : ["bath/bath_Diamond_NV_natab_1"]
+    },
+
+    // ---- the expansion ----
+    // The largest cluster: 2 = single 13C and pairs of 13C. Raise it until the curve stops changing.
+    "order"         : 2,
+    // Gauss along z, the NV axis. The 13C precess at 0.54 MHz: the fast ripple (ESEEM).
+    "bfield"        : 500,
+    // Angstrom: the 13C within 50 A of the NV are kept (978 here).
+    "rbath"         : 50,
+    // Angstrom: two 13C closer than 10 A form a pair cluster.
+    "rdip"          : 10,
+
+    // ---- the time axis ----
+    // ms: the time step, 1 us. t is the whole sequence (2 tau for the Hahn echo).
+    "deltat"        : 0.001,
+    // Number of time points: t = 0 .. 2 ms.
+    "nstep"         : 2000,
+
+    // ---- the pulses ----
+    // Number of pi pulses: 0 Ramsey, 1 Hahn echo, 2 or more CPMG.
+    "pulse"         : {
+        "count" : 1
+    }
+}

@@ -543,6 +543,9 @@ reject_work rj_state_without_factors "state and step require factors mode" "" "{
 reject_work rj_except_gcce "factors/except work requires method cce" "d['method'] = 'gCCE'" "$E"
 reject_work rj_except_order1 "factors/except work requires bundle order 2" "d['order'] = 1" "$E"
 reject_work rj_except_probes "probes require probe mode" "" "${E%\}}, \"probes\": [[0]]}"
+# method noise runs inside as cCCE, so the method check above lets it through; its cluster.mode refusal stops it (adaptive
+# work needs cluster.mode bundle), as it must: noise keeps no cluster coherence for the work to read
+reject_work rj_except_noise "method noise with cluster.mode \"bundle\" is not implemented" "d['method'] = 'noise'" "$E"
 reject_work rj_except_empty "except mode requires a nonempty except list" "" "{\"mode\": \"except\", $B, \"except\": []}"
 reject_work rj_except_twice "except lists a term twice" "" "{\"mode\": \"except\", $B, \"except\": [[0, 3], [0, 3]]}"
 reject_work rj_except_not_a_term "an except entry is not a term of this partition's expansion" "" "{\"mode\": \"except\", $B, \"except\": [[0, 1]]}"
@@ -754,10 +757,37 @@ reject_case p1_manual_hahn rj_hamiltonian_ccce_in_gcce "hamiltonian.cCCE (knight
   "d.setdefault('hamiltonian', {})['cCCE'] = {'knight': True}"
 reject_case natab_knight_shift rj_hamiltonian_ccce_cli_gcce "hamiltonian.cCCE (knight, hfmedi, delta_A) belongs to method cCCE, this run is gCCE" "d['method'] = 'gCCE'"
 reject_case natab_cce2_hahn rj_hamiltonian_gcce_key "hamiltonian.gCCE has no settings yet" "d['hamiltonian'] = {'gCCE': {'knight': True}}"
-# the reserved method noise (A49): refused as not implemented yet
-reject_case natab_cce2_hahn rj_method_noise "method \"noise\" is not implemented yet" "d['method'] = 'noise'"
-# the adaptive block belongs to cluster_mode pcce or bundle; the pcce block to pcce
-reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" \
+# method noise (noise.cpp): cluster.mode standard only, its hamiltonian section in its own runs, a known model
+reject_case natab_cce2_hahn rj_noise_pcce "method noise with cluster.mode \"pcce\" is not implemented" "d['method'] = 'noise'; d['cluster_mode'] = 'pcce'"
+reject_case natab_cce2_hahn rj_hamiltonian_noise_in_ccce "hamiltonian.noise belongs to method noise" \
+  "d['hamiltonian'] = {'noise': {'spectrum': 'bath'}}"
+reject_case natab_cce2_hahn rj_noise_model "hamiltonian.noise.spectrum.model must be \"OU\" or \"power\"" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'spectrum': {'model': 'white'}}}"
+reject_case natab_cce2_hahn rj_noise_pseudo_secular "hamiltonian.noise.pseudo_secular must be" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'pseudo_secular': 'yes'}}"
+reject_case natab_cce2_hahn rj_noise_compute "hamiltonian.noise.compute must be \"coherence\", \"spectrum\" or \"correlation\"" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'psd'}}"
+reject_case natab_cce2_hahn rj_noise_fft_time_max "hamiltonian.noise.fft needs time_max > 0" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum', 'fft': {'time_max': 0}}}"
+reject_case natab_cce2_hahn rj_noise_fft_window "hamiltonian.noise.fft.window must be" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'spectrum', 'fft': {'time_max': 1, 'nstep': 10, 'window': 'blackman'}}}"
+reject_case natab_cce2_hahn rj_noise_model_correlation "hamiltonian.noise.compute \"correlation\" needs hamiltonian.noise.spectrum \"bath\"" \
+  "d['method'] = 'noise'; d['hamiltonian'] = {'noise': {'compute': 'correlation', 'spectrum': {'model': 'OU', 'sigma': 1, 'tau_c': 1}}}"
+# method noise hands the product -chi_C per cluster, not a coherence: what reads the clusters' values is refused
+reject_case natab_cce2_hahn rj_noise_cluster_coherence "method noise does not write output.savemode cluster_coherence" \
+  "d['method'] = 'noise'; d['savemode'] = 'cluster_coherence'"
+reject_case natab_cce2_hahn rj_noise_cluster_dm "method noise does not write output.savemode cluster_density_matrix" \
+  "d['method'] = 'noise'; d['savemode'] = 'cluster_density_matrix'"
+# cCCE computes the coherence only; with quantity dm its kernel stopped mid-run (exit 1 after the clusters were built)
+reject_case natab_cce2_hahn rj_cce_dm "method cCCE computes quantity coherence only (quantity dm needs method gCCE)" \
+  "d['quantity'] = 'dm'"
+# method noise turns backend auto into cpu; with GPU ranks asked for, the message names the method (A98)
+reject_case natab_cce2_hahn rj_noise_ranks_per_gpu "method noise runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu" \
+  "d['method'] = 'noise'; d['backend'] = 'auto'; d['gpu_options'] = {'ranks_per_gpu': 4}"
+# the adaptive block belongs to cluster_mode bundle (pcce was let through until 2026-11-06); the pcce block to pcce
+reject_case natab_cce2_hahn rj_adaptive_standard "the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode standard)" \
+  "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"
+reject_case p1_pcce2_sk2 rj_adaptive_pcce "the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode pcce)" \
   "d['adaptive'] = {'output': 'x', 'atol': 1e-8, 'rtol': 1e-6}"
 reject_case natab_cce2_hahn rj_pcce_block_standard "the cluster.pcce block belongs to cluster.mode pcce" "d['pcce'] = {'partition_size': 2}"
 # delta_A (A83; what it computes is in ../check_analytic/) needs a spin-1 qubit with a zero-field splitting and is
@@ -959,7 +989,7 @@ reject_attached(){    # reject_attached <option word before the file name> <name
     ( cd "$REPO/test/code_verification/check_numerics/cases/natab_cce2_hahn" &&
       "$MPIRUN" -n 1 "$BIN_DEV" "$1$w/rj_adaptive_standard.json" > "$w/proc_$2" 2>&1 < /dev/null )
     rc=$?
-    if [ $rc -ne 0 ] && grep -qF "the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode standard)" "$w/proc_$2"
+    if [ $rc -ne 0 ] && grep -qF "the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode standard)" "$w/proc_$2"
     then echo "  PASS  $2 (exit=$rc)"; PASS=$((PASS+1))
     else echo "  FAIL  $2 : exit=$rc, see $w/proc_$2"; FAIL=$((FAIL+1)); fi
 }
@@ -1137,6 +1167,8 @@ reject_case p1_cce2_single rj_hamiltonian_dissipation_section 'hamiltonian.dissi
 ADB="d['cluster_mode'] = 'bundle'; d['bundle'] = {'max_dim': 8}; d.pop('rdip')"
 reject_case natab_cce2_hahn rj_adaptive_output 'cluster.adaptive.output is now cluster.adaptive.workdir' \
   "$ADB; d['adaptive'] = {'output': 'x', 'atol': 1e-3, 'rtol': 0}"
+reject_case natab_cce2_hahn rj_adaptive_output_path 'output.path does not apply to the adaptive refinement, its folder is cluster.adaptive.workdir' \
+  "$ADB; d['adaptive'] = {'workdir': 'x', 'atol': 1e-3, 'rtol': 0}; d['outfile'] = 'z'; d['output'] = {'path': 'y'}"
 reject_case natab_cce2_hahn rj_adaptive_dash_key 'cluster.adaptive.max-rounds is spelled "max_rounds" in the input' \
   "$ADB; d['adaptive'] = {'workdir': 'x', 'atol': 1e-3, 'rtol': 0, 'max-rounds': 2}"
 

@@ -20,6 +20,8 @@
 // Simulators
 #include "../include/calculation/simulator.h"
 #include "../include/calculation/simulator_gcce_bath.h"
+#include "../include/calculation/noise.h"
+#include "../include/calculation/pseudospin.h"
 #include "../include/calculation/memory_estimate.h"
 #include "../include/calculation/superoperator.h"
 #include "../include/calculation/gpu/compute_backend.h"
@@ -44,6 +46,7 @@
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif
+#include <algorithm>
 #include <vector>
 #include <cmath>
 #include <cctype>
@@ -86,6 +89,7 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     for (long i = 0; i < DefectArray_paxesDraws(); ++i)
         rand();
     double time_start_step = 0., time_end = 0.;
+    computeGpuAutoSettings(cnf);               // the gpu_options the input leaves out, before the split uses them
     computeGpuSplitSetup(cnf,qa,ba,dfa,pls);   // A98: before the clusters are split over the ranks
     //=======================================================
     // Clusterize
@@ -134,6 +138,20 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     const std::vector<int> pairRows(cls->pairRows, cls->pairRows + cls->npairRows);
     const std::vector<double> pairLoads(cls->pairLoads, cls->pairLoads + (cls->pairLoads ? nprocess : 0));
     int*** localclusters = MPI_getLocalClusters(order,clusters,clusterCost,cls->pairsLocal ? 2 : 0,&pairRows,&pairLoads);
+    // B: the GPU cluster batches take consecutive clusters of one dimension, so with a mixed bath a rank's clusters go by
+    // size (the product does not depend on the order but for rounding). The rows keep their memory, their contents move
+    if (computeBatchByDimension(cnf)) for (int n=1; n<=order; n++){
+        const int m = localclusters[n][0][0]-1;
+        std::vector<int> index(m), flat((size_t)m*(n+1));
+        std::vector<double> size(m);
+        for (int i=0; i<m; i++){
+            index[i] = i; size[i] = clusterCost(n,localclusters[n][i+1]);
+            std::copy(localclusters[n][i+1],localclusters[n][i+1]+n+1,flat.begin()+(size_t)i*(n+1));
+        }
+        std::stable_sort(index.begin(),index.end(),[&](int a,int b){ return size[a] > size[b]; });
+        for (int i=0; i<m; i++)
+            std::copy_n(flat.begin()+(size_t)index[i]*(n+1),n+1,localclusters[n][i+1]);
+    }
     // int*** localclusters = clusters; // No MPI
     // reportClusinfo(localclusters,order);
     // A68: one line with the clusters of every order, over all ranks (each rank holds its own share)
@@ -166,8 +184,14 @@ void runOneCalculation(Config* cnf, QubitArray* qa, BathArray* ba, DefectArray* 
     }
 
     // Calculate the dynamics
+    if (cnf->pseudospin){   // a defect spin with added spins makes an order-1 cluster of two spins, taken for a pair
+        for (int idf=0; idf<DefectArray_getNdefect(dfa); ++idf)
+            if (DefectArray_getDefect_idf_naddspin(dfa,idf) > 0) { ccexRefusalPrint(stderr,"Error: method pseudospin does not take defects with added spins\n"); ccexRefuse(); }
+        pseudospinChannelsBegin(op);
+    }
     if(!clusterPlanOnly && adaptiveWork(cnf).mode!="plan")calculate(qa,ba,dfa,cnf,pls,cls,op,localclusters);
     MPI_Barrier(MPI_COMM_WORLD);
+    if (cnf->pseudospin) pseudospinChannelsEnd();
     MPI_freeLocalClusters(order,&localclusters);
 }
 
@@ -180,8 +204,8 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
     // A94 (R2): a finite pulse (pulse.detuning_factor other than 1, of pulse.duration) is the gCCE kernel's alone; the
     // cCCE kernel ignored both keys without a word (meCCE and megCCE refuse detuning_factor, validateMasterEquation)
     if(!strcmp(kernel,"cce") && (pls->detuning_factor!=1.0 || pls->pulse_time!=0.0)) {
-        if(rank==0) fprintf(stderr,"Error: method cCCE needs pulse.detuning_factor = 1 and pulse.duration = 0 (it calculates ideal "
-                                   "instantaneous pulses; a finite pulse needs method gCCE)\n");
+        if(rank==0) fprintf(stderr,"Error: method %s needs pulse.detuning_factor = 1 and pulse.duration = 0 (it calculates ideal "
+                                   "instantaneous pulses; a finite pulse needs method gCCE)\n",cnf->noise ? "noise" : "cCCE");
         ccexRefuse();
     }
     if(!strcmp(kernel,"gcce") && pls->detuning_factor==1.0 && pls->pulse_time!=0.0)
@@ -192,7 +216,7 @@ void validatePulsesForMethod(Config* cnf, Pulse* pls) {
         if((axis=='X' || axis=='Y') && pls->pulse_angles[i]==180.0) continue;
         if(rank==0) fprintf(stderr,"Error: method %s calculates every pulse as an ideal pi flip (X or Y, 180), "
                                    "but pulse %d of %s is %c %g. Use method %s for other rotations.\n",
-                            inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i],
+                            cnf->noise ? "noise" : inputMethodName(cnf->method),i+1,pls->pulsename,axis,pls->pulse_angles[i],
                             !strcmp(kernel,"mecce") ? "megCCE" : "gCCE");   // meCCE, pmeCCE: the ME method that rotates
         ccexRefuse();
     }
@@ -240,6 +264,24 @@ void validateBathPulses(Config* cnf, Pulse* pls) {
     }
 }
 
+// method pseudospin (pseudospin.cpp): the cCCE clusters, the pairs cut to the pseudospin Hamiltonian; what it leaves out is refused
+void validatePseudospin(Config* cnf, Pulse* pls, QubitArray* qa, Cluster* cls) {
+    if (!cnf->pseudospin) return;
+    if (QubitArray_getNqubit(qa) != 1)         refuseRun("method pseudospin supports one qubit");
+    if (strcasecmp(cnf->quantity,"coherence")) refuseRun("method pseudospin computes quantity coherence only");
+    if (Config_getNstate(cnf) != 0)            refuseRun("method pseudospin takes the ensemble only (leave configuration.s_range out)");
+    if (Cluster_getOrder(cls) != 2)            refuseRun("method pseudospin is a pair model, order 2");
+    if (Pulse_getPulseiter(pls))               refuseRun("method pseudospin needs pulse.per_qubit = false");
+    if (strcasecmp(cnf->propagator,"eigen"))   refuseRun("method pseudospin needs execution.propagator eigen");
+    if (Config_getKnight(cnf) || Config_getHfmedi(cnf) || cnf->delta_A)
+        refuseRun("method pseudospin does not take hamiltonian.cCCE (knight, hfmedi, delta_A)");
+    const float* B = Config_getBfield(cnf);   // the cut keeps m_I of the computational z axis: the nuclear Zeeman axis
+    if (B[0] != 0 || B[1] != 0)                refuseRun("method pseudospin needs the field along the qubit axis (bfield [0, 0, B])");
+    if (!strcasecmp(cnf->backend,"cuda"))      refuseRun("method pseudospin runs on the CPU only, set execution.backend to cpu");
+    strcpy(cnf->backend,"cpu");                // auto: the CPU, and none of the GPU batches
+    cnf->gpu_packed_max_dim = cnf->gpu_warp_max_dim = 0;
+}
+
 bool isMasterEquationMethod(const char* m) {   // meCCE, megCCE and their pcce forms (pmeCCE, pmegCCE)
     const char* kernel = methodKernel(m);
     return !strcmp(kernel,"mecce") || !strcmp(kernel,"megcce");
@@ -283,6 +325,32 @@ void validateMasterEquation(Config* cnf, Pulse* pls, QubitArray* qa, Output* op)
 // validateBathPulseTargets), not a cluster: most clusters lack a species. The names compare as the kernels do (case
 // ignored for bath spins; "qubit" or the qubit's name as validateMasterEquation). A name that is both the qubit's and a
 // bath spin's is refused too: the megCCE kernel takes it as a qubit jump and drops the bath spins without a word.
+// method noise (noise.cpp): the cCCE clusters with a kernel of its own; what that kernel leaves out is refused
+void validateNoise(Config* cnf, Pulse* pls, QubitArray* qa, Output* op) {
+    if (!cnf->noise) return;
+    // a cluster's value is -chi_C there (noise.cpp), not a coherence: what reads the clusters' values is refused
+    if (!strcasecmp(op->savemode,"cluster_coherence") || !strcasecmp(op->savemode,"cluster_density_matrix"))
+        refuseRun("method noise does not write output.savemode %s",op->savemode);
+    if (cnf->nrdip_ladder > 0)      refuseRun("method noise does not take rdip_ladder");
+    if (cnf->cluster_contributions) refuseRun("method noise does not take output.cluster_contributions");
+    if (QubitArray_getNqubit(qa) != 1)        refuseRun("method noise supports one qubit");
+    if (strcasecmp(cnf->quantity,"coherence")) refuseRun("method noise computes quantity coherence only");
+    if (Pulse_getPulseiter(pls))              refuseRun("method noise needs pulse.per_qubit = false");
+    if (strcasecmp(cnf->propagator,"eigen"))  refuseRun("method noise needs execution.propagator eigen");
+    if (Config_getKnight(cnf) || Config_getHfmedi(cnf) || cnf->delta_A)
+        refuseRun("method noise does not take hamiltonian.cCCE (knight, hfmedi, delta_A)");
+    // execution.backend cuda: the sums over the modes on the card (noise_gpu.cu); auto is the CPU, a model has no modes.
+    // None of the cCCE GPU batches either way.
+    if (!strcasecmp(cnf->backend,"cuda") && strcmp(cnf->noise_model,"bath"))
+        warnNotUsed("execution.backend","a model spectrum is computed on the CPU");
+    if (strcasecmp(cnf->backend,"cuda") || strcmp(cnf->noise_model,"bath")) strcpy(cnf->backend,"cpu");
+    cnf->gpu_packed_max_dim = cnf->gpu_warp_max_dim = 0;
+    if (!strcmp(cnf->noise_compute,"spectrum") && !(cnf->noise_fft_time_max > 0)){   // chi(T) needs C(t) up to T only
+        cnf->noise_fft_time_max = Config_getDeltat(cnf)*(Config_getNstep(cnf)-1);
+        if (!(cnf->noise_fft_time_max > 0)) refuseRun("hamiltonian.noise.fft.time_max cannot be set from a run of one time point: give it");
+    }
+}
+
 void validateJumpOperatorNames(BathArray* ba, DefectArray* dfa, QubitArray* qa, Config* cnf) {
     if (!isMasterEquationMethod(cnf->method) || !cnf->jump_operators) return;
     std::vector<const char*> names;   // the distinct bath spin names (case ignored), in the order met
@@ -369,8 +437,8 @@ void validateHamiltonianForMethod(Config* cnf, QubitArray* qa) {
 //                  "adaptive": { "policy": "merge", "output": "./adaptive_out",
 //                                "atol": 1e-8, "rtol": 2e-6, "max_rounds": 8 } }
 //
-// (written "Adaptive" until A47; keys are read without regard to case). The block belongs to cluster.mode pcce or
-// bundle. A step's input, which the refinement driver writes, holds
+// (written "Adaptive" until A47; keys are read without regard to case). The block belongs to cluster.mode bundle (the
+// refinement changes bundles; pcce was let through here until 2026-11-06 and refused later, in adaptive_main). A step's input, which the refinement driver writes, holds
 // cluster.adaptive: {"work_file": ...} alone: that is the step's
 // work request (cJSON_readOptionConfig), not a request for a refinement.
 //
@@ -407,8 +475,8 @@ std::vector<std::string> adaptiveArgsFromInput(char* fccein, const char* self) {
     }
     cJSON* mode = cJSON_IsObject(clusterBlock) ? cJSON_GetObjectItem(clusterBlock,"mode") : nullptr;
     const char* shape = cJSON_IsString(mode) ? mode->valuestring : "standard";
-    if(strcasecmp(shape,"pcce") && strcasecmp(shape,"bundle"))
-        fail(std::string("the cluster.adaptive block belongs to cluster.mode pcce or bundle (this input has cluster.mode ")+shape+")");
+    if(strcasecmp(shape,"bundle"))
+        fail(std::string("the cluster.adaptive block belongs to cluster.mode bundle (this input has cluster.mode ")+shape+")");
     static const char* fixed[] = {"input","binary","cwd","mpiexec","ranks"};
     const auto value_text = [&](cJSON* v, const std::string& key) -> std::string {
         if(cJSON_IsString(v)) return v->valuestring;
@@ -863,7 +931,7 @@ static void writeExampleInput(const char* dir){
     }
     if (rank == 0)
         printf("Wrote %s, an input template: name your bath file in its \"bathfile\" before running it\n"
-               "(a ready bath and input: example/tutorial/00_quickstart)\n", path.c_str());
+               "(a ready bath and input: example/tutorial/basic/01_first_run)\n", path.c_str());
 }
 
 static void printUsage(const char* self){
@@ -920,9 +988,9 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
         printf("\n    >> Read %s file successfully\n",fccein);
     }
 
-    // the refinement writes every step into its own folder (cluster.adaptive.output)
+    // the refinement writes every step into its own folder (cluster.adaptive.workdir)
     if (!adaptiveArgs.empty() && (outputFolder || op->outpath[0])){
-        ccexRefusalPrint(stderr, "Error: %s does not apply to the adaptive refinement, its folder is cluster.adaptive.output\n",
+        ccexRefusalPrint(stderr, "Error: %s does not apply to the adaptive refinement, its folder is cluster.adaptive.workdir\n",
                          outputFolder ? "-o" : "output.path");
         ccexRefuse();
     }
@@ -945,6 +1013,14 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
     Config_validateEvolutionUpdate(cnf);       // after the packed kernel's value (A36)
     validatePulsesForMethod(cnf,pls);
     validateHamiltonianForMethod(cnf,qa);
+    // A98: before validateNoise and validatePseudospin, which turn backend auto into cpu: the message names the method
+    if (cnf->gpu_ranks_per_gpu > 0 && (cnf->noise || cnf->pseudospin))
+        refuseRun("method %s runs on the CPU only, leave out execution.gpu_options.ranks_per_gpu",cnf->noise ? "noise" : "pseudospin");
+    validateNoise(cnf,pls,qa,op);              // before computeBackendInit: it settles the backend
+    validatePseudospin(cnf,pls,qa,cls);        // before computeBackendInit: it settles the backend
+    // the cCCE kernel (every cluster.mode) computes the coherence only; with dm it stopped mid-run (calCoherenceCce)
+    if (!strcmp(methodKernel(cnf->method),"cce") && strcasecmp(cnf->quantity,"coherence"))
+        refuseRun("method cCCE computes quantity coherence only (quantity dm needs method gCCE)");
     validateAdaptiveConfig(cnf,cls);
     Config_validatePcceCache(cnf);
     if (clusterPlanOnly && ((strcasecmp(cnf->method,"cce") &&
@@ -1023,6 +1099,21 @@ static int runInput(char* fccein, const char* outputFolder, std::vector<std::str
         printLineSection();
     }
     MPI_Barrier(MPI_COMM_WORLD);
+
+    if (cnf->noise && strcmp(cnf->noise_model,"bath")){   // method noise with a model spectrum: no bath, no clusters
+        noiseModelRun(cnf,pls,op);
+        MPI_Barrier(MPI_COMM_WORLD);
+        clearAdaptiveConnectionCheck();
+        QubitArray_freeAll(qa);
+        Cluster_freeAll(cls);
+        Config_freeAll(cnf);
+        BathArray_freeAll(ba);
+        DefectArray_freeAll(dfa);
+        Pulse_freeAll(pls);
+        Output_freeAll(op);
+        computeBackendFinish(ranged && k < rangeLast);
+        return 0;
+    }
 
     //=======================================================
     // Set simulators

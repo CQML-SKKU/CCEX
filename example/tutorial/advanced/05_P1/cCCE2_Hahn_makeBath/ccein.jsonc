@@ -1,0 +1,37 @@
+{
+    // The Hahn echo of the NV in a P1 bath made by run.sh: 100 ppm P1 on the carbon sites of a 300 A diamond cube
+    // (results/bath/), cCCE2 in the 2e form (the 14N of every P1 a detuning, as in basic/06_defect_bath).
+    // Sampled bath states: configuration.s_range [1, 10], each state s its own output _state<s>.
+    //
+    // The bath is small, for the example: a converged run needs a cube that covers rbath at the concentration of
+    // interest (basic/06_defect_bath). run.sh seeds the generator, so the same bath comes out every time.
+    // Writes results/ccein_state<s>_wiDiv and _noDiv, s = 1 .. 10.
+    // Every key not written here has its default (main.out -e writes them all).
+
+    "Qubit"         : {"qubit": [{"file": "results/bath/bath_P1_100ppm_defect"}], "alpha_state": {"ms": [1]}},
+                                      // the NV at the position the generator wrote (the vacancy V of POSCAR_NV_P).
+                                      // alpha_state ms +1, beta_state the default ms 0
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["results/bath/bath_P1_100ppm"],
+                       "s_range" : [1, 10],
+                       "seed"    : 1},
+                                      // gyrofile: the P1 as a spin 1/2 with the electron's gyromagnetic ratio.
+                                      // s_range: ten pure bath states; seed: draws them and the P1 axis states
+    "order"         : 2,              // cCCE2: single P1 and pairs of P1
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 145,            // Angstrom: inside the 150 A from the NV to the faces of the cube
+    "rdip"          : 135,            // Angstrom: two P1 closer than 135 A form a pair cluster
+    "deltat"        : 0.0002,         // ms: the time step, 0.2 us
+    "nstep"         : 100,            // 100 points: t = 0 .. 19.8 us
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+
+    // P1 in the detuning form of basic/06_defect_bath: 12 axis states, the four bond axes times the three m_I of the
+    // 14N, each P1 given one of them at random (from seed)
+    "Defect"        : {"species": [{
+        "name"          : "P1",
+        "n_axis_states" : 12,
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+}

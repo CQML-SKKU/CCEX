@@ -1,0 +1,33 @@
+// Basic 02, cCCE2_Hahn_builtinIsotopes, ccein_gyrofile.jsonc: Basic 01's input, the 13C spin and gyromagnetic ratio
+// from the gyro file. ccein_builtin.jsonc is the same without it.
+//
+// Writes results/ccein_gyrofile_wiDiv.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), as in Basic 01.
+                "file" : "../../01_first_run/bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        // Name, spin and gyromagnetic ratio (rad kHz/G) per line: "13C 0.5 6.728284". A species written here
+        // overrides the built-in table.
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        "bathfile" : ["../../01_first_run/bath/bath_Diamond_NV_natab_1"]
+    },
+
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

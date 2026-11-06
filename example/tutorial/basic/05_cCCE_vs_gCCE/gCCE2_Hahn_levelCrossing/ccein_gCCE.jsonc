@@ -1,0 +1,42 @@
+// Basic 05, gCCE2_Hahn_levelCrossing, ccein_gCCE.jsonc: the same by gCCE. Near the crossing the NV and the 13C
+// flip-flop, which only gCCE includes. Writes results/ccein_gCCE_k<k>_wiDiv for the ten configurations.
+{
+    // gCCE: the NV is part of every cluster, solved together with its 13C.
+    "method"        : "gCCE",
+    "Qubit"         : {
+        "qubit"  : [
+            {
+                // The NV position (x y z, Angstrom), made by run.sh with the bath files.
+                "file" : "results/bath/config_defect"
+            }
+        ],
+        // The NV zero-field splitting D = 2.88 GHz, as the qubit's self term diag(-D/3, -D/3, 2D/3) in kHz ("q0" is
+        // the default name of the first qubit). gCCE needs it; cCCE does not use it.
+        "intmap" : [
+            {
+                "between" : ["q0", "q0"],
+                "tensor"  : [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]],
+                "unit"    : "kHz"
+            }
+        ],
+        // L(t) between ms -1 and ms 0 (the default is ms +1 and 0): the pair of levels that cross near 1028 G.
+        "alpha_state" : {"ms": [-1]}
+    },
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        // Ten bath configurations (seeds 1 to 10, no 13C within 5 A of the NV), made by run.sh; {k} is each k of
+        // k_range, one run per configuration. The outputs are named _k<k>_.
+        "bathfile" : ["results/bath/config_{k}"],
+        "k_range"  : [1, 10]
+    },
+    "order"         : 2,
+    // Gauss along z, the NV axis. The ms -1 and 0 levels cross at D / gamma_e = 1028 G.
+    "bfield"        : 1024,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

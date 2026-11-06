@@ -15,7 +15,7 @@ using Z=std::complex<double>;
 using M=Eigen::MatrixXcd;
 using V=Eigen::VectorXcd;
 
-static double runCase(int d, bool ensemble, int pulses, bool sameHamiltonian, int clusters=1){
+static double runCase(int d, bool ensemble, int pulses, bool sameHamiltonian, int clusters=1, bool batchCreate=false){
     std::vector<M> alpha, beta;
     std::vector<V> initial;
     std::vector<std::unique_ptr<GpuCce,void(*)(GpuCce*)>> owned;
@@ -27,9 +27,16 @@ static double runCase(int d, bool ensemble, int pulses, bool sameHamiltonian, in
         if (sameHamiltonian) hb=ha;
         V psi=V::Random(d); psi.normalize();
         alpha.push_back(ha);beta.push_back(hb);initial.push_back(psi);
+        if(batchCreate) continue;
         owned.emplace_back(gpuCceCreate(d,ensemble,4,pulses,ha.data(),hb.data(),
                                        ensemble ? nullptr : psi.data()),gpuCceDestroy);
         works.push_back(owned.back().get());
+    }
+    if(batchCreate){     // the eigensystems of all the clusters in one call (gpuCceCreateBatch)
+        std::vector<const void*> hA,hB,psi;
+        for(int c=0;c<clusters;++c){hA.push_back(alpha[c].data());hB.push_back(beta[c].data());psi.push_back(initial[c].data());}
+        works=gpuCceCreateBatch(clusters,d,ensemble,4,pulses,hA.data(),hB.data(),ensemble ? nullptr : psi.data());
+        for(GpuCce* w:works) owned.emplace_back(w,gpuCceDestroy);
     }
     double maximum=0;
     for (int iteration=0; iteration<3; ++iteration){
@@ -106,6 +113,10 @@ int main(){
             for(int p=0;p<=4;++p) maximum=std::max(maximum,runCase(3,ensemble,p,false,5));
             maximum=std::max(maximum,runCase(1,ensemble,4,true,3));
             maximum=std::max(maximum,runCase(16,ensemble,3,false,8));
+            for(int p=0;p<=4;++p) maximum=std::max(maximum,runCase(3,ensemble,p,false,5,true));
+            maximum=std::max(maximum,runCase(1,ensemble,4,true,3,true));
+            maximum=std::max(maximum,runCase(16,ensemble,3,false,8,true));
+            maximum=std::max(maximum,runCase(64,ensemble,2,false,4,true));
         }
         auto memory=gpuMemoryStats();
         if(!memory.reuses || memory.peakCachedBytes>64*1024*1024)

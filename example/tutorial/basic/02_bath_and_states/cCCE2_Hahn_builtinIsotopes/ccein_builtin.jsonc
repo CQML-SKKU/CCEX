@@ -1,0 +1,33 @@
+// Basic 02, cCCE2_Hahn_builtinIsotopes, ccein_builtin.jsonc: ccein_gyrofile.jsonc without gyrofile. 13C is then taken
+// from the built-in isotope table (the EasySpin isotopes): spin 1/2, gamma 6.72828544 rad kHz/G. The log says where
+// each species came from.
+//
+// Writes results/ccein_builtin_wiDiv.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), as in Basic 01.
+                "file" : "../../01_first_run/bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        // No gyrofile: the isotope names of the bath file (13C) are looked up in the built-in table. A species that
+        // is not an isotope (P1, Vp) still needs a gyro file.
+        "bathfile" : ["../../01_first_run/bath/bath_Diamond_NV_natab_1"]
+    },
+
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

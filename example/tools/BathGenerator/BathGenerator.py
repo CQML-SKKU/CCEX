@@ -124,7 +124,7 @@ def ReadPOSCAR(inputfile,opt):
         print("\tThere is no file!! : "+str(inputfile))
         print("\tCheck the Option : ",opt)
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
 
     #create the atom data from poscar
     POSCARdata=AtomData()
@@ -173,20 +173,20 @@ def ReadPOSCAR(inputfile,opt):
         print("\tAtom num :",POSCARdata.Atom_num)
         print("\tPlz, check the atom species and number!!")
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
     elif len(POSCARdata.Cell_parameter) != 3:
         print("\t---------------------------------------------------------------------------------")
         print("\tCell_parameter :",POSCARdata.Cell_parameter)
         print("\tPlz, check the cell parameter!!")
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
     elif len(temp_atomic) != sum(POSCARdata.Atom_num):
         print("\t---------------------------------------------------------------------------------")
         print("\tLength of Atomic position :",len(temp_atomic))
         print("\tTotal Atom num :",sum(POSCARdata.Atom_num))
         print("\tPlz, check the cell informatioin number!!")
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
 
     #create the atomic positions
     line=0
@@ -233,7 +233,7 @@ def ReadProb(inputfile, opt):
         print("\tThere is no file!! : "+str(inputfile))
         print("\tCheck the Option : ",opt)
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
 
     #create the prob class
     Prob=ProbData()
@@ -288,7 +288,7 @@ def ReadProb(inputfile, opt):
             print("\tError, The probability of isotope is over 100%!!")
             print(Prob.iso_name)
             print(Prob.iso_prob)    
-            sys.exit()
+            sys.exit(1)
 
         Prob.iso_prob[temp_atom] = list(np.array(Prob.iso_prob[temp_atom])/100) #sum goes to 1
 
@@ -321,7 +321,7 @@ def CheckProb(ListPOSCAR, probData, args, myrank):
         print("\t>> Error in Atom Probability!! Check the probability file!!")
         print("\t   Some Atoms does not have probability data!!",Err_Atom)
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
 
     #print the prob information
     if myrank == 0:
@@ -376,7 +376,7 @@ def CheckLattice(ListPOSCAR, Deformation_axis,opt2D, myrank):
             print("\t   defect POSCAR Cell parameter : ",ListPOSCAR[1].inputfile)
             print("\t   ",ListPOSCAR[1].Cell_parameter)
             print("\t---------------------------------------------------------------------------------\n")
-            sys.exit()
+            sys.exit(1)
 
     #Consider the deformated POSCARs
     else:
@@ -415,7 +415,7 @@ def CheckLattice(ListPOSCAR, Deformation_axis,opt2D, myrank):
                 print()
                 print("\t   deformated Axis parameter : ",axis)
                 print("\t---------------------------------------------------------------------------------\n")
-                sys.exit()
+                sys.exit(1)
 
 ####################################################
 ####################################################
@@ -559,7 +559,7 @@ def FindDefect(ListPOSCAR, args, myrank):
         print("\t>> Error the defect (%s) is not in POSCAR(%s)!!"%(args.Defect,TargetPOSCAR.inputfile))
         print("\t   Need to Check the Defect option (--Defect %s)"%(args.Defect))
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
 
     #check the defect center have range 
     for i in args.Defect_center:
@@ -568,7 +568,7 @@ def FindDefect(ListPOSCAR, args, myrank):
             print("\t>> Error the Defect center should be in (0 ~ 1)!! Check the --Defect_center !!")
             print("\t   Now Defect center :",args.Defect_center)
             print("\t---------------------------------------------------------------------------------\n")
-            sys.exit()
+            sys.exit(1)
 
     
     #Choose the Defect close to center (0.5,0.5,0.5)
@@ -1066,7 +1066,7 @@ def MakeConfigure(ListPOSCAR,probData,Pivot,args, myrank, world_size):
             print("\t>> Error in defect information in Configure class")
             print("\t   Need to check the defect of configure")
             print("\t---------------------------------------------------------------------------------\n")
-            sys.exit()
+            sys.exit(1)
 
         #find the radius limitation to cal CCE
         FindLimit(Config,Pivot)
@@ -1097,7 +1097,7 @@ def CheckGeneratedSpin(atom_name_data, probData):
             print("\tThe Atom in bath configure is not in probfile!!")
             print("\tTarget atom in Configure : %s"%(tmp_atom))
             print("\tAtom name in probfile :",probData.iso_name.keys())
-            sys.exit()
+            sys.exit(1)
     
     iso_list = []
     for tmp_atom in atom_name_data:
@@ -1356,7 +1356,7 @@ def CheckSpin(atomic, probData, args):
         print("\t>> Error in matching the prob of iso and atom in making bath!")
         print("\t   Need to check the Isotopic data and Atom ({} & {})".format(list(probData.prob.keys()),atomic[0]))
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
     
     #error in prob number (unit : %)
     if sum(problist) > 100:
@@ -1364,7 +1364,7 @@ def CheckSpin(atomic, probData, args):
         print("\t>> Error in probabiltiy number in making bath!")
         print("\t   Summation of probability ({}) is over 100%!".format(sum(problist)))
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
     
     #making the nuclear spin using ramdom number
     problist.append(100-sum(problist))
@@ -1505,7 +1505,7 @@ def ReadConfig(inputConfig,CheckMinBond, myrank):
         print("\tThere is no file!! : "+str(inputConfig))
         print("\tCheck the Option : --convert")
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
     
     #create the configure class
     Configdata=ConfigData()
@@ -1531,7 +1531,7 @@ def ReadConfig(inputConfig,CheckMinBond, myrank):
         print("\t   Length of Configure : {}, total line : {}".format(len(Configdata.bat),temp_line))
         print("\t   Check the Configure file ({})".format(inputConfig))
         print("\t---------------------------------------------------------------------------------\n")
-        sys.exit()
+        sys.exit(1)
 
     #check the minimum length from configure
     if CheckMinBond == True:
@@ -1718,13 +1718,13 @@ if __name__ == "__main__":
             print("\t>> Error of Deformation Axis information!!")
             print("\t   Check the Deformation Axis!!")
             print("\t---------------------------------------------------------------------------------\n")
-            sys.exit() 
+            sys.exit(1) 
         if (len(args.Deformation_axis) != len(list(set(args.Deformation_axis))) and myrank == 0):
             print("\t---------------------------------------------------------------------------------")
             print("\t>> Error in Deformation axis!! It is Overlapped!!")
             print("\t   Now Deformatio axis : ", args.Deformation_axis)
             print("\t---------------------------------------------------------------------------------\n")
-            sys.exit()
+            sys.exit(1)
 
         if (args.Insert != None):
             #check the defomated axis
@@ -1735,7 +1735,7 @@ if __name__ == "__main__":
                 print("\t   len(Deformation POSCAR) : ",len(args.Deformation))
                 print("\t   len(Deformation Axis)   : ",len(args.Deformation_axis))
                 print("\t---------------------------------------------------------------------------------\n")
-                sys.exit()
+                sys.exit(1)
 
             #read the deformated POSCAR
             for deformPOSCAR in args.Deformation:
@@ -1747,7 +1747,7 @@ if __name__ == "__main__":
                 print("\t  To use the deformated POSCAR, we need the defect POSCAR!!")
                 print("\t  Use -I {defect POSCAR}")
                 print()
-                sys.exit() 
+                sys.exit(1) 
 
     #2.4. check the lattice parameter for making configure
     CheckLattice(ListPOSCAR, args.Deformation_axis, args.opt2D, myrank)

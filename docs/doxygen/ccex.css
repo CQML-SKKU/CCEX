@@ -55,3 +55,16 @@ html.ccex-nav-hidden #side-nav, html.ccex-nav-hidden #top { display: none; }
 html.ccex-nav-hidden #ccex-nav-rail { display: block; }
 html.ccex-nav-hidden #doc-content { margin-left: 46px !important; }
 html.ccex-nav-hidden #nav-path { left: 46px; }
+
+/* Overview is Doxygen's main page, and Doxygen lists the sections of the main page
+   under its tree entry. The page's sections are in the table of contents beside it,
+   as on every other page, so the tree shows only the entry. */
+#nav-tree-contents > ul > li > ul > li:first-child > .item .arrow { visibility: hidden !important; }
+#nav-tree-contents > ul > li > ul > li:first-child > ul { display: none !important; }
+
+/* the flowchart of a run (Overview) is drawn large; at full width it fills a screen */
+img[src$="CCEX_workflow.png"] { width: 360px; max-width: 100%; }
+
+/* the table of contents: at every level, the entries under a section show only while that section is read (ccex.js) */
+.contents > .toc li > ul { display: none; }
+.contents > .toc li.ccex-open > ul { display: block; }

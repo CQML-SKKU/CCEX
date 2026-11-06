@@ -1,0 +1,68 @@
+{
+    // gCCE4 Hahn echo of an NV (spin 1 with its zero-field splitting) in four P1 (electron + 15N each), the ensemble.
+    // gCCE puts the qubit in every cluster's Hamiltonian, so the cluster of all four P1 has dimension 3 x 4^4 = 768.
+    // The input has backend cpu; run.sh runs it with bin/main.out, then with backend auto and cuda with
+    // bin/main_gpu.out when it exists. Measured on a GPU server (32 ranks + RTX PRO 6000, CUDA 13.2, MPS, median of
+    // three runs): cpu 33.8 s, auto 2.1 s, cuda 4.7 s, both GPU curves within 1.0e-10 of cpu. Unlike the two cCCE
+    // siblings, gCCE keeps the fixed gpu_options defaults (no [gpu-auto] values).
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "method"        : "gCCE",         // gCCE: the qubit is in every cluster (qubit-bath flip-flops, the qubit's own
+                                      // Hamiltonian); cCCE (the default) would leave it out
+    "Qubit"         : {"qubit" : [{"name": "NV", "xyz": [523.336, 524.936, 521.003]}],
+                       "alpha_state" : {"ms": [1]},
+                       "beta_state" : {"ms": [0]},
+                       "intmap": [{"between": ["NV", "NV"],
+                                   "tensor" : [[-956666.6666666666, 0.0, 0.0], [0.0, -956666.6666666666, 0.0], [0.0, 0.0, 1913333.3333333333]]}]},
+                                      // qubit: the NV (spin 1, the default) by name and position (Angstrom, that of
+                                      // bath/qubit_p1). alpha_state ms +1, beta_state ms 0: L is between them.
+                                      // intmap: a qubit-qubit tensor; between the NV and itself, a self term: the
+                                      // zero-field splitting diag(-D/3, -D/3, 2D/3) in kHz, D = 2.87 GHz
+    "configuration" : {"gyrofile": "../bath/gyro_P1", "bathfile": ["../bath/bath_p1_4"], "seed": 1},
+                                      // gyrofile: the P1 line (spin 1/2, the electron's -17608.597050 rad kHz/G).
+                                      // bathfile: the last four P1 of bath_p1_5. seed: draws each P1's Jahn-Teller
+                                      // axis, so the three backends see one system
+    "order"         : 4,              // clusters of up to four P1: the largest is the whole bath (768 with the qubit)
+    "bfield"        : 292,            // Gauss along z, the NV axis
+    "rbath"         : 58.67823308490217,
+                                      // Angstrom: 1 A beyond the farthest of the four P1 (57.68 A), so all are kept
+    "rdip"          : 117.35646616980434,
+                                      // Angstrom: twice rbath, so every P1 pair is connected
+    "deltat"        : 0.0003,         // the time step in ms (0.3 us)
+    "nstep"         : 100,            // 100 time points: 0 .. 29.7 us
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "execution"     : {"backend": "cpu", "gpu_options": {"min_dim": 256, "evolution_batch_steps": 64}, "profile": true},
+                                      // where the clusters are computed, and the timings.
+                                      //   backend : cpu (the default); auto (dimension >= gpu_options.min_dim on
+                                      //             the GPU, the rest on the CPU, all on the CPU without CUDA);
+                                      //             cuda (every cluster, the qubit alone included, on the GPU;
+                                      //             refused without CUDA). cuda was slower than auto here (4.7 s
+                                      //             against 2.1 s). run.sh sets auto and cuda itself
+                                      //   gpu_options (read by bin/main_gpu.out only):
+                                      //     min_dim               : auto only: the smallest cluster dimension
+                                      //                             (with the qubit) sent to the GPU. 256 sends
+                                      //                             the cluster of four P1 (768); three P1 (192)
+                                      //                             and fewer stay on the CPU. Default 768
+                                      //     evolution_batch_steps : the time points one GPU evolution takes
+                                      //                             together; 64 is the default, written to show it
+                                      //   The keys left out keep their fixed defaults with gCCE (evolution_batch_size
+                                      //   8, cluster_batch_mb 64 MiB a rank, ranks_per_gpu 0).
+                                      //   profile : true prints [profile] lines per rank, method, backend and
+                                      //             cluster dimension (count, seconds); default false
+    // P1 with its 15N as an on-site nuclear spin; one of four Jahn-Teller axes is drawn per P1 from the seed, each with
+    // its own 15N hyperfine tensor (MHz)
+    "Defect"        : {"species": [{
+        "name"          : "P1",
+        "n_onsite_spins": 1,
+        "types"         : ["15N"],
+        "spins"         : [0.5],
+        "gyros"         : [-2.71261804],
+        "n_axis_states" : 4,
+        "hyperfine"     : [[1, "15N", [-114.060798, 0.0, 0.0, 0.0, -114.060798, 0.0, 0.0, 0.0, -159.951079]],
+                           [2, "15N", [-144.654779, -17.663442, -12.489096, -17.663442, -124.25879, -7.210583, -12.489096, -7.210583, -119.159104]],
+                           [3, "15N", [-144.654772, 17.663446, 12.489095, 17.663446, -124.258798, -7.210585, 12.489095, -7.210585, -119.159104]],
+                           [4, "15N", [-114.060798, 1e-06, 0.0, 1e-06, -154.852772, 14.421165, 0.0, 14.421165, -119.159104]]]}]}
+                                      // as in cCCE5_Hahn_backends: one 15N (I = 1/2, gyros rad kHz/G) on each P1
+                                      // site, which joins its electron in every cluster; four Jahn-Teller axes
+                                      // drawn from seed, each with its 3x3 electron-15N hyperfine tensor (9
+                                      // numbers, MHz)
+}

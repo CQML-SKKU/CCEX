@@ -48,7 +48,7 @@ PROJECT_NAME           = CCEX
 # could be handy for archiving the generated documentation or if some version
 # control system is used.
 
-PROJECT_NUMBER         = 2.0.1
+PROJECT_NUMBER         = 2.1.0
 
 # Using the PROJECT_BRIEF tag one can provide an optional one line description
 # for a project that appears at the top of each page and should give viewer a
@@ -955,17 +955,26 @@ INPUT                  = ../../include \
                          ../../src/auto_convergence \
                          ../user \
                          ../methods \
-                         ../../example/tutorial/00_quickstart/README.md \
-                         ../../example/tutorial/01_ensemble_and_states/README.md \
-                         ../../example/tutorial/02_pulses/README.md \
-                         ../../example/tutorial/03_P1/README.md \
-                         ../../example/tutorial/04_hBN/README.md \
-                         ../../example/tutorial/05_multiNV/README.md \
-                         ../../example/tutorial/06_cCCE_vs_gCCE/README.md \
-                         ../../example/tutorial/07_pCCE_and_bundle/README.md \
-                         ../../example/tutorial/08_GPU/README.md \
-                         ../../example/tutorial/09_auto_convergence/README.md \
-                         ../../example/tutorial/10_coordinate_rotation/README.md
+                         ../../example/tutorial/basic/01_first_run/README.md \
+                         ../../example/tutorial/basic/02_bath_and_states/README.md \
+                         ../../example/tutorial/basic/03_convergence/README.md \
+                         ../../example/tutorial/basic/04_pulses/README.md \
+                         ../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md \
+                         ../../example/tutorial/basic/06_defect_bath/README.md \
+                         ../../example/tutorial/advanced/01_auto_convergence/README.md \
+                         ../../example/tutorial/advanced/02_analysis/README.md \
+                         ../../example/tutorial/advanced/03_server_runs/README.md \
+                         ../../example/tutorial/advanced/04_GPU/README.md \
+                         ../../example/tutorial/advanced/05_P1/README.md \
+                         ../../example/tutorial/advanced/06_hBN/README.md \
+                         ../../example/tutorial/advanced/06_hBN/README.md \
+                         ../../example/tutorial/advanced/07_multi_qubits/README.md \
+                         ../../example/tutorial/advanced/08_coordinate_rotation/README.md \
+                         ../../example/tutorial/advanced/09_hamiltonian_terms/README.md \
+                         ../../example/tutorial/advanced/10_cluster_modes/README.md \
+                         ../../example/tutorial/advanced/11_dissipation/README.md \
+                         ../../example/tutorial/advanced/12_noise/README.md \
+                         ../../example/tutorial/advanced/13_pseudospin/README.md
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
@@ -1382,6 +1391,7 @@ HTML_STYLESHEET        =
 
 HTML_EXTRA_STYLESHEET  = ./doxygen-awesome.css \
                          ./doxygen-awesome-sidebar-only.css \
+                         ./doxygen-awesome-sidebar-only-darkmode-toggle.css \
                          ./ccex.css
 
 # The HTML_EXTRA_FILES tag can be used to specify one or more extra images or
@@ -1392,7 +1402,11 @@ HTML_EXTRA_STYLESHEET  = ./doxygen-awesome.css \
 # files will be copied as-is; there are no commands or markers available.
 # This tag requires that the tag GENERATE_HTML is set to YES.
 
-HTML_EXTRA_FILES       = ccex.js
+HTML_EXTRA_FILES       = ccex.js \
+                         doxygen-awesome-darkmode-toggle.js \
+                         doxygen-awesome-fragment-copy-button.js \
+                         doxygen-awesome-paragraph-link.js \
+                         doxygen-awesome-interactive-toc.js
 
 # The HTML_COLORSTYLE tag can be used to specify if the generated HTML output
 # should be rendered with a dark or light theme.

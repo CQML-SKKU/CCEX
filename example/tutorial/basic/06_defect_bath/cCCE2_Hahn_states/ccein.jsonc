@@ -1,0 +1,64 @@
+// Basic 06, cCCE2_Hahn_states: the Hahn echo of an NV (ms +1 / 0) in a bath of P1 electron spins at 1 ppm, cCCE2,
+// over ten bath configurations and ten sampled bath states each.
+//
+// Writes results/ccein_k<k>_state<s>_wiDiv, k = 1 .. 10, s = 1 .. 10: 100 curves; run.sh plots their mean.
+{
+    "Qubit"         : {
+        "qubit"       : [
+            {
+                // The NV position (x y z, Angstrom), the first line of this file.
+                "file" : "../bath/14N_1ppm/bath_DiaP1_1ppm_Defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        // The P1 as a spin 1/2 with the electron's gyromagnetic ratio: "P1 0.5 -17608.597050" (rad kHz/G). A P1 is not
+        // an isotope, so the built-in table cannot give it.
+        "gyrofile" : "../bath/DiaP1_gyro",
+        // Ten configurations of P1 at 1 ppm, k = 1 ... 10 (about 470 P1 within rbath each).
+        "bathfile" : ["../bath/14N_1ppm/bath_DiaP1_1ppm_{k}"],
+        "k_range"  : [1, 10],
+        // Ten sampled pure states per configuration: each P1 up or down, and its axis and m_I, drawn from seed.
+        "s_range"  : [1, 10],
+        // One seed per configuration.
+        "seed"     : [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+    },
+
+    // ---- the expansion ----
+    "order"         : 2,
+    "bfield"        : 500,
+    // Angstrom: electron spins couple over much longer distances than 13C; the P1 within 850 A of the NV are kept.
+    "rbath"         : 850,
+    // Angstrom: two P1 closer than 620 A form a pair cluster.
+    "rdip"          : 620,
+
+    // ---- the time axis ----
+    // ms: the time step, 2 us. An electron bath decays in hundreds of microseconds, not milliseconds as 13C.
+    "deltat"        : 0.002,
+    // Number of time points: t = 0 .. 1 ms.
+    "nstep"         : 500,
+    "pulse"         : {
+        "count" : 1
+    },
+
+    // ---- the P1 centre ----
+    // Every bath spin named "P1" is this defect: an electron spin 1/2 on a substitutional N. Its 14N hyperfine shifts
+    // the electron by A_zz m_I, which depends on which of the 4 C-N bond axes the P1 lies along and on m_I = +1, 0, -1:
+    // 4 x 3 = 12 possible shifts (detunings). Each P1 is given one of them at random (from seed).
+    "Defect"        : {
+        "species" : [
+            {
+                "name"          : "P1",
+                "n_axis_states" : 12,
+                // [axis state, "e" (the electron), shift in MHz]. 1-9: the three tilted axes (A_zz 84.946496 MHz) with
+                // m_I +1, 0, -1; 10-12: the axis along z (A_zz 114.0264 MHz).
+                "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                                   [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                                   [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                                   [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]
+            }
+        ]
+    }
+}

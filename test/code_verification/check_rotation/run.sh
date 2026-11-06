@@ -543,6 +543,52 @@ PYEOF
     fi
 done
 
+# strained and bubble (qd_readmode 3, 4): a spin outside the defect file's range is folded by the cell into the
+# range of quadrupole.file_without_defect and takes that file's tensor. One 11B 100 A from the defect along x, cell
+# [100, 0, 0], and a no-defect copy whose tensors are x10: its quadrupole tensor must be 10 times that of the run
+# with the plain copy. Both range forms of the files: MinDif/MaxDif (Qfile) and the eight vertices (Qfile_vertex).
+# Before 2.1.0 strained looked the folded spin up in the defect file again, and a vertex file never ended the fold.
+python3 - "$WORK" "$HEX" <<'PYEOF'
+import sys
+work, hexdir = sys.argv[1:3]
+for src in ("Qfile", "Qfile_vertex"):
+    out = []
+    for line in open(hexdir + "/" + src).read().split("\n"):
+        f = line.split()
+        if len(f) == 13 and f[0] in ("B", "N", "C"):
+            v = [float(x) for x in f[1:]]
+            line = "\t".join([f[0]] + ["%.5f" % x for x in v[:3]] + ["%.5f" % (10 * x) for x in v[3:]])
+        out.append(line)
+    open(work + "/" + src + "_x10", "w").write("\n".join(out))
+d = [float(x) for x in open(hexdir + "/defect").read().split()[:3]]
+open(work + "/qd_far_bath", "w").write("1.0 0.0 0.0 0.0\n%.5f %.5f %.5f 11B\n" % (d[0] - 3.75537 + 100, d[1] + 0.72281, d[2]))
+PYEOF
+for qdmode in 3 4; do
+    for src in Qfile Qfile_vertex; do
+        for wo in plain x10; do
+            WOFILE="$HEX/$src"; [ $wo = x10 ] && WOFILE="$WORK/${src}_x10"
+            hex_case "hex_qd${qdmode}_fold_${src}_$wo" 0 "$qdmode" \
+                "'bathfile': ['$WORK/qd_far_bath'], 'rbath': 200,
+                 'hamiltonian': {'common': {'quadrupole': {'file': '$HEX/$src', 'file_without_defect': '$WOFILE',
+                                                           'cell': [100.0,0.0,0.0]}}}"
+            [ $RC -eq 0 ] || fail "hex_qd${qdmode}_fold_${src}_$wo failed (rc=$RC)"
+        done
+        python3 - "$WORK/hex_qd${qdmode}_fold_${src}_plain.log" "$WORK/hex_qd${qdmode}_fold_${src}_x10.log" <<'PYEOF'
+import re, sys
+def q(f):
+    m = re.search(r'quad\[0\]\s*:\s*\[\s*([-+]?[0-9.]+(?:[eE][-+]?[0-9]+)?)', open(f).read())
+    return float(m.group(1)) if m else None
+a, b = q(sys.argv[1]), q(sys.argv[2])
+sys.exit(0 if a and b and abs(b / a - 10.0) < 1e-3 else 1)
+PYEOF
+        if [ $? -eq 0 ]; then
+            pass "[qd_readmode=$qdmode, $src] a folded spin takes the tensor of quadrupole.file_without_defect"
+        else
+            fail "[qd_readmode=$qdmode, $src] a folded spin did not take the tensor of quadrupole.file_without_defect"
+        fi
+    done
+done
+
 echo "  [hf_readmode=2, hyperfine.frame=file]"
 python3 check_tensors.py "$WORK/hex_hf2_norot.log" "$WORK/hex_hf2_rot.log" \
     --kind hypf --qubit-axis 1 1 1 --expect rotated

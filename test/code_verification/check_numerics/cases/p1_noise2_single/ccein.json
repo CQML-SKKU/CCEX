@@ -1,0 +1,131 @@
+{
+  "method": "noise",
+  "quantity": "coherence",
+  "Qubit": {
+    "qubit": [
+      {
+        "file": "../../inputs/p1_1ppm/bath_DiaP1_1ppm_Defect"
+      }
+    ],
+    "alpha_state": {
+      "ms": [
+        -1
+      ]
+    },
+    "beta_state": {
+      "ms": [
+        0
+      ]
+    }
+  },
+  "configuration": {
+    "gyrofile": "../../inputs/p1_1ppm/DiaP1_gyro",
+    "bathfile": [
+      "../../inputs/p1_1ppm/bath_DiaP1_1ppm_1"
+    ],
+    "bath_state_file": [
+      "../../inputs/p1_1ppm/state_"
+    ],
+    "s_range": [
+      1,
+      2
+    ],
+    "seed": 19,
+    "defect_axis_file": [
+      "../../inputs/p1_1ppm/avaax_nav12"
+    ]
+  },
+  "order": 2,
+  "bfield": 500,
+  "rbath": 500,
+  "rdip": 620,
+  "deltat": 0.01,
+  "nstep": 200,
+  "cluster": {
+    "selection": {
+      "add_subclusters": false,
+      "max_per_order": [
+        0,
+        0,
+        0
+      ]
+    }
+  },
+  "pulse": {
+    "count": 1
+  },
+  "output": {
+    "savemode": "coherence"
+  },
+  "Defect": {
+    "species": [
+      {
+        "name": "P1",
+        "n_onsite_spins": 0,
+        "n_axis_states": 12,
+        "detuning": [
+          [
+            1,
+            "e",
+            84.946496
+          ],
+          [
+            2,
+            "e",
+            84.946496
+          ],
+          [
+            3,
+            "e",
+            84.946496
+          ],
+          [
+            4,
+            "e",
+            0.0
+          ],
+          [
+            5,
+            "e",
+            0.0
+          ],
+          [
+            6,
+            "e",
+            0.0
+          ],
+          [
+            7,
+            "e",
+            -84.946496
+          ],
+          [
+            8,
+            "e",
+            -84.946496
+          ],
+          [
+            9,
+            "e",
+            -84.946496
+          ],
+          [
+            10,
+            "e",
+            114.0264
+          ],
+          [
+            11,
+            "e",
+            0.0
+          ],
+          [
+            12,
+            "e",
+            -114.0264
+          ]
+        ]
+      }
+    ]
+  }
+}

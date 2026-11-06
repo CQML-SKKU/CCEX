@@ -1,0 +1,38 @@
+// Basic 02, cCCE2_Hahn_states, ccein_files.jsonc: ccein.jsonc with the 20 bath states read from files instead of drawn
+// by CCEX (for states from elsewhere: a polarised bath, another code). run.sh writes the files first with
+// example/tools/StateFiles/make_state_files.py.
+//
+// Writes results/ccein_files_state1_wiDiv ... state20.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), as in Basic 01.
+                "file" : "../../01_first_run/bath/bath_Diamond_NV_natab_defect"
+            }
+        ]
+    },
+
+    // ---- the bath ----
+    "configuration" : {
+        "gyrofile"        : "../../01_first_run/bath/gyro_13C",
+        "bathfile"        : ["../../01_first_run/bath/bath_Diamond_NV_natab_1"],
+        "s_range"         : [1, 20],
+        // One name per bath file, {s} the state: results/states/state1 ... state20. A file is a count line, then
+        // one m_s per spin of the bath file.
+        "bath_state_file" : ["results/states/state{s}"],
+        // make_state_files.py draws the states from this seed.
+        "seed"            : 1
+    },
+
+    // ---- as in Basic 01 ----
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

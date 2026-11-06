@@ -1,0 +1,31 @@
+// Basic 05, gCCE2_Hahn_levelCrossing, ccein_cCCE.jsonc: the NV ms -1 / 0 at 1024 G, 4 G below the crossing of the
+// ms -1 and 0 levels, by cCCE. Writes results/ccein_cCCE_k<k>_wiDiv for the ten configurations.
+{
+    "Qubit"         : {
+        "qubit"  : [
+            {
+                // The NV position (x y z, Angstrom), made by run.sh with the bath files.
+                "file" : "results/bath/config_defect"
+            }
+        ],
+        // L(t) between ms -1 and ms 0 (the default is ms +1 and 0): the pair of levels that cross near 1028 G.
+        "alpha_state" : {"ms": [-1]}
+    },
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        // Ten bath configurations (seeds 1 to 10, no 13C within 5 A of the NV), made by run.sh; {k} is each k of
+        // k_range, one run per configuration. The outputs are named _k<k>_.
+        "bathfile" : ["results/bath/config_{k}"],
+        "k_range"  : [1, 10]
+    },
+    "order"         : 2,
+    // Gauss along z, the NV axis. The ms -1 and 0 levels cross at D / gamma_e = 1028 G.
+    "bfield"        : 1024,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    "deltat"        : 0.001,
+    "nstep"         : 2000,
+    "pulse"         : {
+        "count" : 1
+    }
+}

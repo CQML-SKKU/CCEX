@@ -52,8 +52,33 @@ static std::string shownKey(const cJSON* object, const char* key){
     return where == shownPaths().end() ? std::string(key ? key : "") : joinKey(where->second, key ? key : "");
 }
 static void applyInputUnits(cJSON* root);
+static cJSON* untrackedItem(const cJSON* object, const char* key);
+// method noise with a model spectrum reads no bath: the keys of the bath and the clusters every reader asks for are
+// added where the input leaves them out (order 1, bfield 0, rbath 0, rdip 0, one qubit at the origin); unused
+static void addNoiseModelDefaults(cJSON* root){
+    cJSON* method = untrackedItem(root,"method");
+    cJSON* spectrum = untrackedItem(untrackedItem(untrackedItem(root,"hamiltonian"),"noise"),"spectrum");
+    if (!cJSON_IsString(method) || strcasecmp(method->valuestring,"noise") || !cJSON_IsObject(spectrum)) return;
+    const char* why = "a model spectrum (hamiltonian.noise.spectrum) reads no bath and makes no clusters";
+    for (const char* key : {"order", "bfield", "rbath", "rdip"})
+        if (!untrackedItem(root,key)) cJSON_AddNumberToObject(root,key,!strcmp(key,"order") ? 1 : 0);
+        else warnNotUsed(key,why);
+    if (!untrackedItem(root,"Qubit")) cJSON_AddItemToObject(root,"Qubit",cJSON_Parse("{\"qubit\": [{\"xyz\": [0, 0, 0]}]}"));
+    else warnNotUsed("Qubit",why);
+    // the bath's blocks are taken out, so that no reader opens the files they name
+    for (const char* key : {"configuration", "Defect"})
+        if (untrackedItem(root,key)){ warnNotUsed(key,why); cJSON_DeleteItemFromObject(root,key); }
+}
+// method pseudospin is a pair model: a missing order is 2 (another order is refused in main.cpp)
+static void addPseudospinDefaults(cJSON* root){
+    cJSON* method = untrackedItem(root,"method");
+    if (cJSON_IsString(method) && !strcasecmp(method->valuestring,"pseudospin") && !untrackedItem(root,"order"))
+        cJSON_AddNumberToObject(root,"order",2);
+}
 static cJSON* trackedParse(const char* text){
     cJSON* root = cJSON_Parse(text);
+    if (root) addNoiseModelDefaults(root);
+    if (root) addPseudospinDefaults(root);
     if (root) applyInputUnits(root);    // A67: {"value", "unit"} to the plain number in the key's own unit, before any reader
     if (root) recordPaths(root, "", "");
     return root;
@@ -248,6 +273,15 @@ static void applyInputUnits(cJSON* root){
     // A94 (G20): cluster.bundle.merge_cutoff (rad/ms) and hamiltonian.common.quadrupole.cell (A) take a unit too
     cJSON* bundle = untrackedItem(untrackedItem(root, "cluster"), "bundle");
     if (cJSON_IsObject(bundle)) applyUnit(bundle, "merge_cutoff", "cluster.bundle.merge_cutoff", kRateRadMs);
+    cJSON* spectrum = untrackedItem(untrackedItem(untrackedItem(root, "hamiltonian"), "noise"), "spectrum");
+    if (cJSON_IsObject(spectrum)){
+        applyUnit(spectrum, "sigma", "hamiltonian.noise.spectrum.sigma", kFreqKHz);
+        applyUnit(spectrum, "tau_c", "hamiltonian.noise.spectrum.tau_c", kTimeMs);
+        applyUnit(spectrum, "f_min", "hamiltonian.noise.spectrum.f_min", kFreqKHz);
+        applyUnit(spectrum, "f_max", "hamiltonian.noise.spectrum.f_max", kFreqKHz);
+    }
+    cJSON* noiseFft = untrackedItem(untrackedItem(untrackedItem(root, "hamiltonian"), "noise"), "fft");
+    if (cJSON_IsObject(noiseFft)) applyUnit(noiseFft, "time_max", "hamiltonian.noise.fft.time_max", kTimeMs);
     cJSON* quadrupole = untrackedItem(untrackedItem(untrackedItem(root, "hamiltonian"), "common"), "quadrupole");
     if (cJSON_IsObject(quadrupole)) applyUnit(quadrupole, "cell", "hamiltonian.common.quadrupole.cell", kLengthA);
     cJSON* hamiltonian = untrackedItem(root, "hamiltonian");
@@ -476,7 +510,7 @@ static void refuseOldInputKeys(cJSON* root){
     if (found.empty()) return;
     if (rank==0){
         for (const std::string& f : found) ccexRefusalPrint(stderr,"Error: %s\n",f.c_str());
-        ccexRefusalPrint(stderr,"%s (docs/user/InputFile.md has the table of old and new names)\n",kConvertHint);
+        ccexRefusalPrint(stderr,"%s (docs/user/InputFile_OldNames.md has the table of old and new names)\n",kConvertHint);
     }
     ccexRefuse();
 }
@@ -694,17 +728,13 @@ bool cJSON_readConfigurationRange(char* fccein, long* first, long* last){
 // cluster_mode pcce runs with cCCE, gCCE, meCCE and megCCE: inside pCCE, pgCCE, pmeCCE and pmegCCE (methodUsesPcceClusters
 // and methodKernel, general.h); the adding_MECCE branch's method names pgCCE, pmeCCE and pmegCCE are refused with the new
 // form. gCCE also runs with bundle; dsj, itb and dsjitb run with cCCE only (gCCE with them is not implemented yet;
-// improvements.md A47). noise is a reserved method name (A49): accepted by the reader, refused as not implemented yet.
-// A method name: cCCE, gCCE, meCCE or megCCE (true for gCCE); reserved, old and unknown names are refused.
+// improvements.md A47). noise (A49 reserved it) runs inside as CCE with cnf->noise set (noise.cpp), cluster_mode standard.
+// pseudospin runs inside as CCE with cnf->pseudospin set (pseudospin.cpp), cluster_mode standard.
+// A method name: cCCE, gCCE, meCCE, megCCE, noise or pseudospin (true for gCCE); old and unknown names are refused.
 static bool checkedMethodName(const char* method, const char* where){
     const bool gcce = !strcasecmp(method,"gcce");
     const bool mecce = !strcasecmp(method,"mecce"), megcce = !strcasecmp(method,"megcce");
-    if (!strcasecmp(method,"noise")){
-        ccexRefusalPrint(stderr,"Error: %s \"%s\" is not implemented yet (a reserved name, the methods that run are cCCE, gCCE, meCCE "
-                       "and megCCE)\n",where,method);
-        ccexRefuse();
-    }
-    if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce")){
+    if (!gcce && !mecce && !megcce && strcasecmp(method,"ccce") && strcasecmp(method,"noise") && strcasecmp(method,"pseudospin")){
         // CCE, pCCE, dsj, itb and dsjitb never come here: refuseOldInputKeys refuses them with the new form, before any reader
         static const char* branch[][2] = {{"pgcce","gCCE"}, {"pmecce","meCCE"}, {"pmegcce","megCCE"}};   // adding_MECCE
         const char* now = nullptr;
@@ -712,8 +742,7 @@ static bool checkedMethodName(const char* method, const char* where){
         if (now)
             ccexRefusalPrint(stderr,"Error: %s \"%s\" is now method \"%s\" with \"cluster.mode\": \"pcce\" in the input\n",where,method,now);
         else
-            ccexRefusalPrint(stderr,"Error: %s must be cCCE, gCCE, meCCE or megCCE (noise is reserved, not implemented yet), not \"%s\"\n",
-                    where,method);
+            ccexRefusalPrint(stderr,"Error: %s must be cCCE, gCCE, meCCE, megCCE, noise or pseudospin, not \"%s\"\n",where,method);
         ccexRefuse();
     }
     return gcce;
@@ -727,6 +756,14 @@ static void internalMethod(const char* method, const char* shape, const char* wh
     while (k < 6 && strcasecmp(shape,shapes[k])) ++k;
     if (k == 6){   // "adaptive" (bundle now) never comes here: refuseOldInputKeys refuses it first
         ccexRefusalPrint(stderr,"Error: cluster.mode must be standard, pcce, bundle, dsj, itb or dsjitb, not \"%s\"\n",shape);
+        ccexRefuse();
+    }
+    if (!strcasecmp(method,"noise") && k != 0){   // noise.cpp: the cCCE clusters, cluster.mode standard only for now
+        ccexRefusalPrint(stderr,"Error: method noise with cluster.mode \"%s\" is not implemented (cluster.mode standard)\n",shapes[k]);
+        ccexRefuse();
+    }
+    if (!strcasecmp(method,"pseudospin") && k != 0){   // pseudospin.cpp: the cCCE pairs, cluster.mode standard only
+        ccexRefusalPrint(stderr,"Error: method pseudospin with cluster.mode \"%s\" is not implemented (cluster.mode standard)\n",shapes[k]);
         ccexRefuse();
     }
     if ((mecce || megcce) && k != 0 && k != 1){
@@ -746,6 +783,91 @@ static void internalMethod(const char* method, const char* shape, const char* wh
 }
 
 static cJSON* readBlockOrEmpty(cJSON* parent, const char* key);
+static cJSON* readBlock(cJSON* parent, const char* key);
+// hamiltonian.noise.spectrum: "bath" (the default: the cluster mode sum) or a model of the qubit frequency noise,
+// {"model": "OU", "sigma" (kHz), "tau_c" (ms)} or {"model": "power", "amplitude" (kHz^2/kHz at 1 kHz), "beta", "f_min", "f_max" (kHz)}
+static void readNoiseSpectrum(Config* cnf, cJSON* section){
+    if (!cnf->noise && section->child){
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise belongs to method noise, this run is not\n");
+        ccexRefuse();
+    }
+    // pseudo_secular: the noise of a bath spin is its secular hyperfine term A_zz I_z (false), or with the
+    // pseudo-secular A_zx I_x + A_zy I_y too (true)
+    const bool pseudoSecularGiven = cJSON_GetObjectItem(section,"pseudo_secular") != NULL;
+    cnf->noise_pseudo_secular = cJSON_ReadBool(section,(char*)"pseudo_secular",true,false);
+    // compute: what the run gives (noise.cpp); fft: the grid and the FFT of compute spectrum (the keys of the spectral route)
+    const bool computeGiven = cJSON_GetObjectItem(section,"compute") != NULL;
+    const char* compute = cJSON_ReadString(section,(char*)"compute",true,(char*)"coherence");
+    if (strcasecmp(compute,"coherence") && strcasecmp(compute,"spectrum") && strcasecmp(compute,"correlation")){
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise.compute must be \"coherence\", \"spectrum\" or \"correlation\", not \"%s\"\n",compute);
+        ccexRefuse();
+    }
+    for (const char* c : {"coherence", "spectrum", "correlation"}) if (!strcasecmp(compute,c)) strcpy(cnf->noise_compute,c);
+    cJSON* fft = readBlock(section,"fft");
+    if (fft && strcmp(cnf->noise_compute,"spectrum"))
+        warnNotUsed("hamiltonian.noise.fft","it is read with hamiltonian.noise.compute \"spectrum\" only");
+    else if (!strcmp(cnf->noise_compute,"spectrum")){
+        if (!fft) fft = cJSON_CreateObject();   // every key has a default
+        // a key left out is set later: time_max by validateNoise, nstep by noiseFinish (noise.cpp)
+        const bool hasTimeMax = cJSON_HasObjectItem(fft,"time_max"), hasNstep = cJSON_HasObjectItem(fft,"nstep");
+        cnf->noise_fft_time_max = hasTimeMax ? cJSON_ReadDouble(fft,(char*)"time_max",false,0) : 0;
+        cnf->noise_fft_nstep = hasNstep ? cJSON_ReadInt(fft,(char*)"nstep",false,0) : 0;
+        cnf->noise_fft_auto_nstep = !hasNstep;
+        cnf->noise_fft_pad_factor = cJSON_ReadInt(fft,(char*)"pad_factor",true,1);
+        if ((hasTimeMax && !(cnf->noise_fft_time_max > 0)) || (hasNstep && cnf->noise_fft_nstep < 2) || cnf->noise_fft_pad_factor < 1){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.fft needs time_max > 0, nstep >= 2 and pad_factor >= 1\n");
+            ccexRefuse();
+        }
+        const char* window = cJSON_ReadString(fft,(char*)"window",true,(char*)"none");
+        if (strcasecmp(window,"none") && strcasecmp(window,"hann") && strcasecmp(window,"tukey") && strcasecmp(window,"exp")){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.fft.window must be \"none\", \"hann\", \"tukey\" or \"exp\", not \"%s\"\n",window);
+            ccexRefuse();
+        }
+        for (const char* w : {"none", "hann", "tukey", "exp"}) if (!strcasecmp(window,w)) strcpy(cnf->noise_fft_window,w);
+        cnf->noise_fft_subtract_mean = cJSON_ReadBool(fft,(char*)"subtract_mean",true,false);
+        cnf->noise_fft_clamp_negative = cJSON_ReadBool(fft,(char*)"clamp_negative",true,false);
+    }
+    cJSON* spectrum = cJSON_GetObjectItem(section,"spectrum");
+    if (!spectrum) return;
+    if (cJSON_IsString(spectrum) && spectrum->valuestring && !strcasecmp(spectrum->valuestring,"bath")) return;
+    if (pseudoSecularGiven) warnNotUsed("hamiltonian.noise.pseudo_secular","a model spectrum has no bath");
+    if (computeGiven && strcmp(cnf->noise_compute,"coherence")){
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise.compute \"%s\" needs hamiltonian.noise.spectrum \"bath\" (a model spectrum "
+                         "computes the coherence alone)\n",cnf->noise_compute);
+        ccexRefuse();
+    }
+    if (!cJSON_IsObject(spectrum)){
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise.spectrum must be \"bath\" or {\"model\": \"OU\" or \"power\", ...}\n");
+        ccexRefuse();
+    }
+    const char* model = cJSON_ReadString(spectrum,(char*)"model",false,NULL);
+    auto positive = [&](const char* key){
+        const double v = cJSON_ReadDouble(spectrum,(char*)key,false,0);
+        if (!(v > 0)){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.spectrum.%s must be positive\n",key);
+            ccexRefuse();
+        }
+        return v;
+    };
+    if (!strcasecmp(model,"OU")){
+        strcpy(cnf->noise_model,"OU");
+        cnf->noise_sigma = positive("sigma");
+        cnf->noise_tau_c = positive("tau_c");
+    }else if (!strcasecmp(model,"power")){
+        strcpy(cnf->noise_model,"power");
+        cnf->noise_amplitude = positive("amplitude");
+        cnf->noise_beta = cJSON_ReadDouble(spectrum,(char*)"beta",false,0);
+        cnf->noise_f_min = positive("f_min");
+        cnf->noise_f_max = positive("f_max");
+        if (cnf->noise_f_max <= cnf->noise_f_min){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.noise.spectrum.f_max must be above f_min\n");
+            ccexRefuse();
+        }
+    }else{
+        ccexRefusalPrint(stderr,"Error: hamiltonian.noise.spectrum.model must be \"OU\" or \"power\", not \"%s\"\n",model);
+        ccexRefuse();
+    }
+}
 static void readMethod(cJSON* root, char* methodOut, char* modeOut){
     cJSON* mode = cJSON_GetObjectItem(readBlockOrEmpty(root,"cluster"),"mode");   // cluster.mode (A65; cluster_mode before)
     if (mode && (!cJSON_IsString(mode) || !mode->valuestring)){
@@ -1464,6 +1586,8 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     char method[MAX_CHARARRAY_LENGTH], clusterMode[16];
     readMethod(root,method,clusterMode);
     Config_setMethod(cnf,method); // inside: CCE, gCCE, pCCE, dsj, dsjitb, itb (from method and cluster_mode)
+    cnf->noise = !strcasecmp(cJSON_ReadString(root,"method",true,"cCCE"),"noise");   // inside CCE, with the noise kernel
+    cnf->pseudospin = !strcasecmp(cJSON_ReadString(root,"method",true,"cCCE"),"pseudospin");   // inside CCE, its pair kernel
     strcpy(cnf->cluster_mode,clusterMode);   // inside: standard, or adaptive for cluster_mode bundle
 
     char* quantity = cJSON_ReadString(root,"quantity",true,"coherence");
@@ -1578,6 +1702,7 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         for (int k=0; k<8; ++k){
             cJSON* item = cJSON_GetObjectItem(block,gpuKeys[k]);   // recorded as read (cJSON_checkInputKeys)
             if (!item) continue;
+            cnf->gpu_options_given |= 1u << k;
             char name[64];
             snprintf(name,sizeof name,"execution.gpu_options.%s",gpuKeys[k]);
             const double value = readFiniteNumber(item,name);
@@ -2070,7 +2195,10 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
         printf("          hyperfine { dipole, contact, file, missing_row },\n");
         printf("          quadrupole (\"off\" or { structure, file, file_without_defect, cell }) ]\n");
         printf("        hamiltonian.cCCE : [ knight, hfmedi, delta_A ]\n");
-        printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n\n");
+        printf("        hamiltonian.meCCE / megCCE : [ jump_operators ]\n");
+        printf("        hamiltonian.noise : [ spectrum (\"bath\" or { model OU: sigma, tau_c; model power: amplitude, beta, f_min, f_max }), pseudo_secular, compute (coherence, spectrum, correlation),\n"
+               "          fft { time_max, nstep, window, pad_factor, subtract_mean, clamp_negative } ]\n");
+        printf("        hamiltonian.pseudospin : [ channels (\"grouped\" or \"pairwise\") ]\n\n");
     }
     cJSON* hamiltonian = readBlock(root,"hamiltonian");
     // A94 (G1) named the sections by role, corrections and dissipation; reverted 2026-10-17, the sections stay by method
@@ -2086,13 +2214,25 @@ void cJSON_readOptionConfig(Config* cnf, char* fccein){
     }
     cJSON* common = hamiltonian ? readBlock(hamiltonian,"common") : NULL;
     cJSON* cCCE = hamiltonian ? readBlock(hamiltonian,"cCCE") : NULL;
-    // gCCE and the reserved method noise (A49) have no settings yet: an empty section is allowed
-    for (const char* name : {"gCCE", "noise"}){
-        cJSON* section = hamiltonian ? readBlock(hamiltonian,name) : NULL;
-        if (section && section->child){
-            ccexRefusalPrint(stderr,"Error: hamiltonian.%s has no settings yet (\"%s\")\n",name,section->child->string);
+    // gCCE has no settings yet: an empty section is allowed
+    if (cJSON* section = hamiltonian ? readBlock(hamiltonian,"gCCE") : NULL)
+        if (section->child){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.gCCE has no settings yet (\"%s\")\n",section->child->string);
             ccexRefuse();
         }
+    if (cJSON* section = hamiltonian ? readBlock(hamiltonian,"noise") : NULL) readNoiseSpectrum(cnf,section);
+    // method pseudospin: channels "grouped" (default, the states joined by channels as one block) or "pairwise" (every channel alone)
+    if (cJSON* section = hamiltonian ? readBlock(hamiltonian,"pseudospin") : NULL){
+        if (!cnf->pseudospin && section->child){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin belongs to method pseudospin, this run is not\n");
+            ccexRefuse();
+        }
+        const char* channels = cJSON_ReadString(section,(char*)"channels",true,(char*)"grouped");
+        if (strcasecmp(channels,"grouped") && strcasecmp(channels,"pairwise")){
+            ccexRefusalPrint(stderr,"Error: hamiltonian.pseudospin.channels must be \"grouped\" or \"pairwise\", not \"%s\"\n",channels);
+            ccexRefuse();
+        }
+        cnf->pseudospin_grouped = !strcasecmp(channels,"grouped");
     }
     // the master-equation methods: jump_operators only; which method the section belongs to is checked once every
     // reader has run (main.cpp, validateHamiltonianForMethod)

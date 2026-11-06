@@ -43,6 +43,20 @@ Config* Config_init(){
     cnf->bath_mean_field_off=false;
     cnf->hamiltonian_ccce_given=false;
     cnf->delta_A=false;
+    cnf->noise=false;
+    strcpy(cnf->noise_model,"bath");
+    cnf->noise_pseudo_secular=false;
+    strcpy(cnf->noise_compute,"coherence");
+    cnf->noise_fft_time_max=0;
+    cnf->noise_fft_nstep=0;
+    cnf->noise_fft_auto_nstep=false;
+    strcpy(cnf->noise_fft_window,"none");
+    cnf->noise_fft_pad_factor=1;
+    cnf->noise_fft_subtract_mean=cnf->noise_fft_clamp_negative=false;
+    cnf->noise_sigma=cnf->noise_tau_c=0;
+    cnf->noise_amplitude=cnf->noise_beta=cnf->noise_f_min=cnf->noise_f_max=0;
+    cnf->pseudospin=false;
+    cnf->pseudospin_grouped=true;
     cnf->pcce_detail_limit=ccex::partitionDetailLimit;
     cnf->gpu_batch_clusters = 8;
     cnf->gpu_cluster_batch_mb = 64;
@@ -51,6 +65,7 @@ Config* Config_init(){
     cnf->gpu_warp_max_dim = -1;                 // not given; Config_resolveWarpMaxDim picks the default (A40)
     cnf->gpu_warp_source[0] = '\0';
     cnf->gpu_ranks_per_gpu = 0;                 // A98: every rank may open the GPU
+    cnf->gpu_options_given = 0;
     cnf->profile = false;
     cnf->cluster_only = false;
     cnf->cluster_contributions = false;
@@ -413,9 +428,9 @@ void Config_setMethod(Config* cnf, char* method){
 
 void Config_setQuantity(Config* cnf, char* quantity){
 
-    // "noise" used to be accepted, but nothing computes it: the run gave the coherence under that name (review 20261013-doxygen D22)
+    // "noise" used to be accepted, but nothing computed it: the run gave the coherence under that name (review 20261013-doxygen D22)
     if (strcasecmp(quantity,"noise") == 0) {
-        ccexRefusalPrint(stderr, "Error: quantity \"noise\" is not supported (no noise calculation exists), use coherence or dm\n");
+        ccexRefusalPrint(stderr, "Error: quantity \"noise\" is not supported, the noise calculation is method \"noise\" (with quantity coherence)\n");
         ccexRefuse();
     }
 
@@ -997,7 +1012,22 @@ void Config_report(Config* cnf, bool qubitBathMeanField){
 
     const bool pcce = methodUsesPcceClusters(cnf->method);
     const bool bundle = !strcasecmp(cnf->cluster_mode,"adaptive");   // cluster.mode bundle
-    printStructElementChar("method",Config_getMethod(cnf));
+    printStructElementChar("method",cnf->noise ? (char*)"noise" : cnf->pseudospin ? (char*)"pseudospin" : Config_getMethod(cnf));   // noise, pseudospin: CCE inside
+    if (cnf->noise) printStructElementChar("hamiltonian.noise.spectrum",cnf->noise_model);
+    if (cnf->noise && !strcmp(cnf->noise_model,"bath")){
+        printStructElementChar("hamiltonian.noise.pseudo_secular",(char*)(cnf->noise_pseudo_secular ? "true" : "false"));
+        printStructElementChar("hamiltonian.noise.compute",cnf->noise_compute);
+        if (!strcmp(cnf->noise_compute,"spectrum")){
+            printStructElementDouble("hamiltonian.noise.fft.time_max",cnf->noise_fft_time_max);
+            if (cnf->noise_fft_auto_nstep) printStructElementChar("hamiltonian.noise.fft.nstep",(char*)"from the bath's modes");
+            else printStructElementInt("hamiltonian.noise.fft.nstep",cnf->noise_fft_nstep);
+            printStructElementChar("hamiltonian.noise.fft.window",cnf->noise_fft_window);
+            printStructElementInt("hamiltonian.noise.fft.pad_factor",cnf->noise_fft_pad_factor);
+            printStructElementChar("hamiltonian.noise.fft.subtract_mean",(char*)(cnf->noise_fft_subtract_mean ? "true" : "false"));
+            printStructElementChar("hamiltonian.noise.fft.clamp_negative",(char*)(cnf->noise_fft_clamp_negative ? "true" : "false"));
+        }
+    }
+    if (cnf->pseudospin) printStructElementChar("hamiltonian.pseudospin.channels",(char*)(cnf->pseudospin_grouped ? "grouped" : "pairwise"));
     printStructElementChar("quantity",Config_getQuantity(cnf));
     printStructElementChar("propagator",Config_getPropagator(cnf));
     if (strcasecmp(cnf->propagator,"sparse")==0){

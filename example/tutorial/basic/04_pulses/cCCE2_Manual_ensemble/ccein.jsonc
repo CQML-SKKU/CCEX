@@ -1,0 +1,39 @@
+// Basic 04, cCCE2_Manual_ensemble: a CPMG-2 written out pulse by pulse (pulse.name "Manual"), the way to run a
+// sequence CCEX has no name for. The time points are those of CPMG-2 in cCCE2_CPMG_ensemble.
+//
+// Writes results/ccein_k<k>_wiDiv for the ten configurations. run.sh also runs the built-in CPMG-2 (pulse {"count": 2}); the two curves are the same.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), made by run.sh with the bath files.
+                "file" : "results/bath/config_defect"
+            }
+        ]
+    },
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        // Ten bath configurations (seeds 1 to 10, no 13C within 5 A of the NV), made by run.sh; {k} is each k of
+        // k_range, one run per configuration. The outputs are named _k<k>_.
+        "bathfile" : ["results/bath/config_{k}"],
+        "k_range"  : [1, 10]
+    },
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+    // ms: 2N / nu_L for N = 2, the 13C revivals of CPMG-2 (as in cCCE2_CPMG_ensemble).
+    "deltat"        : 0.007470773,
+    "nstep"         : 535,
+
+    // ---- the pulses ----
+    "pulse"         : {
+        "count"    : 2,
+        // The sequence is written out below (without "name" it follows from count: Ramsey, HahnEcho or CPMG).
+        "name"     : "Manual",
+        // count + 1 rows [free time before the pulse as a fraction of t, axis X|Y|Z, angle in degrees]; the last row
+        // is the free time after the last pulse (axis I). Here: wait t/4, pi about X, wait t/2, pi about X, wait t/4.
+        // cCCE takes every pulse as a pi flip; other angles need method gCCE.
+        "sequence" : [["1/4", "X", 180.0], ["1/2", "X", 180.0], ["1/4", "I", 0.0]]
+    }
+}

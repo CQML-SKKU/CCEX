@@ -1,0 +1,60 @@
+{
+    // The Hahn echo of the NV (ms +1 / 0) in a 1 ppm P1 bath, gCCE2, without a pump: ccein_pump.jsonc without its
+    // pulse.bath block, the reference the DEER curve is compared with.
+    // Sampled bath states: configuration.s_range [1, 10], each state s its own output _state<s>.
+    //
+    // The physics: the NV's pi pulse flips the sign of its static coupling to every P1, so the phase of the first
+    // half is undone in the second; what is left decays through the P1 flip-flops. T2 of the mean of the 10 states
+    // 150 us, against 36 us with the pump (README). Writes results/ccein_nopump_state<s>_wiDiv and _noDiv, s = 1 .. 10.
+    //
+    // Differs from ccein_pump.jsonc only in pulse.bath, from cCCE2_Hahn_states in the method (gCCE, the NV written
+    // out), ms +1, one configuration and the time axis. At 500 G the NV's ms -1 / 0 transition is close to the P1
+    // lines and its gCCE2 curve diverges, hence ms +1 (README).
+    // Every key not written here has its default (main.out -e writes them all).
+
+    "method"        : "gCCE",         // the NV (qubit) is in every cluster's Hamiltonian (qubit-bath flip-flops are
+                                      // possible); and ccein_pump.jsonc needs it (cCCE refuses pulse.bath)
+    "Qubit"         : {"qubit" : [{"name": "NV", "xyz": [1123.596, 1124.863, 1124.378]}],
+                       "alpha_state" : {"ms": [1]},
+                       "beta_state" : {"ms": [0]},
+                       "intmap": [{"between": ["NV", "NV"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]}]},
+                                      // the NV written out. "name" is what intmap refers to; "xyz" its position in
+                                      // Angstrom (the same as bath/14N_1ppm/bath_DiaP1_1ppm_Defect). L(t) between ms
+                                      // +1 (alpha_state) and 0 (beta_state). intmap NV-NV: the self term, the
+                                      // zero-field splitting D = 2.88 GHz as diag(-D/3, -D/3, 2D/3) in kHz (the log
+                                      // notes the unit). In gCCE the qubit levels are in the Hamiltonian, so the
+                                      // splitting has to be written (basic/05_cCCE_vs_gCCE)
+    "configuration" : {"gyrofile": "../../../basic/06_defect_bath/bath/DiaP1_gyro",
+                       "bathfile": ["../../../basic/06_defect_bath/bath/14N_1ppm/bath_DiaP1_1ppm_1"],
+                       "s_range" : [1, 10],
+                       "seed"    : 1},
+                                      // the bath. gyrofile: the P1 as a spin 1/2 with the electron's gyromagnetic
+                                      // ratio (rad kHz/G). bathfile: one configuration, 469 P1 within rbath. s_range:
+                                      // ten pure bath states. seed: draws the P1 axis states (so which P1 the tone
+                                      // hits in ccein_pump.jsonc) and the bath states; the same in both inputs
+    "order"         : 2,              // gCCE2: the NV with single P1 and with pairs of P1
+    "bfield"        : 500,            // Gauss along z, the NV axis
+    "rbath"         : 850,            // Angstrom: the P1 within 850 A of the NV are kept
+    "rdip"          : 620,            // Angstrom: two P1 closer than 620 A form a pair cluster
+    "deltat"        : 0.002,          // ms: the time step, 2 us (the decay is faster than in cCCE2_Hahn_states)
+    "nstep"         : 200,            // 200 points: t = 0 .. 398 us
+    "pulse"         : {"count": 1},   // one pi pulse on the NV: the Hahn echo. ccein_pump.jsonc adds pulse.bath, a pi
+                                      // pulse on part of the P1 at the same time
+
+    // The P1 centre: substitutional N, an electron spin 1/2 on a 14N (I = 1). Defect.species makes every bath spin
+    // named "P1" this defect. The 14N is not a spin of its own here (n_onsite_spins 0, the default): its hyperfine
+    // enters only as a static shift A_zz m_I of the electron, the detuning (the pump of ccein_pump selects by it). A P1
+    // has four Jahn-Teller axes (the four C-N bond directions) and three m_I: 4 x 3 = 12 axis states, and each P1 is
+    // given one of them at random (from configuration.seed; configuration.defect_axis_file gives them instead).
+    "Defect"        : {"species": [{
+        "name"          : "P1",       // the name in the bath file this species applies to
+        "n_axis_states" : 12,         // the indexed states 1 .. 12 that "detuning" lists
+        "detuning"      : [[1, "e",  84.946496], [2, "e",  84.946496], [3,  "e",  84.946496],
+                           [4, "e",   0.0],      [5, "e",   0.0],      [6,  "e",   0.0],
+                           [7, "e", -84.946496], [8, "e", -84.946496], [9,  "e", -84.946496],
+                           [10, "e", 114.0264],  [11, "e",  0.0],      [12, "e", -114.0264]]}]}
+                                      // [axis state, "e" (the electron), MHz]. 1-9: the three axes tilted from z,
+                                      // A_zz 84.946496 MHz, m_I +1 (1-3), 0 (4-6), -1 (7-9). 10-12: the axis along z,
+                                      // A_zz = A_par 114.0264 MHz, m_I +1, 0, -1
+}

@@ -4,6 +4,7 @@
  */
 #include "../../include/calculation/simulator.h"
 #include "../../include/calculation/hamiltonian.h"
+#include "../../include/calculation/pseudospin.h"
 #include <cmath>
 #include <iostream>
 #include <memory>
@@ -25,6 +26,7 @@ std::pair<MatrixXcd,MatrixXcd> cceHamiltonians(QubitArray* qa,BathArray* ba,Conf
     return {std::move(interaction[0]),std::move(interaction[1])};
 }
 #ifdef CCEX_USE_CUDA
+#include "../../include/calculation/gpu/gpu_batch_memory.h"
 void validateCceCudaHamiltonians(const MatrixXcd& a,const MatrixXcd& b) {
     for(const MatrixXcd* h:{&a,&b})
         if(!finiteAndHermitian(*h))
@@ -244,6 +246,12 @@ void calCoherenceCceInto(QubitArray* qa, BathArray* ba, Config* cnf, Pulse* puls
     if (nqubit > 1){
         fprintf(stderr,"Error : calCoherenceCce : nqubit > 1, current nqubit = %d\n",nqubit);
         exit(1);
+    }
+
+    if (cnf->pseudospin){   // method pseudospin (pseudospin.cpp): a pair in the pseudospin model, a single spin 1 (the pairs alone)
+        if (BathArray_getNspin(ba)==2) calCoherencePseudospinInto(qa,ba,cnf,pulse,result);
+        else for (int i=0; i<Config_getNstep(cnf); ++i) result[i] = MatrixXcd::Ones(1,1);
+        return;
     }
 
     // A2: propagator = sparse from sparse_min_dim on (one state; main.cpp refuses the rest) - no dense Hamiltonian
@@ -723,23 +731,26 @@ std::vector<MatrixXcd*> calCoherenceCceCudaBatch(QubitArray* qa,
         std::vector<std::unique_ptr<GpuCce,void(*)(GpuCce*)>> owned;
         std::vector<GpuCce*> works;
         std::vector<std::unique_ptr<MatrixXcd[]>> results;
-        std::vector<double> build(n),setup(n);
+        std::vector<double> build(n);
+        // the Hamiltonians first, then the eigensystems of all of them in one call (gpuCceCreateBatch)
+        std::vector<std::pair<MatrixXcd,MatrixXcd>> hamiltonians;
+        std::vector<MatrixXcd> states(ensemble ? 0 : n);
+        std::vector<const void*> hA(n),hB(n),psi(n,nullptr);
         for(int c=0;c<n;++c){
             BathArray* ba=baths[c];
             if(BathArray_dim(ba)!=d)throw std::runtime_error("mixed cCCE batch dimensions");
             const double start=cnf->profile ? MPI_Wtime() : 0;
-            auto conditional=cceHamiltonians(qa,ba,cnf);
-            const MatrixXcd& ha=conditional.first;const MatrixXcd& hbeta=conditional.second;
-            const double ready=cnf->profile ? MPI_Wtime() : 0;
-            validateCceCudaHamiltonians(ha,hbeta);
-            MatrixXcd psi;
-            if(!ensemble)psi=BathArray_Psi0(ba);
-            owned.emplace_back(gpuCceCreate(d,ensemble,batch,npulse,ha.data(),hbeta.data(),
-                                            ensemble ? nullptr : psi.data()),gpuCceDestroy);
-            works.push_back(owned.back().get());
+            hamiltonians.push_back(cceHamiltonians(qa,ba,cnf));
+            build[c]=(cnf->profile ? MPI_Wtime() : 0)-start;
+            validateCceCudaHamiltonians(hamiltonians[c].first,hamiltonians[c].second);
+            if(!ensemble){states[c]=BathArray_Psi0(ba);psi[c]=states[c].data();}
             results.emplace_back(new MatrixXcd[nstep]);
-            build[c]=ready-start;setup[c]=(cnf->profile ? MPI_Wtime() : 0)-ready;
         }
+        for(int c=0;c<n;++c){hA[c]=hamiltonians[c].first.data();hB[c]=hamiltonians[c].second.data();}
+        const double setupStart=cnf->profile ? MPI_Wtime() : 0;
+        works=gpuCceCreateBatch(n,d,ensemble,batch,npulse,hA.data(),hB.data(),ensemble ? nullptr : psi.data());
+        for(GpuCce* w:works)owned.emplace_back(w,gpuCceDestroy);
+        const double setupEach=((cnf->profile ? MPI_Wtime() : 0)-setupStart)/n;
         const double evolutionStart=cnf->profile ? MPI_Wtime() : 0;
         std::vector<double> durations((size_t)batch*(npulse+1));
         std::vector<doublec> coherence((size_t)n*batch);
@@ -754,7 +765,7 @@ std::vector<MatrixXcd*> calCoherenceCceCudaBatch(QubitArray* qa,
         const double evolution=(cnf->profile ? MPI_Wtime() : 0)-evolutionStart;
         std::vector<MatrixXcd*> out;
         for(int c=0;c<n;++c){
-            computeProfile(cnf,"cce","cuda",d,build[c],setup[c],evolution/n);
+            computeProfile(cnf,"cce","cuda",d,build[c],setupEach,evolution/n);
             out.push_back(results[c].release());
         }
         computeClusterBatch(cnf,d,n);
@@ -795,10 +806,35 @@ double cceTimeMadeUp(Config* cnf, Pulse* pls, int d, bool gpu){
     const double start = MPI_Wtime();
 #ifdef CCEX_USE_CUDA
     if (gpu){
-        MatrixXcd* cuda = calCoherenceCceCuda(ws.Halpha,ws.Hbeta,psi,cnf,pls,start,start);
-        if (!cuda) return -1;
-        delete[] cuda;
-        return MPI_Wtime()-start;
+        // as the run: as many clusters as one GPU batch takes (simulator.cpp), the seconds per cluster
+        const bool ensemble = Config_getNstate(cnf)==0;
+        const int nstep = Config_getNstep(cnf), npulse = Pulse_getNpulse(pls), steps = std::min(cnf->gpu_batch_steps,std::max(1,nstep));
+        const long double bytes = gpuClusterMemoryEstimate(d,1,steps,npulse,false,!ensemble)+gpuCceBatchWorkspaceEstimate(d);
+        const int n = int(std::max(1.0L,std::min((long double)cnf->gpu_batch_clusters,1048576.0L*cnf->gpu_cluster_batch_mb/bytes)));
+        if (n == 1){
+            MatrixXcd* cuda = calCoherenceCceCuda(ws.Halpha,ws.Hbeta,psi,cnf,pls,start,start);
+            if (!cuda) return -1;
+            delete[] cuda;
+            return MPI_Wtime()-start;
+        }
+        try {
+            std::vector<const void*> hA(n,ws.Halpha.data()), hB(n,ws.Hbeta.data()), state(n,psi.data());
+            std::vector<std::unique_ptr<GpuCce,void(*)(GpuCce*)>> owned;
+            std::vector<GpuCce*> works = gpuCceCreateBatch(n,d,ensemble,steps,npulse,hA.data(),hB.data(),ensemble ? nullptr : state.data());
+            for (GpuCce* w : works) owned.emplace_back(w,gpuCceDestroy);
+            std::vector<double> durations((size_t)steps*(npulse+1));
+            std::vector<doublec> coherence((size_t)n*steps);
+            double time = 0;
+            for (int first=0; first<nstep; first+=steps){
+                const int count = std::min(steps,nstep-first);
+                cceCudaDurations(pls,ensemble,count,double(cnf->deltat),time,durations);
+                gpuCceEvolveBatch(works.data(),n,count,durations.data(),coherence.data());
+            }
+            return (MPI_Wtime()-start)/n;
+        } catch (const GpuOutOfMemory& e){
+            computeCudaOutOfMemory(cnf,d,e.what());
+            return -1;
+        }
     }
 #else
     (void)gpu;

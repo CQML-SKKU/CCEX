@@ -1,0 +1,38 @@
+// Basic 04, cCCE2_CPMG_ensemble: the NV of Basic 01 under CPMG-4, four equally spaced pi pulses over the total time t.
+// The time points are the 13C revivals of CPMG-4 (deltat = 2N / nu_L, below).
+//
+// Writes results/ccein_k<k>_wiDiv for the ten configurations. run.sh also runs this input with pulse.count 1 and 2 and their own deltat.
+{
+    "Qubit"         : {
+        "qubit" : [
+            {
+                // The NV position (x y z, Angstrom), made by run.sh with the bath files.
+                "file" : "results/bath/config_defect"
+            }
+        ]
+    },
+    "configuration" : {
+        "gyrofile" : "../../01_first_run/bath/gyro_13C",
+        // Ten bath configurations (seeds 1 to 10, no 13C within 5 A of the NV), made by run.sh; {k} is each k of
+        // k_range, one run per configuration. The outputs are named _k<k>_.
+        "bathfile" : ["results/bath/config_{k}"],
+        "k_range"  : [1, 10]
+    },
+    "order"         : 2,
+    "bfield"        : 500,
+    "rbath"         : 50,
+    "rdip"          : 10,
+
+    // ---- the time axis ----
+    // ms: 2N / nu_L for N = 4 pulses, with nu_L = 535.4 kHz the 13C Larmor frequency at 500 G. At these times every
+    // free period t/(2N) is a whole number of 13C periods, so the fast 13C ripple drops out of the curve.
+    "deltat"        : 0.014941546,
+    // Number of time points: t = 0 .. 3.98 ms.
+    "nstep"         : 267,
+
+    // ---- the pulses ----
+    // CPMG-N: N pi pulses at t/(2N), 3t/(2N), ..., (2N-1)t/(2N). 1 is the Hahn echo.
+    "pulse"         : {
+        "count" : 4
+    }
+}

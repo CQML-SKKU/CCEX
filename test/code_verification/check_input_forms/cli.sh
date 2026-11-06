@@ -4,9 +4,9 @@
 #   X1  -e writes ccex_example.jsonc alone, and with its bathfile pointed at 00_quickstart's bath (a sed copy, run.jsonc,
 #       the path written with a '//' inside the string) it runs to the end (2 ranks): the // comments are read, a '//'
 #       in a string is kept, and the outputs are run_* (output.file's default without .jsonc)
-#   X5  every trailing comment of the example starts at column 41 (whole-line comments at column 1, 5 or 41), and the
-#       ':' of the keys that start a line (active or commented out) are in one column per object: "key" : value, one
-#       space before the ':' of the longest key and one after (objects whose '{' ends its line)
+#   X5  the example has no trailing comments (each explanation is on comment lines above its key, indented by a multiple
+#       of 4), and the ':' of the keys that start a line (active or commented out) are in one column per object:
+#       "key" : value, one space before the ':' of the longest key and one after (objects whose '{' ends its line)
 #   X2  -e -o DIR writes the same file into DIR (made when missing)
 #   X3  the example names every input key the readers accept (example_keys.py: the contract on the source)
 #   X6  the example's auto_convergence lines, uncommented, are accepted by the runner, for every choice of the alternative
@@ -35,7 +35,7 @@ same_curves(){ cmp -s "$1_noDiv" "$2_noDiv" && cmp -s "$1_wiDiv" "$2_wiDiv"; }
 
 ( cd "$W/e1" && "$MPIRUN" -n 1 "$BIN_DEV" -e > e.log 2>&1 < /dev/null ) && [ -s "$W/e1/ccex_example.jsonc" ] \
     && [ "$(ls "$W/e1" | tr '\n' ' ')" = "ccex_example.jsonc e.log " ] || no "X1 -e did not write ccex_example.jsonc alone (see $W/e1/e.log)"
-sed 's|"bathfile" *: \["my_bath.txt"\]|"bathfile": ["'"$REPO"'/example/tutorial/00_quickstart/bath//bath_Diamond_NV_natab_1"]|' \
+sed 's|"bathfile" *: \["my_bath.txt"\]|"bathfile": ["'"$REPO"'/example/tutorial/basic/01_first_run/bath//bath_Diamond_NV_natab_1"]|' \
     "$W/e1/ccex_example.jsonc" > "$W/e1/run.jsonc"
 grep -q 'bath//bath_Diamond' "$W/e1/run.jsonc" || no "X1 the example has no \"bathfile\" : [\"my_bath.txt\"] line to point at a bath"
 ( cd "$W/e1" && "$MPIRUN" -n 2 "$BIN_DEV" -f run.jsonc > run.log 2>&1 < /dev/null ); rc=$?
@@ -46,7 +46,7 @@ then ok "X1 -e writes the template, and with a bath it runs ($lines time points,
 else no "X1 the template with a bath did not run: exit $rc, $lines lines for nstep $nstep (see $W/e1/run.log)"; fi
 
 # X5: a trailing comment is a '//' outside a string after the code of an active line or of a commented-out key line
-# ('//' and two or more spaces, then a JSON character). The ':' check follows the brackets of those code lines.
+# ('//' and two or more spaces, then a JSON character); there must be none. The ':' check follows the brackets.
 bad=$(python3 - "$W/e1/ccex_example.jsonc" <<'PY'
 import re, sys
 lines = open(sys.argv[1]).read().splitlines()
@@ -54,7 +54,7 @@ body = lines.index('{')
 bad, keys, stack, nid, block = [], {}, [], 0, set()
 for n, line in enumerate(lines, 1):
     if re.match(r'\s*//', line) and not re.match(r'//\s{2,}["{}\[\]]', line):     # a whole-line comment
-        if len(line) - len(line.lstrip()) not in (0, 4, 40): bad.append(n)
+        if (len(line) - len(line.lstrip())) % 4: bad.append(n)
         continue
     code, ins, esc = line, False, False
     for i in range(2 if line.startswith('//') else 0, len(line) - 1):
@@ -65,7 +65,7 @@ for n, line in enumerate(lines, 1):
             elif c == '"': ins = False
         elif c == '"': ins = True
         elif line.startswith('//', i):
-            if i != 40: bad.append(n)
+            bad.append(n)
             code = line[:i].rstrip()
             break
     if n <= body: continue
@@ -90,8 +90,8 @@ print(' '.join(map(str, bad)) + '|' + ' '.join(map(str, colon)))
 PY
 ) || bad="(the check did not run)|"
 [ "$bad" = "|" ] && [ -s "$W/e1/ccex_example.jsonc" ] \
-    && ok "X5 every trailing comment of the template starts at column 41, the ':' of each object in one column" \
-    || no "X5 comments off column 41 on lines: ${bad%%|*}; ':' not aligned on lines: ${bad#*|}"
+    && ok "X5 the template has no trailing comments, comment lines on 4-space indents, the ':' of each object in one column" \
+    || no "X5 trailing or misindented comments on lines: ${bad%%|*}; ':' not aligned on lines: ${bad#*|}"
 
 ( cd "$W" && "$MPIRUN" -n 1 "$BIN_DEV" -e -o e2/sub > e2.log 2>&1 < /dev/null )
 if cmp -s "$W/e1/ccex_example.jsonc" "$W/e2/sub/ccex_example.jsonc" && [ "$(ls "$W/e2/sub")" = "ccex_example.jsonc" ]

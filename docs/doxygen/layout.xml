@@ -5,6 +5,19 @@
   <navindex>
     <tab type="mainpage" visible="yes" title="Overview"/>
     <tab type="user" url="@ref md_docs_2user_2GettingStarted" title="Getting started"/>
+    <tab type="user" url="@ref md_docs_2user_2BuildingAndRunning" title="Building and running"/>
+    <tab type="usergroup" url="@ref md_docs_2methods_2Methods" title="Theory and implementation">
+      <tab type="user" url="@ref md_docs_2methods_2cce" title="cCCE and gCCE"/>
+      <tab type="user" url="@ref md_docs_2methods_2pcce" title="Partition CCE (pCCE)"/>
+      <tab type="user" url="@ref md_docs_2methods_2bundle-adaptive" title="Bundles and adaptive refinement"/>
+      <tab type="user" url="@ref md_docs_2methods_2master-equation" title="Master-equation CCE"/>
+      <tab type="user" url="@ref md_docs_2methods_2noise" title="Semiclassical noise"/>
+      <tab type="user" url="@ref md_docs_2methods_2pseudospin" title="Pseudospin model"/>
+      <tab type="user" url="@ref md_docs_2methods_2deer" title="DEER bath pulses"/>
+      <tab type="user" url="@ref md_docs_2methods_2coordinate-frame-rotation" title="Coordinate frame rotation"/>
+      <tab type="user" url="@ref md_docs_2methods_2auto-convergence" title="Automatic convergence"/>
+      <tab type="user" url="@ref md_docs_2methods_2gpu" title="GPU execution"/>
+    </tab>
     <tab type="usergroup" url="@ref md_docs_2user_2InputFile" title="Input file">
       <tab type="user" url="@ref md_docs_2user_2InputFile__General" title="General tags"/>
       <tab type="user" url="@ref md_docs_2user_2InputFile__Qubit" title="Qubit tags"/>
@@ -14,32 +27,44 @@
       <tab type="user" url="@ref md_docs_2user_2InputFile__Defect" title="Defect tags"/>
       <tab type="user" url="@ref md_docs_2user_2InputFile__Output" title="Output tags"/>
       <tab type="user" url="@ref md_docs_2user_2InputFile__AutoConvergence" title="Automatic convergence tags"/>
+      <tab type="user" url="@ref md_docs_2user_2InputFile__OldNames" title="Upgrading old inputs"/>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2OutputFiles" title="Output files"/>
     <tab type="usergroup" url="@ref md_docs_2user_2Examples" title="Examples">
-      <tab type="user" url="@ref tutorial_00" title="00 Quickstart"/>
-      <tab type="user" url="@ref tutorial_01" title="01 Ensemble and states"/>
-      <tab type="user" url="@ref tutorial_02" title="02 Pulses"/>
-      <tab type="user" url="@ref tutorial_03" title="03 P1 electron-spin bath"/>
-      <tab type="user" url="@ref tutorial_04" title="04 hBN with DFT tensors"/>
-      <tab type="user" url="@ref tutorial_05" title="05 Several NV centres"/>
-      <tab type="user" url="@ref tutorial_06" title="06 cCCE against gCCE"/>
-      <tab type="user" url="@ref tutorial_07" title="07 pCCE and bundles"/>
-      <tab type="user" url="@ref tutorial_08" title="08 GPU"/>
-      <tab type="user" url="@ref tutorial_09" title="09 Automatic convergence"/>
-      <tab type="user" url="@ref tutorial_10" title="10 Coordinate rotation"/>
+      <tab type="usergroup" url="[none]" title="Basic">
+        <tab type="user" url="@ref tutorial_b01" title="01 NV in ¹³C, from a bath to T2"/>
+        <tab type="user" url="@ref tutorial_b02" title="02 Bath configurations, sampled states and isotopes"/>
+        <tab type="user" url="@ref tutorial_b03" title="03 Checking convergence"/>
+        <tab type="user" url="@ref tutorial_b04" title="04 Pulse sequences"/>
+        <tab type="user" url="@ref tutorial_b05" title="05 cCCE against gCCE"/>
+        <tab type="user" url="@ref tutorial_b06" title="06 An electron-spin bath (P1)"/>
+      </tab>
+      <tab type="usergroup" url="[none]" title="Advanced">
+        <tab type="usergroup" url="[none]" title="1. Running and handling a calculation">
+          <tab type="user" url="@ref tutorial_a01" title="01 Automatic convergence"/>
+          <tab type="user" url="@ref tutorial_a02" title="02 Analysis of the output"/>
+          <tab type="user" url="@ref tutorial_a03" title="03 Runs on a cluster (Slurm)"/>
+          <tab type="user" url="@ref tutorial_a04" title="04 The GPU backend"/>
+        </tab>
+        <tab type="usergroup" url="[none]" title="2. Other systems and inputs">
+          <tab type="user" url="@ref tutorial_a05" title="05 Electron-spin baths further"/>
+          <tab type="user" url="@ref tutorial_a06" title="06 V_B⁻ in h-BN with DFT tensors"/>
+          <tab type="user" url="@ref tutorial_a07" title="07 Multiple qubits"/>
+          <tab type="user" url="@ref tutorial_a08" title="08 Coordinate rotation"/>
+        </tab>
+        <tab type="usergroup" url="[none]" title="3. Hamiltonian terms and cluster shapes">
+          <tab type="user" url="@ref tutorial_a09" title="09 The terms of the cluster Hamiltonian"/>
+          <tab type="user" url="@ref tutorial_a10" title="10 The cluster modes (dsj, pCCE, bundles) and adaptive refinement"/>
+        </tab>
+        <tab type="usergroup" url="[none]" title="4. Other models of the bath">
+          <tab type="user" url="@ref tutorial_a11" title="11 Dissipation (meCCE and megCCE)"/>
+          <tab type="user" url="@ref tutorial_a12" title="12 Semiclassical noise (method noise)"/>
+          <tab type="user" url="@ref tutorial_a13" title="13 Pseudospin pairs"/>
+        </tab>
+      </tab>
     </tab>
     <tab type="user" url="@ref md_docs_2user_2Analysis" title="Analysis"/>
     <tab type="user" url="@ref md_docs_2user_2Tools" title="Tools"/>
-    <tab type="usergroup" url="@ref md_docs_2methods_2Methods" title="Methods">
-      <tab type="user" url="@ref md_docs_2methods_2cce" title="cCCE and gCCE"/>
-      <tab type="user" url="@ref md_docs_2methods_2pcce" title="Partition CCE (pCCE)"/>
-      <tab type="user" url="@ref md_docs_2methods_2bundle-adaptive" title="Bundles and adaptive refinement"/>
-      <tab type="user" url="@ref md_docs_2methods_2coordinate-frame-rotation" title="Coordinate frame rotation"/>
-      <tab type="user" url="@ref md_docs_2methods_2deer" title="DEER bath pulses"/>
-      <tab type="user" url="@ref md_docs_2methods_2master-equation" title="Master-equation CCE"/>
-      <tab type="user" url="@ref md_docs_2methods_2gpu" title="GPU execution"/>
-    </tab>
     <tab type="user" url="@ref md_docs_2user_2Changes" title="Changes"/>
     <tab type="classes" visible="yes" title="Data structures">
       <tab type="classlist" visible="yes" title="" intro=""/>

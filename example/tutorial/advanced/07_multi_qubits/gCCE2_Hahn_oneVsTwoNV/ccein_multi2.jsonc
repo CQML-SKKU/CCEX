@@ -1,0 +1,40 @@
+{
+    // Two NV centres along z in the same bath: qubit1 is the NV of ccein_single.jsonc, qubit2 25 A above it (rbath 50
+    // around each stays inside the 150 A bath cell). The coherence is between |+1,+1> and |0,0>; the two NVs interact
+    // by their dipolar coupling (set from the positions).
+    //
+    // The physics: the two NVs are one register of dimension 9 in every cluster, in a bath of the 13C around both;
+    // they are coupled by the point dipole, about 3.3 MHz at 25 A (52 MHz nm^3 / r^3). T2 0.956 ms here against
+    // 1.084 ms for one NV (README). About 2 min on 4 ranks.
+    //
+    // Writes results/ccein_multi2_wiDiv and _noDiv (t in ms, L(t) per line). The sibling ccein_single.jsonc is the
+    // first NV alone (its position from a file in place of xyz).
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "method"        : "gCCE",         // generalized CCE: the qubits are in every cluster's Hamiltonian, with their
+                                      // coupling and the qubit-bath flip-flops
+    "Qubit"         : {"qubit" : [{"name": "qubit1", "xyz": [73.73895, 75.72808, 73.97033]},
+                                  {"name": "qubit2", "xyz": [73.73895, 75.72808, 98.97033]}],
+                       "intmap": [{"between": ["qubit1", "qubit1"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]},
+                                  {"between": ["qubit2", "qubit2"],
+                                   "tensor": [[-960000, 0, 0], [0, -960000, 0], [0, 0, 1920000]]}]},
+                                      // qubit: one entry per NV, a name (used by intmap) and the position xyz
+                                      // (Angstrom; qubit1 is the first line of basic/01_first_run's defect file). Not
+                                      // written: spin 1 and the electron's gyromagnetic ratio. intmap: the self term
+                                      // of each name is its zero-field splitting, diag(-D/3, -D/3, 2D/3) with D =
+                                      // 2.88 GHz, in kHz (no "unit": the log notes it). The qubit1-qubit2 pair is not
+                                      // written, so it gets the point dipole of the positions. alpha_state and
+                                      // beta_state are not written: {"ms": [1, 1]} and {"ms": [0, 0]} by default;
+                                      // e.g. {"ms": [1, 0]} and {"ms": [0, 0]}: qubit1's coherence, qubit2 in ms 0
+    "configuration" : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                       "bathfile": ["../../../basic/01_first_run/bath/bath_Diamond_NV_natab_1"]},
+                                      // basic/01_first_run's bath: gyro_13C (name, spin, rad kHz/G) and a 150 A cube of
+                                      // diamond with 1.1 % 13C
+    "order"         : 2,              // the largest cluster: single 13C and pairs, each with both NVs (gCCE2)
+    "bfield"        : 500,            // Gauss along z, the axis of both NVs (the 13C precess at 535 kHz)
+    "rbath"         : 50,             // Angstrom: the 13C within 50 A of either NV, 1341 here (978 for one NV)
+    "rdip"          : 10,             // Angstrom: two 13C closer than 10 A form a pair cluster
+    "deltat"        : 0.001,          // the time step in ms (1 us); t is the whole echo (2 tau)
+    "nstep"         : 2000,           // 2000 time points: t = 0 .. 2 ms
+    "pulse"         : {"count": 1}    // one pi pulse on both NVs together: the Hahn echo
+}

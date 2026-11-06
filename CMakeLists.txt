@@ -34,7 +34,7 @@
 # Eigen, uthash and SQLite are in external/. MKL when it is found (CCEX_BLAS, see do_compile.sh).
 
 cmake_minimum_required(VERSION 3.18)
-project(CCEX VERSION 2.0.1 LANGUAGES C CXX)
+project(CCEX VERSION 2.1.0 LANGUAGES C CXX)
 
 set(CCEX_CUDA AUTO CACHE STRING "CUDA backend binary: AUTO, ON or OFF")
 set(CCEX_CUDA_SPLIT_COMPILE 5 CACHE STRING "nvcc -split-compile threads for the CUDA files (0: every CPU, 1: off)")
@@ -326,7 +326,8 @@ CCEX_UNIT_OBJS='$<JOIN:$<TARGET_OBJECTS:ccex_core>, > $<JOIN:$<TARGET_OBJECTS:cc
 if(_ccex_cuda)
   add_library(ccex_gpu_backend OBJECT ${CMAKE_SOURCE_DIR}/src/calculation/gpu/gpu_backend.cu
               ${CMAKE_SOURCE_DIR}/src/calculation/gpu/small_cluster_gpu.cu
-              ${CMAKE_SOURCE_DIR}/src/calculation/gpu/warp_cluster_gpu.cu)
+              ${CMAKE_SOURCE_DIR}/src/calculation/gpu/warp_cluster_gpu.cu
+              ${CMAKE_SOURCE_DIR}/src/calculation/gpu/noise_gpu.cu)
   target_include_directories(ccex_gpu_backend PRIVATE ${CMAKE_SOURCE_DIR}/include)
   target_compile_options(ccex_gpu_backend PRIVATE -O3 -lineinfo -split-compile=${CCEX_CUDA_SPLIT_COMPILE})
   # A68: the architecture in the Build line; "native" leaves it to the list nvcc compiled for (gpu_backend.cu)

@@ -1,0 +1,54 @@
+{
+    // The run of cCCE5_Hahn_backends with backend auto and no gpu_options: what bin/main_gpu.out chooses by itself.
+    // For cCCE with backend auto or cuda, the gpu_options an input leaves out are set at the start of the run and a
+    // [gpu-auto] line in the log says to what (docs/user/InputFile_Backend.md, "Automatic values"). run.sh runs it
+    // with bin/main_gpu.out (and, for the comparison, with backend cpu) and prints that line. Writes
+    // results/ccein_wiDiv (auto) and cpu_wiDiv. Without bin/main_gpu.out, auto runs on the CPU and nothing is chosen.
+    "Qubit"         : {"qubit": [{"file": "../bath/qubit_p1"}], "alpha_state": {"ms": [1]}},
+                                      // the NV (spin 1, the default) at the position in bath/qubit_p1 (x y z,
+                                      // Angstrom). alpha_state ms +1: L is between ms +1 and 0 (beta_state default)
+    "configuration" : {"gyrofile": "../bath/gyro_P1", "bathfile": ["../bath/bath_p1_5"], "seed": 1},
+                                      // gyrofile: the P1 line (spin 1/2, the electron's -17608.597050 rad kHz/G).
+                                      // bathfile: five P1 (x y z P1, Angstrom). seed: draws each P1's Jahn-Teller
+                                      // axis (Defect block); give it so that the three backends see one system
+    "order"         : 5,              // clusters of up to five P1: here every subset of the bath, the largest the
+                                      // whole bath (dimension 1024)
+    "bfield"        : 292,            // Gauss along z, the NV axis
+    "rbath"         : 59.66270215962017,
+                                      // Angstrom: 1 A beyond the farthest of the five P1 (58.66 A), so all are kept
+    "rdip"          : 119.32540431924033,
+                                      // Angstrom: twice rbath, so every P1 pair is connected
+    "deltat"        : 0.0003,         // the time step in ms (0.3 us)
+    "nstep"         : 100,            // 100 time points: 0 .. 29.7 us
+    "pulse"         : {"count": 1},   // one pi pulse: the Hahn echo
+    "execution"     : {"backend": "auto", "profile": true},
+                                      // backend auto: the clusters of dimension >= gpu_options.min_dim on the GPU,
+                                      // the rest on the CPU. No gpu_options, so with NP ranks on a node with G GPUs:
+                                      //   ranks_per_gpu 4 when NP > 4 G (only 4 ranks a GPU open it and take the
+                                      //   large clusters; the others stay on the CPU), else 0 (every rank may);
+                                      //   min_dim 256 with ranks_per_gpu (else the fixed 768): here the clusters of
+                                      //   four P1 (256) and five (1024);
+                                      //   evolution_batch_size 32: clusters of one dimension computed together;
+                                      //   cluster_batch_mb: two thirds of the smallest card over the ranks that
+                                      //   open it.
+                                      // Write any of them to fix it. profile: [profile] lines with the timings
+    // P1 with its 15N as an on-site nuclear spin; one of four Jahn-Teller axes is drawn per P1 from the seed, each with
+    // its own 15N hyperfine tensor (MHz)
+    "Defect"        : {"species": [{
+        "name"          : "P1",
+        "n_onsite_spins": 1,
+        "types"         : ["15N"],
+        "spins"         : [0.5],
+        "gyros"         : [-2.71261804],
+        "n_axis_states" : 4,
+        "hyperfine"     : [[1, "15N", [-114.060798, 0.0, 0.0, 0.0, -114.060798, 0.0, 0.0, 0.0, -159.951079]],
+                           [2, "15N", [-144.654779, -17.663442, -12.489096, -17.663442, -124.25879, -7.210583, -12.489096, -7.210583, -119.159104]],
+                           [3, "15N", [-144.654772, 17.663446, 12.489095, 17.663446, -124.258798, -7.210585, 12.489095, -7.210585, -119.159104]],
+                           [4, "15N", [-114.060798, 1e-06, 0.0, 1e-06, -154.852772, 14.421165, 0.0, 14.421165, -119.159104]]]}]}
+                                      // name: the bath file's spin name this species applies to.
+                                      // n_onsite_spins 1: one nuclear spin on each P1 site, which joins its
+                                      // electron in every cluster (types: the isotope 15N, spins: I = 1/2,
+                                      // gyros: rad kHz/G). n_axis_states 4: the Jahn-Teller axes, one per P1 from
+                                      // seed. hyperfine: per axis state [axis, "15N", the 3x3 electron-15N tensor
+                                      // as 9 numbers in MHz]
+}

@@ -31,6 +31,7 @@ for d in "$HERE"/cases/*/; do n=$(basename "$d"); mkdir -p "$OUT/$n"
   else
     ( cd "$d" && timeout 900 "${CCEX_MPI:-mpirun}" -n "$NP" "$BIN" -f ccein.json -o "$OUT/$n/out" > "$LOG/$n.log" 2>&1 ) || echo "$n: exit $? under $name (see $LOG/$n.log)"
   fi
+  rmdir "$OUT/$n" 2>/dev/null && echo "$n: nothing written under $name, left out (compare.py reports it as new)" || true
 done
 echo "reference/$name: $(ls "$OUT" | wc -l) cases"
 if [ "$what" != current ] && [ -z "${CCEX_KEEP_WORKTREE:-}" ]; then (cd "$REPO" && git worktree remove --force "$WT"); fi

@@ -32,7 +32,7 @@ if start is None:
 block, depth = [], 0
 for l in lines[start:]:
     # a commented line of the input (// then a key, a value or a bracket); a comment line of its own (the continued
-    # explanations at column 41) stays a comment
+    # explanation lines above each key) stays a comment
     text = re.sub(r'^(\s*)//', r'\1', l, count=1) if re.match(r'\s*//\s*["{}\[\]0-9-]', l) else l
     block.append(text)
     code = strip_comments(text)

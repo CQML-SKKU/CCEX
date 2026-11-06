@@ -5,6 +5,7 @@
 #ifndef CCEX_GPU_BACKEND_H
 #define CCEX_GPU_BACKEND_H
 #include <cstddef>
+#include <vector>
 #include <stdexcept>
 #include "accelerator_defaults.h"
 
@@ -52,6 +53,10 @@ struct GpuCce;
 // bath state. Hamiltonians, initial and coherence are complex-double arrays.
 GpuCce* gpuCceCreate(int dimension, bool ensemble, int batchSteps, int pulseCount,
                     const void* hAlpha, const void* hBeta, const void* initial);
+// n clusters of one dimension at once: one batched eigensolver call for their 2n Hamiltonians (hAlpha[c], hBeta[c], and
+// initial[c] unless ensemble); each work as gpuCceCreate's, destroyed by gpuCceDestroy
+std::vector<GpuCce*> gpuCceCreateBatch(int clusterCount, int dimension, bool ensemble, int batchSteps, int pulseCount,
+                                       const void* const* hAlpha, const void* const* hBeta, const void* const* initial);
 // durations[p*count+t] is the exact host duration for interval p and time t.
 // The ensemble path preserves legacy cCCE's even-pulse conjugation convention.
 void gpuCceEvolve(GpuCce* work, int count, const double* durations, void* coherence);

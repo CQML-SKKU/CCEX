@@ -1,68 +1,77 @@
 # Examples
 
-Eleven worked examples live in `example/tutorial/`, in the order to learn them; each has a page here with its text,
-its input files and its expected figures. Each topic folder holds one folder per calculation, named
-`<method><order>_<pulse>_<approach>` (`cCCE2_Hahn_ensemble`: cCCE to order 2, Hahn echo, the bath ensemble; the
-approach is `ensemble`, `states` or what the calculation compares). A calculation folder has its inputs
-(`ccein*.jsonc`, JSON with `//` comments, only the keys that matter; `main.out -e` writes every key), a `run.sh` and the
-`expected.png` a rerun is compared with. Each page says, for every calculation, what it shows, the keys that matter,
-how to run it (time, ranks, memory), the expected result and what to change next.
+The tutorials are in `example/tutorial/`, in two levels. `basic/` covers the input itself and runs in seconds to a
+minute, so read it in order. `advanced/` builds on it, so pick the topic you need.
 
-| Page | Topic |
+1. [Basic](#ex_basic): the input, six topics in order.
+2. [Advanced](#ex_advanced): thirteen topics in four groups, each on its own.
+3. [What should I use for my case?](#WhatToUse): the method and the tutorial for a situation.
+
+<a id="ex_basic"></a>
+## 1. Basic
+
+| Page | What it covers |
 |---|---|
-| [00_quickstart](../../example/tutorial/00_quickstart/README.md) | NV in natural-abundance ¹³C, cCCE2 Hahn echo, seconds on a laptop |
-| [01_ensemble_and_states](../../example/tutorial/01_ensemble_and_states/README.md) | averaging over bath configurations (`k_range`) and over sampled bath states (`s_range`); the built-in isotope table |
-| [02_pulses](../../example/tutorial/02_pulses/README.md) | Hahn echo, CPMG, a sequence written out (`Manual`) |
-| [03_P1](../../example/tutorial/03_P1/README.md) | an electron-spin bath: P1 at 1 and 10 ppm, Vp, a DEER pump, the mean field of the bath |
-| [04_hBN](../../example/tutorial/04_hBN/README.md) | V_B⁻ in h-BN with DFT hyperfine and quadrupole tensors |
-| [05_multiNV](../../example/tutorial/05_multiNV/README.md) | several NV centres as one register |
-| [06_cCCE_vs_gCCE](../../example/tutorial/06_cCCE_vs_gCCE/README.md) | the two methods, the options of cCCE (dsj, Knight shift), meCCE |
-| [07_pCCE_and_bundle](../../example/tutorial/07_pCCE_and_bundle/README.md) | clusters of groups: partitions (pCCE), bundles, adaptive refinement, the cluster reports |
-| [08_GPU](../../example/tutorial/08_GPU/README.md) | the CUDA backend against the CPU |
-| [09_auto_convergence](../../example/tutorial/09_auto_convergence/README.md) | the automatic convergence of the time window, rdip, rbath and the configurations |
-| [10_coordinate_rotation](../../example/tutorial/10_coordinate_rotation/README.md) | a bath written in another frame (`frame.rotation`) |
+| [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) | An NV in natural-abundance ¹³C, a cCCE2 Hahn echo in seconds on a laptop. |
+| [Basic 02: Bath configurations, sampled states and isotopes](../../example/tutorial/basic/02_bath_and_states/README.md) | Averaging over bath configurations (`k_range`) and over sampled bath states (`s_range`), and the built-in isotope table. |
+| [Basic 03: Checking convergence](../../example/tutorial/basic/03_convergence/README.md) | `rbath`, `rdip`, `order`, the number of configurations and the time axis, each changed until the curve no longer moves. |
+| [Basic 04: Pulse sequences](../../example/tutorial/basic/04_pulses/README.md) | The Hahn echo, CPMG, and a sequence written out (`Manual`). |
+| [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) | The two methods, the same at a strong field and different near a level crossing. |
+| [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) | The `Defect` block, sampled states and the mean field of the bath. |
 
-<a id="RunningOne"></a>
-## Running one
+<a id="ex_advanced"></a>
+## 2. Advanced
 
-```
-bash do_compile.sh wsl-gnu                     # once, from the repository root; makes bin/main.out
-cd example/tutorial/00_quickstart
-NP=4 bash run.sh                               # results/; needs python3 with numpy and matplotlib for the plot
-```
+<a id="ex_adv_run"></a>
+### 2.1 Running and handling a calculation
 
-`run.sh` finds the binary through `git rev-parse --show-toplevel` (`CCEX_BIN` names another one, e.g. a CMake build's
-`build/bin/main.out`; `CCEX_GPU_BIN` the GPU binary of `08_GPU`), runs every input with `mpirun -n $NP ... -o results`
-(the outputs are named after the input: `ccein_wiDiv`, `ccein_k1_state3_wiDiv`, ...; see [Output files](OutputFiles.md))
-and then `example/tutorial/plot_coherence.py`, which writes `results/coherence.png` and prints one number per curve
-(T2 = the last time |L| ≥ 1/e). A few `run.sh` also run a variant of the input written by
-`example/tools/InputKeys/set_input_keys.py` into `results/`. Inputs name their files relative to the calculation
-folder (`../bath/`, `../../00_quickstart/bath/`), so `run.sh` is run from there. Git ignores `results/`.
+| Page | What it covers |
+|---|---|
+| [Advanced 01: Automatic convergence](../../example/tutorial/advanced/01_auto_convergence/README.md) | The time window, rdip, rbath and the configurations found by the runner. |
+| [Advanced 02: Analysis of the output](../../example/tutorial/advanced/02_analysis/README.md) | The analyzer (error correction, average, T2 fit) and the cluster reports. |
+| [Advanced 03: Runs on a cluster (Slurm)](../../example/tutorial/advanced/03_server_runs/README.md) | A production run as a Slurm job, its size, one job and a job array. |
+| [Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) | The CUDA backend against the CPU, and the automatic GPU options. |
 
-Shared by the tutorials: `example/tutorial/plot_coherence.py` (the figures and numbers) and
-`example/tutorial/make_natab_baths.sh` (natural-abundance ¹³C configurations made with `example/tools/BathGenerator`,
-for `01` and `09`). Each `expected.png` was made by that folder's `run.sh` on a workstation (i7-14700K, WSL, 4 ranks);
-the three calculations of `08_GPU` and `05_multiNV/gCCE2_HahnRamsey_NV6` need a server and have no `expected.png` yet.
-Times and memory on the pages are from the same workstation.
+<a id="ex_adv_systems"></a>
+### 2.2 Other systems and inputs
+
+| Page | What it covers |
+|---|---|
+| [Advanced 05: Electron-spin baths further](../../example/tutorial/advanced/05_P1/README.md) | Making a P1 bath, the ¹⁴N as a detuning or a spin (2e, 2e2n), order 2 checked at order 4 and a DEER pump. |
+| [Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) | Making an h-BN bath, the tensor files from a VASP run (`example/tools/SpinTensorReader`), and the coherence without and with them. |
+| [Advanced 07: Multiple qubits](../../example/tutorial/advanced/07_multi_qubits/README.md) | Two and three NVs as one register. |
+| [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) | A bath written in another frame (`frame.rotation`), and a `Defect` species in that frame. |
+
+<a id="ex_adv_cce"></a>
+### 2.3 Hamiltonian terms and cluster shapes
+
+| Page | What it covers |
+|---|---|
+| [Advanced 09: The terms of the cluster Hamiltonian](../../example/tutorial/advanced/09_hamiltonian_terms/README.md) | The corrections to cCCE (the hyperfine-mediated term, the Knight shift) against gCCE, and the mean fields. |
+| [Advanced 10: The cluster modes (dsj, pCCE, bundles) and adaptive refinement](../../example/tutorial/advanced/10_cluster_modes/README.md) | Disjoint clusters, partitions (pCCE), bundles and the adaptive refinement. |
+
+<a id="ex_adv_methods"></a>
+### 2.4 Other models of the bath
+
+| Page | What it covers |
+|---|---|
+| [Advanced 11: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/11_dissipation/README.md) | Lindblad relaxation of the bath spins (meCCE) and of the qubit (megCCE) in every cluster. |
+| [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md) | The Gaussian coherence of the phase noise, from the bath or from a model spectrum, and its correlation C(t) and spectrum S(f). |
+| [Advanced 13: Pseudospin pairs](../../example/tutorial/advanced/13_pseudospin/README.md) | The pairs of a nuclear bath in the pseudospin model, against cCCE2. |
 
 <a id="WhatToUse"></a>
-## What should I use for my case?
+## 3. What should I use for my case?
 
-| Situation | Method and keys | Example |
+| Situation | Use | Example |
 |---|---|---|
-| a defect in a nuclear-spin bath (¹³C, ²⁹Si, ...), high field along the defect axis | cCCE (the default), `order` 2, ensemble | [00_quickstart](../../example/tutorial/00_quickstart/README.md), [01_ensemble_and_states](../../example/tutorial/01_ensemble_and_states/README.md) (`cCCE2_Hahn_ensemble`) |
-| several bath configurations from one input | `configuration.bathfile` with `{k}` and `configuration.k_range` | [01_ensemble_and_states](../../example/tutorial/01_ensemble_and_states/README.md) (`cCCE2_Hahn_ensemble`) |
-| the bath in sampled pure states (electron baths, polarised or single-shot) | `configuration.s_range` and `seed` (or `bath_state_file`, `example/tools/StateFiles`) | [01_ensemble_and_states](../../example/tutorial/01_ensemble_and_states/README.md) (`cCCE2_Hahn_states`), [03_P1](../../example/tutorial/03_P1/README.md) |
-| dynamical decoupling | `pulse.count` (1 Hahn, N CPMG-N), `pulse.name` `Manual` with `pulse.sequence` for any other π sequence | [02_pulses](../../example/tutorial/02_pulses/README.md) |
-| an electron-spin bath (P1, other paramagnetic defects) | the `Defect` block (axes, detunings, on-site nuclei), `s_range`, check `order` 4 | [03_P1](../../example/tutorial/03_P1/README.md) |
-| DFT hyperfine and quadrupole tensors (2D materials, defects with strong contact terms) | `hamiltonian.common.hyperfine` / `quadrupole` with the files of `example/tools/SpinTensorReader` ([Tools](Tools.md)) | [04_hBN](../../example/tutorial/04_hBN/README.md) |
-| low or tilted field, a spin-1 qubit whose zero-field splitting matters, the qubit density matrix | gCCE (`method` gCCE, `Qubit.intmap` self entry), `quantity` dm | [06_cCCE_vs_gCCE](../../example/tutorial/06_cCCE_vs_gCCE/README.md) (`gCCE2_Hahn_vsCCE`), [03_P1](../../example/tutorial/03_P1/README.md) (`gCCE2_Hahn_zfs`) |
-| cCCE in a tilted field | `hamiltonian.cCCE.knight` | [06_cCCE_vs_gCCE](../../example/tutorial/06_cCCE_vs_gCCE/README.md) (`cCCE2_Hahn_knightShift`) |
-| several qubits | `Qubit.qubit` list with `intmap`, gCCE | [05_multiNV](../../example/tutorial/05_multiNV/README.md) |
-| strongly coupled groups of bath spins (dense electron baths) | pCCE (`cluster.mode` pcce, `partition_size`) or bundles (`cluster.mode` bundle, `bundle.max_dim`, optionally `cluster.adaptive`) | [07_pCCE_and_bundle](../../example/tutorial/07_pCCE_and_bundle/README.md) |
-| large clusters (Hilbert dimension of hundreds or more) and a GPU | `execution.backend` auto with `bin/main_gpu.out` | [08_GPU](../../example/tutorial/08_GPU/README.md) |
-| not sure which rbath, rdip, time window or number of configurations | the `auto_convergence` block | [09_auto_convergence](../../example/tutorial/09_auto_convergence/README.md) |
-| a bath file written in the crystal frame (defect axis not along z) | the `frame.rotation` block, `qubit_axis` | [10_coordinate_rotation](../../example/tutorial/10_coordinate_rotation/README.md) |
-
-Which combinations of method, cluster mode and backend run at all is the table
-[What runs where](Overview.md#WhatRunsWhere).
+| A defect in a nuclear-spin bath, with the field along the defect axis. | cCCE (default). | [Basic 01: NV in ¹³C, from a bath to T2](../../example/tutorial/basic/01_first_run/README.md) |
+| An electron-spin bath (P1, ...). | The `Defect` block and sampled states. | [Basic 06: An electron-spin bath (P1)](../../example/tutorial/basic/06_defect_bath/README.md) |
+| Hyperfine and quadrupole from DFT. | The tensor files. | [Advanced 06: V_B⁻ in h-BN with DFT tensors](../../example/tutorial/advanced/06_hBN/README.md) |
+| Near a level crossing, a low or tilted field, or the density matrix. | gCCE. | [Basic 05: cCCE against gCCE](../../example/tutorial/basic/05_cCCE_vs_gCCE/README.md) |
+| Several qubits. | gCCE with `intmap`. | [Advanced 07: Multiple qubits](../../example/tutorial/advanced/07_multi_qubits/README.md) |
+| Strongly coupled bath spins. | pCCE or bundles. | [Advanced 10: The cluster modes (dsj, pCCE, bundles) and adaptive refinement](../../example/tutorial/advanced/10_cluster_modes/README.md) |
+| Large clusters. | The GPU backend. | [Advanced 04: The GPU backend](../../example/tutorial/advanced/04_GPU/README.md) |
+| A bath written in the crystal frame. | `frame.rotation`. | [Advanced 08: Coordinate rotation](../../example/tutorial/advanced/08_coordinate_rotation/README.md) |
+| A noise spectrum, or a model noise without a bath. | Method noise. | [Advanced 12: Semiclassical noise (method noise)](../../example/tutorial/advanced/12_noise/README.md) |
+| Which nuclear pairs drive the decay. | Method pseudospin. | [Advanced 13: Pseudospin pairs](../../example/tutorial/advanced/13_pseudospin/README.md) |
+| Relaxation of the bath spins or of the qubit. | meCCE or megCCE. | [Advanced 11: Dissipation (meCCE and megCCE)](../../example/tutorial/advanced/11_dissipation/README.md) |

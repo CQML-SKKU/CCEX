@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""compare.py RUN_DIR REF_DIR [--expected expected.json] [--tol 1e-9]
+"""compare.py RUN_DIR REF_DIR [--expected expected.json] [--tol 1e-9] [--history]
 
 For every case, the largest |run - reference| over the files both wrote. The verdict is taken
 on the _noDiv files and the density-matrix files; the _wiDiv coherence (normalised by the
@@ -9,7 +9,9 @@ denominator is small. A case listed in expected.json for this reference is repor
 run did not write, nothing judged in common, or an output that is empty, of another length or, where judged,
 non-finite where the reference is finite, fails as well, whatever expected.json says; a file the
 reference wrote under another name is compared under the name in the reference's "renames"
-({case: {run file: reference file}}). No case at all fails. Exit status 1 if any case fails."""
+({case: {run file: reference file}}). No case at all fails. Exit status 1 if any case fails.
+--history (run.sh, for every reference but the one that decides: the tags and the older head-*): a case the reference
+does not have, added after it was recorded, is reported as "new" and does not fail; every other rule holds."""
 import sys, os, glob, json, numpy as np
 args = sys.argv[1:]; run, ref = args[0], args[1]
 tol = float(args[args.index('--tol') + 1]) if '--tol' in args else 1e-9
@@ -28,6 +30,7 @@ heads = sorted(glob.glob(os.path.join(os.path.dirname(os.path.abspath(ref.rstrip
 relative = mkl and 'tol' not in exp and bool(heads) and os.path.abspath(ref.rstrip('/')) == heads[-1]
 if relative: tol = 1e-12
 renames = exp.get('renames', {})
+history = '--history' in args
 def load(path):
     """Every whitespace-separated token as a number (complex() reads the whole token, inf and nan included), and
     the first token it cannot read, as "line N: token", or None. Such a file is broken whatever the reference holds
@@ -63,6 +66,7 @@ names = sorted({os.path.basename(d.rstrip('/')) for d in glob.glob(f'{run}/*/') 
 for name in names:
     cdir, rdir = f'{run}/{name}/', f'{ref}/{name}'
     files = sorted(f for f in os.listdir(cdir) if f not in ('run.log', 'out.json')) if os.path.isdir(cdir) else []   # out.json: run.sh's input copy
+    if files and not os.path.isdir(rdir) and history: rows.append((name, None, None, 'new')); continue
     if not files or not os.path.isdir(rdir): rows.append((name, None, None, 'no reference' if files else 'no output')); continue
     judged, shown, notes, compared, missing = 0.0, 0.0, [], 0, []
     names_in_ref = {f: renames.get(name, {}).get(f, f) for f in files}    # run file -> reference file
@@ -85,6 +89,8 @@ print(f'{"case":24} {"noDiv/dm":>10} {"wiDiv":>10}  verdict   (reference {versio
       + (', relative: MKL build)' if relative else ')'))
 for name, j, s, note in rows:
     reason = exp.get('cases', {}).get(name)
+    if note == 'new':  # --history: the case came after this reference
+        print(f'{name:24} {"-":>10} {"-":>10}  {"new":8}  not in this reference (added after it)'); continue
     if j is None:     # nothing or not everything compared: no reason excuses it (reviews 4cc510 R2, 8fecd5 R1)
         fails += 1; print(f'{name:24} {"-":>10} {"-":>10}  {"FAIL":8}  {note}'); continue
     if j <= tol: verdict = 'ok'

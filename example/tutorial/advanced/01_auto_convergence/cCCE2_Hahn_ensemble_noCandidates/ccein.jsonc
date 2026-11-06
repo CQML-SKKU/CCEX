@@ -1,0 +1,46 @@
+{
+    // The fully automatic form of ../cCCE2_Hahn_ensemble: the same calculation (basic/01_first_run's cCCE2 Hahn echo of an
+    // NV in natural-abundance 13C, the ensemble) with the rdip and rbath blocks left out, so the runner proposes their
+    // candidates from the 13C around the NV. Only the auto_convergence block differs from ../cCCE2_Hahn_ensemble, and
+    // run.sh makes its baths in larger cells (140 A). Expected: rdip 8.24 A, rbath 41.7 A, window 2.98 ms, 30
+    // production configurations, T2 0.81 ms. Writes everything under results/auto/.
+    //
+    // Config (General) : the physics only, as in ../cCCE2_Hahn_ensemble. rbath, rdip and the time window are not
+    //                    given: the auto_convergence block finds them. nstep is the number of time points of
+    //                    every run; deltat only sets the first window ((nstep - 1) x deltat = 1 ms).
+    // The ensemble: no configuration.s_range, the average over the unpolarised bath (one output).
+    "method"           : "cCCE",            // conventional CCE: the qubit only sets the field each 13C feels
+    "quantity"         : "coherence",       // the qubit coherence L(t), the only quantity the runner converges
+    // Qubit : ms = +1 / 0 of the NV, one pi pulse (Hahn echo)
+    "Qubit"            : {"qubit": [{"file": "results/bath/config_defect"}], "alpha_state": {"ms": [1]}, "beta_state": {"ms": [0]}},
+                                            // the NV's position: the first line of results/bath/config_defect,
+                                            // which run.sh makes with the baths. L between ms +1 and 0
+    "configuration"    : {"gyrofile": "../../../basic/01_first_run/bath/gyro_13C",
+                                            // the 13C line: name, spin, gyromagnetic ratio (rad kHz/G)
+        // no s_range : the ensemble, one curve per bath configuration; only the number of configurations is chosen
+        "seed"     : 1,                     // one integer (1 when absent): fixes how the runner splits the
+                                            // configurations into test and production (a list is refused here)
+        "bathfile" : ["results/bath/config_{k}"]},
+                                            // one name with {k}: every k whose file exists is a configuration
+                                            // (made by run.sh in 140 A cells: rbath up to 68 A)
+    "order"            : 2,                 // single 13C and pairs (cCCE2)
+    "bfield"           : 500,               // Gauss along z, the NV axis
+    "deltat"           : 0.01,              // ms: only the first window, (101 - 1) x 0.01 = 1 ms
+    "nstep"            : 101,               // the time points of every run (150 when absent); the runner keeps it
+    "pulse"            : {"count": 1},      // one pi pulse: the Hahn echo
+
+    // auto_convergence : the block of ../cCCE2_Hahn_ensemble without rdip and rbath: only the workdir and the
+    //                    sampling are written (example/tools/AutoConvergence/README.md).
+    //   rdip, rbath    : left out: the runner counts the 13C of the test configurations around the NV and starts
+    //                    from 4 rbath candidates 1.25 apart, the largest where 300 spins are inside, and 7 rdip
+    //                    candidates 0.8 apart from the pair-phase rule; the largest of each is raised by 1.25
+    //                    until the comparisons agree (rbath at most the 68 A the 140 A cells of run.sh cover;
+    //                    the 110 A cells of ../cCCE2_Hahn_ensemble, 53 A, stop it unresolved: it needs 65.5 A).
+    "auto_convergence" : {
+        "workdir"        : "results/auto",  // the folder of the runs (runs/), the decisions (decisions.jsonl) and
+                                            // the results (result/: summary.txt and the figures) (required)
+        "sampling"       : {}               // the split of the bath configurations, as in ../cCCE2_Hahn_ensemble:
+                                            // 10 for the tests, the rest for the production; {} keeps every
+                                            // default (SE(A)/A <= 5 %)
+    }
+}

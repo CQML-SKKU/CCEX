@@ -295,6 +295,57 @@ void computeGpuSplitSetup(Config* config, QubitArray* qa, BathArray* ba, DefectA
 #endif
 }
 
+void computeGpuAutoSettings(Config* config){
+#ifdef CCEX_USE_CUDA
+    const bool cce = !strcasecmp(config->method,"cce") || !strcasecmp(config->method,"pcce");
+    if (!cudaSupported || !nodeKnown || !cce || !strcasecmp(config->backend,"cpu")) return;
+    // option.cpp's gpuKeys: 0 min_dim, 3 evolution_batch_size, 4 cluster_batch_mb, 7 ranks_per_gpu
+    auto given = [&](int k){ return (config->gpu_options_given >> k) & 1u; };
+    if (given(0) && given(3) && given(4) && given(7)) return;
+    // node rank 0 alone asks the driver (as computeGpuSplitSetup), so a rank that never uses the GPU never starts CUDA
+    MPI_Comm node;
+    MPI_Comm_split_type(MPI_COMM_WORLD,MPI_COMM_TYPE_SHARED,rank,MPI_INFO_NULL,&node);
+    long long info[2] = {0,0};
+    if (nodeRank == 0){ info[0] = gpuVisibleDevices(); info[1] = info[0] ? (long long)gpuDeviceMemorySmallest() : 0; }
+    MPI_Bcast(info,2,MPI_LONG_LONG,0,node);
+    MPI_Comm_free(&node);
+    const int devices = int(info[0]);
+    if (devices <= 0 || info[1] <= 0) return;
+    std::string set;
+    if (!given(7) && !strcasecmp(config->backend,"auto") && !strcasecmp(config->cluster_mode,"standard") && nodeSize > 4*devices){
+        config->gpu_ranks_per_gpu = 4;
+        append(set," ranks_per_gpu=4");
+    }
+    if (!given(0) && config->gpu_ranks_per_gpu > 0){
+        config->gpu_min_dim = 256;
+        append(set," min_dim=256");
+    }
+    if (!given(3)){
+        config->gpu_batch_clusters = 32;
+        append(set," evolution_batch_size=32");
+    }
+    if (!given(4)){
+        const long long perCard = (nodeSize + devices - 1)/devices;
+        const long long ranks = config->gpu_ranks_per_gpu > 0 ? std::min<long long>(config->gpu_ranks_per_gpu,perCard) : perCard;
+        config->gpu_cluster_batch_mb = int(std::max(64LL,std::min<long long>(INT_MAX,info[1]/3*2/ranks/1048576)));
+        append(set," cluster_batch_mb=%d",config->gpu_cluster_batch_mb);
+    }
+    if (rank == 0 && !set.empty()) printf("[gpu-auto]%s (gpu_options the input leaves out; %d GPU(s), %lld MiB the smallest)\n",
+                                          set.c_str(),devices,info[1]/1048576);
+#else
+    (void)config;
+#endif
+}
+
+bool computeBatchByDimension(const Config* config){
+#ifdef CCEX_USE_CUDA
+    // a CPU rank does not batch; nor do the large clusters within the default 64 MiB, where the order only costs
+    return cudaSupported && config->gpu_batch_clusters > 1 && config->gpu_cluster_batch_mb > 64 && (!split.on || split.isGpu[rank]);
+#else
+    (void)config; return false;
+#endif
+}
+
 bool computeGpuSplitOn(){ return split.on; }
 const std::vector<int>& computeGpuSplitRanks(){ return split.ranks; }
 
